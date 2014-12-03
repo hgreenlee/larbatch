@@ -25,10 +25,6 @@ test "$ss" = csh && alias return exit
 set_ msg1='ERROR: You MUST setup ups'
 test -z $UPS_DIR && ( echo ""; echo "$msg1"; echo "" ) && return
 
-set_ msg3='ERROR: You MUST specify either -o, -p, or -d'
-set_ msg4='Usage: setup_for_development <-d|-o|-p> <qualifier list>'
-test -z "$1" && ( echo ""; echo "$msg4"; echo "$msg3"; echo "" ) && return
-
 # make sure we know where this script lives
 # now if we were passed a path or if not, we can figure it out (maybe if we are interactive)
 #   bash, zsh, ksh and tcsh pass params to a source file, csh does not. but someone will be writing csh scripts
@@ -64,7 +60,7 @@ setup -B $cetb $cetv
 test "$?" = 0 || set_ setup_fail="true"
 setenv UPS_OVERRIDE -B
 # now get the rest of the products
-set_ cmd="$CETBUILDTOOLS_DIR/bin/set_dev_products $CETPKG_SOURCE $CETPKG_BUILD $*"
+set_ cmd="$CETBUILDTOOLS_DIR/bin/set_dev_products $CETPKG_SOURCE $CETPKG_BUILD simple"
 #echo Ready to run $cmd
 source `$cmd`
 #echo "$cmd returned $setup_fail"
@@ -73,13 +69,11 @@ test "$setup_fail" = "true" && return 1
 test -e "$CETPKG_BUILD/diag_report" && cat $CETPKG_BUILD/diag_report
 echo ----------------------------------------------------------------
 
-# add lib to LD_LIBRARY_PATH
-source $CETBUILDTOOLS_DIR/bin/set_dev_lib
 # add bin to path
 source $CETBUILDTOOLS_DIR/bin/set_dev_bin
 
 # final sanity check and report
-source $CETBUILDTOOLS_DIR/bin/set_dev_check_report
+source $CETBUILDTOOLS_DIR/bin/set_dev_check_report simple
 
 # cleanup before exiting
 test "$ss" = csh && unalias tnotnull nullout set_ vecho_ return
