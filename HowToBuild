@@ -7,13 +7,8 @@
 # you should move it to a different directory that is not underneath
 # your $MRB_SOURCE, so that the mrb build system will not see it.
 
-# To build larbatch, execute the following commands in the top
-# larbatch source directory (you can source this file).  Note that you
-# need to have a separate build area from your normal mrb build area,
-# as well as a separate source area.
-
 # After building larbatch following these instructions, larbatch
-# should be installed as a normal null-flavored ups product in your
+# will be installed as a normal null-flavored ups product in your
 # $MRB_INSTALL area.  Normal setup commands like "setup larbatch
 # <version>" (without qualifiers) and "mrbslp" should work.
 
