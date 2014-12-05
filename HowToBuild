@@ -1,5 +1,5 @@
 # Package larbatch is a null-flavored package that can not currently
-# be built properly using standard mrb build tools (mrbsetenv, mrb
+# be built properly using standard mrb build tools (mrbsetenv, mrb 
 # build, mrb install).  Follow these instructions to build larbatch by
 # hand.
 
