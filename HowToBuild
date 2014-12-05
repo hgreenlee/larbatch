@@ -19,4 +19,3 @@ source ../larbatch/ups/setup_for_development
 cmake -DCMAKE_INSTALL_PREFIX=$MRB_INSTALL ${CETPKG_SOURCE}
 make install
 cd ../larbatch
-
