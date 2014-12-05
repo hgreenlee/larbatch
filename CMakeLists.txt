@@ -24,7 +24,7 @@ find_ups_product(cetbuildtools v4_00_00)
 # source code
 add_subdirectory(ups)
 add_subdirectory(scripts)
-#add_subdirectory(python)
+add_subdirectory(python)
 
 # packaging utility
 include(UseCPack)
