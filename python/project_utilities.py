@@ -14,7 +14,11 @@ import sys, os, stat, time, types
 import socket
 import subprocess
 import getpass
+# Prevent root from printing garbage on initialization.
+if os.environ.has_key('TERM'):
+    del os.environ['TERM']
 import ROOT
+ROOT.gErrorIgnoreLevel = ROOT.kError
 
 proxy_ok = False
 ticket_ok = False
