@@ -2450,16 +2450,22 @@ def main(argv):
 		     
     if audit:
         import_samweb()
-	if stage.name == 'gen':
-		print 'No auditing for "gen" stage...exiting!'
+        stage_has_input = stage.inputfile != '' or stage.inputlist != '' or stage.inputdef != ''
+	if not stage_has_input:
+		print 'No auditing for generator stage...exiting!'
 		sys.exit(1)
 	#Are there other ways to get output files other than through definition!?
 	outputlist = []
 	outparentlist = []
 	if stage.defname != '':	
 		query = 'isparentof: (defname: %s) and availability: anylocation' %(stage.defname)
-		outparentlist = samweb.listFiles(dimensions=query)
-		outputlist = samweb.listFiles(defname=stage.defname)
+                try:
+                    outparentlist = samweb.listFiles(dimensions=query)
+                    outputlist = samweb.listFiles(defname=stage.defname)
+                except:
+                    print 'Error accessing sam information for definition %s.' % stage.defname
+                    print 'Does definition exist?'
+                    sys.exit(1)
 	else:
 		print "Output definition not found...exiting!"
 		sys.exit(1)
@@ -2507,21 +2513,14 @@ def main(argv):
 			   else:
 			     print 'No files.list file found, run project.py --check'
 			     sys.exit(1)
-			   #make a dictionary or jason file  
-			   #sdict = {'content_status':'bad'}			     
-			   #make a .json file with { "content_status": "bad"} json fragment
-			   #json = open("jsonfile.json","w")
-			   #json.write("{ \"content_status\": \"bad\" }")
-			   #json.close()	
+
 			#declare the content status of the file as bad in SAM
-			#samweb.modifyFileMetadata(rmfile, sdict)
-			#mmd_cmd = 'samweb modify-metadata %s %s' %(rmfile,"jsonfile.json")
-		        #subprocess.check_output(mmd_cmd, shell = True)	 
-			#temporary fix for declaring the content_status of a file as bad in SAM. 
-			mmd_cmd = 'curl --cert /tmp/x509up_u$(id -u) --insecure -d "status=bad" -d "comment=declared%20bad" https://samweb.fnal.gov:8483/sam/uboone/api/files/name/'+rmfile+'/content_status'
-			subprocess.check_output(mmd_cmd, shell = True)	
+                        
+                        sdict = {'content_status':'bad'}
+			samweb.modifyFileMetadata(rmfile, sdict)
 			print '\nDeclaring the status of the following file as bad:', rmfile
-			#remove this file from the files.list in the output directory			
+
+			#remove this file from the files.list in the output directory
 			fn = []  
 			fn = [x for x in slist if os.path.basename(string.strip(x)) != rmfile] 
    			thefile = safeopen(fnlist)
