@@ -23,15 +23,17 @@
 #
 # Sam and parallel project options.
 #
+# --sam_url <arg>         - Specify url of samweb server.
 # --sam_user <arg>        - Specify sam user (default $GRID_USER).
-# --sam_group <arg>       - Specify sam group (default "uboone").
-# --sam_station <arg>     - Specify sam station (default "uboone").
+# --sam_group <arg>       - Specify sam group (default --group option).
+# --sam_station <arg>     - Specify sam station (default --group option).
 # --sam_defname <arg>     - Sam dataset definition name.
 # --sam_project <arg>     - Sam project name.
 # --njobs <arg>           - Parallel project with specified number of jobs (default one).
 #
 # Larsoft options.
 #
+# --ups <arg>             - Comma-separated list of top level run-time ups products.
 # -r, --release <arg>     - Release tag.
 # -q, -b, --build <arg>   - Release build qualifier (default "debug", or "prof").
 # --localdir <arg>        - Larsoft local test release directory (default none).
@@ -66,8 +68,7 @@
 # MRB run-time environmental setup is controlled by four options:
 #  --release (-r), --build (-b, -q), --localdir, and --localtar.  
 #
-# a) Use option --release or -r to specify uboonecode version.  Note that
-#    larsoft is setup as a dependent product of uboonecode.
+# a) Use option --release or -r to specify version of top-level product(s).  
 # b) Use option --build or -b to specify build full qualifiers (e.g. 
 #    "debug:e5" or "e5:prof").
 # c) Options --localdir or --localtar are used to specify your local
@@ -184,6 +185,7 @@ NFILE=0
 NFILE_SKIP=0
 NJOBS=1
 ARGS=""
+UPS_PRDS=""
 REL=""
 QUAL=""
 LOCALDIR=""
@@ -200,9 +202,10 @@ PROCMAP=""
 INITSCRIPT=""
 INITSOURCE=""
 ENDSCRIPT=""
+SAM_URL=""
 SAM_USER=$GRID_USER
-SAM_GROUP="uboone"
-SAM_STATION="uboone"
+SAM_GROUP=""
+SAM_STATION=""
 SAM_DEFNAME=""
 SAM_PROJECT=""
 USE_SAM=0
@@ -290,6 +293,14 @@ while [ $# -gt 0 ]; do
       fi
       ;;
 
+    # Sam url.
+    --sam_url )
+      if [ $# -gt 1 ]; then
+        SAM_URL=$2
+        shift
+      fi
+      ;;
+
     # Sam user.
     --sam_user )
       if [ $# -gt 1 ]; then
@@ -338,6 +349,14 @@ while [ $# -gt 0 ]; do
         shift
         ARGS=$@
         break
+      fi
+      ;;
+
+    # Top level ups products (comma-separated list).
+    --ups )
+      if [ $# -gt 1 ]; then
+        UPS_PRDS=$2
+        shift
       fi
       ;;
 
@@ -522,7 +541,15 @@ id
 # Set defaults.
 
 if [ x$QUAL = x ]; then
-  QUAL="debug:e5"
+  QUAL="prof:e6"
+fi
+
+if [ x$SAM_GROUP = x ]; then
+  SAM_GROUP=$GRP
+fi
+
+if [ x$SAM_STATION = x ]; then
+  SAM_STATION=$GRP
 fi
 
 # Initialize microboone ups products and mrb.
@@ -848,16 +875,20 @@ if [ x$LOCALTAR != x ]; then
   mrbslp
 fi
 
-# Setup specified version of uboonecode (if specified, and if local
-# test release did not set it up).
+# Setup specified version of top level run time products
+# (if specified, and if local test release did not set them up).
 
-if [ x$UBOONECODE_DIR == x -a x$REL != x ]; then
-  echo "Setting up uboonecode $REL -q ${QUAL}."
-  if [ x$IFDHC_DIR != x ]; then
-    unsetup ifdhc
-  fi
-  setup uboonecode $REL -q $QUAL
+if [ x$IFDHC_DIR != x ]; then
+  unsetup ifdhc
 fi
+
+for prd in `echo $UPS_PRDS | tr , ' '`
+do
+  if ! ups active | grep -q $prd; then
+    echo "Setting up $prd $REL -q ${QUAL}."
+    setup $prd $REL -q $QUAL
+  fi
+done
 
 cd $TMP/work
 
@@ -1144,7 +1175,7 @@ if [ $USE_SAM -ne 0 ]; then
 
 services.user.IFDH:
 {
-  IFDH_BASE_URI: "http://samweb.fnal.gov:8480/sam/uboone/api"
+  IFDH_BASE_URI: "$SAM_URL"
 }
 
 services.user.CatalogInterface:

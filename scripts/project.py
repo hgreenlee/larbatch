@@ -2675,6 +2675,7 @@ def main(argv):
         command.extend([' --group', project.group])
         command.extend([' -g'])
         command.extend([' -c', 'wrapper.fcl'])
+        command.extend([' --ups', project_utilities.get_ups_products()])
         if project.release_tag != '':
             command.extend([' -r', project.release_tag])
         command.extend([' -b', project.release_qual])
@@ -2690,7 +2691,8 @@ def main(argv):
             command.extend([' -S', input_list_name])
         elif inputdef != '':
             command.extend([' --sam_defname', inputdef,
-                            ' --sam_project', prjname])
+                            ' --sam_project', prjname,
+                            ' --sam_url', project_utilities.get_public_samweb_url()])
         command.extend([' -n', '%d' % project.num_events])
         command.extend([' --njobs', '%d' % stage.num_jobs ])
         if stage.init_script != '':
