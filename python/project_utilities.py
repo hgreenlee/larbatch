@@ -67,7 +67,7 @@ def get_dcache_server():
 
 # Function to determine dropbox directory based on sam metadata.
 # Raise an exception if the specified file doesn't have metadata.
-# This function should be overridden in <experiment>-utilities module.
+# This function should be overridden in <experiment>_utilities module.
 
 def get_dropbox(filename):
     raise RuntimeError, 'Function get_dropbox not implemented.'
@@ -398,6 +398,23 @@ class SafeTFile:
 
     def Get(self, objname):
         return self.root_tfile.Get(objname)
+
+# Function to return a comma-separated list of run-time top level ups products.
+
+def get_ups_products():
+    return get_experiment() + 'code'
+
+# Function to return url of the public samweb server.
+# This function should be overridden in <experiment>_utilities.py.
+
+def get_public_samweb_url():
+    raise RuntimeError, 'Function get_public_samweb_url not implemented.'
+
+# Function to return url of the secure samweb server.
+# This function should be overridden in <experiment>_utilities.py.
+
+def get_secure_samweb_url():
+    raise RuntimeError, 'Function get_secure_samweb_url not implemented.'
 
 # Import experiment-specific utilities.  In this imported module, one can 
 # override any function or symbol defined above, or add new ones.
