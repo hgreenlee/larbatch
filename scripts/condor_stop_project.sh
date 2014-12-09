@@ -12,6 +12,7 @@
 # --sam_project <arg> - Sam project name (required).
 # --outdir <arg>      - Specify output directory (optional). 
 # -g, --grid          - Be grid-friendly.
+# --workdir <arg>     - Work directory
 #
 # End options.
 #
@@ -65,6 +66,14 @@ while [ $# -gt 0 ]; do
       GRID=1
       ;;
 
+    # Work directory.
+    --workdir )
+      if [ $# -gt 1 ]; then
+        WORKDIR=$2
+        shift
+      fi
+      ;;
+
     # Other.
     * )
       echo "Unknown option $1"
@@ -89,25 +98,26 @@ if [ x$SAM_PROJECT = x ]; then
   exit 1
 fi
 
-# Initialize microboone ups products and mrb.
+# Make sure work directory is defined and exists.
 
-OASIS_DIR="/cvmfs/oasis.opensciencegrid.org/microboone/products/"
-FERMIAPP_DIR="/grid/fermiapp/products/uboone/"
-
-echo "Initializing ups and mrb."
-  
-if [[ -d "${FERMIAPP_DIR}" ]]; then
-  echo "Sourcing ${FERMIAPP_DIR}setup_uboone.sh file"
-  source ${FERMIAPP_DIR}/setup_uboone.sh
-
-elif [[ -d "${OASIS_DIR}" ]]; then
-  echo "Sourcing the ${OASIS_DIR}setup_uboone.sh file"
-  source ${OASIS_DIR}/setup_uboone.sh
-
-else
-  echo "Could not find MRB initialization script setup_uboone.sh"
+if [ x$WORKDIR = x ]; then
+  echo "Work directory not specified."
   exit 1
 fi
+if [ $GRID -eq 0 -a ! -d $WORKDIR ]; then
+  echo "Work directory $WORKDIR does not exist."
+  exit 1
+fi
+echo "Work directory: $WORKDIR"
+
+# Initialize microboone ups products and mrb.
+
+echo "Initializing ups and mrb."
+
+echo "Sourcing setup_experiment.sh"
+source ${WORKDIR}/setup_experiment.sh
+
+echo PRODUCTS=$PRODUCTS
 
 # Ifdh may already be setup by jobsub wrapper.
 # If not, set it up here.

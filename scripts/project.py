@@ -2241,6 +2241,11 @@ def main(argv):
 
         wrapper_fcl.close()
 
+        # Copy and rename experiment setup script to the work directory.
+
+        setupscript = os.path.join(stage.workdir,'setup_experiment.sh')
+        shutil.copy(project_utilities.get_setup_script_path(), setupscript)
+
         # Copy and rename batch script to the work directory.
 
         workname = '%s-%s' % (stage.name, project.name)
@@ -2764,6 +2769,11 @@ def main(argv):
 
             start_command.extend([' --outdir', stage.outdir])
 
+            # Work directory
+
+            start_command.extend([' --workdir', stage.workdir])
+
+
             # Stop project jobsub command.
                 
             if project.server == '':
@@ -2810,6 +2820,11 @@ def main(argv):
             # Output directory.
 
             stop_command.extend([' --outdir', stage.outdir])
+
+            # Work directory
+
+            stop_command.extend([' --workdir', stage.workdir])
+
 
             # Create dagNabbit.py configuration script in the work directory.
 
