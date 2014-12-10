@@ -150,6 +150,7 @@
 #                     Default: DEDICATED,OPPORTUNISTIC.
 # <stage><lines>   - Arbitrary condor commands (expert option, jobsub_submit --lines=...).
 # <stage><site>    - Specify site (default jobsub decides).
+# <stage><parameter> - Specify metadata parameters for echo experiment
 #
 #
 # <fcldir>  - Directory in which to search for fcl files (optional, repeatable).
@@ -522,7 +523,7 @@ class ProjectDef:
         self.stop_script = 'condor_stop_project.sh'    # Sam stop project script.
         self.fclpath = []                 # Fcl search path.
         self.stages = []                  # List of stages (StageDef objects).
-            
+        self.parameters = {}              # Dictionary of metadata parameters
         # Extract values from xml.
 
         # Project name (attribute)
@@ -715,6 +716,13 @@ class ProjectDef:
                                         self.merge))
             default_input_list = os.path.join(self.stages[-1].outdir, 'files.list')
 
+        # Dictionary of metadata parameters
+
+        param_elements = project_element.getElementsByTagName('parameter')
+        for param_element in param_elements:
+            name = param_element.attributes['name'].firstChild.data
+            value = param_element.firstChild.data
+            self.parameters[name] = value
         # Done.
                 
         return
