@@ -2763,7 +2763,9 @@ def main(argv):
 
             # Sam options.
 
-            start_command.extend([' --sam_defname', inputdef,
+            start_command.extend([' --sam_station', project_utilities.get_experiment(),
+                                  ' --sam_group', project_utilities.get_experiment(),
+                                  ' --sam_defname', inputdef,
                                   ' --sam_project', prjname,
                                   ' -g'])
 
@@ -2817,7 +2819,8 @@ def main(argv):
 
             # Sam options.
 
-            stop_command.extend([' --sam_project', prjname,
+            stop_command.extend([' --sam_station', project_utilities.get_experiment(),
+                                 ' --sam_project', prjname,
                                  ' -g'])
 
             # Output directory.
