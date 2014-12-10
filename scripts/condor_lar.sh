@@ -41,10 +41,6 @@
 # --mrb                   - Ignored (for compatibility).
 # --srt                   - Exit with error status (SRT run time no longer supported).
 #
-# Microboone options.
-#
-# --ubfcl <arg>           - Ubfcl version (default none, depracated).
-#
 # Other options.
 #
 # -h, --help              - Print help.
@@ -190,7 +186,6 @@ REL=""
 QUAL=""
 LOCALDIR=""
 LOCALTAR=""
-UBFCL=""
 INTERACTIVE=0
 GRP=""
 WORKDIR=""
@@ -400,14 +395,6 @@ while [ $# -gt 0 ]; do
     --srt )
       echo "SRT run time environment is no longer supported."
       exit 1
-      ;;
-
-    # Ubfcl version.
-    --ubfcl )
-      if [ $# -gt 1 ]; then
-        UBFCL=$2
-        shift
-      fi
       ;;
 
     # Interactive flag.
@@ -888,13 +875,6 @@ if [ x$IFDHC_DIR = x ]; then
 fi
 echo "IFDH_ART_DIR=$IFDH_ART_DIR"
 echo "IFDHC_DIR=$IFDHC_DIR"
-
-# Set up ubfcl product version, if any.
-
-if [ x$UBFCL != x ]; then
-  setup ubfcl $UBFCL
-fi 
-echo "UBFCL_DIR=${UBFCL_DIR}"
 
 # Get input files to process, either single file, file list, or sam.
 #
