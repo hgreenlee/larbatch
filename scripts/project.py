@@ -107,6 +107,7 @@
 #             be multiple instances of this tag with different name
 #             attributes.  The name attribute is optional if there is
 #             only one project stage.
+# <parameter name="parametername"> - Specify experiment-specific metadata parameters
 #
 # <stage><fcl> - Name of fcl file (required).  Specify just the filename,
 #             not the full path.
@@ -150,7 +151,6 @@
 #                     Default: DEDICATED,OPPORTUNISTIC.
 # <stage><lines>   - Arbitrary condor commands (expert option, jobsub_submit --lines=...).
 # <stage><site>    - Specify site (default jobsub decides).
-# <stage><parameter> - Specify metadata parameters for echo experiment
 #
 #
 # <fcldir>  - Directory in which to search for fcl files (optional, repeatable).
