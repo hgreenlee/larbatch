@@ -416,6 +416,12 @@ def get_public_samweb_url():
 def get_secure_samweb_url():
     raise RuntimeError, 'Function get_secure_samweb_url not implemented.'
 
+# Function to return path of experiment setup script (bash).
+# This function should be overridden in <experiment>_utilities.py.
+
+def get_setup_script_path():
+    raise RuntimeError, 'Function get_setup_script_path not implemented.'
+
 # Import experiment-specific utilities.  In this imported module, one can 
 # override any function or symbol defined above, or add new ones.
 
