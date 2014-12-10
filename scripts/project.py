@@ -754,7 +754,7 @@ class ProjectDef:
             result += '    %s\n' % fcldir
         result += 'Metadata parameters:\n'
         for key in self.parameters:
-            result += '%s: %s\n' % (key,parameters[key])
+            result += '%s: %s\n' % (key,self.parameters[key])
         result += '\nStages:'
         for stage in self.stages:
             result += '\n\n' + str(stage)
