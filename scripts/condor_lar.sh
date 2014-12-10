@@ -569,7 +569,7 @@ echo "Work directory: $WORKDIR"
 echo "Initializing ups and mrb."
 
 echo "Sourcing setup_experiment.sh"
-source ${WORKDIR}/setup_experiment.sh
+source ${CONDOR_DIR_INPUT}/setup_experiment.sh
 
 echo PRODUCTS=$PRODUCTS
 

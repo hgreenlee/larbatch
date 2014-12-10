@@ -8,11 +8,10 @@
 #
 # condor_stop_project.sh [options]
 #
-# --sam_station <arg> - Specify sam station (default "uboone").
+# --sam_station <arg> - Specify sam station (required).
 # --sam_project <arg> - Sam project name (required).
 # --outdir <arg>      - Specify output directory (optional). 
 # -g, --grid          - Be grid-friendly.
-# --workdir <arg>     - Work directory
 #
 # End options.
 #
@@ -22,7 +21,7 @@
 
 # Parse arguments.
 
-SAM_STATION="uboone"
+SAM_STATION=""
 SAM_PROJECT=""
 OUTDIR=""
 GRID=0
@@ -66,14 +65,6 @@ while [ $# -gt 0 ]; do
       GRID=1
       ;;
 
-    # Work directory.
-    --workdir )
-      if [ $# -gt 1 ]; then
-        WORKDIR=$2
-        shift
-      fi
-      ;;
-
     # Other.
     * )
       echo "Unknown option $1"
@@ -91,6 +82,13 @@ echo "Nodename: `hostname`"
 echo "Sam station: $SAM_STATION"
 echo "Sam project name: $SAM_PROJECT"
 
+# Complain if SAM_STATION is not defined.
+
+if [ x$SAM_STATION = x ]; then
+  echo "Sam station was not specified (use option --sam_station)."
+  exit 1
+fi
+
 # Complain if SAM_PROJECT is not defined.
 
 if [ x$SAM_PROJECT = x ]; then
@@ -98,24 +96,12 @@ if [ x$SAM_PROJECT = x ]; then
   exit 1
 fi
 
-# Make sure work directory is defined and exists.
-
-if [ x$WORKDIR = x ]; then
-  echo "Work directory not specified."
-  exit 1
-fi
-if [ $GRID -eq 0 -a ! -d $WORKDIR ]; then
-  echo "Work directory $WORKDIR does not exist."
-  exit 1
-fi
-echo "Work directory: $WORKDIR"
-
-# Initialize microboone ups products and mrb.
+# Initialize ups products and mrb.
 
 echo "Initializing ups and mrb."
 
 echo "Sourcing setup_experiment.sh"
-source ${WORKDIR}/setup_experiment.sh
+source ${CONDOR_DIR_INPUT}/setup_experiment.sh
 
 echo PRODUCTS=$PRODUCTS
 

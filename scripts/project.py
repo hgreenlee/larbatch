@@ -2637,6 +2637,7 @@ def main(argv):
         # Jobsub options.
         
         command.append('--group=%s' % project.group)
+        command.append('-f %s' % setupscript)
         if project.server == '':
             command.append('-q')       # Mail on error (only).
             command.append('--grid')
@@ -2731,6 +2732,7 @@ def main(argv):
             # General options.
             
             start_command.append('--group=%s' % project.group)
+            start_command.append('-f %s' % setupscript)
             if project.server == '':
                 start_command.append('-q')       # Mail on error (only).
                 start_command.append('--grid')
@@ -2784,6 +2786,7 @@ def main(argv):
             # General options.
             
             stop_command.append('--group=%s' % project.group)
+            stop_command.append('-f %s' % setupscript)
             if project.server == '':
                 stop_command.append('-q')       # Mail on error (only).
                 stop_command.append('--grid')
