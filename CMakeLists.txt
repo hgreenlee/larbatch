@@ -28,4 +28,3 @@ add_subdirectory(python)
 
 # packaging utility
 include(UseCPack)
-
