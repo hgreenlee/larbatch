@@ -168,11 +168,6 @@ import sys, os, stat, string, subprocess, shutil, urllib, getpass, json
 from xml.dom.minidom import parse
 import project_utilities, root_metadata
 
-# Initialize the global symbol ROOT to be None.
-# We will update this to point to the ROOT module later if we need to.
-
-ROOT = None
-
 # Do the same for samweb_cli module and global SAMWebClient object.
 
 samweb_cli = None
@@ -805,26 +800,6 @@ class ProjectDef:
         if fcl == '' or not os.path.exists(fcl):
             raise IOError, 'Could not find fcl file %s.' % fclname
         return fcl
-
-
-# Function to make sure ROOT module is imported.
-# This function should be called before accessing global ROOT object.
-
-def import_root():
-
-    # Import ROOT module.
-    # Globally turn off root warnings.
-    # Don't let root see our command line options.
-
-    global ROOT
-    if ROOT is None:
-        if os.environ.has_key('TERM'):
-            del os.environ['TERM']
-        myargv = sys.argv
-        sys.argv = myargv[0:1]
-        import ROOT
-        ROOT.gErrorIgnoreLevel = ROOT.kError
-        sys.argv = myargv
 
 
 # Function to make sure samweb_cli module is imported.
