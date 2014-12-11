@@ -101,14 +101,15 @@
 #
 # <filetype> - Sam file type ("data" or "mc", default none).
 # <runtype>  - Sam run type (normally "physics", default none).
+# <parameter name="parametername"> - Specify experiment-specific metadata parameters
+#
 # <merge>    - special histogram merging program (default "hadd -T", 
 #               can be overridden at each stage).
+#
 # <stage name="stagename"> - Information about project stage.  There can
 #             be multiple instances of this tag with different name
 #             attributes.  The name attribute is optional if there is
 #             only one project stage.
-# <parameter name="parametername"> - Specify experiment-specific metadata parameters
-#
 # <stage><fcl> - Name of fcl file (required).  Specify just the filename,
 #             not the full path.
 # <stage><outdir> - Output directory (required).  A subdirectory with the
@@ -277,6 +278,7 @@ class StageDef:
         self.resource = ''     # Jobsub resources.
         self.lines = ''        # Arbitrary condor commands.
         self.site = ''         # Site.
+        self.parameters = {}   # Dictionary of metadata parameters.
 
         # Extract values from xml.
 
@@ -412,6 +414,14 @@ class StageDef:
         if site_elements:
             self.site = site_elements[0].firstChild.data
 
+        # Dictionary of metadata parameters
+
+        param_elements = stage_element.getElementsByTagName('parameter')
+        for param_element in param_elements:
+            name = param_element.attributes['name'].firstChild.data
+            value = param_element.firstChild.data
+            self.parameters[name] = value
+
         # Done.
 
         return
@@ -437,6 +447,9 @@ class StageDef:
         result += 'Resource = %s\n' % self.resource
         result += 'Lines = %s\n' % self.lines
         result += 'Site = %s\n' % self.site
+        result += 'Metadata parameters:\n'
+        for key in self.parameters:
+            result += '%s: %s\n' % (key,self.parameters[key])
         return result
 
     # Raise an exception if any specified input file/list doesn't exist.
@@ -523,7 +536,8 @@ class ProjectDef:
         self.stop_script = 'condor_stop_project.sh'    # Sam stop project script.
         self.fclpath = []                 # Fcl search path.
         self.stages = []                  # List of stages (StageDef objects).
-        self.parameters = {}              # Dictionary of metadata parameters
+        self.parameters = {}              # Dictionary of metadata parameters.
+
         # Extract values from xml.
 
         # Project name (attribute)
@@ -723,6 +737,7 @@ class ProjectDef:
             name = param_element.attributes['name'].firstChild.data
             value = param_element.firstChild.data
             self.parameters[name] = value
+
         # Done.
                 
         return
