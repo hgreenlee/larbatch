@@ -818,6 +818,8 @@ def import_root():
 
     global ROOT
     if ROOT is None:
+        if os.environ.has_key('TERM'):
+            del os.environ['TERM']
         myargv = sys.argv
         sys.argv = myargv[0:1]
         import ROOT

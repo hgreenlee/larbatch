@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 ######################################################################
 #
-# Name: stat.py
+# Name: rootstat.py
 #
 # Purpose: Analyze art root file and dump object statistics.
 #
@@ -35,6 +35,8 @@ import project_utilities
 
 myargv = sys.argv
 sys.argv = myargv[0:1]
+if os.environ.has_key('TERM'):
+    del os.environ['TERM']
 import ROOT
 ROOT.gErrorIgnoreLevel = ROOT.kError
 sys.argv = myargv

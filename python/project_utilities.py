@@ -14,11 +14,17 @@ import sys, os, stat, time, types
 import socket
 import subprocess
 import getpass
+
 # Prevent root from printing garbage on initialization.
 if os.environ.has_key('TERM'):
     del os.environ['TERM']
+
+# Hide command line arguments from ROOT module.
+myargv = sys.argv
+sys.argv = myargv[0:1]
 import ROOT
 ROOT.gErrorIgnoreLevel = ROOT.kError
+sys.argv = myargv
 
 proxy_ok = False
 ticket_ok = False
