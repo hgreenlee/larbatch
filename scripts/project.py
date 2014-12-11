@@ -2708,8 +2708,7 @@ def main(argv):
             command.extend([' -S', input_list_name])
         elif inputdef != '':
             command.extend([' --sam_defname', inputdef,
-                            ' --sam_project', prjname,
-                            ' --sam_url', project_utilities.get_public_samweb_url()])
+                            ' --sam_project', prjname])
         command.extend([' -n', '%d' % project.num_events])
         command.extend([' --njobs', '%d' % stage.num_jobs ])
         if stage.init_script != '':
@@ -2784,11 +2783,6 @@ def main(argv):
 
             start_command.extend([' --outdir', stage.outdir])
 
-            # Work directory
-
-            start_command.extend([' --workdir', stage.workdir])
-
-
             # Stop project jobsub command.
                 
             if project.server == '':
@@ -2837,11 +2831,6 @@ def main(argv):
             # Output directory.
 
             stop_command.extend([' --outdir', stage.outdir])
-
-            # Work directory
-
-            stop_command.extend([' --workdir', stage.workdir])
-
 
             # Create dagNabbit.py configuration script in the work directory.
 

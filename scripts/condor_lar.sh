@@ -197,7 +197,6 @@ PROCMAP=""
 INITSCRIPT=""
 INITSOURCE=""
 ENDSCRIPT=""
-SAM_URL=""
 SAM_USER=$GRID_USER
 SAM_GROUP=""
 SAM_STATION=""
@@ -284,14 +283,6 @@ while [ $# -gt 0 ]; do
     --njobs )
       if [ $# -gt 1 ]; then
         NJOBS=$2
-        shift
-      fi
-      ;;
-
-    # Sam url.
-    --sam_url )
-      if [ $# -gt 1 ]; then
-        SAM_URL=$2
         shift
       fi
       ;;
@@ -1143,7 +1134,7 @@ if [ $USE_SAM -ne 0 ]; then
 
 services.user.IFDH:
 {
-  IFDH_BASE_URI: "$SAM_URL"
+  IFDH_BASE_URI: "$IFDH_BASE_URI"
 }
 
 services.user.CatalogInterface:
