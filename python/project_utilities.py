@@ -410,19 +410,8 @@ class SafeTFile:
 def get_ups_products():
     return get_experiment() + 'code'
 
-# Function to return url of the public samweb server.
-# This function should be overridden in <experiment>_utilities.py.
-
-def get_public_samweb_url():
-    raise RuntimeError, 'Function get_public_samweb_url not implemented.'
-
-# Function to return url of the secure samweb server.
-# This function should be overridden in <experiment>_utilities.py.
-
-def get_secure_samweb_url():
-    raise RuntimeError, 'Function get_secure_samweb_url not implemented.'
-
-# Function to return path of experiment setup script (bash).
+# Function to return path of experiment bash setup script that is valid
+# on the node where this script is being executed.
 # This function should be overridden in <experiment>_utilities.py.
 
 def get_setup_script_path():
