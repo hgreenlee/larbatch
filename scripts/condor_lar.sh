@@ -1134,7 +1134,6 @@ if [ $USE_SAM -ne 0 ]; then
 
 services.user.IFDH:
 {
-  IFDH_BASE_URI: "$IFDH_BASE_URI"
 }
 
 services.user.CatalogInterface:
