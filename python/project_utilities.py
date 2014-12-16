@@ -417,6 +417,12 @@ def get_ups_products():
 def get_setup_script_path():
     raise RuntimeError, 'Function get_setup_script_path not implemented.'
 
+# Function to return dimension string for project, stage.
+# This function should be overridden in experiment_utilities.py
+
+def dimensions(project, stage):
+    raise RuntimeError, 'Function dimensions not implemented.'
+
 # Import experiment-specific utilities.  In this imported module, one can 
 # override any function or symbol defined above, or add new ones.
 

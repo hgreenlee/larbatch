@@ -995,18 +995,6 @@ def docheck(project, stage, ana):
         print '%d unconsumed files.' % nerror
     return 0
 
-# Construct dimension string for project, stage.
-
-def dimensions(project, stage):
-
-    dim = 'file_type %s' % project.file_type
-    dim = dim + ' and data_tier %s' % stage.data_tier
-    dim = dim + ' and ub_project.name %s' % project.name
-    dim = dim + ' and ub_project.stage %s' % stage.name
-    dim = dim + ' and ub_project.version %s' % project.release_tag
-    dim = dim + ' and availability: anylocation'
-    return dim
-
 # Check sam declarations.
 
 def docheck_declarations(outdir, declare):
@@ -1156,7 +1144,7 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
     import_samweb()
 
     # Loop over files queried by dimension string.
-
+    print dim
     filelist = samweb.listFiles(dimensions=dim, stream=True)
     while 1:
         try:
@@ -1990,7 +1978,7 @@ def main(argv):
         if stage.defname == '':
             print 'No sam dataset definition name specified for this stage.'
             return 1
-        dim = dimensions(project, stage)
+        dim = project_utilities.dimensions(project, stage)
         rc = docheck_definition(stage.defname, dim, define)
 
     if test_definition:
@@ -2021,14 +2009,14 @@ def main(argv):
 
         # Print summary of declared files.
 
-        dim = dimensions(project, stage)
+        dim = project_utilities.dimensions(project, stage)
         rc = dotest_declarations(dim)
 
     if check_locations or add_locations or clean_locations or remove_locations or upload:
 
         # Check sam disk locations.
 
-        dim = dimensions(project, stage)
+        dim = project_utilities.dimensions(project, stage)
         rc = docheck_locations(dim, stage.outdir,
                                add_locations, clean_locations, remove_locations,
                                upload)
@@ -2037,7 +2025,7 @@ def main(argv):
 
         # Check sam tape locations.
 
-        dim = dimensions(project, stage)
+        dim = project_utilities.dimensions(project, stage)
         rc = docheck_tape(dim)
 
     if submit or makeup:
