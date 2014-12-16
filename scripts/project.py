@@ -1144,7 +1144,6 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
     import_samweb()
 
     # Loop over files queried by dimension string.
-    print dim
     filelist = samweb.listFiles(dimensions=dim, stream=True)
     while 1:
         try:
