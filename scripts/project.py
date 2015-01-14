@@ -75,8 +75,6 @@
 #
 # The following element tags withing the project element are recognized.
 #
-# <group>   - Group (default $GROUP).
-#
 # <numevents> - Total number of events (required).
 # <numjobs> - Number of worker jobs (default 1).  This value can be
 #             overridden for individual stages by <stage><numjobs>.
@@ -1645,9 +1643,6 @@ def main(argv):
                                   project.release_tag)
             else:
                 wrapper_fcl.write('services.FileCatalogMetadata.applicationVersion: "test"\n')
-            if project.group:
-                wrapper_fcl.write('services.FileCatalogMetadata.group: "%s"\n' % \
-                                  project.group)
             if project.file_type:
                 wrapper_fcl.write('services.FileCatalogMetadata.fileType: "%s"\n' % \
                                   project.file_type)
@@ -2059,7 +2054,7 @@ def main(argv):
 
         # Jobsub options.
         
-        command.append('--group=%s' % project.group)
+        command.append('--group=%s' % project_utilities.get_experiment())
         command.append('-f %s' % setupscript)
         if project.server == '':
             command.append('-q')       # Mail on error (only).
@@ -2101,7 +2096,7 @@ def main(argv):
 
         # Larsoft options.
 
-        command.extend([' --group', project.group])
+        command.extend([' --group', project_utilities.get_experiment()])
         command.extend([' -g'])
         command.extend([' -c', 'wrapper.fcl'])
         command.extend([' --ups', project_utilities.get_ups_products()])
@@ -2153,7 +2148,7 @@ def main(argv):
 
             # General options.
             
-            start_command.append('--group=%s' % project.group)
+            start_command.append('--group=%s' % project_utilities.get_experiment())
             start_command.append('-f %s' % setupscript)
             if project.server == '':
                 start_command.append('-q')       # Mail on error (only).
@@ -2204,7 +2199,7 @@ def main(argv):
 
             # General options.
             
-            stop_command.append('--group=%s' % project.group)
+            stop_command.append('--group=%s' % project_utilities.get_experiment())
             stop_command.append('-f %s' % setupscript)
             if project.server == '':
                 stop_command.append('-q')       # Mail on error (only).
@@ -2306,7 +2301,7 @@ def main(argv):
                 command = ['dagNabbit.py', '-i', dagfilepath, '-s']
             else:
                 command = ['jobsub_submit_dag']
-                command.append('--group=%s' % project.group)
+                command.append('--group=%s' % project_utilities.get_experiment())
                 if project.server != '-':
                     command.append('--jobsub-server=%s' % project.server)
                 dagfileurl = 'file://'+ dagfilepath

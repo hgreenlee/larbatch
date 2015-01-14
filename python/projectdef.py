@@ -25,9 +25,6 @@ class ProjectDef:
         # Assign default values.
         
         self.name= ''                     # Project name.
-        self.group = ''                   # Experiment or group.
-        if os.environ.has_key('GROUP'):
-            self.group = os.environ['GROUP']
         self.num_events = 0               # Total events (all jobs).
         self.num_jobs = 1                 # Number of jobs.
         self.os = ''                      # Batch OS.
@@ -57,14 +54,6 @@ class ProjectDef:
             self.name = project_element.attributes['name'].firstChild.data
         if self.name == '':
             raise XMLError, 'Project name not specified.'
-
-        # Group (subelement).
-
-        group_elements = project_element.getElementsByTagName('group')
-        if group_elements:
-            self.group = group_elements[0].firstChild.data
-        if self.group == '':
-            raise XMLError, 'Group not specified.'
 
         # Total events (subelement).
 
@@ -257,7 +246,6 @@ class ProjectDef:
 
     def __str__(self):
         result = 'Project name = %s\n' % self.name
-        result += 'Group = %s\n' % self.group
         result += 'Total events = %d\n' % self.num_events
         result += 'Number of jobs = %d\n' % self.num_jobs
         result += 'OS = %s\n' % self.os
