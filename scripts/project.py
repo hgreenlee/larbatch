@@ -29,6 +29,7 @@
 # --submit     - Submit all jobs for specified stage.
 # --check      - Check results for specified stage and print message.
 # --checkana   - Check analysis results for specified stage and print message.
+# --fetchlog   - Fetch jobsub logfiles (jobsub_fetchlog).
 # --mergehist  - merge histogram files using hadd -T
 # --mergentuple- merge ntuple files using hadd
 # --merge      - merge non-ART root files using the specified merging program in the XML file
@@ -993,6 +994,102 @@ def docheck(project, stage, ana):
         print '%d unconsumed files.' % nerror
     return 0
 
+# Check project results in the specified directory.
+
+def dofetchlog(stage):
+
+    # This funciton fetches jobsub log files using command
+    # jobsub_fetchlog.  Fetched log files are stored in a subdirectory
+    # called "log" in the stage output directory.
+    #
+    # This function has uses an algorithm to determine the log file
+    # job id that is based on the worker environment as recorded in
+    # file "env.txt" as returned from any worker.  Therefore, at least
+    # one worker must have completed (successfully or not) for this
+    # function to succeed.
+
+    # Look for a file called "env.txt" in any subdirectory of
+    # stage.outdir.
+
+    for dirpath, dirnames, filenames in os.walk(stage.outdir):
+        for filename in filenames:
+            if filename == 'env.txt':
+
+                # Look for either environment variable:
+                #
+                # 1. JOBSUBPARENTJOBID
+                # 2. JOBSUBJOBID
+                #
+                # If we find the former, use that as the log file id.
+                # If we find the latter, construct the log file id by 
+                # changing the process number to zero.
+
+                logid = ''
+                envpath = os.path.join(dirpath, filename)
+                vars = project_utilities.saferead(envpath)
+
+                # JOBSUBPARENTJOBID
+
+                for var in vars:
+                    varsplit = var.split('=', 1)
+                    name = varsplit[0].strip()
+                    if name == 'JOBSUBPARENTJOBID':
+                        logid = varsplit[1].strip()
+                        break
+
+                # JOBSUBJOBID
+
+                if logid == '':
+                    for var in vars:
+                        varsplit = var.split('=', 1)
+                        name = varsplit[0].strip()
+                        if name == 'JOBSUBJOBID':
+                            logid = varsplit[1].strip()
+                            break
+
+                if logid != '':
+
+                    # Fix up the log file id by changing the process
+                    # number to zero.
+
+                    logsplit = logid.split('@', 1)
+                    cluster_process = logsplit[0]
+                    server = logsplit[1]
+                    cluster = cluster_process.split('.', 1)[0]
+                    logid = cluster + '.0' + '@' + server
+
+                    # Make a directory to receive log files.
+
+                    logdir = os.path.join(stage.outdir, 'log')
+                    if project_utilities.safeexist(logdir):
+                        shutil.rmtree(logdir)
+                    os.mkdir(logdir)
+                    
+                    # Do the actual fetch.
+                    # Tarball is fetched into current directory, and unpacked
+                    # into log directory.
+
+                    print 'Fetching log files for id %s' % logid
+                    command = ['jobsub_fetchlog']
+                    command.append('--jobid=%s' % logid)
+                    command.append('--dest-dir=%s' % logdir)
+                    rc = subprocess.call(command)
+
+                    # Done.
+
+                    if rc != 0:
+                        print 'Failed to fetch log files.'
+                    return rc
+
+    # Done (failure).
+    # If we fall out of the loop, we didn't find a file called env.txt, or
+    # it didn't contain the right environment variables we need.
+    # In this case, the most likely explanation is that no workers have
+    # completed yet.
+
+    print 'Failed to fetch log files.'
+    return 1
+
 # Check sam declarations.
 
 def docheck_declarations(outdir, declare):
@@ -1369,6 +1466,7 @@ def main(argv):
     submit = 0
     check = 0
     checkana = 0
+    fetchlog = 0
     mergehist = 0
     mergentuple = 0
     audit = 0
@@ -1421,6 +1519,9 @@ def main(argv):
             del args[0]
         elif args[0] == '--checkana':
             checkana = 1
+            del args[0]
+        elif args[0] == '--fetchlog':
+            fetchlog = 1
             del args[0]
 	elif args[0] == '--merge':
 	    merge = 1
@@ -1506,7 +1607,7 @@ def main(argv):
     
     # Make sure that no more than one action was specified (except clean and info options).
 
-    num_action = submit + check + checkana + merge + mergehist + mergentuple + audit + stage_status + makeup + define + undefine + declare
+    num_action = submit + check + checkana + fetchlog + merge + mergehist + mergentuple + audit + stage_status + makeup + define + undefine + declare
     if num_action > 1:
         print 'More than one action was specified.'
         return 1
@@ -1570,7 +1671,7 @@ def main(argv):
 
     # Check input file/list, output directory, and work directory.
 
-    if submit or check or checkana or makeup:
+    if submit or check or checkana or fetchlog or makeup:
         stage.checkinput()
         stage.checkdirs()
 
@@ -1816,6 +1917,12 @@ def main(argv):
         # Check results from specified project stage.
         
         rc = docheck(project, stage, checkana)
+
+    if fetchlog:
+
+        # Fetch logfiles.
+
+        rc = dofetchlog(stage)
 		   
     # Make merged histogram or ntuple files using proper hadd option. 
     # Makes a merged root file called anahist.root in the project output directory
