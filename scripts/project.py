@@ -2225,7 +2225,8 @@ def main(argv):
         elif inputdef != '':
             command.extend([' --sam_defname', inputdef,
                             ' --sam_project', prjname])
-        command.extend([' --inputmode', stage.inputmode])
+        if stage.inputmode != '':
+            command.extend([' --inputmode', stage.inputmode])
         command.extend([' -n', '%d' % project.num_events])
         command.extend([' --njobs', '%d' % stage.num_jobs ])
         if stage.init_script != '':
