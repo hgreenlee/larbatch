@@ -19,6 +19,7 @@
 # --nskip <arg>           - Number of events to skip.
 # --nfile <arg>           - Number of files to process per worker.
 # --nfile_skip <arg>      - Number of files to skip (use with option -S).
+# --inputmode <arg>       - Input mode ('textfile' or '', default '')
 # --args <args...>        - Arguments for lar command line (place at end).
 #
 # Sam and parallel project options.
@@ -1065,9 +1066,13 @@ if [ $USE_SAM -eq 0 -a $NFILE_TOTAL -eq 0 -o "$INMODE" = 'textfile' ]; then
 source.firstSubRun: $SUBRUN
 
 EOF
-if [ "$INMODE" = 'textfile' ]; then
-  echo "physics.producers.generator.InputFileName: \"`cat input.list`\"" >> subrun_wrapper.fcl
-fi
+  if [ "$INMODE" = 'textfile' ]; then
+    if [ $ NFILE_LOCAL -ne 1 ]; then
+      echo "Text file input mode specified with wrong number of input files."
+      exit 1
+    fi
+    echo "physics.producers.generator.InputFileName: \"`cat input.list`\"" >> subrun_wrapper.fcl
+  fi
   FCL=subrun_wrapper.fcl
   
   echo "First MC event: $FIRST_EVENT"
