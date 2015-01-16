@@ -112,6 +112,10 @@ class StageDef:
         if self.inputdef != '' and (self.inputfile != '' or self.inputlist != ''):
             raise XMLError, 'Input dataset and input files specified for stage %s.' % self.name
 
+        # It is an error to use textfile inputmode without an inputlist
+        if self.inputmode == 'textfile' and self.inputlist == '':
+            raise XMLError, 'Input list (inputlist) is needed for textfile model.'
+
         # If none of input definition, input file, nor input list were specified, set
         # the input list to the dafault input list.
 
