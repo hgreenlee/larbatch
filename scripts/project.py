@@ -125,6 +125,8 @@
 #             of batch jobs must be one.
 # <stage><inputlist> - Specify input file list (a file containing a list
 #             of input files, one per line, full path).
+# <stage><inputmode> - Specify input file tyle. Default is none which means 
+#             art root file. Alternative is textfile
 # <stage><inputdef>  - Specify input sam dataset definition.
 #
 #             It is optional to specify an input file or input list (Monte
@@ -2223,6 +2225,7 @@ def main(argv):
         elif inputdef != '':
             command.extend([' --sam_defname', inputdef,
                             ' --sam_project', prjname])
+        command.extend([' --inputmode', stage.inputmode])
         command.extend([' -n', '%d' % project.num_events])
         command.extend([' --njobs', '%d' % stage.num_jobs ])
         if stage.init_script != '':

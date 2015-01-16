@@ -29,6 +29,7 @@ class StageDef:
         self.workdir = ''      # Work directory.
         self.inputfile = ''    # Single input file.
         self.inputlist = ''    # Input file list.
+        self.inputmode = ''    # Input file type (none or textfile)
         self.inputdef = ''     # Input sam dataset definition.
         self.num_jobs = default_num_jobs # Number of jobs.
         self.target_size = 0   # Target size for output files.
@@ -87,6 +88,12 @@ class StageDef:
         inputlist_elements = stage_element.getElementsByTagName('inputlist')
         if inputlist_elements:
             self.inputlist = inputlist_elements[0].firstChild.data
+
+        # Input file type (subelement).
+
+        inputmode_elements = stage_element.getElementsByTagName('inputmode')
+        if inputmode_elements:
+            self.inputmode = inputmode_elements[0].firstChild.data
 
         # Input sam dataset dfeinition (subelement).
 
@@ -198,6 +205,7 @@ class StageDef:
         result += 'Work directory = %s\n' % self.workdir
         result += 'Input file = %s\n' % self.inputfile
         result += 'Input list = %s\n' % self.inputlist
+        result += 'Input mode = %s\n' % self.inputmode
         result += 'Input sam dataset = %s\n' % self.inputdef
         result += 'Number of jobs = %d\n' % self.num_jobs
         result += 'Output file target size = %d\n' % self.target_size
