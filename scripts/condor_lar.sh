@@ -1175,7 +1175,7 @@ fi
 
 LAROPT="-c $FCL"
 if [ -f input.list ]; then
-  if [ "$INMODE" != 'textfile']; then
+  if [ "$INMODE" != 'textfile' ]; then
     LAROPT="$LAROPT -S input.list"
   fi
 fi
