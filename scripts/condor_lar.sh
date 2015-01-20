@@ -594,6 +594,8 @@ if [ $GRID -ne 0 ]; then
   echo "X509_USER_PROXY = $X509_USER_PROXY"
   if ! echo $X509_USER_PROXY | grep -q Production; then
     IFDH_OPT="--force=expgridftp"
+  else
+    IFDH_OPT="--force=gridftp"
   fi
 fi
 echo "IFDH_OPT=$IFDH_OPT"
@@ -777,8 +779,7 @@ if [ x$LOCALDIR != x ]; then
     setup ifdhc
   fi
   echo "IFDHC_DIR=$IFDHC_DIR"
-  #ifdh cp -r $IFDH_OPT $LOCALDIR .
-  ifdh cp -r --force=expgridftp $LOCALDIR .
+  ifdh cp -r $IFDH_OPT $LOCALDIR .
   stat=$?
   if [ $stat -ne 0 ]; then
     echo "ifdh cp failed with status ${stat}."
