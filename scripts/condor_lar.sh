@@ -777,7 +777,8 @@ if [ x$LOCALDIR != x ]; then
     setup ifdhc
   fi
   echo "IFDHC_DIR=$IFDHC_DIR"
-  ifdh cp -r $IFDH_OPT $LOCALDIR .
+  #ifdh cp -r $IFDH_OPT $LOCALDIR .
+  ifdh cp -r --force=expgridftp $LOCALDIR .
   stat=$?
   if [ $stat -ne 0 ]; then
     echo "ifdh cp failed with status ${stat}."
@@ -865,6 +866,8 @@ do
     setup $prd $REL -q $QUAL
   fi
 done
+
+ups active
 
 cd $TMP/work
 
@@ -1067,7 +1070,7 @@ source.firstSubRun: $SUBRUN
 
 EOF
   if [ "$INMODE" = 'textfile' ]; then
-    if [ $ NFILE_LOCAL -ne 1 ]; then
+    if [ $NFILE_LOCAL -ne 1 ]; then
       echo "Text file input mode specified with wrong number of input files."
       exit 1
     fi

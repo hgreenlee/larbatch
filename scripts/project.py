@@ -153,6 +153,7 @@
 #                     Default: DEDICATED,OPPORTUNISTIC.
 # <stage><lines>   - Arbitrary condor commands (expert option, jobsub_submit --lines=...).
 # <stage><site>    - Specify site (default jobsub decides).
+# <stage><output>  - Specify output file name.
 #
 #
 # <fcldir>  - Directory in which to search for fcl files (optional, repeatable).
@@ -2234,6 +2235,8 @@ def main(argv):
             command.extend([' --inputmode', stage.inputmode])
         command.extend([' -n', '%d' % project.num_events])
         command.extend([' --njobs', '%d' % stage.num_jobs ])
+        if stage.output != '':
+            command.extend([' --output', stage.output])
         if stage.init_script != '':
             command.extend([' --init-script',
                             os.path.join('.', os.path.basename(stage.init_script))])
