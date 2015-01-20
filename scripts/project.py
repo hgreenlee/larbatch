@@ -2153,6 +2153,10 @@ def main(argv):
 
         proxy = project_utilities.get_proxy()
 
+        # Get role
+
+        role = project_utilities.get_role()
+
         # Construct jobsub command line for workers.
 
         if project.server == '':
@@ -2172,6 +2176,7 @@ def main(argv):
             if proxy != '':
                 command.append('-x %s' % proxy)
         else:
+            command.append('--role=%s' % role)
             if project.server != '-':
                 command.append('--jobsub-server=%s' % project.server)
             if stage.resource != '':
