@@ -43,6 +43,7 @@ class StageDef:
         self.lines = ''        # Arbitrary condor commands.
         self.site = ''         # Site.
         self.parameters = {}   # Dictionary of metadata parameters.
+        self.output = ''       # Art output file name.
 
         # Extract values from xml.
 
@@ -196,6 +197,12 @@ class StageDef:
             value = param_element.firstChild.data
             self.parameters[name] = value
 
+        # Output file name (subelement).
+
+        output_elements = stage_element.getElementsByTagName('output')
+        if output_elements:
+            self.output = output_elements[0].firstChild.data
+
         # Done.
 
         return
@@ -211,6 +218,7 @@ class StageDef:
         result += 'Input list = %s\n' % self.inputlist
         result += 'Input mode = %s\n' % self.inputmode
         result += 'Input sam dataset = %s\n' % self.inputdef
+        result += 'Output file name = %s\n' % self.output
         result += 'Number of jobs = %d\n' % self.num_jobs
         result += 'Output file target size = %d\n' % self.target_size
         result += 'Dataset definition name = %s\n' % self.defname
