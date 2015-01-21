@@ -29,6 +29,7 @@ class StageDef:
         self.workdir = ''      # Work directory.
         self.inputfile = ''    # Single input file.
         self.inputlist = ''    # Input file list.
+        self.inputmode = ''    # Input file type (none or textfile)
         self.inputdef = ''     # Input sam dataset definition.
         self.num_jobs = default_num_jobs # Number of jobs.
         self.target_size = 0   # Target size for output files.
@@ -42,6 +43,7 @@ class StageDef:
         self.lines = ''        # Arbitrary condor commands.
         self.site = ''         # Site.
         self.parameters = {}   # Dictionary of metadata parameters.
+        self.output = ''       # Art output file name.
 
         # Extract values from xml.
 
@@ -88,6 +90,12 @@ class StageDef:
         if inputlist_elements:
             self.inputlist = inputlist_elements[0].firstChild.data
 
+        # Input file type (subelement).
+
+        inputmode_elements = stage_element.getElementsByTagName('inputmode')
+        if inputmode_elements:
+            self.inputmode = inputmode_elements[0].firstChild.data
+
         # Input sam dataset dfeinition (subelement).
 
         inputdef_elements = stage_element.getElementsByTagName('inputdef')
@@ -104,6 +112,10 @@ class StageDef:
 
         if self.inputdef != '' and (self.inputfile != '' or self.inputlist != ''):
             raise XMLError, 'Input dataset and input files specified for stage %s.' % self.name
+
+        # It is an error to use textfile inputmode without an inputlist or inputfile
+        if self.inputmode == 'textfile' and self.inputlist == '' and self.inputfile == '':
+            raise XMLError, 'Input list (inputlist) or inputfile is needed for textfile model.'
 
         # If none of input definition, input file, nor input list were specified, set
         # the input list to the dafault input list.
@@ -185,6 +197,12 @@ class StageDef:
             value = param_element.firstChild.data
             self.parameters[name] = value
 
+        # Output file name (subelement).
+
+        output_elements = stage_element.getElementsByTagName('output')
+        if output_elements:
+            self.output = output_elements[0].firstChild.data
+
         # Done.
 
         return
@@ -198,7 +216,9 @@ class StageDef:
         result += 'Work directory = %s\n' % self.workdir
         result += 'Input file = %s\n' % self.inputfile
         result += 'Input list = %s\n' % self.inputlist
+        result += 'Input mode = %s\n' % self.inputmode
         result += 'Input sam dataset = %s\n' % self.inputdef
+        result += 'Output file name = %s\n' % self.output
         result += 'Number of jobs = %d\n' % self.num_jobs
         result += 'Output file target size = %d\n' % self.target_size
         result += 'Dataset definition name = %s\n' % self.defname

@@ -19,6 +19,7 @@
 # --nskip <arg>           - Number of events to skip.
 # --nfile <arg>           - Number of files to process per worker.
 # --nfile_skip <arg>      - Number of files to skip (use with option -S).
+# --inputmode <arg>       - Input mode ('textfile' or '', default '')
 # --args <args...>        - Arguments for lar command line (place at end).
 #
 # Sam and parallel project options.
@@ -172,6 +173,7 @@ cd
 FCL=""
 INFILE=""
 INLIST=""
+INMODE=""
 OUTFILE=""
 NEVT=0
 NSKIP=0
@@ -235,6 +237,14 @@ while [ $# -gt 0 ]; do
     -S|--source-list )
       if [ $# -gt 1 ]; then
         INLIST=$2
+        shift
+      fi
+      ;;
+
+    # Input file mode.
+    --inputmode )
+      if [ $# -gt 1 ]; then
+        INMODE=$2
         shift
       fi
       ;;
@@ -584,6 +594,8 @@ if [ $GRID -ne 0 ]; then
   echo "X509_USER_PROXY = $X509_USER_PROXY"
   if ! echo $X509_USER_PROXY | grep -q Production; then
     IFDH_OPT="--force=expgridftp"
+  else
+    IFDH_OPT="--force=gridftp"
   fi
 fi
 echo "IFDH_OPT=$IFDH_OPT"
@@ -856,6 +868,8 @@ do
   fi
 done
 
+ups active
+
 cd $TMP/work
 
 # In case mrb setup didn't setup a version of ifdhc, set up ifdhc again.
@@ -986,6 +1000,9 @@ elif [ $USE_SAM -eq 0 -a x$INLIST != x ]; then
       LOCAL_INFILE=`basename $infile`
       if grep -q $LOCAL_INFILE input.list; then
         LOCAL_INFILE=input${nfile}.root
+	if [ "$INMODE" = 'textfile' ]; then
+	  LOCAL_INFILE=input${nfile}.txt
+	fi
       fi
       echo "Copying $infile"
       ifdh cp $IFDH_OPT $infile $LOCAL_INFILE
@@ -1025,8 +1042,9 @@ fi
 # In case no input files were specified, and we are not getting input
 # from sam (i.e. mc generation), recalculate the first event number,
 # the subrun number, and the number of events to generate in this worker.
+# This also applies to the textfile inputmode.
 
-if [ $USE_SAM -eq 0 -a $NFILE_TOTAL -eq 0 ]; then
+if [ $USE_SAM -eq 0 -a $NFILE_TOTAL -eq 0 -o "$INMODE" = 'textfile' ]; then
 
   # Don't allow --nskip.
 
@@ -1052,6 +1070,13 @@ if [ $USE_SAM -eq 0 -a $NFILE_TOTAL -eq 0 ]; then
 source.firstSubRun: $SUBRUN
 
 EOF
+  if [ "$INMODE" = 'textfile' ]; then
+    if [ $NFILE_LOCAL -ne 1 ]; then
+      echo "Text file input mode specified with wrong number of input files."
+      exit 1
+    fi
+    echo "physics.producers.generator.InputFileName: \"`cat input.list`\"" >> subrun_wrapper.fcl
+  fi
   FCL=subrun_wrapper.fcl
   
   echo "First MC event: $FIRST_EVENT"
@@ -1159,7 +1184,9 @@ fi
 
 LAROPT="-c $FCL"
 if [ -f input.list ]; then
-  LAROPT="$LAROPT -S input.list"
+  if [ "$INMODE" != 'textfile' ]; then
+    LAROPT="$LAROPT -S input.list"
+  fi
 fi
 if [ x$OUTFILE != x ]; then
   LAROPT="$LAROPT -o $OUTFILE"
