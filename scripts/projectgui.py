@@ -17,4 +17,3 @@ from projectapp import ProjectApp
 
 w = ProjectApp()
 w.mainloop()
-print 'Exiting'

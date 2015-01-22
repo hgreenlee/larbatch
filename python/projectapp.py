@@ -11,19 +11,23 @@
 
 # Standard imports
 
-import os
+import sys, os
 
-# Import GUI stuff
+# Import project.py as a module.
+
+import project
+
+# Import Tkinter GUI stuff
 
 import Tkinter as tk
-import ttk
-from projectview import ProjectView
+#import ttk
 import tkFileDialog
-import project
+import tkMessageBox
+from projectview import ProjectView
 
 # Main window class for this gui application.
 
-class ProjectApp(ttk.Frame):
+class ProjectApp(tk.Frame):
 
     # Constructor.
 
@@ -35,11 +39,12 @@ class ProjectApp(ttk.Frame):
             self.root = tk.Tk()
         else:
             self.root = parent
+        self.root.title('project')
         self.root.protocol('WM_DELETE_WINDOW', self.close)
 
         # Register our outermost frame in the parent window.
 
-        ttk.Frame.__init__(self, self.root)
+        tk.Frame.__init__(self, self.root)
         self.pack(expand=1, fill=tk.BOTH)
 
         # Make widgets that belong to this app.
@@ -52,6 +57,14 @@ class ProjectApp(ttk.Frame):
 
         # Known projects.
         self.projects = []
+
+        # Process command line arguments.
+
+        for n in range(1, len(sys.argv)):
+            xmlpath = sys.argv[n]
+            self.open(xmlpath, choose=False)
+        if len(self.projects) > 0:
+            self.choose_project(self.projects[0][0])
 
     # Make widgets.  Make and register all widgets in the application window.
 
@@ -72,7 +85,7 @@ class ProjectApp(ttk.Frame):
 
         # Put menu in its own frame.
 
-        self.menubar = ttk.Frame(self)
+        self.menubar = tk.Frame(self)
         self.menubar.pack(side=tk.TOP, anchor=tk.NW)
 
         # File menu.
@@ -84,28 +97,56 @@ class ProjectApp(ttk.Frame):
         file_menu.add_command(label='Quit', command=self.close)
         mbutton['menu'] = file_menu
 
+        # View menu.
+
+        mbutton = tk.Menubutton(self.menubar, text='View')
+        mbutton.pack(side=tk.LEFT)
+        view_menu = tk.Menu(mbutton)
+        view_menu.add_command(label='XML', command=self.xml_view)
+        view_menu.add_command(label='Project status', command=self.project_status_view)
+        mbutton['menu'] = view_menu
+
         # Project menu.
 
         mbutton = tk.Menubutton(self.menubar, text='Project')
         mbutton.pack(side=tk.LEFT)
         self.project_menu = tk.Menu(mbutton)
-        self.project_menu.add_command(label='Next Project', command=self.next_project)
-        self.project_menu.add_command(label='Previous Project', command=self.previous_project)
+        self.project_menu.add_command(label='Next Project', command=self.next_project,
+                                      accelerator='PgUp')
+        self.project_menu.add_command(label='Previous Project', command=self.previous_project,
+                                      accelerator='PgDn')
         self.project_menu.add_separator()
         mbutton['menu'] = self.project_menu
+
+        # Add key bindings.
+
+        self.project_menu.bind_all('<KeyPress-KP_Next>', self.next_project_handler)
+        self.project_menu.bind_all('<KeyPress-Next>', self.next_project_handler)
+        self.project_menu.bind_all('<KeyPress-KP_Prior>', self.previous_project_handler)
+        self.project_menu.bind_all('<KeyPress-Prior>', self.previous_project_handler)
 
         return
 
     # Open project.
-    def open(self):
-        types = (('XML files', '*.xml'),
-                 ('All files', '*'))
-        d = tkFileDialog.Open(filetypes=types, parent=self.root)
-        xml_path = d.show()
+
+    def open(self, xml_path=None, choose=True):
+        if xml_path == None:
+            types = (('XML files', '*.xml'),
+                     ('All files', '*'))
+            d = tkFileDialog.Open(filetypes=types, parent=self.root)
+            xml_path = d.show()
 
         # Parse xml into ProjectDef object, and from that extract project name.
+        # This step can raise an exception for several reasons.  In that case, 
+        # display a message and return without opening the file.
 
-        project_def = project.ProjectDef(project.get_project(xml_path, ''), False)
+        try:
+            project_def = project.ProjectDef(project.get_project(xml_path, ''), False)
+        except:
+            message = 'Error opening %s' % xml_path
+            tkMessageBox.showwarning('', message)
+            return
+            
         project_name = project_def.name
 
         # See if this project is already in the list of open projects.
@@ -113,7 +154,8 @@ class ProjectApp(ttk.Frame):
 
         for project_tuple in self.projects:
             if project_name == project_tuple[0]:
-                self.choose_project(project_name)
+                if choose:
+                    self.choose_project(project_name)
                 return
 
         # Add this project to the list of known projects.
@@ -127,18 +169,35 @@ class ProjectApp(ttk.Frame):
 
         # Choose just-opened project.
 
-        self.choose_project(project_name)
+        if choose:
+            self.choose_project(project_name)
 
     # Choose already-opened project.
+
     def choose_project(self, value):
-        print 'Choose project: %s' % value
         self.current_project = value
+        for project_tuple in self.projects:
+            project_name = project_tuple[0]
+            xml_path = project_tuple[1]
+            project_def = project_tuple[2]
+            if project_name == value:
 
-        # Update project widget with name of xml file.
+                # Update project widget with name of xml file.
 
-        self.project_view.set_xml_file(value)
+                self.project_view.set_project(project_name, xml_path, project_def)
+                return
+    
+        # It is an error if we fall out of the loop.
 
+        raise 'No project: %s' % value
 
+    # Key event handlers.
+
+    def next_project_handler(self, event):
+        self.next_project()
+    def previous_project_handler(self, event):
+        self.previous_project()
+        
     # Select next project.
     def next_project(self):
 
@@ -162,8 +221,8 @@ class ProjectApp(ttk.Frame):
 
         self.choose_project(self.projects[0][0])
 
-
     # Select previous project.
+
     def previous_project(self):
 
         # Don't do anything if the project list is empty.
@@ -184,6 +243,16 @@ class ProjectApp(ttk.Frame):
         # Choose the last project if we fell out of the loop.
 
         self.choose_project(self.projects[-1][0])
+
+    # Select XML view.
+
+    def xml_view(self):
+        self.project_view.xml_view()
+
+    # Select project status view.
+
+    def project_status_view(self):
+        self.project_view.project_status_view()
 
     # Close window.
 
