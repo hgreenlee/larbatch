@@ -170,6 +170,7 @@ import sys, os, stat, string, subprocess, shutil, urllib, json
 from xml.dom.minidom import parse
 import project_utilities, root_metadata
 from projectdef import ProjectDef
+from projectstatus import ProjectStatus
 
 # Do the same for samweb_cli module and global SAMWebClient object.
 
@@ -309,6 +310,8 @@ def doclean(project, stagename):
 
 def dostatus(project):
 
+    project_status = ProjectStatus(project)
+
     print 'Project %s:' % project.name
 
     # Loop over stages.
@@ -316,53 +319,13 @@ def dostatus(project):
     for stage in project.stages:
 
         stagename = stage.name
-        outdir = stage.outdir
-
-        # Test whether output directory exists.
-
-        if project_utilities.safeexist(outdir):
-
-            # Output directory exists.
-
-            nfile = 0
-            nev = 0
-            nerror = 0
-            nmiss = 0
-
-            # Count good files and events.
-
-            eventsfile = os.path.join(outdir, 'events.list')
-            if project_utilities.safeexist(eventsfile):
-                lines = project_utilities.saferead(eventsfile)
-                for line in lines:
-                    words = string.split(line)
-                    if len(words) >= 2:
-                        nfile = nfile + 1
-                        nev = nev + int(words[1])
-
-            # Count errors.
-
-            badfile = os.path.join(outdir, 'bad.list')
-            if project_utilities.safeexist(badfile):
-                lines = project_utilities.saferead(badfile)
-                nerror = nerror + len(lines)
-
-            # Count missing files.
-
-            missingfile = os.path.join(outdir, 'missing_files.list')
-            if project_utilities.safeexist(missingfile):
-                lines = project_utilities.saferead(missingfile)
-                nmiss = nmiss + len(lines)
-
+        stage_status = project_status.get_stage_status(stagename)
+        if stage_status.exists:
             print 'Stage %s: %d good output files, %d events, %d errors, %d missing files.' % (
-                stagename, nfile, nev, nerror, nmiss)
-
+                stagename, stage_status.nfile, stage_status.nev, stage_status.nerror, 
+                stage_status.nmiss)
         else:
-
-            # Output directory does not exist.
-
             print 'Stage %s output directory does not exist.' % stagename
-
     return
 
 # This is a recursive function that looks for project
@@ -705,7 +668,8 @@ def docheck(project, stage, ana):
 
         # Regular worker jobs checked here.
 
-        if dirok and not subpath[-6:] == '_start' and not subpath[-5:] == '_stop':
+        if dirok and not subpath[-6:] == '_start' and not subpath[-5:] == '_stop' \
+                and not subdir == 'log':
 
             bad = 0
 
