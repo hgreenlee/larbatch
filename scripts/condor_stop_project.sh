@@ -147,9 +147,9 @@ echo "Scratch directory: $TMP"
 # See if we need to set umask for group write.
 
 if [ $GRID -eq 0 -a x$LOGDIR != x ]; then
-  OUTUSER=`stat -c %U $LOGDIR`
+  LOGUSER=`stat -c %U $LOGDIR`
   CURUSER=`whoami`
-  if [ $OUTUSER != $CURUSER ]; then
+  if [ $LOGUSER != $CURUSER ]; then
     echo "Setting umask for group write."
     umask 002
   fi
