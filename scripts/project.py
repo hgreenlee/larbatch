@@ -50,6 +50,7 @@
 # Information only actions:
 #
 # --outdir     - Print the name of the output directory for stage.
+# --logdir     - Print the name of the log directory for stage.
 # --fcl        - Print the fcl file name and version for stage.
 # --defname    - Print sam dataset definition name for stage.
 # --input_files        - Print all input files.
@@ -115,6 +116,10 @@
 #             project name is created underneath this directory.  Individual
 #             workers create an additional subdirectory under that with
 #             names like <cluster>_<process>.
+# <stage><logdir> - Log directory (optional).  If not specified, default to
+#                   be the same as the output directory.  A directory structure
+#                   is created under the log directory similar to the one
+#                   under the output directory.
 # <stage><workdir> - Specify work directory (required).  This directory acts
 #             as the submission directory for the batch job.  Fcl file, batch
 #             script, and input file list are copied here.  A subdirectory with
@@ -291,6 +296,17 @@ def doclean(project, stagename):
                     shutil.rmtree(stage.outdir)
                 else:
                     print 'Owner mismatch, delete %s manually.' % stage.outdir
+                    sys.exit(1)
+
+            # Clean this stage logdir.
+
+            if os.path.exists(stage.logdir):
+                dir_uid = os.stat(stage.logdir).st_uid
+                if dir_uid == uid or dir_uid == euid:
+                    print 'Clean directory %s.' % stage.logdir
+                    shutil.rmtree(stage.logdir)
+                else:
+                    print 'Owner mismatch, delete %s manually.' % stage.logdir
                     sys.exit(1)
 
             # Clean this stage workdir.
@@ -682,9 +698,9 @@ def docheck(project, stage, ana):
     uris = []         # List of input files processed successfully.
     bad_workers = []  # List of bad worker subdirectories.
 
-    subdirs = os.listdir(stage.outdir)
+    subdirs = os.listdir(stage.logdir)
     for subdir in subdirs:
-        subpath = os.path.join(stage.outdir, subdir)
+        subpath = os.path.join(stage.logdir, subdir)
         dirok = project_utilities.fast_isdir(subpath)
 
         # Update list of sam projects from start job.
