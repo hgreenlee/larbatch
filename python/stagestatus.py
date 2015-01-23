@@ -25,7 +25,7 @@ class StageStatus:
         # Default values.
 
         self.stage = stage               # Stage name.
-        self.exists = False              # Does outdir exist?
+        self.exists = False              # Does logdir exist?
         self.nfile = 0                   # Number of good files.
         self.nev = 0                     # Number of good events.
         self.nerror = 0                  # Number of workers with errors.
@@ -39,11 +39,11 @@ class StageStatus:
 
     def update(self):
 
-        outdir = self.stage.outdir
+        logdir = self.stage.logdir
 
         # Test whether output directory exists.
 
-        if project_utilities.safeexist(outdir):
+        if project_utilities.safeexist(logdir):
 
             # Output directory exists.
 
@@ -55,7 +55,7 @@ class StageStatus:
 
             # Count good files and events.
 
-            eventsfile = os.path.join(outdir, 'events.list')
+            eventsfile = os.path.join(logdir, 'events.list')
             if project_utilities.safeexist(eventsfile):
                 lines = project_utilities.saferead(eventsfile)
                 for line in lines:
@@ -66,14 +66,14 @@ class StageStatus:
 
             # Count errors.
 
-            badfile = os.path.join(outdir, 'bad.list')
+            badfile = os.path.join(logdir, 'bad.list')
             if project_utilities.safeexist(badfile):
                 lines = project_utilities.saferead(badfile)
                 self.nerror = self.nerror + len(lines)
 
             # Count missing files.
 
-            missingfile = os.path.join(outdir, 'missing_files.list')
+            missingfile = os.path.join(logdir, 'missing_files.list')
             if project_utilities.safeexist(missingfile):
                 lines = project_utilities.saferead(missingfile)
                 self.nmiss = self.nmiss + len(lines)
