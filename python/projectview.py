@@ -35,8 +35,7 @@ class ProjectView(tk.Frame):
         # Make widgets that belong to this widget.
 
         self.make_widgets()
-        self.set_project(project_name, xml_path, project_def)
-       
+        self.set_project(project_name, xml_path, project_def)       
 
     # Make widgets.
 
@@ -51,7 +50,7 @@ class ProjectView(tk.Frame):
         # Make scroll bars, but don't grid them yet.
 
         self.xmlframe = tk.Frame(self)
-        self.xmlframe.grid(row=1, column=0, sticky=tk.N+tk.E+tk.W+tk.S)
+        #self.xmlframe.grid(row=1, column=0, sticky=tk.N+tk.E+tk.W+tk.S)
         self.xmlframe.rowconfigure(0, weight=1)
         self.xmlframe.columnconfigure(0, weight=1)
         self.xml = tk.Text(self.xmlframe, height=24, width=80, wrap=tk.NONE)
@@ -72,11 +71,10 @@ class ProjectView(tk.Frame):
 
         # Add a project status view.
        
-        # Add a scrolling text box for displaying xml.
-        # Make scroll bars, but don't grid them yet.
+        # Add a frame for project status view.
 
-        self.psframe = tk.Frame(self)
-        self.ps = ProjectStatusView(self.psframe)        
+        self.ps = ProjectStatusView(self)
+        self.ps.grid(row=1, column=0, sticky=tk.N+tk.E+tk.W+tk.S)
 
     # Set the name of the xml file.
 
@@ -89,6 +87,8 @@ class ProjectView(tk.Frame):
             self.xml.delete('1.0', tk.END)
             self.xml.insert('1.0', xmltext)
             self.xml['state'] = tk.DISABLED
+        if project_def != None:
+            self.ps.set_project(project_def)
         
     # See if we need to enable or disable either scrollbar.
 
@@ -112,10 +112,10 @@ class ProjectView(tk.Frame):
 
     def xml_view(self):
         self.xmlframe.grid(row=1, column=0, sticky=tk.N+tk.E+tk.W+tk.S)
-        self.psframe.grid_forget()
+        self.ps.grid_forget()
 
     # Set project status view.
 
     def project_status_view(self):
         self.xmlframe.grid_forget()
-        self.psframe.grid(row=1, column=0, sticky=tk.N+tk.E+tk.W+tk.S)
+        self.ps.grid(row=1, column=0, sticky=tk.N+tk.E+tk.W+tk.S)

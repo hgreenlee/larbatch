@@ -9,7 +9,7 @@ LIST(APPEND exes root_metadata.py )
 
 # Non-executable python files.
 
-LIST(APPEND nonexes project_utilities.py xmlerror.py projectdef.py stagedef.py projectapp.py projectview.py statusview.py )
+LIST(APPEND nonexes project_utilities.py xmlerror.py projectdef.py stagedef.py projectstatus.py stagestatus.py projectapp.py projectview.py statusview.py )
 
 message(STATUS "Executable python modules ${exes}")
 message(STATUS "Non-executable python modules ${nonexes}")
