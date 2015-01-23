@@ -761,12 +761,6 @@ echo "Process: $PROCESS"
 OUTPUT_SUBDIR=${CLUSTER}_${PROCESS}
 echo "Output subdirectory: $OUTPUT_SUBDIR"
 
-# Copy stuff back to log directory before we actually start running lar.
-
-#ifdh mkdir $IFDH_OPT ${LOGDIR}/${OUTPUT_SUBDIR}/hostname.txt
-#ifdh cp $IFDH_OPT hostname.txt ${LOGDIR}/${OUTPUT_SUBDIR}/hostname.txt
-#ifdh cp $IFDH_OPT jobid.txt ${LOGDIR}/${OUTPUT_SUBDIR}/jobid.txt
-
 # Make sure fcl file exists.
 
 if [ ! -f $FCL ]; then
