@@ -467,16 +467,21 @@ def check_root_json(json_path):
 # 4. In the case of TFile output (histogram or ntuples), creates a final json file holding
 #    all the TFile metadata related information. This is done as part of --checkana.
 
-def check_root_file(path):
+def check_root_file(path, logdir):
 
     global proxy_ok
     nevroot = -1
     json_ok = False
     md = []
 
+    # First check if root file exists (error if not).
+
+    if not project_utilities.safeexist(path):
+        return -1
+
     # See if we have precalculated metadata for this root file.
 
-    json_path = path + '.json'
+    json_path = os.path.join(logdir, os.path.basename(path) + '.json')
     if project_utilities.safeexist(json_path):
         # Get number of events from precalculated metadata.
         try:
@@ -553,7 +558,7 @@ def check_root_file(path):
 
 # Check root files (*.root) in the specified directory.
 
-def check_root(dir):
+def check_root(outdir, logdir):
 
     # This method looks for files with names of the form *.root.
     # If such files are found, it also checks for the existence of
@@ -571,30 +576,30 @@ def check_root(dir):
     roots = []
     hists = []
 
-    print 'Checking root files in directory %s.' % dir
-    filenames = os.listdir(dir)
+    print 'Checking root files in directory %s.' % outdir
+    filenames = os.listdir(outdir)
     for filename in filenames:
         if filename[-5:] == '.root':
-            path = os.path.join(dir, filename)
-            nevroot = check_root_file(path)
+            path = os.path.join(outdir, filename)
+            nevroot = check_root_file(path, logdir)
             if nevroot > 0:
                 if nev < 0:
                     nev = 0
                 nev = nev + nevroot
-                roots.append((os.path.join(dir, filename), nevroot))
+                roots.append((os.path.join(outdir, filename), nevroot))
 
             elif nevroot == 0:
 
                 # Valid root (histo/ntuple) file, not an art root file.
 
-                hists.append(os.path.join(dir, filename))
+                hists.append(os.path.join(outdir, filename))
 
             else:
 
                 # Found a .root file that is not openable.
                 # Print a warning, but don't trigger any other error.
 
-                print 'Warning: File %s in directory %s is not a valid root file.' % (filename, dir)
+                print 'Warning: File %s in directory %s is not a valid root file.' % (filename, outdir)
 
     # Done.
 
@@ -678,7 +683,7 @@ def docheck(project, stage, ana):
 
     import_samweb()
     has_metadata = project.file_type != '' or project.run_type != ''
-    print 'Checking directory %s' % stage.outdir
+    print 'Checking directory %s' % stage.logdir
 
     # Default result is success.
 
@@ -700,13 +705,14 @@ def docheck(project, stage, ana):
 
     subdirs = os.listdir(stage.logdir)
     for subdir in subdirs:
-        subpath = os.path.join(stage.logdir, subdir)
-        dirok = project_utilities.fast_isdir(subpath)
+        out_subpath = os.path.join(stage.outdir, subdir)
+        log_subpath = os.path.join(stage.logdir, subdir)
+        dirok = project_utilities.fast_isdir(log_subpath)
 
         # Update list of sam projects from start job.
 
-        if dirok and subpath[-6:] == '_start':
-            filename = os.path.join(subpath, 'sam_project.txt')
+        if dirok and log_subpath[-6:] == '_start':
+            filename = os.path.join(log_subpath, 'sam_project.txt')
             if project_utilities.safeexist(filename):
                 sam_project = project_utilities.saferead(filename)[0].strip()
                 if sam_project != '' and not sam_project in sam_projects:
@@ -714,15 +720,21 @@ def docheck(project, stage, ana):
 
         # Regular worker jobs checked here.
 
-        if dirok and not subpath[-6:] == '_start' and not subpath[-5:] == '_stop' \
+        if dirok and not subdir[-6:] == '_start' and not subdir[-5:] == '_stop' \
                 and not subdir == 'log':
 
             bad = 0
 
+            # Make sure that corresponding output directory exists.
+
+            if not project_utilities.fast_isdir(out_subpath):
+                print 'No output directory corresponding to subdirectory %s.' % subdir
+                bad = 1
+
             # Check lar exit status (if any).
 
             if not bad:
-                stat_filename = os.path.join(subpath, 'lar.stat')
+                stat_filename = os.path.join(log_subpath, 'lar.stat')
                 if project_utilities.safeexist(stat_filename):
                     status = 0
                     try:
@@ -740,7 +752,7 @@ def docheck(project, stage, ana):
             if not bad:
                 nev = 0
                 roots = []
-                nev, roots, subhists = check_root(subpath)
+                nev, roots, subhists = check_root(out_subpath, log_subpath)
                 if not ana:
                     if len(roots) == 0 or nev < 0:
                         print 'Problem with root file(s) in subdirectory %s.' % subdir
@@ -766,11 +778,11 @@ def docheck(project, stage, ana):
             # Update sam_projects and cpids.
 
             if not bad and stage.inputdef != '':
-                filename1 = os.path.join(subpath, 'sam_project.txt')
+                filename1 = os.path.join(log_subpath, 'sam_project.txt')
                 if not project_utilities.safeexist(filename1):
                     print 'Could not find file sam_project.txt'
                     bad = 1
-                filename2 = os.path.join(subpath, 'cpid.txt')
+                filename2 = os.path.join(log_subpath, 'cpid.txt')
                 if not project_utilities.safeexist(filename2):
                     print 'Could not find file cpid.txt'
                     bad = 1
@@ -786,7 +798,7 @@ def docheck(project, stage, ana):
             # Update list of uris.
 
             if not bad and (stage.inputlist !='' or stage.inputfile != ''):
-                filename = os.path.join(subpath, 'transferred_uris.list')
+                filename = os.path.join(log_subpath, 'transferred_uris.list')
                 if not project_utilities.safeexist(filename):
                     print 'Could not find file transferred_uris.list'
                     bad = 1
@@ -826,22 +838,22 @@ def docheck(project, stage, ana):
 
     # Open files.
 
-    filelistname = os.path.join(stage.outdir, 'files.list')
+    filelistname = os.path.join(stage.logdir, 'files.list')
     filelist = safeopen(filelistname)
 
-    eventslistname = os.path.join(stage.outdir, 'events.list')
+    eventslistname = os.path.join(stage.logdir, 'events.list')
     eventslist = safeopen(eventslistname)
 
-    badfilename = os.path.join(stage.outdir, 'bad.list')
+    badfilename = os.path.join(stage.logdir, 'bad.list')
     badfile = safeopen(badfilename)
 
-    missingfilesname = os.path.join(stage.outdir, 'missing_files.list')
+    missingfilesname = os.path.join(stage.logdir, 'missing_files.list')
     missingfiles = safeopen(missingfilesname)
 
-    filesanalistname = os.path.join(stage.outdir, 'filesana.list')
+    filesanalistname = os.path.join(stage.logdir, 'filesana.list')
     filesanalist = safeopen(filesanalistname)
 
-    urislistname = os.path.join(stage.outdir, 'transferred_uris.list')
+    urislistname = os.path.join(stage.logdir, 'transferred_uris.list')
     urislist = safeopen(urislistname)
 
     # Generate "files.list" and "events.list."
@@ -911,7 +923,7 @@ def docheck(project, stage, ana):
 
         # List of successful sam projects.
         
-        sam_projects_filename = os.path.join(stage.outdir, 'sam_projects.list')
+        sam_projects_filename = os.path.join(stage.logdir, 'sam_projects.list')
         sam_projects_file = safeopen(sam_projects_filename)
         for sam_project in sam_projects:
             sam_projects_file.write('%s\n' % sam_project)
@@ -919,7 +931,7 @@ def docheck(project, stage, ana):
 
         # List of successfull consumer process ids.
 
-        cpids_filename = os.path.join(stage.outdir, 'cpids.list')
+        cpids_filename = os.path.join(stage.logdir, 'cpids.list')
         cpids_file = safeopen(cpids_filename)
         for cpid in cpids:
             cpids_file.write('%s\n' % cpid)
@@ -997,7 +1009,7 @@ def docheck(project, stage, ana):
 
     # Done
 
-    checkfile = safeopen(os.path.join(stage.outdir, 'checked'))
+    checkfile = safeopen(os.path.join(stage.logdir, 'checked'))
     checkfile.close()
 
     if stage.inputdef == '':
@@ -1022,9 +1034,9 @@ def dofetchlog(stage):
     # function to succeed.
 
     # Look for a file called "env.txt" in any subdirectory of
-    # stage.outdir.
+    # stage.logdir.
 
-    for dirpath, dirnames, filenames in os.walk(stage.outdir):
+    for dirpath, dirnames, filenames in os.walk(stage.logdir):
         for filename in filenames:
             if filename == 'env.txt':
 
@@ -1073,7 +1085,7 @@ def dofetchlog(stage):
 
                     # Make a directory to receive log files.
 
-                    logdir = os.path.join(stage.outdir, 'log')
+                    logdir = os.path.join(stage.logdir, 'log')
                     if project_utilities.safeexist(logdir):
                         shutil.rmtree(logdir)
                     os.mkdir(logdir)
@@ -1105,7 +1117,7 @@ def dofetchlog(stage):
 
 # Check sam declarations.
 
-def docheck_declarations(outdir, declare):
+def docheck_declarations(logdir, declare):
 
     # Initialize samweb.
 
@@ -1114,7 +1126,7 @@ def docheck_declarations(outdir, declare):
     # Loop over root files listed in files.list.
 
     roots = []
-    fnlist = os.path.join(outdir, 'files.list')
+    fnlist = os.path.join(logdir, 'files.list')
     if project_utilities.safeexist(fnlist):
         roots = project_utilities.saferead(fnlist)
     else:
@@ -1245,7 +1257,7 @@ def doundefine(defname):
 
 # Check disk locations.  Maybe add or remove locations.
 
-def docheck_locations(dim, outdir, add, clean, remove, upload):
+def docheck_locations(dim, logdir, add, clean, remove, upload):
 
     # Initialize samweb.
 
@@ -1262,11 +1274,11 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
         # Got a filename.
 
         # Look for locations on disk.
-        # Look in first level subdirectories of outdir.
+        # Look in first level subdirectories of logdir.
 
         disk_locs = []
-        for subdir in os.listdir(outdir):
-            subpath = os.path.join(outdir, subdir)
+        for subdir in os.listdir(logdir):
+            subpath = os.path.join(logdir, subdir)
             if project_utilities.fast_isdir(subpath):
                 for fn in os.listdir(subpath):
                     if fn == filename:
@@ -1487,6 +1499,7 @@ def main(argv):
     makeup = 0
     clean = 0
     outdir = 0
+    logdir = 0
     fcl = 0
     defname = 0
     do_input_files = 0
@@ -1559,6 +1572,9 @@ def main(argv):
             del args[0]
         elif args[0] == '--outdir':
             outdir = 1
+            del args[0]
+        elif args[0] == '--logdir':
+            logdir = 1
             del args[0]
         elif args[0] == '--fcl':
             fcl = 1
@@ -1664,6 +1680,11 @@ def main(argv):
     if outdir:
         print stage.outdir
 
+    # Do outdir action now.
+
+    if logdir:
+        print stage.logdir
+
     # Do defname action now.
 
     if defname:
@@ -1695,17 +1716,18 @@ def main(argv):
             if not mode & stat.S_IWGRP:
                 mode = mode | stat.S_IWGRP
                 os.chmod(stage.outdir, mode)
+        if stage.logdir[0:6] == '/pnfs/':
+            mode = os.stat(stage.logdir).st_mode
+            if not mode & stat.S_IWGRP:
+                mode = mode | stat.S_IWGRP
+                os.chmod(stage.logdir, mode)
 
-        # For now, also make output directory world-writable.
-
-        #if not mode & stat.S_IWOTH:
-        #    mode = mode | stat.S_IWOTH
-        #    os.chmod(stage.outdir, mode)
-
-    # For first submission, make sure output directory is empty.
+    # For first submission, make sure output and log directories are empty.
 
     if submit and len(os.listdir(stage.outdir)) != 0:
         raise RuntimeError, 'Output directory %s is not empty.' % stage.outdir
+    if submit and len(os.listdir(stage.logdir)) != 0:
+        raise RuntimeError, 'Output directory %s is not empty.' % stage.logdir
 
     # Do the following sections only if there is the possibility
     # of submtting jobs (submit or makeup action).
@@ -1841,7 +1863,7 @@ def main(argv):
 
         if makeup:
 
-            checked_file = os.path.join(stage.outdir, 'checked')
+            checked_file = os.path.join(stage.logdir, 'checked')
             if not project_utilities.safeexist(checked_file):
                 print 'Wait for any running jobs to finish and run project.py --check'
                 return 1
@@ -1849,12 +1871,16 @@ def main(argv):
 
             # First delete bad worker subdirectories.
 
-            bad_filename = os.path.join(stage.outdir, 'bad.list')
+            bad_filename = os.path.join(stage.logdir, 'bad.list')
             if project_utilities.safeexist(bad_filename):
                 lines = project_utilities.saferead(bad_filename)
                 for line in lines:
                     bad_subdir = line.strip()
                     bad_path = os.path.join(stage.outdir, bad_subdir)
+                    if os.path.exists(bad_path):
+                        print 'Deleting %s' % bad_path
+                        shutil.rmtree(bad_path)
+                    bad_path = os.path.join(stage.logdir, bad_subdir)
                     if os.path.exists(bad_path):
                         print 'Deleting %s' % bad_path
                         shutil.rmtree(bad_path)
@@ -1865,7 +1891,7 @@ def main(argv):
 
             missing_files = []
             if stage.inputdef == '':
-                missing_filename = os.path.join(stage.outdir, 'missing_files.list')
+                missing_filename = os.path.join(stage.logdir, 'missing_files.list')
                 if project_utilities.safeexist(missing_filename):
                     lines = project_utilities.saferead(missing_filename)
                     for line in lines:
@@ -1891,7 +1917,7 @@ def main(argv):
             # Get list of successful consumer process ids.
 
             cpids = []
-            cpids_filename = os.path.join(stage.outdir, 'cpids.list')
+            cpids_filename = os.path.join(stage.logdir, 'cpids.list')
             if project_utilities.safeexist(cpids_filename):
                 cpids_files = project_utilities.saferead(cpids_filename)
                 for line in cpids_files:
@@ -1943,7 +1969,7 @@ def main(argv):
     if mergehist or mergentuple or merge:
      
         hlist = []
-	hnlist = os.path.join(stage.outdir, 'filesana.list')
+	hnlist = os.path.join(stage.logdir, 'filesana.list')
 	if project_utilities.safeexist(hnlist):
 	  hlist = project_utilities.saferead(hnlist)	
 	else:
@@ -2036,7 +2062,7 @@ def main(argv):
 		if item in inputlist:
 			mc = mc+1
 			if mc==1:
-				missingfilelistname = os.path.join(stage.outdir, 'missingfiles.list')
+				missingfilelistname = os.path.join(stage.logdir, 'missingfiles.list')
     				missingfilelist = safeopen(missingfilelistname)
 			if mc>=1:
 				missingfilelist.write("%s\n" %item)	
@@ -2047,7 +2073,7 @@ def main(argv):
 			rmfile = list(set(children) & set(outputlist))[0]
 			if me ==1:
 			   flist = []
-			   fnlist = os.path.join(stage.outdir, 'files.list')
+			   fnlist = os.path.join(stage.logdir, 'files.list')
 			   if project_utilities.safeexist(fnlist):
 			     flist = project_utilities.saferead(fnlist)
 			     slist = []  
@@ -2117,7 +2143,7 @@ def main(argv):
 
         # Check sam declarations.
 
-        rc = docheck_declarations(stage.outdir, declare)
+        rc = docheck_declarations(stage.logdir, declare)
 
     if test_declarations:
 
@@ -2131,7 +2157,7 @@ def main(argv):
         # Check sam disk locations.
 
         dim = project_utilities.dimensions(project, stage)
-        rc = docheck_locations(dim, stage.outdir,
+        rc = docheck_locations(dim, stage.logdir,
                                add_locations, clean_locations, remove_locations,
                                upload)
 
@@ -2234,6 +2260,7 @@ def main(argv):
             command.extend([' --localtar', project.local_release_tar])
         command.extend([' --workdir', stage.workdir])
         command.extend([' --outdir', stage.outdir])
+        command.extend([' --logdir', stage.logdir])
         if stage.inputfile != '':
             command.extend([' -s', stage.inputfile])
         elif input_list_name != '':
@@ -2319,7 +2346,7 @@ def main(argv):
 
             # Output directory.
 
-            start_command.extend([' --outdir', stage.outdir])
+            start_command.extend([' --logdir', stage.logdir])
 
             # Stop project jobsub command.
                 
@@ -2368,7 +2395,7 @@ def main(argv):
 
             # Output directory.
 
-            stop_command.extend([' --outdir', stage.outdir])
+            stop_command.extend([' --logdir', stage.logdir])
 
             # Create dagNabbit.py configuration script in the work directory.
 
@@ -2440,7 +2467,7 @@ def main(argv):
 
         os.chdir(stage.workdir)
 
-        checked_file = os.path.join(stage.outdir, 'checked')
+        checked_file = os.path.join(stage.logdir, 'checked')
         if submit:
 
             # For submit action, invoke the job submission command.
