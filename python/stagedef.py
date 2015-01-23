@@ -26,6 +26,7 @@ class StageDef:
         self.name = ''         # Stage name.
         self.fclname = ''      # Fcl name (just name, not path).
         self.outdir = ''       # Output directory.
+        self.logdir = ''       # Log directory.
         self.workdir = ''      # Work directory.
         self.inputfile = ''    # Single input file.
         self.inputlist = ''    # Input file list.
@@ -70,6 +71,14 @@ class StageDef:
             self.outdir = outdir_elements[0].firstChild.data
         if self.outdir == '':
             raise XMLError, 'Output directory not specified for stage %s.' % self.name
+
+        # Log directory (subelement).
+
+        logdir_elements = stage_element.getElementsByTagName('logdir')
+        if logdir_elements:
+            self.logdir = logdir_elements[0].firstChild.data
+        if self.logdir == '':
+            self.logdir = self.outdir
 
         # Work directory (subelement).
 
@@ -221,6 +230,7 @@ class StageDef:
         result = 'Stage name = %s\n' % self.name
         result += 'Fcl filename = %s\n' % self.fclname
         result += 'Output directory = %s\n' % self.outdir
+        result += 'Log directory = %s\n' % self.logdir
         result += 'Work directory = %s\n' % self.workdir
         result += 'Input file = %s\n' % self.inputfile
         result += 'Input list = %s\n' % self.inputlist
@@ -275,20 +285,24 @@ class StageDef:
                 self.num_jobs = new_num_jobs
 
 
-    # Raise an exception if output directory or work directory doesn't exist.
+    # Raise an exception if output directory, log directory, or work directory doesn't exist.
 
     def checkdirs(self):
         if not os.path.exists(self.outdir):
             raise IOError, 'Output directory %s does not exist.' % self.outdir
+        if not os.path.exists(self.logdir):
+            raise IOError, 'Log directory %s does not exist.' % self.logdir
         if not os.path.exists(self.workdir):
             raise IOError, 'Work directory %s does not exist.' % self.workdir
         return
     
-    # Make output and work directory, if they don't exist.
+    # Make output, log, and work directory, if they don't exist.
 
     def makedirs(self):
         if not os.path.exists(self.outdir):
             os.makedirs(self.outdir)
+        if not os.path.exists(self.logdir):
+            os.makedirs(self.logdir)
         if not os.path.exists(self.workdir):
             os.makedirs(self.workdir)
         self.checkdirs()

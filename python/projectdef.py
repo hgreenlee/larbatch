@@ -228,7 +228,7 @@ class ProjectDef:
                                         default_input_list, 
                                         self.num_jobs, 
                                         self.merge))
-            default_input_list = os.path.join(self.stages[-1].outdir, 'files.list')
+            default_input_list = os.path.join(self.stages[-1].logdir, 'files.list')
 
         # Dictionary of metadata parameters
 
