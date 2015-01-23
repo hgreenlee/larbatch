@@ -15,6 +15,7 @@
 # -s, --source <arg>      - Input file (full path).
 # -S, --source-list <arg> - Input file list (full path, one per line).
 # -o, --output <arg>      - Output file name.
+# -T, --TFileName  <arg>  - TFile output file name
 # -n, --nevts <arg>       - Number of events to process.
 # --nskip <arg>           - Number of events to skip.
 # --nfile <arg>           - Number of files to process per worker.
@@ -175,6 +176,7 @@ INFILE=""
 INLIST=""
 INMODE=""
 OUTFILE=""
+TFILE=""
 NEVT=0
 NSKIP=0
 FIRST_EVENT=0
@@ -256,6 +258,14 @@ while [ $# -gt 0 ]; do
         shift
       fi
       ;;
+      
+    # Output TFile.
+    -T|--TFileName )
+      if [ $# -gt 1 ]; then
+        TFILE=$2
+        shift
+      fi
+      ;;    
 
     # Number of events.
     -n|--nevts )
@@ -500,6 +510,7 @@ done
 #echo "INFILE=$INFILE"
 #echo "INLIST=$INLIST"
 #echo "OUTFILE=$OUTFILE"
+#echo "TFILE=$TFILE"
 #echo "NEVT=$NEVT"
 #echo "NSKIP=$NSKIP"
 #echo "NFILE=$NFILE"
@@ -1191,6 +1202,9 @@ fi
 if [ x$OUTFILE != x ]; then
   LAROPT="$LAROPT -o $OUTFILE"
 fi
+if [ x$TFILE != x ]; then
+  LAROPT="$LAROPT -T $TFILE"
+fi
 if [ $NEVT -ne 0 ]; then
   LAROPT="$LAROPT -n $NEVT"  
 fi
@@ -1297,6 +1311,11 @@ mkdir $OUTPUT_SUBDIR
 for outfile in *; do
   if [ $outfile != $OUTPUT_SUBDIR ]; then
     mv $outfile $OUTPUT_SUBDIR
+  fi
+done
+for tfile in *; do
+  if [ $tfile != $OUTPUT_SUBDIR ]; then
+    mv $tfile $OUTPUT_SUBDIR
   fi
 done
 echo "ifdh cp -r $IFDH_OPT $OUTPUT_SUBDIR ${OUTDIR}/$OUTPUT_SUBDIR"

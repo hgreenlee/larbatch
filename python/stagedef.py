@@ -44,7 +44,8 @@ class StageDef:
         self.site = ''         # Site.
         self.parameters = {}   # Dictionary of metadata parameters.
         self.output = ''       # Art output file name.
-
+        self.TFileName = ''    # TFile output file name.
+	
         # Extract values from xml.
 
         # Stage name (attribute).
@@ -134,6 +135,7 @@ class StageDef:
         target_size_elements = stage_element.getElementsByTagName('targetsize')
         if target_size_elements:
             self.target_size = int(target_size_elements[0].firstChild.data)
+	
 
         # Sam dataset definition name (subelement).
 
@@ -202,6 +204,12 @@ class StageDef:
         output_elements = stage_element.getElementsByTagName('output')
         if output_elements:
             self.output = output_elements[0].firstChild.data
+	    
+	# TFileName (subelement).
+
+        TFileName_elements = stage_element.getElementsByTagName('TFileName')
+        if TFileName_elements:
+            self.TFileName = TFileName_elements[0].firstChild.data     
 
         # Done.
 
@@ -219,6 +227,7 @@ class StageDef:
         result += 'Input mode = %s\n' % self.inputmode
         result += 'Input sam dataset = %s\n' % self.inputdef
         result += 'Output file name = %s\n' % self.output
+        result += 'TFileName = %s\n' % self.TFileName	
         result += 'Number of jobs = %d\n' % self.num_jobs
         result += 'Output file target size = %d\n' % self.target_size
         result += 'Dataset definition name = %s\n' % self.defname
