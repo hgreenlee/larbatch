@@ -154,6 +154,8 @@
 # <stage><lines>   - Arbitrary condor commands (expert option, jobsub_submit --lines=...).
 # <stage><site>    - Specify site (default jobsub decides).
 # <stage><output>  - Specify output file name.
+# <stage><TFileName>   - Ability to specify unique output TFile Name 
+#		         (Required when generating Metadata for TFiles)
 #
 #
 # <fcldir>  - Directory in which to search for fcl files (optional, repeatable).
@@ -440,68 +442,96 @@ def check_root_json(json_path):
             nevroot = int(md['events'])
 
     return nevroot
-
-
+    
 # Check a single root file.
 # Returns an int containing following information.
 # 1.  Number of event (>0) in TTree named "Events."
 # 2.  Zero if root file does not contain an Events TTree, but is otherwise valid (openable).
 # 3.  -1 for error (root file is not openable).
+# 4. In the case of TFile output (histogram or ntuples), creates a final json file holding
+#    all the TFile metadata related information. This is done as part of --checkana.
 
 def check_root_file(path):
 
     global proxy_ok
     nevroot = -1
     json_ok = False
+    md = []
 
     # See if we have precalculated metadata for this root file.
 
     json_path = path + '.json'
     if project_utilities.safeexist(json_path):
-
         # Get number of events from precalculated metadata.
-
         try:
-            nevroot = check_root_json(json_path)
+	    # do not call check_root_json, to accommodate merging this json with the TFile json
+	    # The "md" dictionary obtained will be useful through the code!
+	    # nevroot = check_root_json(json_path)
+	    lines = project_utilities.saferead(json_path)
+     	    s = ''
+            for line in lines:
+               s = s + line
+            # Convert json string to python dictionary.
+            md = json.loads(s)
+            # Extract number of events from metadata.
+	    if len(md.keys()) > 0:
+      		nevroot = 0
+            	if md.has_key('events'):
+                     nevroot = int(md['events'])
             json_ok = True
         except:
             nevroot = -1
 
-    if not json_ok:
-
-        # Make root metadata.
-
+    if not json_ok: 
+        
+	# Make root metadata.
+	
         url = project_utilities.path_to_url(path)
-        if url != path and not proxy_ok:
+	if url != path and not proxy_ok:
             proxy_ok = project_utilities.test_proxy()
         print 'Generating root metadata for file %s.' % os.path.basename(path)
         md = root_metadata.get_external_metadata(path)
+	
         if md.has_key('events'):
 
             # Art root file if dictionary has events key.
-
             nevroot = int(md['events'])
 
         elif len(md.keys()) > 0:
 
             # No events key, but non-empty dictionary, so histo/ntuple root file.
-
             nevroot = 0
         else:
-
             # Empty dictionary is invalid root file.
-
             nevroot = -1
-
-        # Save root metadata in .json file.
-
-        mdtext = json.dumps(md, sys.stdout, indent=2, sort_keys=True)
-        if project_utilities.safeexist(json_path):
-            os.remove(json_path)
-        json_file = safeopen(json_path)
-        json_file.write(mdtext)
-        json_file.close()
-
+	    	
+    # if the root file is a TFile (hist or ntuple file) 
+    # append information from TFile metadata service (previously saved in 
+    # a standard "anahist.json" file) to a more appropriately named final
+    # json file that will be created here
+    if nevroot == 0:
+       temp = os.path.join(os.path.dirname(path), 'anahist.json')
+       if project_utilities.safeexist(temp):
+         lines = project_utilities.saferead(temp)
+         s1 = ''
+         for line in lines:
+           s1 = s1 + line
+         # Convert json string to python dictionary.
+         md1 = json.loads(s1) 
+         os.remove(temp) 
+         md = dict(md.items()+md1.items())   
+       else:
+           pass   
+           
+    if nevroot ==0 or not json_ok:     
+           
+       mdtext = json.dumps(md, sys.stdout, indent=2, sort_keys=True)
+       if project_utilities.safeexist(json_path):
+    	   os.remove(json_path)
+       json_file = safeopen(json_path)
+       json_file.write(mdtext)
+       json_file.close()
+        
     return nevroot
 
 
@@ -2201,6 +2231,8 @@ def main(argv):
         command.extend([' --njobs', '%d' % stage.num_jobs ])
         if stage.output != '':
             command.extend([' --output', stage.output])
+	if stage.TFileName != '':
+            command.extend([' --TFileName', stage.TFileName]) 	    
         if stage.init_script != '':
             command.extend([' --init-script',
                             os.path.join('.', os.path.basename(stage.init_script))])
