@@ -2242,7 +2242,6 @@ def main(argv):
     xmlfile = ''
     projectname = ''
     stagename = ''
-    override_merge = ''
     merge = 0
     submit = 0
     check = 0
@@ -2409,7 +2408,7 @@ def main(argv):
 
     # Convert the project element into a ProjectDef object.
 
-    project = ProjectDef(project_element, override_merge)
+    project = ProjectDef(project_element)
 
     # Do clean action now.  Cleaning can be combined with submission.
 

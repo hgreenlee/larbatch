@@ -20,7 +20,7 @@ class ProjectDef:
     # Constructor.
     # project_element argument can be an xml element or None.
 
-    def __init__(self, project_element, override_merge):
+    def __init__(self, project_element):
 
         # Assign default values.
         
@@ -107,8 +107,6 @@ class ProjectDef:
                 self.merge = merge_elements[0].firstChild.data
             else:
                 self.merge = ''
-        if override_merge != '':
-            self.merge = override_merge
 	    
         # Larsoft (subelement).
 
