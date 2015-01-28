@@ -2038,6 +2038,158 @@ def dosubmit(project, stage, makeup=False):
 
     return 0
 
+# Merge histogram files.
+# If mergehist is True, merge histograms using "hadd -T".
+# If mergentuple is True, do full merge using "hadd".
+# If neither argument is True, do custom merge using merge program specified 
+# in xml stage.
+
+def domerge(stage, mergehist, mergentuple):
+
+    hlist = []
+    hnlist = os.path.join(stage.logdir, 'filesana.list')
+    if project_utilities.safeexist(hnlist):
+        hlist = project_utilities.saferead(hnlist)
+    else:
+        raise RuntimeError, 'No filesana.list file found, run project.py --checkana'
+
+    histurlsname_temp = 'histurls.list'
+    if os.path.exists(histurlsname_temp):
+        os.remove(histurlsname_temp)
+    histurls = open(histurlsname_temp, 'w') 
+	
+    for hist in hlist:
+        histurls.write('%s\n' % project_utilities.path_to_url(hist)) 	
+    histurls.close()
+       	
+    if len(hlist) > 0:
+        name = os.path.join(stage.outdir, 'anahist.root')
+        if name[0:6] == '/pnfs/':
+            name_temp = 'anahist.root'
+        else:
+            name_temp = name 
+		     
+        if mergehist:
+            mergecom = "hadd -T"
+        elif mergentuple:
+            mergecom = "hadd"
+        else:
+            mergecom = stage.merge
+           
+        print "Merging %d root files using %s." % (len(hlist), mergecom)
+			          			         
+        if os.path.exists(name_temp):
+            os.remove(name_temp)
+        comlist = mergecom.split()
+        comlist.extend(["-v", "0", "-f", "-k", name_temp, '@' + histurlsname_temp])
+        rc = subprocess.call(comlist)
+        if rc != 0:
+            print "%s exit status %d" % (mergecom, rc)
+        if name != name_temp:
+            if project_utilities.safeexist(name):
+                os.remove(name)
+            if os.path.exists(name_temp):
+                subprocess.call(['ifdh', 'cp', name_temp, name])
+                os.remove(name_temp)
+        os.remove(histurlsname_temp)	     
+
+
+# Sam audit.
+
+def doaudit(stage):
+
+    import_samweb()
+    stage_has_input = stage.inputfile != '' or stage.inputlist != '' or stage.inputdef != ''
+    if not stage_has_input:
+        raise RuntimeError, 'No auditing for generator stage.'
+
+    # Are there other ways to get output files other than through definition!?
+
+    outputlist = []
+    outparentlist = []
+    if stage.defname != '':	
+        query = 'isparentof: (defname: %s) and availability: anylocation' %(stage.defname)
+        try:
+            outparentlist = samweb.listFiles(dimensions=query)
+            outputlist = samweb.listFiles(defname=stage.defname)
+        except:
+            raise RuntimeError, 'Error accessing sam information for definition %s.\nDoes definition exist?' % stage.defname
+    else:
+        raise RuntimeError, 'Output definition not found.'
+			
+    # To get input files one can use definition or get inputlist given to that stage or 
+    # get input files for a given stage as get_input_files(stage)
+
+    inputlist = []	
+    if stage.inputdef != '':
+        import_samweb()
+        inputlist=samweb.listFiles(defname=stage.inputdef)
+    elif stage.inputlist != '':
+        ilist = []
+        if project_utilities.safeexist(stage.inputlist):
+            ilist = project_utilities.saferead(stage.inputlist)
+            inputlist = [] 
+            for i in ilist:
+                inputlist.append(os.path.basename(string.strip(i)))	
+    else:
+        raise RuntimeError, 'Input definition and/or input list does not exist.'
+    
+    difflist = set(inputlist)^set(outparentlist)
+    mc = 0;
+    me = 0;
+    for item in difflist:
+        if item in inputlist:
+            mc = mc+1
+            if mc==1:
+                missingfilelistname = os.path.join(stage.logdir, 'missingfiles.list')
+                missingfilelist = safeopen(missingfilelistname)
+                if mc>=1:
+                    missingfilelist.write("%s\n" %item)	
+        elif item in outparentlist:
+            me = me+1
+            childcmd = 'samweb list-files "ischildof: (file_name=%s) and availability: anylocation"' %(item)
+            children = subprocess.check_output(childcmd, shell = True).splitlines()
+            rmfile = list(set(children) & set(outputlist))[0]
+            if me ==1:
+                flist = []
+                fnlist = os.path.join(stage.logdir, 'files.list')
+                if project_utilities.safeexist(fnlist):
+                    flist = project_utilities.saferead(fnlist)
+                    slist = []  
+                    for line in flist:
+                        slist.append(string.split(line)[0])
+                else:
+                    raise RuntimeError, 'No files.list file found, run project.py --check'
+
+            # Declare the content status of the file as bad in SAM.
+                        
+            sdict = {'content_status':'bad'}
+            samweb.modifyFileMetadata(rmfile, sdict)
+            print '\nDeclaring the status of the following file as bad:', rmfile
+
+            # Remove this file from the files.list in the output directory.
+
+            fn = []  
+            fn = [x for x in slist if os.path.basename(string.strip(x)) != rmfile] 
+            thefile = safeopen(fnlist)
+            for item in fn:
+                thefile.write("%s\n" % item) 
+	
+    if mc==0 and me==0:
+        print "Everything in order."
+        return 0
+    else:	
+        print 'Missing parent file(s) = ', mc
+        print 'Extra parent file(s) = ',me
+	
+    if mc != 0:
+        missingfilelist.close()	
+        print "Creating missingfiles.list in the output directory....done!"
+    if me != 0:
+        thefile.close()	
+        #os.remove("jsonfile.json")
+        print "For extra parent files, files.list redefined and content status declared as bad in SAM...done!"	     
+    
 
 # Print help.
 
@@ -2319,154 +2471,17 @@ def main(argv):
 
         rc = dofetchlog(stage)
 		   
-    # Make merged histogram or ntuple files using proper hadd option. 
-    # Makes a merged root file called anahist.root in the project output directory
-    
     if mergehist or mergentuple or merge:
-     
-        hlist = []
-	hnlist = os.path.join(stage.logdir, 'filesana.list')
-	if project_utilities.safeexist(hnlist):
-	  hlist = project_utilities.saferead(hnlist)	
-	else:
-	  print 'No filesana.list file found, run project.py --checkana'
-	  sys.exit(1)	
-	  
-	histurlsname_temp = 'histurls.list'
-        if os.path.exists(histurlsname_temp):
-             os.remove(histurlsname_temp)
-        histurls = open(histurlsname_temp, 'w') 
-	
-	for hist in hlist:
-             histurls.write('%s\n' % project_utilities.path_to_url(hist)) 	
-        histurls.close()
-       	
-        if len(hlist) > 0:
-	   name = os.path.join(stage.outdir, 'anahist.root')
-	   if name[0:6] == '/pnfs/':
-           	name_temp = 'anahist.root'
-           else:
-           	name_temp = name 
-		     
-           if mergehist:
-  		mergecom = "hadd -T"
-	   elif mergentuple:
-	     	mergecom = "hadd"
-           elif merge:
-	        mergecom = stage.merge
-           
-	   print "Merging %d root files using %s." % (len(hlist), mergecom)
-			          			         
-           if os.path.exists(name_temp):
-               os.remove(name_temp)
-           comlist = mergecom.split()
-           comlist.extend(["-v", "0", "-f", "-k", name_temp, '@' + histurlsname_temp])
-           rc = subprocess.call(comlist)
-           if rc != 0:
-               print "%s exit status %d" % (mergecom, rc)
-           if name != name_temp:
-               if project_utilities.safeexist(name):
-        	   os.remove(name)
-               if os.path.exists(name_temp):
-        	   subprocess.call(['ifdh', 'cp', name_temp, name])
-        	   os.remove(name_temp)
-           os.remove(histurlsname_temp)		     
-		     
+        
+        # Make merged histogram or ntuple files using proper hadd option. 
+        # Makes a merged root file called anahist.root in the project output directory
+    
+        domerge(stage, mergehist, mergentuple)
 		     
     if audit:
-        import_samweb()
-        stage_has_input = stage.inputfile != '' or stage.inputlist != '' or stage.inputdef != ''
-	if not stage_has_input:
-		print 'No auditing for generator stage...exiting!'
-		sys.exit(1)
-	#Are there other ways to get output files other than through definition!?
-	outputlist = []
-	outparentlist = []
-	if stage.defname != '':	
-		query = 'isparentof: (defname: %s) and availability: anylocation' %(stage.defname)
-                try:
-                    outparentlist = samweb.listFiles(dimensions=query)
-                    outputlist = samweb.listFiles(defname=stage.defname)
-                except:
-                    print 'Error accessing sam information for definition %s.' % stage.defname
-                    print 'Does definition exist?'
-                    sys.exit(1)
-	else:
-		print "Output definition not found...exiting!"
-		sys.exit(1)
-			
-	#to get input files one can use definition or get inputlist given to that stage or get input files for a given stage as get_input_files(stage)
-	inputlist = []	
-	if stage.inputdef != '':
-	        import_samweb()
-		inputlist=samweb.listFiles(defname=stage.inputdef)
-	elif stage.inputlist != '':
-		ilist = []
-		if project_utilities.safeexist(stage.inputlist):
-		    ilist = project_utilities.saferead(stage.inputlist)
-		inputlist = [] 
-		for i in ilist:
-		    inputlist.append(os.path.basename(string.strip(i)))	
-	else:
-		print "Input definition and/or input list doesn't exist...exiting!"
-		sys.exit(1)
-    
-	difflist = set(inputlist)^set(outparentlist)
-	mc = 0;
-	me = 0;
-	for item in difflist:
-		if item in inputlist:
-			mc = mc+1
-			if mc==1:
-				missingfilelistname = os.path.join(stage.logdir, 'missingfiles.list')
-    				missingfilelist = safeopen(missingfilelistname)
-			if mc>=1:
-				missingfilelist.write("%s\n" %item)	
-		elif item in outparentlist:
-			me = me+1
-			childcmd = 'samweb list-files "ischildof: (file_name=%s) and availability: anylocation"' %(item)
-			children = subprocess.check_output(childcmd, shell = True).splitlines()
-			rmfile = list(set(children) & set(outputlist))[0]
-			if me ==1:
-			   flist = []
-			   fnlist = os.path.join(stage.logdir, 'files.list')
-			   if project_utilities.safeexist(fnlist):
-			     flist = project_utilities.saferead(fnlist)
-			     slist = []  
-			     for line in flist:
-	                        slist.append(string.split(line)[0])
-			   else:
-			     print 'No files.list file found, run project.py --check'
-			     sys.exit(1)
 
-			#declare the content status of the file as bad in SAM
-                        
-                        sdict = {'content_status':'bad'}
-			samweb.modifyFileMetadata(rmfile, sdict)
-			print '\nDeclaring the status of the following file as bad:', rmfile
+        doaudit(stage)
 
-			#remove this file from the files.list in the output directory
-			fn = []  
-			fn = [x for x in slist if os.path.basename(string.strip(x)) != rmfile] 
-   			thefile = safeopen(fnlist)
-		        for item in fn:
-			    thefile.write("%s\n" % item) 
-	
-	if mc==0 and me==0:
-		print "Everything in order..exiting"
-		sys.exit(1)
-	else:	
-		print 'Missing parent file(s) = ', mc
-		print 'Extra parent file(s) = ',me
-	
-	if mc != 0:
-		missingfilelist.close()	
-		print "Creating missingfiles.list in the output directory....done!"
-	if me != 0:
-	        thefile.close()	
-		#os.remove("jsonfile.json")
-		print "For extra parent files, files.list redefined and content status declared as bad in SAM...done!"	     
-    
     if check_definition or define:
 
         # Make sam dataset definition.
