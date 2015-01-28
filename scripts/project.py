@@ -2480,6 +2480,8 @@ def main(argv):
 		     
     if audit:
 
+        # Sam audit.
+
         doaudit(stage)
 
     if check_definition or define:
