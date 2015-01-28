@@ -79,7 +79,7 @@ class ProjectStatusView(tk.Frame):
                                   padx=10, pady=10, font=tkFont.Font(size=12))
         self.stage_cat.grid(row=0, column=0, sticky=tk.N+tk.E+tk.W+tk.S)
         self.files_cat = tk.Frame(self, bd=1, relief=tk.SUNKEN)
-        files_label = tk.Label(self.files_cat, bg='lightgray', relief=tk.FLAT, text='Files',
+        files_label = tk.Label(self.files_cat, bg='lightgray', relief=tk.FLAT, text='Output',
                                   padx=10, font=tkFont.Font(size=12))
         files_label.pack(side=tk.LEFT, expand=1, fill=tk.BOTH)
         checkana_button = tk.Button(self.files_cat, bg='lightgray', text='CheckAna',

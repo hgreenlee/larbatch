@@ -152,6 +152,17 @@ class ProjectApp(tk.Frame):
         self.stage_menu.bind_all('<KeyPress-KP_Down>', self.next_stage_handler)
         self.stage_menu.bind_all('<KeyPress-Down>', self.next_stage_handler)
 
+        # Output menu.
+
+        mbutton = tk.Menubutton(self.menubar, text='Output', font=tkFont.Font(size=12))
+        mbutton.pack(side=tk.LEFT)
+        self.output_menu = tk.Menu(mbutton)
+        self.output_menu.add_command(label='Check', command=self.check)
+        self.output_menu.add_command(label='Checkana', command=self.checkana)
+        self.output_menu.add_command(label='Fetchlog', command=self.fetchlog)
+        self.output_menu.add_command(label='Clean', command=self.clean)
+        mbutton['menu'] = self.output_menu
+
         # Batch menu.
 
         mbutton = tk.Menubutton(self.menubar, text='Batch', font=tkFont.Font(size=12))
@@ -160,11 +171,6 @@ class ProjectApp(tk.Frame):
         self.batch_menu.add_command(label='Submit', command=self.submit)
         self.batch_menu.add_command(label='Makeup', command=self.makeup)
         self.batch_menu.add_command(label='Update', command=self.update_jobs)
-        self.batch_menu.add_separator()
-        self.batch_menu.add_command(label='Check', command=self.check)
-        self.batch_menu.add_command(label='Checkana', command=self.checkana)
-        self.batch_menu.add_command(label='Fetchlog', command=self.fetchlog)
-        self.batch_menu.add_command(label='Clean', command=self.clean)
         mbutton['menu'] = self.batch_menu
         return
 
