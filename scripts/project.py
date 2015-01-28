@@ -2038,6 +2038,61 @@ def dosubmit(project, stage, makeup=False):
 
     return 0
 
+# Merge histogram files.
+# If mergehist is True, merge histograms using "hadd -T".
+# If mergentuple is True, do full merge using "hadd".
+# If neither argument is True, do custom merge using merge program specified 
+# in xml stage.
+
+def domerge(stage, mergehist, mergentuple):
+
+    hlist = []
+    hnlist = os.path.join(stage.logdir, 'filesana.list')
+    if project_utilities.safeexist(hnlist):
+        hlist = project_utilities.saferead(hnlist)	
+    else:
+        raise RuntimeError, 'No filesana.list file found, run project.py --checkana'
+	  
+    histurlsname_temp = 'histurls.list'
+    if os.path.exists(histurlsname_temp):
+        os.remove(histurlsname_temp)
+    histurls = open(histurlsname_temp, 'w') 
+	
+    for hist in hlist:
+        histurls.write('%s\n' % project_utilities.path_to_url(hist)) 	
+    histurls.close()
+       	
+    if len(hlist) > 0:
+        name = os.path.join(stage.outdir, 'anahist.root')
+        if name[0:6] == '/pnfs/':
+            name_temp = 'anahist.root'
+        else:
+            name_temp = name 
+		     
+        if mergehist:
+            mergecom = "hadd -T"
+        elif mergentuple:
+            mergecom = "hadd"
+        else:
+            mergecom = stage.merge
+           
+        print "Merging %d root files using %s." % (len(hlist), mergecom)
+			          			         
+        if os.path.exists(name_temp):
+            os.remove(name_temp)
+        comlist = mergecom.split()
+        comlist.extend(["-v", "0", "-f", "-k", name_temp, '@' + histurlsname_temp])
+        rc = subprocess.call(comlist)
+        if rc != 0:
+            print "%s exit status %d" % (mergecom, rc)
+        if name != name_temp:
+            if project_utilities.safeexist(name):
+                os.remove(name)
+            if os.path.exists(name_temp):
+                subprocess.call(['ifdh', 'cp', name_temp, name])
+                os.remove(name_temp)
+        os.remove(histurlsname_temp)	     
+
 
 # Print help.
 
@@ -2319,59 +2374,12 @@ def main(argv):
 
         rc = dofetchlog(stage)
 		   
-    # Make merged histogram or ntuple files using proper hadd option. 
-    # Makes a merged root file called anahist.root in the project output directory
-    
     if mergehist or mergentuple or merge:
-     
-        hlist = []
-	hnlist = os.path.join(stage.logdir, 'filesana.list')
-	if project_utilities.safeexist(hnlist):
-	  hlist = project_utilities.saferead(hnlist)	
-	else:
-	  print 'No filesana.list file found, run project.py --checkana'
-	  sys.exit(1)	
-	  
-	histurlsname_temp = 'histurls.list'
-        if os.path.exists(histurlsname_temp):
-             os.remove(histurlsname_temp)
-        histurls = open(histurlsname_temp, 'w') 
-	
-	for hist in hlist:
-             histurls.write('%s\n' % project_utilities.path_to_url(hist)) 	
-        histurls.close()
-       	
-        if len(hlist) > 0:
-	   name = os.path.join(stage.outdir, 'anahist.root')
-	   if name[0:6] == '/pnfs/':
-           	name_temp = 'anahist.root'
-           else:
-           	name_temp = name 
-		     
-           if mergehist:
-  		mergecom = "hadd -T"
-	   elif mergentuple:
-	     	mergecom = "hadd"
-           elif merge:
-	        mergecom = stage.merge
-           
-	   print "Merging %d root files using %s." % (len(hlist), mergecom)
-			          			         
-           if os.path.exists(name_temp):
-               os.remove(name_temp)
-           comlist = mergecom.split()
-           comlist.extend(["-v", "0", "-f", "-k", name_temp, '@' + histurlsname_temp])
-           rc = subprocess.call(comlist)
-           if rc != 0:
-               print "%s exit status %d" % (mergecom, rc)
-           if name != name_temp:
-               if project_utilities.safeexist(name):
-        	   os.remove(name)
-               if os.path.exists(name_temp):
-        	   subprocess.call(['ifdh', 'cp', name_temp, name])
-        	   os.remove(name_temp)
-           os.remove(histurlsname_temp)		     
-		     
+        
+        # Make merged histogram or ntuple files using proper hadd option. 
+        # Makes a merged root file called anahist.root in the project output directory
+    
+        domerge(stage, mergehist, mergentuple)
 		     
     if audit:
         import_samweb()
