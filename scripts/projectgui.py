@@ -13,7 +13,7 @@
 #
 ######################################################################
 
-from projectapp import ProjectApp
+from project_gui_modules.projectapp import ProjectApp
 
 w = ProjectApp()
 w.mainloop()

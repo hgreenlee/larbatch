@@ -32,6 +32,7 @@ bindir  product_dir    bin
 
 # table fragment to set various environment variables.
 table_fragment_begin
+    pathPrepend(PYTHONPATH, ${UPS_PROD_DIR}/bin)
     pathPrepend(PYTHONPATH, ${UPS_PROD_DIR}/python)
 table_fragment_end
 
