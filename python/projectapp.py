@@ -111,7 +111,6 @@ class ProjectApp(tk.Frame):
         mbutton.pack(side=tk.LEFT)
         view_menu = tk.Menu(mbutton)
         view_menu.add_command(label='XML', command=self.xml_view)
-        view_menu.add_command(label='Project status', command=self.project_status_view)
         mbutton['menu'] = view_menu
 
         # Project menu.
@@ -324,12 +323,7 @@ class ProjectApp(tk.Frame):
     # Select XML view.
 
     def xml_view(self):
-        self.project_view.xml_view()
-
-    # Select project status view.
-
-    def project_status_view(self):
-        self.project_view.project_status_view()
+        self.project_view.make_xml_window()
 
     # Select next stage.
 

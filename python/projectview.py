@@ -13,7 +13,9 @@
 # Import GUI stuff
 
 import Tkinter as tk
+import tkMessageBox
 from statusview import ProjectStatusView
+from textwindow import TextWindow
 
 # Project widget class
 
@@ -51,80 +53,42 @@ class ProjectView(tk.Frame):
         self.label = tk.Label(self, relief=tk.SUNKEN)
         self.label.grid(row=1, column=0, sticky=tk.N+tk.E+tk.W)
 
-        # Add a scrolling text box for displaying xml.
-        # Make scroll bars, but don't grid them yet.
-
-        self.xmlframe = tk.Frame(self)
-        #self.xmlframe.grid(row=2, column=0, sticky=tk.N+tk.E+tk.W+tk.S)
-        self.xmlframe.rowconfigure(0, weight=1)
-        self.xmlframe.columnconfigure(0, weight=1)
-        self.xml = tk.Text(self.xmlframe, height=24, width=80, wrap=tk.NONE)
-        self.xml.grid(row=0, column=0, sticky=tk.N+tk.E+tk.W+tk.S)
-        self.xmlvbar = tk.Scrollbar(self.xmlframe, orient=tk.VERTICAL, command=self.xml.yview)
-        self.xml['yscrollcommand'] = self.xmlvbar.set
-        self.xmlvbar_visible = 0
-        self.xmlhbar = tk.Scrollbar(self.xmlframe, orient=tk.HORIZONTAL, command=self.xml.xview)
-        self.xml['xscrollcommand'] = self.xmlhbar.set
-        self.xmlhbar_visible = 0
-        self.check_scroll()
- 
-	# Set event bindings (check scrollbar visibility when window size 
-        # changes).
-
-	self.xml.bind('<Configure>', self.check_scroll)
-        self.xml['state'] = tk.DISABLED
-
         # Add a project status view.
-       
-        # Add a frame for project status view.
 
         self.ps = ProjectStatusView(self)
         self.ps.grid(row=2, column=0, sticky=tk.N+tk.E+tk.W+tk.S)
 
-    # Set the name of the xml file.
+    # Select the project.
 
     def set_project(self, project_name, xml_path, project_def):
         self.path['text'] = xml_path
         self.label['text'] = project_name
-        if xml_path != None:
-            f = open(xml_path)
-            xmltext = f.read()
-            self.xml['state'] = tk.NORMAL
-            self.xml.delete('1.0', tk.END)
-            self.xml.insert('1.0', xmltext)
-            self.xml['state'] = tk.DISABLED
         if project_def != None:
             self.ps.set_project(project_def)
-        
-    # See if we need to enable or disable either scrollbar.
 
-    def check_scroll(self, event=None):
-	yv = self.xml.yview()
-	if not self.xmlvbar_visible and (yv[0] != 0.0 or yv[1] != 1.0):
-	    self.xmlvbar_visible = 1
-	    self.xmlvbar.grid(row=0, column=1, sticky=tk.N+tk.S)
-	elif self.xmlvbar_visible and yv[0] == 0.0 and yv[1] == 1.0:
-	    self.xmlvbar_visible = 0
-	    self.xmlvbar.grid_forget()
-	xv = self.xml.xview()
-	if not self.xmlhbar_visible and (xv[0] != 0.0 or xv[1] != 1.0):
-	    self.xmlhbar_visible = 1
-	    self.xmlhbar.grid(row=1, column=0, sticky=tk.E+tk.W)
-	elif self.xmlhbar_visible and xv[0] == 0.0 and xv[1] == 1.0:
-	    self.xmlhbar_visible = 0
-	    self.xmlhbar.grid_forget()
+    # Make a top level window for displaying xml.
 
-    # Set XML view.
+    def make_xml_window(self):
 
-    def xml_view(self):
-        self.xmlframe.grid(row=2, column=0, sticky=tk.N+tk.E+tk.W+tk.S)
-        self.ps.grid_forget()
+        xml_path = self.path['text']
+        if xml_path == None or xml_path == '':
+            tkMessageBox.showerror('', 'No xml file specified.')
+            return
 
-    # Set project status view.
+        # Get text of xml file.
 
-    def project_status_view(self):
-        self.xmlframe.grid_forget()
-        self.ps.grid(row=2, column=0, sticky=tk.N+tk.E+tk.W+tk.S)
+        f = open(xml_path)
+        if not f:
+            tkMessageBox.showerror('', 'Error opening xml file %s.' % xml_path)
+            return
+        xmltext = f.read()
+
+        # Make a new top level window to hold xml text.
+        # After we are done making this window, we don't keep track
+        # of it any more.  It is owned by window manager.
+
+        w = TextWindow()
+        w.insert(tk.END, xmltext)
 
     # Update status view.
 
