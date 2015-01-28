@@ -9,7 +9,7 @@
 #
 ######################################################################
 
-import os, string
+import os, string, stat
 import project_utilities
 from xmlerror import XMLError
 
@@ -305,5 +305,19 @@ class StageDef:
             os.makedirs(self.logdir)
         if not os.path.exists(self.workdir):
             os.makedirs(self.workdir)
+
+        # If output is on dcache, make output directory group-writable.
+
+        if self.outdir[0:6] == '/pnfs/':
+            mode = os.stat(self.outdir).st_mode
+            if not mode & stat.S_IWGRP:
+                mode = mode | stat.S_IWGRP
+                os.chmod(self.outdir, mode)
+        if self.logdir[0:6] == '/pnfs/':
+            mode = os.stat(self.logdir).st_mode
+            if not mode & stat.S_IWGRP:
+                mode = mode | stat.S_IWGRP
+                os.chmod(self.logdir, mode)
+
         self.checkdirs()
         return

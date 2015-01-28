@@ -28,6 +28,7 @@ sys.argv = myargv
 
 proxy_ok = False
 ticket_ok = False
+ticket_user = ''
 
 # Function to return the current experiment.
 # The following places for obtaining this information are
@@ -110,6 +111,36 @@ def get_role():
 
     return result
 
+# Get authenticated user (from kerberos ticket, not $USER).
+
+def get_user():
+
+    # See if we have a cached value for user.
+
+    global ticket_user
+    if ticket_user != '':
+        return ticket_user
+
+    # First make sure we have ticket (raise exception if not).
+
+    test_ticket()
+
+    # Get information about our ticket.
+
+    for line in subprocess.check_output('klist').splitlines():
+        pattern = 'Default principal:'
+        n = line.find(pattern)
+        if n >= 0:
+            principal = line[n + len(pattern):].strip()
+            m = principal.find('@')
+            if m > 0:
+                ticket_user = principal[:m]
+                return ticket_user
+
+    # Something went wrong...
+
+    raise RuntimeError, 'Unable to determine authenticated user.'        
+
 # Get proxy path.
 
 def get_proxy():
@@ -149,19 +180,18 @@ def safeexist(path):
     except:
         return False
 
-# Test whether user has a valid kerberos ticket.  Exit if no.
+# Test whether user has a valid kerberos ticket.  Raise exception if no.
 
 def test_ticket():
     global ticket_ok
     if not ticket_ok:
         ok = subprocess.call(['klist', '-s'])
         if ok != 0:
-            print 'Please get a kerberos ticket.'
-            os._exit(1)
+            raise RuntimeError, 'Please get a kerberos ticket.'
         ticket_ok = True
     return ticket_ok
 
-# Test whether user has a valid grid proxy.  Exit if no.
+# Test whether user has a valid grid proxy.  Raise exception if no.
 
 def test_proxy():
     global proxy_ok
@@ -176,8 +206,7 @@ def test_proxy():
             subprocess.check_call(['voms-proxy-info', '-exists'], stdout=-1)
             proxy_ok = True
         except:
-            print 'Please get a grid proxy.'
-            os._exit(1)
+            raise RuntimeError, 'Please get a grid proxy.'
     return proxy_ok
 
 # dCache-safe method to return contents (list of lines) of file.

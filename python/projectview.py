@@ -23,11 +23,11 @@ class ProjectView(tk.Frame):
 
     def __init__(self, parent, project_name=None, xml_path=None, project_def=None):
 
-        self.root = parent
+        self.parent = parent
 
         # Register our outermost frame in the parent window.
 
-        tk.Frame.__init__(self, self.root)
+        tk.Frame.__init__(self, self.parent)
         self.pack(expand=1, fill=tk.BOTH)
         self.rowconfigure(1, weight=1)
         self.columnconfigure(0, weight=1)
@@ -41,16 +41,21 @@ class ProjectView(tk.Frame):
 
     def make_widgets(self):
 
+        # Add a label which will display the current project xml file path.
+
+        self.path = tk.Label(self, relief=tk.SUNKEN)
+        self.path.grid(row=0, column=0, sticky=tk.N+tk.E+tk.W)
+
         # Add a label which will display the current project name.
 
         self.label = tk.Label(self, relief=tk.SUNKEN)
-        self.label.grid(row=0, column=0, sticky=tk.N+tk.E+tk.W)
+        self.label.grid(row=1, column=0, sticky=tk.N+tk.E+tk.W)
 
         # Add a scrolling text box for displaying xml.
         # Make scroll bars, but don't grid them yet.
 
         self.xmlframe = tk.Frame(self)
-        #self.xmlframe.grid(row=1, column=0, sticky=tk.N+tk.E+tk.W+tk.S)
+        #self.xmlframe.grid(row=2, column=0, sticky=tk.N+tk.E+tk.W+tk.S)
         self.xmlframe.rowconfigure(0, weight=1)
         self.xmlframe.columnconfigure(0, weight=1)
         self.xml = tk.Text(self.xmlframe, height=24, width=80, wrap=tk.NONE)
@@ -74,11 +79,12 @@ class ProjectView(tk.Frame):
         # Add a frame for project status view.
 
         self.ps = ProjectStatusView(self)
-        self.ps.grid(row=1, column=0, sticky=tk.N+tk.E+tk.W+tk.S)
+        self.ps.grid(row=2, column=0, sticky=tk.N+tk.E+tk.W+tk.S)
 
     # Set the name of the xml file.
 
     def set_project(self, project_name, xml_path, project_def):
+        self.path['text'] = xml_path
         self.label['text'] = project_name
         if xml_path != None:
             f = open(xml_path)
@@ -111,11 +117,26 @@ class ProjectView(tk.Frame):
     # Set XML view.
 
     def xml_view(self):
-        self.xmlframe.grid(row=1, column=0, sticky=tk.N+tk.E+tk.W+tk.S)
+        self.xmlframe.grid(row=2, column=0, sticky=tk.N+tk.E+tk.W+tk.S)
         self.ps.grid_forget()
 
     # Set project status view.
 
     def project_status_view(self):
         self.xmlframe.grid_forget()
-        self.ps.grid(row=1, column=0, sticky=tk.N+tk.E+tk.W+tk.S)
+        self.ps.grid(row=2, column=0, sticky=tk.N+tk.E+tk.W+tk.S)
+
+    # Update status view.
+
+    def update_status(self):
+        self.ps.update_status()
+
+    # Update bach jobs.
+
+    def update_jobs(self):
+        self.ps.update_jobs()
+
+    # Highlight stage.
+
+    def highlight_stage(self, stagename):
+        self.ps.highlight_stage(stagename)

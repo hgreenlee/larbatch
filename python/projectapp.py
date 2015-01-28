@@ -11,11 +11,12 @@
 
 # Standard imports
 
-import sys, os
+import sys, os, subprocess
 
 # Import project.py as a module.
 
 import project
+from batchstatus import BatchStatus
 
 # Import Tkinter GUI stuff
 
@@ -23,7 +24,10 @@ import Tkinter as tk
 #import ttk
 import tkFileDialog
 import tkMessageBox
+import tkFont
 from projectview import ProjectView
+
+ticket_ok = False
 
 # Main window class for this gui application.
 
@@ -51,11 +55,15 @@ class ProjectApp(tk.Frame):
 
         self.make_widgets()
 
-        # Current project (menu settable).
+        # Current project and stage (menu settable).
 
-        self.current_project = tk.StringVar()
+        self.current_project_name = ''
+        self.current_project_def = None
+        self.current_stage_name = ''
+        self.current_stage_def = None
 
-        # Known projects.
+        # Known projects (3-tuple: project_name, xml_path, project_def)
+
         self.projects = []
 
         # Process command line arguments.
@@ -90,7 +98,7 @@ class ProjectApp(tk.Frame):
 
         # File menu.
 
-        mbutton = tk.Menubutton(self.menubar, text='File')
+        mbutton = tk.Menubutton(self.menubar, text='File', font=tkFont.Font(size=12))
         mbutton.pack(side=tk.LEFT)
         file_menu = tk.Menu(mbutton)
         file_menu.add_command(label='Open Project', command=self.open)
@@ -99,7 +107,7 @@ class ProjectApp(tk.Frame):
 
         # View menu.
 
-        mbutton = tk.Menubutton(self.menubar, text='View')
+        mbutton = tk.Menubutton(self.menubar, text='View', font=tkFont.Font(size=12))
         mbutton.pack(side=tk.LEFT)
         view_menu = tk.Menu(mbutton)
         view_menu.add_command(label='XML', command=self.xml_view)
@@ -108,7 +116,7 @@ class ProjectApp(tk.Frame):
 
         # Project menu.
 
-        mbutton = tk.Menubutton(self.menubar, text='Project')
+        mbutton = tk.Menubutton(self.menubar, text='Project', font=tkFont.Font(size=12))
         mbutton.pack(side=tk.LEFT)
         self.project_menu = tk.Menu(mbutton)
         self.project_menu.add_command(label='Next Project', command=self.next_project,
@@ -118,13 +126,46 @@ class ProjectApp(tk.Frame):
         self.project_menu.add_separator()
         mbutton['menu'] = self.project_menu
 
-        # Add key bindings.
+        # Add project menu key bindings.
 
         self.project_menu.bind_all('<KeyPress-KP_Next>', self.next_project_handler)
         self.project_menu.bind_all('<KeyPress-Next>', self.next_project_handler)
         self.project_menu.bind_all('<KeyPress-KP_Prior>', self.previous_project_handler)
         self.project_menu.bind_all('<KeyPress-Prior>', self.previous_project_handler)
 
+        # Stage menu.
+
+        mbutton = tk.Menubutton(self.menubar, text='Stage', font=tkFont.Font(size=12))
+        mbutton.pack(side=tk.LEFT)
+        self.stage_menu = tk.Menu(mbutton)
+        self.stage_menu.add_command(label='Next Stage', command=self.next_stage,
+                                    accelerator='Up')
+        self.stage_menu.add_command(label='Previous Stage', command=self.previous_stage,
+                                    accelerator='Down')
+        self.stage_menu.add_separator()
+        mbutton['menu'] = self.stage_menu
+
+        # Add stage menu key bindings.
+
+        self.stage_menu.bind_all('<KeyPress-KP_Up>', self.previous_stage_handler)
+        self.stage_menu.bind_all('<KeyPress-Up>', self.previous_stage_handler)
+        self.stage_menu.bind_all('<KeyPress-KP_Down>', self.next_stage_handler)
+        self.stage_menu.bind_all('<KeyPress-Down>', self.next_stage_handler)
+
+        # Batch menu.
+
+        mbutton = tk.Menubutton(self.menubar, text='Batch', font=tkFont.Font(size=12))
+        mbutton.pack(side=tk.LEFT)
+        self.batch_menu = tk.Menu(mbutton)
+        self.batch_menu.add_command(label='Submit', command=self.submit)
+        self.batch_menu.add_command(label='Makeup', command=self.makeup)
+        self.batch_menu.add_command(label='Update', command=self.update_jobs)
+        self.batch_menu.add_separator()
+        self.batch_menu.add_command(label='Check', command=self.check)
+        self.batch_menu.add_command(label='Checkana', command=self.checkana)
+        self.batch_menu.add_command(label='Fetchlog', command=self.fetchlog)
+        self.batch_menu.add_command(label='Clean', command=self.clean)
+        mbutton['menu'] = self.batch_menu
         return
 
     # Open project.
@@ -143,8 +184,9 @@ class ProjectApp(tk.Frame):
         try:
             project_def = project.ProjectDef(project.get_project(xml_path, ''), False)
         except:
-            message = 'Error opening %s' % xml_path
-            tkMessageBox.showwarning('', message)
+            e = sys.exc_info()
+            message = 'Error opening %s\n%s' % (xml_path, e[1])
+            tkMessageBox.showerror('', message)
             return
             
         project_name = project_def.name
@@ -164,7 +206,7 @@ class ProjectApp(tk.Frame):
 
         # Update project menu.
 
-        callback = tk._setit(self.current_project, project_name, callback=self.choose_project)
+        callback = tk._setit(tk.StringVar(), project_name, callback=self.choose_project)
         self.project_menu.add_command(label=project_name, command=callback)
 
         # Choose just-opened project.
@@ -175,21 +217,46 @@ class ProjectApp(tk.Frame):
     # Choose already-opened project.
 
     def choose_project(self, value):
-        self.current_project = value
+        self.current_project_name = ''
+        self.current_project_def = None
+        self.current_stage_name = ''
+        self.current_stage_def = None
+        self.project_view.highlight_stage(self.current_stage_name)
         for project_tuple in self.projects:
             project_name = project_tuple[0]
             xml_path = project_tuple[1]
             project_def = project_tuple[2]
             if project_name == value:
+                self.current_project_name = value
+                self.current_project_def = project_def
 
-                # Update project widget with name of xml file.
+                # Update project view widget.
 
                 self.project_view.set_project(project_name, xml_path, project_def)
+
+                # Update stage menu.
+
+                self.stage_menu.delete(3, tk.END)
+                self.stage_menu.add_separator()
+                for stage in project_def.stages:
+                    callback = tk._setit(tk.StringVar(), stage.name, callback=self.choose_stage)
+                    self.stage_menu.add_command(label=stage.name, command=callback)
+
                 return
     
         # It is an error if we fall out of the loop.
 
         raise 'No project: %s' % value
+
+    # Choose stage.
+
+    def choose_stage(self, value):
+        if self.current_project_def != None:
+            for stage in self.current_project_def.stages:
+                if stage.name == value:
+                    self.current_stage_name = value
+                    self.current_stage_def = stage
+                    self.project_view.highlight_stage(self.current_stage_name)
 
     # Key event handlers.
 
@@ -197,6 +264,10 @@ class ProjectApp(tk.Frame):
         self.next_project()
     def previous_project_handler(self, event):
         self.previous_project()
+    def next_stage_handler(self, event):
+        self.next_stage()
+    def previous_stage_handler(self, event):
+        self.previous_stage()
         
     # Select next project.
     def next_project(self):
@@ -214,7 +285,7 @@ class ProjectApp(tk.Frame):
             if found:
                 self.choose_project(project_name)
                 return
-            if project_name == self.current_project:
+            if project_name == self.current_project_name:
                 found = True
 
         # Choose first project if we fell out of the loop.
@@ -235,7 +306,7 @@ class ProjectApp(tk.Frame):
         previous_project_name = self.projects[-1][0]
         for project_tuple in self.projects:
             project_name = project_tuple[0]
-            if project_name == self.current_project:
+            if project_name == self.current_project_name:
                 self.choose_project(previous_project_name)
                 return
             previous_project_name = project_name
@@ -253,6 +324,147 @@ class ProjectApp(tk.Frame):
 
     def project_status_view(self):
         self.project_view.project_status_view()
+
+    # Select next stage.
+
+    def next_stage(self):
+        if self.current_project_def != None:
+
+            # Cycle through stages.
+
+            found = False
+            for stage in self.current_project_def.stages:
+                if found:
+                    self.choose_stage(stage.name)
+                    return
+                if stage.name == self.current_stage_name:
+                    found = True
+
+            # Choose first stage if we fell out of the loop.
+
+            self.choose_stage(self.current_project_def.stages[0].name)
+
+    # Select previous stage.
+
+    def previous_stage(self):
+        if self.current_project_def != None:
+
+            # Cycle through stages.
+
+            previous_stage_name = self.current_project_def.stages[-1].name
+            for stage in self.current_project_def.stages:
+                if stage.name == self.current_stage_name:
+                    self.choose_stage(previous_stage_name)
+                    return
+                previous_stage_name = stage.name
+
+            # Choose last stage if we fell out of the loop.
+
+            self.choose_stage(self.current_project_def.stages[-1].name)
+
+    # Check action.
+
+    def check(self):
+        if self.current_project_def == None:
+            tkMessageBox.showwarning('', 'No project selected.')
+            return
+        if self.current_stage_def == None:
+            tkMessageBox.showwarning('', 'No stage selected.')
+            return
+        try:
+            project.docheck(self.current_project_def, self.current_stage_def, ana=False)
+        except:
+            e = sys.exc_info()
+            tkMessageBox.showerror('', e[1])
+        self.project_view.update_status()
+
+    # Checkana action.
+
+    def checkana(self):
+        if self.current_project_def == None:
+            tkMessageBox.showwarning('', 'No project selected.')
+            return
+        if self.current_stage_def == None:
+            tkMessageBox.showwarning('', 'No stage selected.')
+            return
+        try:
+            project.docheck(self.current_project_def, self.current_stage_def, ana=True)
+        except:
+            e = sys.exc_info()
+            tkMessageBox.showerror('', e[1])
+        self.project_view.update_status()
+
+    # Fetchlog action.
+
+    def fetchlog(self):
+        if self.current_project_def == None:
+            tkMessageBox.showwarning('', 'No project selected.')
+            return
+        if self.current_stage_def == None:
+            tkMessageBox.showwarning('', 'No stage selected.')
+            return
+        try:
+            project.dofetchlog(self.current_stage_def)
+        except:
+            e = sys.exc_info()
+            tkMessageBox.showerror('', e[1])
+
+    # Clean action.
+
+    def clean(self):
+        if self.current_project_def == None:
+            tkMessageBox.showwarning('', 'No project selected.')
+            return
+        if self.current_stage_def == None:
+            tkMessageBox.showwarning('', 'No stage selected.')
+            return
+        try:
+            project.doclean(self.current_project_def, self.current_stage_name)
+        except:
+            e = sys.exc_info()
+            tkMessageBox.showerror('', e[1])
+        self.project_view.update_status()
+
+    # Submit action.
+
+    def submit(self):
+        if self.current_project_def == None:
+            tkMessageBox.showwarning('', 'No project selected.')
+            return
+        if self.current_stage_def == None:
+            tkMessageBox.showwarning('', 'No stage selected.')
+            return
+
+        try:
+            project.dosubmit(self.current_project_def, self.current_stage_def, makeup=False)
+        except:
+            e = sys.exc_info()
+            tkMessageBox.showerror('', e[1])
+        BatchStatus.update_jobs()
+        self.project_view.update_status()
+
+    # Makeup action.
+
+    def makeup(self):
+        if self.current_project_def == None:
+            tkMessageBox.showwarning('', 'No project selected.')
+            return
+        if self.current_stage_def == None:
+            tkMessageBox.showwarning('', 'No stage selected.')
+            return
+
+        try:
+            project.dosubmit(self.current_project_def, self.current_stage_def, makeup=True)
+        except:
+            e = sys.exc_info()
+            tkMessageBox.showerror('', e[1])
+        BatchStatus.update_jobs()
+        self.project_view.update_status()
+
+    # Update jobs action.
+
+    def update_jobs(self):
+        self.project_view.update_jobs()
 
     # Close window.
 
