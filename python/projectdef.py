@@ -74,12 +74,14 @@ class ProjectDef:
         os_elements = project_element.getElementsByTagName('os')
         if os_elements:
             self.os = os_elements[0].firstChild.data
+            self.os = ''.join(self.os.split())
 
         # Resource (subelement).
 
         resource_elements = project_element.getElementsByTagName('resource')
         if resource_elements:
             self.resource = resource_elements[0].firstChild.data
+            self.resource = ''.join(self.resource.split())
 
         # Lines (subelement).
 
@@ -98,6 +100,7 @@ class ProjectDef:
         site_elements = project_element.getElementsByTagName('site')
         if site_elements:
             self.site = site_elements[0].firstChild.data
+            self.site = ''.join(self.site.split())
 
         # merge (subelement).
  	
