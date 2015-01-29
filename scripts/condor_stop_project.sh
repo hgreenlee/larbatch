@@ -10,7 +10,7 @@
 #
 # --sam_station <arg> - Specify sam station (required).
 # --sam_project <arg> - Sam project name (required).
-# --outdir <arg>      - Specify output directory (optional). 
+# --logdir <arg>      - Specify log directory (optional). 
 # -g, --grid          - Be grid-friendly.
 #
 # End options.
@@ -23,7 +23,7 @@
 
 SAM_STATION=""
 SAM_PROJECT=""
-OUTDIR=""
+LOGDIR=""
 GRID=0
 IFDH_OPT=""
 
@@ -52,10 +52,10 @@ while [ $# -gt 0 ]; do
       fi
       ;;
 
-    # Output directory.
-    --outdir )
+    # Log directory.
+    --logdir )
       if [ $# -gt 1 ]; then
-        OUTDIR=$2
+        LOGDIR=$2
         shift
       fi
       ;;
@@ -146,10 +146,10 @@ echo "Scratch directory: $TMP"
 
 # See if we need to set umask for group write.
 
-if [ $GRID -eq 0 -a x$OUTDIR != x ]; then
-  OUTUSER=`stat -c %U $OUTDIR`
+if [ $GRID -eq 0 -a x$LOGDIR != x ]; then
+  LOGUSER=`stat -c %U $LOGDIR`
   CURUSER=`whoami`
-  if [ $OUTUSER != $CURUSER ]; then
+  if [ $LOGUSER != $CURUSER ]; then
     echo "Setting umask for group write."
     umask 002
   fi
@@ -183,7 +183,7 @@ fi
 # directory with a unique name.  Then copy this directory
 # and its contents recursively.
 
-if [ x$OUTDIR != x ]; then
+if [ x$LOGDIR != x ]; then
   OUTPUT_SUBDIR=${CLUSTER}_stop
   mkdir $OUTPUT_SUBDIR
   for outfile in *; do
@@ -191,8 +191,8 @@ if [ x$OUTDIR != x ]; then
       mv $outfile $OUTPUT_SUBDIR
     fi
   done
-  echo "ifdh cp -r $IFDH_OPT $OUTPUT_SUBDIR ${OUTDIR}/$OUTPUT_SUBDIR"
-  ifdh cp -r $IFDH_OPT $OUTPUT_SUBDIR ${OUTDIR}/$OUTPUT_SUBDIR
+  echo "ifdh cp -r $IFDH_OPT $OUTPUT_SUBDIR ${LOGDIR}/$OUTPUT_SUBDIR"
+  ifdh cp -r $IFDH_OPT $OUTPUT_SUBDIR ${LOGDIR}/$OUTPUT_SUBDIR
   stat=$?
   if [ $stat -ne 0 ]; then
     echo "ifdh cp failed with status ${stat}."

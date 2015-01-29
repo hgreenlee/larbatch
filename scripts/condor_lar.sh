@@ -15,6 +15,7 @@
 # -s, --source <arg>      - Input file (full path).
 # -S, --source-list <arg> - Input file list (full path, one per line).
 # -o, --output <arg>      - Output file name.
+# -T, --TFileName  <arg>  - TFile output file name
 # -n, --nevts <arg>       - Number of events to process.
 # --nskip <arg>           - Number of events to skip.
 # --nfile <arg>           - Number of files to process per worker.
@@ -50,6 +51,7 @@
 # --group <arg>           - Group or experiment (required).
 # --workdir <arg>         - Work directory (required).
 # --outdir <arg>          - Output directory (required).
+# --logdir <arg>          - Log directory (required).
 # --scratch <arg>         - Scratch directory (only for interactive).
 # --cluster <arg>         - Job cluster (override $CLUSTER)
 # --process <arg>         - Process within cluster (override $PROCESS).
@@ -175,6 +177,7 @@ INFILE=""
 INLIST=""
 INMODE=""
 OUTFILE=""
+TFILE=""
 NEVT=0
 NSKIP=0
 FIRST_EVENT=0
@@ -192,6 +195,7 @@ INTERACTIVE=0
 GRP=""
 WORKDIR=""
 OUTDIR=""
+LOGDIR=""
 SCRATCH=""
 CLUS=""
 PROC=""
@@ -256,6 +260,14 @@ while [ $# -gt 0 ]; do
         shift
       fi
       ;;
+      
+    # Output TFile.
+    -T|--TFileName )
+      if [ $# -gt 1 ]; then
+        TFILE=$2
+        shift
+      fi
+      ;;    
 
     # Number of events.
     -n|--nevts )
@@ -432,6 +444,14 @@ while [ $# -gt 0 ]; do
       fi
       ;;
 
+    # Log directory.
+    --logdir )
+      if [ $# -gt 1 ]; then
+        LOGDIR=$2
+        shift
+      fi
+      ;;
+
     # Scratch directory.
     --scratch )
       if [ $# -gt 1 ]; then
@@ -500,6 +520,7 @@ done
 #echo "INFILE=$INFILE"
 #echo "INLIST=$INLIST"
 #echo "OUTFILE=$OUTFILE"
+#echo "TFILE=$TFILE"
 #echo "NEVT=$NEVT"
 #echo "NSKIP=$NSKIP"
 #echo "NFILE=$NFILE"
@@ -514,6 +535,7 @@ done
 #echo "GRP=$GRP"
 #echo "WORKDIR=$WORKDIR"
 #echo "OUTDIR=$OUTDIR"
+#echo "LOGDIR=$LOGDIR"
 #echo "SCRATCH=$SCRATCH"
 #echo "CLUS=$CLUS"
 #echo "PROC=$PROC"
@@ -619,12 +641,25 @@ if [ $GRID -eq 0 -a \( ! -d $OUTDIR -o ! -w $OUTDIR \) ]; then
 fi
 echo "Output directory: $OUTDIR"
 
+# Make sure log directory exists and is writable.
+
+if [ x$LOGDIR = x ]; then
+  echo "Log directory not specified."
+  exit 1
+fi
+if [ $GRID -eq 0 -a \( ! -d $LOGDIR -o ! -w $LOGDIR \) ]; then
+  echo "Log directory $LOGDIR does not exist or is not writable."
+  exit 1
+fi
+echo "Log directory: $LOGDIR"
+
 # See if we need to set umask for group write.
 
 if [ $GRID -eq 0 ]; then
   OUTUSER=`stat -c %U $OUTDIR`
+  LOGUSER=`stat -c %U $LOGDIR`
   CURUSER=`whoami`
-  if [ $OUTUSER != $CURUSER ]; then
+  if [ $OUTUSER != $CURUSER -o $LOGUSER != $CURUSER ]; then
     echo "Setting umask for group write."
     umask 002
   fi
@@ -725,12 +760,6 @@ echo "Process: $PROCESS"
 
 OUTPUT_SUBDIR=${CLUSTER}_${PROCESS}
 echo "Output subdirectory: $OUTPUT_SUBDIR"
-
-# Copy stuff back to output directory before we actually start running lar.
-
-#ifdh mkdir $IFDH_OPT ${OUTDIR}/${OUTPUT_SUBDIR}/hostname.txt
-#ifdh cp $IFDH_OPT hostname.txt ${OUTDIR}/${OUTPUT_SUBDIR}/hostname.txt
-#ifdh cp $IFDH_OPT jobid.txt ${OUTDIR}/${OUTPUT_SUBDIR}/jobid.txt
 
 # Make sure fcl file exists.
 
@@ -1191,6 +1220,9 @@ fi
 if [ x$OUTFILE != x ]; then
   LAROPT="$LAROPT -o $OUTFILE"
 fi
+if [ x$TFILE != x ]; then
+  LAROPT="$LAROPT -T $TFILE"
+fi
 if [ $NEVT -ne 0 ]; then
   LAROPT="$LAROPT -n $NEVT"  
 fi
@@ -1293,16 +1325,33 @@ fi
 # directory with a unique name.  Then copy this directory
 # and its contents recursively.
 
-mkdir $OUTPUT_SUBDIR
+mkdir out
+mkdir log
+for outfile in *.root; do
+  mv $outfile out
+done
 for outfile in *; do
-  if [ $outfile != $OUTPUT_SUBDIR ]; then
-    mv $outfile $OUTPUT_SUBDIR
+  if [ $outfile != log -a $outfile != out ]; then
+    mv $outfile log
   fi
 done
-echo "ifdh cp -r $IFDH_OPT $OUTPUT_SUBDIR ${OUTDIR}/$OUTPUT_SUBDIR"
-ifdh cp -r $IFDH_OPT $OUTPUT_SUBDIR ${OUTDIR}/$OUTPUT_SUBDIR
+
+echo "ifdh cp -r $IFDH_OPT log ${LOGDIR}/$OUTPUT_SUBDIR"
+ifdh cp -r $IFDH_OPT log ${LOGDIR}/$OUTPUT_SUBDIR
+stat=$?
+if [ $stat -ne 0 ]; then
+  echo "ifdh cp failed with status ${stat}."
+fi
+statout=stat
+
+echo "ifdh cp -r $IFDH_OPT out ${OUTDIR}/$OUTPUT_SUBDIR"
+ifdh cp -r $IFDH_OPT out ${OUTDIR}/$OUTPUT_SUBDIR
 stat=$?
 if [ $stat -ne 0 ]; then
   echo "ifdh cp failed with status ${stat}."
   exit $stat
-fi 
+fi
+if [ $statout -ne 0 ];
+  exit $statout
+fi
+

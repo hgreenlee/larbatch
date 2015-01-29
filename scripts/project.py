@@ -50,6 +50,7 @@
 # Information only actions:
 #
 # --outdir     - Print the name of the output directory for stage.
+# --logdir     - Print the name of the log directory for stage.
 # --fcl        - Print the fcl file name and version for stage.
 # --defname    - Print sam dataset definition name for stage.
 # --input_files        - Print all input files.
@@ -115,6 +116,10 @@
 #             project name is created underneath this directory.  Individual
 #             workers create an additional subdirectory under that with
 #             names like <cluster>_<process>.
+# <stage><logdir> - Log directory (optional).  If not specified, default to
+#                   be the same as the output directory.  A directory structure
+#                   is created under the log directory similar to the one
+#                   under the output directory.
 # <stage><workdir> - Specify work directory (required).  This directory acts
 #             as the submission directory for the batch job.  Fcl file, batch
 #             script, and input file list are copied here.  A subdirectory with
@@ -154,6 +159,8 @@
 # <stage><lines>   - Arbitrary condor commands (expert option, jobsub_submit --lines=...).
 # <stage><site>    - Specify site (default jobsub decides).
 # <stage><output>  - Specify output file name.
+# <stage><TFileName>   - Ability to specify unique output TFile Name 
+#		         (Required when generating Metadata for TFiles)
 #
 #
 # <fcldir>  - Directory in which to search for fcl files (optional, repeatable).
@@ -170,6 +177,8 @@ import sys, os, stat, string, subprocess, shutil, urllib, json
 from xml.dom.minidom import parse
 import project_utilities, root_metadata
 from projectdef import ProjectDef
+from projectstatus import ProjectStatus
+from batchstatus import BatchStatus
 
 # Do the same for samweb_cli module and global SAMWebClient object.
 
@@ -290,6 +299,17 @@ def doclean(project, stagename):
                     print 'Owner mismatch, delete %s manually.' % stage.outdir
                     sys.exit(1)
 
+            # Clean this stage logdir.
+
+            if os.path.exists(stage.logdir):
+                dir_uid = os.stat(stage.logdir).st_uid
+                if dir_uid == uid or dir_uid == euid:
+                    print 'Clean directory %s.' % stage.logdir
+                    shutil.rmtree(stage.logdir)
+                else:
+                    print 'Owner mismatch, delete %s manually.' % stage.logdir
+                    sys.exit(1)
+
             # Clean this stage workdir.
 
             if os.path.exists(stage.workdir):
@@ -309,6 +329,9 @@ def doclean(project, stagename):
 
 def dostatus(project):
 
+    project_status = ProjectStatus(project)
+    batch_status = BatchStatus(project)
+
     print 'Project %s:' % project.name
 
     # Loop over stages.
@@ -316,53 +339,16 @@ def dostatus(project):
     for stage in project.stages:
 
         stagename = stage.name
-        outdir = stage.outdir
-
-        # Test whether output directory exists.
-
-        if project_utilities.safeexist(outdir):
-
-            # Output directory exists.
-
-            nfile = 0
-            nev = 0
-            nerror = 0
-            nmiss = 0
-
-            # Count good files and events.
-
-            eventsfile = os.path.join(outdir, 'events.list')
-            if project_utilities.safeexist(eventsfile):
-                lines = project_utilities.saferead(eventsfile)
-                for line in lines:
-                    words = string.split(line)
-                    if len(words) >= 2:
-                        nfile = nfile + 1
-                        nev = nev + int(words[1])
-
-            # Count errors.
-
-            badfile = os.path.join(outdir, 'bad.list')
-            if project_utilities.safeexist(badfile):
-                lines = project_utilities.saferead(badfile)
-                nerror = nerror + len(lines)
-
-            # Count missing files.
-
-            missingfile = os.path.join(outdir, 'missing_files.list')
-            if project_utilities.safeexist(missingfile):
-                lines = project_utilities.saferead(missingfile)
-                nmiss = nmiss + len(lines)
-
-            print 'Stage %s: %d good output files, %d events, %d errors, %d missing files.' % (
-                stagename, nfile, nev, nerror, nmiss)
-
+        stage_status = project_status.get_stage_status(stagename)
+        b_stage_status = batch_status.get_stage_status(stagename)
+        if stage_status.exists:
+            print '\nStage %s: %d good output files, %d events, %d errors, %d missing files.' % (
+                stagename, stage_status.nfile, stage_status.nev, stage_status.nerror, 
+                stage_status.nmiss)
         else:
-
-            # Output directory does not exist.
-
-            print 'Stage %s output directory does not exist.' % stagename
-
+            print '\nStage %s output directory does not exist.' % stagename
+        print 'Stage %s batch jobs: %d idle, %d running, %d held, %d other.' % (
+            stagename, b_stage_status[0], b_stage_status[1], b_stage_status[2], b_stage_status[3])
     return
 
 # This is a recursive function that looks for project
@@ -477,74 +463,107 @@ def check_root_json(json_path):
             nevroot = int(md['events'])
 
     return nevroot
-
-
+    
 # Check a single root file.
 # Returns an int containing following information.
 # 1.  Number of event (>0) in TTree named "Events."
 # 2.  Zero if root file does not contain an Events TTree, but is otherwise valid (openable).
 # 3.  -1 for error (root file is not openable).
+# 4. In the case of TFile output (histogram or ntuples), creates a final json file holding
+#    all the TFile metadata related information. This is done as part of --checkana.
 
-def check_root_file(path):
+def check_root_file(path, logdir):
 
     global proxy_ok
     nevroot = -1
     json_ok = False
+    md = []
+
+    # First check if root file exists (error if not).
+
+    if not project_utilities.safeexist(path):
+        return -1
 
     # See if we have precalculated metadata for this root file.
 
-    json_path = path + '.json'
+    json_path = os.path.join(logdir, os.path.basename(path) + '.json')
     if project_utilities.safeexist(json_path):
-
         # Get number of events from precalculated metadata.
-
         try:
-            nevroot = check_root_json(json_path)
+	    # do not call check_root_json, to accommodate merging this json with the TFile json
+	    # The "md" dictionary obtained will be useful through the code!
+	    # nevroot = check_root_json(json_path)
+	    lines = project_utilities.saferead(json_path)
+     	    s = ''
+            for line in lines:
+               s = s + line
+            # Convert json string to python dictionary.
+            md = json.loads(s)
+            # Extract number of events from metadata.
+	    if len(md.keys()) > 0:
+      		nevroot = 0
+            	if md.has_key('events'):
+                     nevroot = int(md['events'])
             json_ok = True
         except:
             nevroot = -1
 
-    if not json_ok:
-
-        # Make root metadata.
-
+    if not json_ok: 
+        
+	# Make root metadata.
+	
         url = project_utilities.path_to_url(path)
-        if url != path and not proxy_ok:
+	if url != path and not proxy_ok:
             proxy_ok = project_utilities.test_proxy()
         print 'Generating root metadata for file %s.' % os.path.basename(path)
         md = root_metadata.get_external_metadata(path)
+	
         if md.has_key('events'):
 
             # Art root file if dictionary has events key.
-
             nevroot = int(md['events'])
 
         elif len(md.keys()) > 0:
 
             # No events key, but non-empty dictionary, so histo/ntuple root file.
-
             nevroot = 0
         else:
-
             # Empty dictionary is invalid root file.
-
             nevroot = -1
-
-        # Save root metadata in .json file.
-
-        mdtext = json.dumps(md, sys.stdout, indent=2, sort_keys=True)
-        if project_utilities.safeexist(json_path):
-            os.remove(json_path)
-        json_file = safeopen(json_path)
-        json_file.write(mdtext)
-        json_file.close()
-
+	    	
+    # if the root file is a TFile (hist or ntuple file) 
+    # append information from TFile metadata service (previously saved in 
+    # a standard "anahist.json" file) to a more appropriately named final
+    # json file that will be created here
+    if nevroot == 0:
+       temp = os.path.join(os.path.dirname(path), 'anahist.json')
+       if project_utilities.safeexist(temp):
+         lines = project_utilities.saferead(temp)
+         s1 = ''
+         for line in lines:
+           s1 = s1 + line
+         # Convert json string to python dictionary.
+         md1 = json.loads(s1) 
+         os.remove(temp) 
+         md = dict(md.items()+md1.items())   
+       else:
+           pass   
+           
+    if nevroot ==0 or not json_ok:     
+           
+       mdtext = json.dumps(md, sys.stdout, indent=2, sort_keys=True)
+       if project_utilities.safeexist(json_path):
+    	   os.remove(json_path)
+       json_file = safeopen(json_path)
+       json_file.write(mdtext)
+       json_file.close()
+        
     return nevroot
 
 
 # Check root files (*.root) in the specified directory.
 
-def check_root(dir):
+def check_root(outdir, logdir):
 
     # This method looks for files with names of the form *.root.
     # If such files are found, it also checks for the existence of
@@ -562,30 +581,30 @@ def check_root(dir):
     roots = []
     hists = []
 
-    print 'Checking root files in directory %s.' % dir
-    filenames = os.listdir(dir)
+    print 'Checking root files in directory %s.' % outdir
+    filenames = os.listdir(outdir)
     for filename in filenames:
         if filename[-5:] == '.root':
-            path = os.path.join(dir, filename)
-            nevroot = check_root_file(path)
+            path = os.path.join(outdir, filename)
+            nevroot = check_root_file(path, logdir)
             if nevroot > 0:
                 if nev < 0:
                     nev = 0
                 nev = nev + nevroot
-                roots.append((os.path.join(dir, filename), nevroot))
+                roots.append((os.path.join(outdir, filename), nevroot))
 
             elif nevroot == 0:
 
                 # Valid root (histo/ntuple) file, not an art root file.
 
-                hists.append(os.path.join(dir, filename))
+                hists.append(os.path.join(outdir, filename))
 
             else:
 
                 # Found a .root file that is not openable.
                 # Print a warning, but don't trigger any other error.
 
-                print 'Warning: File %s in directory %s is not a valid root file.' % (filename, dir)
+                print 'Warning: File %s in directory %s is not a valid root file.' % (filename, outdir)
 
     # Done.
 
@@ -667,9 +686,12 @@ def docheck(project, stage, ana):
     # the requisite number of good generator jobs, a "missing_files.list" will be
     # generated with lines containing /dev/null.
 
+    stage.checkinput()
+    stage.checkdirs()
+
     import_samweb()
     has_metadata = project.file_type != '' or project.run_type != ''
-    print 'Checking directory %s' % stage.outdir
+    print 'Checking directory %s' % stage.logdir
 
     # Default result is success.
 
@@ -689,15 +711,16 @@ def docheck(project, stage, ana):
     uris = []         # List of input files processed successfully.
     bad_workers = []  # List of bad worker subdirectories.
 
-    subdirs = os.listdir(stage.outdir)
+    subdirs = os.listdir(stage.logdir)
     for subdir in subdirs:
-        subpath = os.path.join(stage.outdir, subdir)
-        dirok = project_utilities.fast_isdir(subpath)
+        out_subpath = os.path.join(stage.outdir, subdir)
+        log_subpath = os.path.join(stage.logdir, subdir)
+        dirok = project_utilities.fast_isdir(log_subpath)
 
         # Update list of sam projects from start job.
 
-        if dirok and subpath[-6:] == '_start':
-            filename = os.path.join(subpath, 'sam_project.txt')
+        if dirok and log_subpath[-6:] == '_start':
+            filename = os.path.join(log_subpath, 'sam_project.txt')
             if project_utilities.safeexist(filename):
                 sam_project = project_utilities.saferead(filename)[0].strip()
                 if sam_project != '' and not sam_project in sam_projects:
@@ -705,14 +728,21 @@ def docheck(project, stage, ana):
 
         # Regular worker jobs checked here.
 
-        if dirok and not subpath[-6:] == '_start' and not subpath[-5:] == '_stop':
+        if dirok and not subdir[-6:] == '_start' and not subdir[-5:] == '_stop' \
+                and not subdir == 'log':
 
             bad = 0
+
+            # Make sure that corresponding output directory exists.
+
+            if not project_utilities.fast_isdir(out_subpath):
+                print 'No output directory corresponding to subdirectory %s.' % subdir
+                bad = 1
 
             # Check lar exit status (if any).
 
             if not bad:
-                stat_filename = os.path.join(subpath, 'lar.stat')
+                stat_filename = os.path.join(log_subpath, 'lar.stat')
                 if project_utilities.safeexist(stat_filename):
                     status = 0
                     try:
@@ -730,7 +760,7 @@ def docheck(project, stage, ana):
             if not bad:
                 nev = 0
                 roots = []
-                nev, roots, subhists = check_root(subpath)
+                nev, roots, subhists = check_root(out_subpath, log_subpath)
                 if not ana:
                     if len(roots) == 0 or nev < 0:
                         print 'Problem with root file(s) in subdirectory %s.' % subdir
@@ -756,11 +786,11 @@ def docheck(project, stage, ana):
             # Update sam_projects and cpids.
 
             if not bad and stage.inputdef != '':
-                filename1 = os.path.join(subpath, 'sam_project.txt')
+                filename1 = os.path.join(log_subpath, 'sam_project.txt')
                 if not project_utilities.safeexist(filename1):
                     print 'Could not find file sam_project.txt'
                     bad = 1
-                filename2 = os.path.join(subpath, 'cpid.txt')
+                filename2 = os.path.join(log_subpath, 'cpid.txt')
                 if not project_utilities.safeexist(filename2):
                     print 'Could not find file cpid.txt'
                     bad = 1
@@ -776,7 +806,7 @@ def docheck(project, stage, ana):
             # Update list of uris.
 
             if not bad and (stage.inputlist !='' or stage.inputfile != ''):
-                filename = os.path.join(subpath, 'transferred_uris.list')
+                filename = os.path.join(log_subpath, 'transferred_uris.list')
                 if not project_utilities.safeexist(filename):
                     print 'Could not find file transferred_uris.list'
                     bad = 1
@@ -816,22 +846,22 @@ def docheck(project, stage, ana):
 
     # Open files.
 
-    filelistname = os.path.join(stage.outdir, 'files.list')
+    filelistname = os.path.join(stage.logdir, 'files.list')
     filelist = safeopen(filelistname)
 
-    eventslistname = os.path.join(stage.outdir, 'events.list')
+    eventslistname = os.path.join(stage.logdir, 'events.list')
     eventslist = safeopen(eventslistname)
 
-    badfilename = os.path.join(stage.outdir, 'bad.list')
+    badfilename = os.path.join(stage.logdir, 'bad.list')
     badfile = safeopen(badfilename)
 
-    missingfilesname = os.path.join(stage.outdir, 'missing_files.list')
+    missingfilesname = os.path.join(stage.logdir, 'missing_files.list')
     missingfiles = safeopen(missingfilesname)
 
-    filesanalistname = os.path.join(stage.outdir, 'filesana.list')
+    filesanalistname = os.path.join(stage.logdir, 'filesana.list')
     filesanalist = safeopen(filesanalistname)
 
-    urislistname = os.path.join(stage.outdir, 'transferred_uris.list')
+    urislistname = os.path.join(stage.logdir, 'transferred_uris.list')
     urislist = safeopen(urislistname)
 
     # Generate "files.list" and "events.list."
@@ -901,7 +931,7 @@ def docheck(project, stage, ana):
 
         # List of successful sam projects.
         
-        sam_projects_filename = os.path.join(stage.outdir, 'sam_projects.list')
+        sam_projects_filename = os.path.join(stage.logdir, 'sam_projects.list')
         sam_projects_file = safeopen(sam_projects_filename)
         for sam_project in sam_projects:
             sam_projects_file.write('%s\n' % sam_project)
@@ -909,7 +939,7 @@ def docheck(project, stage, ana):
 
         # List of successfull consumer process ids.
 
-        cpids_filename = os.path.join(stage.outdir, 'cpids.list')
+        cpids_filename = os.path.join(stage.logdir, 'cpids.list')
         cpids_file = safeopen(cpids_filename)
         for cpid in cpids:
             cpids_file.write('%s\n' % cpid)
@@ -987,7 +1017,7 @@ def docheck(project, stage, ana):
 
     # Done
 
-    checkfile = safeopen(os.path.join(stage.outdir, 'checked'))
+    checkfile = safeopen(os.path.join(stage.logdir, 'checked'))
     checkfile.close()
 
     if stage.inputdef == '':
@@ -1011,10 +1041,13 @@ def dofetchlog(stage):
     # one worker must have completed (successfully or not) for this
     # function to succeed.
 
-    # Look for a file called "env.txt" in any subdirectory of
-    # stage.outdir.
+    stage.checkinput()
+    stage.checkdirs()
 
-    for dirpath, dirnames, filenames in os.walk(stage.outdir):
+    # Look for a file called "env.txt" in any subdirectory of
+    # stage.logdir.
+
+    for dirpath, dirnames, filenames in os.walk(stage.logdir):
         for filename in filenames:
             if filename == 'env.txt':
 
@@ -1063,7 +1096,7 @@ def dofetchlog(stage):
 
                     # Make a directory to receive log files.
 
-                    logdir = os.path.join(stage.outdir, 'log')
+                    logdir = os.path.join(stage.logdir, 'log')
                     if project_utilities.safeexist(logdir):
                         shutil.rmtree(logdir)
                     os.mkdir(logdir)
@@ -1095,7 +1128,7 @@ def dofetchlog(stage):
 
 # Check sam declarations.
 
-def docheck_declarations(outdir, declare):
+def docheck_declarations(logdir, declare):
 
     # Initialize samweb.
 
@@ -1104,7 +1137,7 @@ def docheck_declarations(outdir, declare):
     # Loop over root files listed in files.list.
 
     roots = []
-    fnlist = os.path.join(outdir, 'files.list')
+    fnlist = os.path.join(logdir, 'files.list')
     if project_utilities.safeexist(fnlist):
         roots = project_utilities.saferead(fnlist)
     else:
@@ -1235,7 +1268,7 @@ def doundefine(defname):
 
 # Check disk locations.  Maybe add or remove locations.
 
-def docheck_locations(dim, outdir, add, clean, remove, upload):
+def docheck_locations(dim, logdir, add, clean, remove, upload):
 
     # Initialize samweb.
 
@@ -1252,11 +1285,11 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
         # Got a filename.
 
         # Look for locations on disk.
-        # Look in first level subdirectories of outdir.
+        # Look in first level subdirectories of logdir.
 
         disk_locs = []
-        for subdir in os.listdir(outdir):
-            subpath = os.path.join(outdir, subdir)
+        for subdir in os.listdir(logdir):
+            subpath = os.path.join(logdir, subdir)
             if project_utilities.fast_isdir(subpath):
                 for fn in os.listdir(subpath):
                     if fn == filename:
@@ -1413,6 +1446,751 @@ def docheck_tape(dim):
 
     return 0
 
+# Copy files to workdir.
+# On success, returns 4-tuple: (input_list_name, makeup_count, makeup_defname, workname).
+# On error, return None
+
+def fill_workdir(project, stage, makeup):
+
+    input_list_name = ''
+    makeup_count = 0
+    makeup_defname = ''
+    workname = ''
+
+    # If there is an input list, copy it to the work directory.
+
+    if stage.inputlist != '':
+        input_list_name = os.path.basename(stage.inputlist)
+        work_list_name = os.path.join(stage.workdir, input_list_name)
+        if stage.inputlist != work_list_name:
+            input_files = project_utilities.saferead(stage.inputlist)
+            work_list = open(work_list_name, 'w')
+            for input_file in input_files:
+                work_list.write('%s\n' % input_file.strip())
+            work_list.close()
+
+    # Now locate the fcl file on the fcl search path.
+
+    fcl = project.get_fcl(stage.fclname)
+
+    # Copy the fcl file to the work directory.
+
+    workfcl = os.path.join(stage.workdir, os.path.basename(stage.fclname))
+    if fcl != workfcl:
+        shutil.copy(fcl, workfcl)
+
+    # Construct a wrapper fcl file (called "wrapper.fcl") that will include
+    # the original fcl, plus any overrides that are dynamically generated
+    # in this script.
+
+    wrapper_fcl = open(os.path.join(stage.workdir, 'wrapper.fcl'), 'w')
+    wrapper_fcl.write('#include "%s"\n' % os.path.basename(stage.fclname))
+    wrapper_fcl.write('\n')
+
+    # Generate overrides for sam metadata fcl parameters.
+    # Only do this if our xml file appears to contain sam metadata.
+
+    xml_has_metadata = project.file_type != '' or \
+                       project.run_type != ''
+    if xml_has_metadata:
+
+        # Add overrides for FileCatalogMetadata.
+
+        if project.release_tag != '':
+            wrapper_fcl.write('services.FileCatalogMetadata.applicationVersion: "%s"\n' % \
+                                  project.release_tag)
+        else:
+            wrapper_fcl.write('services.FileCatalogMetadata.applicationVersion: "test"\n')
+        if project.file_type:
+            wrapper_fcl.write('services.FileCatalogMetadata.fileType: "%s"\n' % \
+                              project.file_type)
+        if project.run_type:
+            wrapper_fcl.write('services.FileCatalogMetadata.runType: "%s"\n  ' % \
+                              project.run_type)
+
+
+        # Add experiment-specific sam metadata.
+
+        sam_metadata = project_utilities.get_sam_metadata(project, stage)
+        if sam_metadata:
+            wrapper_fcl.write(sam_metadata)
+
+    wrapper_fcl.close()
+
+    # Copy and rename experiment setup script to the work directory.
+
+    setupscript = os.path.join(stage.workdir,'setup_experiment.sh')
+    shutil.copy(project_utilities.get_setup_script_path(), setupscript)
+
+    # Copy and rename batch script to the work directory.
+
+    workname = '%s-%s' % (stage.name, project.name)
+    workname = workname + os.path.splitext(project.script)[1]
+    workscript = os.path.join(stage.workdir, workname)
+    if project.script != workscript:
+        shutil.copy(project.script, workscript)
+
+    # Copy and rename sam start project script to work directory.
+
+    workstartscript = ''
+    workstartname = ''
+    if project.start_script != '':
+        workstartname = 'start-%s' % workname
+        workstartscript = os.path.join(stage.workdir, workstartname)
+        if project.start_script != workstartscript:
+            shutil.copy(project.start_script, workstartscript)
+
+    # Copy and rename sam stop project script to work directory.
+
+    workstopscript = ''
+    workstopname = ''
+    if project.stop_script != '':
+        workstopname = 'stop-%s' % workname
+        workstopscript = os.path.join(stage.workdir, workstopname)
+        if project.stop_script != workstopscript:
+            shutil.copy(project.stop_script, workstopscript)
+
+    # Copy worker initialization script to work directory.
+
+    if stage.init_script != '':
+        if not os.path.exists(stage.init_script):
+            print 'Worker initialization script %s does not exist.\n' % stage.init_script
+            return None
+        work_init_script = os.path.join(stage.workdir, os.path.basename(stage.init_script))
+        if stage.init_script != work_init_script:
+            shutil.copy(stage.init_script, work_init_script)
+
+    # Copy worker initialization source script to work directory.
+
+    if stage.init_source != '':
+        if not os.path.exists(stage.init_source):
+            print 'Worker initialization source script %s does not exist.\n' % stage.init_source
+            return None
+        work_init_source = os.path.join(stage.workdir, os.path.basename(stage.init_source))
+        if stage.init_source != work_init_source:
+            shutil.copy(stage.init_source, work_init_source)
+
+    # Copy worker end-of-job script to work directory.
+
+    if stage.end_script != '':
+        if not os.path.exists(stage.end_script):
+            print 'Worker end-of-job script %s does not exist.\n' % stage.end_script
+            return None
+        work_end_script = os.path.join(stage.workdir, os.path.basename(stage.end_script))
+        if stage.end_script != work_end_script:
+            shutil.copy(stage.end_script, work_end_script)
+
+    # If this is a makeup action, find list of missing files.
+    # If sam information is present (cpids.list), create a makeup dataset.
+
+    if makeup:
+
+        checked_file = os.path.join(stage.logdir, 'checked')
+        if not project_utilities.safeexist(checked_file):
+            print 'Wait for any running jobs to finish and run project.py --check'
+            return None
+        makeup_count = 0
+
+        # First delete bad worker subdirectories.
+
+        bad_filename = os.path.join(stage.logdir, 'bad.list')
+        if project_utilities.safeexist(bad_filename):
+            lines = project_utilities.saferead(bad_filename)
+            for line in lines:
+                bad_subdir = line.strip()
+                bad_path = os.path.join(stage.outdir, bad_subdir)
+                if os.path.exists(bad_path):
+                    print 'Deleting %s' % bad_path
+                    shutil.rmtree(bad_path)
+                bad_path = os.path.join(stage.logdir, bad_subdir)
+                if os.path.exists(bad_path):
+                    print 'Deleting %s' % bad_path
+                    shutil.rmtree(bad_path)
+
+        # Get a list of missing files, if any, for file list input.
+        # Regenerate the input file list in the work directory, and 
+        # set the makeup job count.
+
+        missing_files = []
+        if stage.inputdef == '':
+            missing_filename = os.path.join(stage.logdir, 'missing_files.list')
+            if project_utilities.safeexist(missing_filename):
+                lines = project_utilities.saferead(missing_filename)
+                for line in lines:
+                    words = string.split(line)
+                    missing_files.append(words[0])
+            makeup_count = len(missing_files)
+            print 'Makeup list contains %d files.' % makeup_count
+
+        if input_list_name != '':
+            work_list_name = os.path.join(stage.workdir, input_list_name)
+            if os.path.exists(work_list_name):
+                os.remove(work_list_name)
+            work_list = open(work_list_name, 'w')
+            for missing_file in missing_files:
+                work_list.write('%s\n' % missing_file)
+            work_list.close()
+
+        # Prepare sam-related makeup information.
+
+        import_samweb()
+
+        # Get list of successful consumer process ids.
+
+        cpids = []
+        cpids_filename = os.path.join(stage.logdir, 'cpids.list')
+        if project_utilities.safeexist(cpids_filename):
+            cpids_files = project_utilities.saferead(cpids_filename)
+            for line in cpids_files:
+                cpids.append(line.strip())
+
+        # Create makeup dataset definition.
+
+        makeup_defname = ''
+        if len(cpids) > 0:
+            makeup_defname = samweb.makeProjectName(stage.inputdef) + '_makeup'
+
+            # Construct comma-separated list of consumer process ids.
+
+            cpids_list = ''
+            sep = ''
+            for cpid in cpids:
+                cpids_list = cpids_list + '%s%s' % (sep, cpid)
+                sep = ','
+
+            # Construct makeup dimension.
+                
+            dim = '(defname: %s) minus (consumer_process_id %s and consumed_status consumed)' % (stage.inputdef, cpids_list)
+
+            # Create makeup dataset definition.
+
+            print 'Creating makeup sam dataset definition %s' % makeup_defname
+            samweb.createDefinition(defname=makeup_defname, dims=dim)
+            makeup_count = samweb.countFiles(defname=makeup_defname)
+            print 'Makeup dataset contains %d files.' % makeup_count
+
+    return input_list_name, makeup_count, makeup_defname, workname
+
+# Issue jobsub submit command.
+
+def dojobsub(project, stage, makeup, input_list_name, makeup_count, makeup_defname, workname):
+
+    # Sam stuff.
+
+    # Get input sam dataset definition name.
+    # Can be from xml or a makeup dataset that we just created.
+
+    inputdef = stage.inputdef
+    if makeup and makeup_defname != '':
+        inputdef = makeup_defname
+
+    # Sam project name.
+
+    prjname = ''
+    if inputdef != '':
+        import_samweb()
+        prjname = samweb.makeProjectName(inputdef)
+
+    # Get proxy.
+
+    proxy = project_utilities.get_proxy()
+
+    # Get role
+
+    role = project_utilities.get_role()
+
+    # Construct jobsub command line for workers.
+
+    if project.server == '':
+        command = ['jobsub']
+    else:
+        command = ['jobsub_submit']
+    command_njobs = 1
+
+    # Jobsub options.
+        
+    command.append('--group=%s' % project_utilities.get_experiment())
+    setupscript = os.path.join(stage.workdir,'setup_experiment.sh')
+    command.append('-f %s' % setupscript)
+    if project.server == '':
+        command.append('-q')       # Mail on error (only).
+        command.append('--grid')
+        command.append('--opportunistic')
+        if proxy != '':
+            command.append('-x %s' % proxy)
+    else:
+        command.append('--role=%s' % role)
+        if project.server != '-':
+            command.append('--jobsub-server=%s' % project.server)
+        if stage.resource != '':
+            command.append('--resource-provides=usage_model=%s' % stage.resource)
+        elif project.resource != '':
+            command.append('--resource-provides=usage_model=%s' % project.resource)
+        if stage.lines != '':
+            command.append('--lines=%s' % stage.lines)
+        elif project.lines != '':
+            command.append('--lines=%s' % project.lines)
+        if stage.site != '':
+            command.append('--site=%s' % stage.site)
+        elif project.site != '':
+            command.append('--site=%s' % project.site)
+    if project.os != '':
+        command.append('--OS=%s' % project.os)
+    if not makeup:
+        command_njobs = stage.num_jobs
+        command.extend(['-N', '%d' % command_njobs])
+    else:
+        command_njobs = min(makeup_count, stage.num_jobs)
+        command.extend(['-N', '%d' % command_njobs])
+
+    # Batch script.
+
+    if project.server == '':
+        command.append(workname)
+    else:
+        workurl = "file://%s/%s" % (stage.workdir, workname)
+        command.append(workurl)
+
+    # Larsoft options.
+
+    command.extend([' --group', project_utilities.get_experiment()])
+    command.extend([' -g'])
+    command.extend([' -c', 'wrapper.fcl'])
+    command.extend([' --ups', project_utilities.get_ups_products()])
+    if project.release_tag != '':
+        command.extend([' -r', project.release_tag])
+    command.extend([' -b', project.release_qual])
+    if project.local_release_dir != '':
+        command.extend([' --localdir', project.local_release_dir])
+    if project.local_release_tar != '':
+        command.extend([' --localtar', project.local_release_tar])
+    command.extend([' --workdir', stage.workdir])
+    command.extend([' --outdir', stage.outdir])
+    command.extend([' --logdir', stage.logdir])
+    if stage.inputfile != '':
+        command.extend([' -s', stage.inputfile])
+    elif input_list_name != '':
+        command.extend([' -S', input_list_name])
+    elif inputdef != '':
+        command.extend([' --sam_defname', inputdef,
+                        ' --sam_project', prjname])
+    if stage.inputmode != '':
+        command.extend([' --inputmode', stage.inputmode])
+    command.extend([' -n', '%d' % project.num_events])
+    command.extend([' --njobs', '%d' % stage.num_jobs ])
+    if stage.output != '':
+        command.extend([' --output', stage.output])
+    if stage.TFileName != '':
+        command.extend([' --TFileName', stage.TFileName]) 	    
+    if stage.init_script != '':
+        command.extend([' --init-script',
+                        os.path.join('.', os.path.basename(stage.init_script))])
+    if stage.init_source != '':
+        command.extend([' --init-source',
+                        os.path.join('.', os.path.basename(stage.init_source))])
+    if stage.end_script != '':
+        command.extend([' --end-script',
+                        os.path.join('.', os.path.basename(stage.end_script))])
+
+    # If input is from sam, also construct a dag file.
+
+    if prjname != '':
+
+        # At this point, it is an error if the start and stop project
+        # scripts were not found.
+
+        if workstartname == '' or workstopname == '':
+            print 'Sam start or stop project script not found.'
+            sys.exit(1)
+
+        # Start project jobsub command.
+                
+        if project.server == '':
+            start_command = ['jobsub']
+        else:
+            start_command = ['jobsub']
+
+        # General options.
+            
+        start_command.append('--group=%s' % project_utilities.get_experiment())
+        start_command.append('-f %s' % setupscript)
+        if project.server == '':
+            start_command.append('-q')       # Mail on error (only).
+            start_command.append('--grid')
+            start_command.append('--opportunistic')
+        else:
+            if stage.resource != '':
+                command.append('--resource-provides=usage_model=%s' % stage.resource)
+            elif project.resource != '':
+                start_command.append('--resource-provides=usage_model=%s' % project.resource)
+            if stage.lines != '':
+                command.append('--lines=%s' % stage.lines)
+            elif project.lines != '':
+                start_command.append('--lines=%s' % project.lines)
+            if stage.site != '':
+                command.append('--site=%s' % stage.site)
+            elif project.site != '':
+                start_command.append('--site=%s' % project.site)
+        if project.os != '':
+            start_command.append('--OS=%s' % project.os)
+
+        # Start project script.
+
+        if project.server == '':
+            start_command.append(workstartname)
+        else:
+            workstarturl = "file://%s/%s" % (stage.workdir, workstartname)
+            start_command.append(workstarturl)
+
+        # Sam options.
+
+        start_command.extend([' --sam_station', project_utilities.get_experiment(),
+                              ' --sam_group', project_utilities.get_experiment(),
+                              ' --sam_defname', inputdef,
+                              ' --sam_project', prjname,
+                              ' -g'])
+
+        # Output directory.
+
+        start_command.extend([' --logdir', stage.logdir])
+
+        # Stop project jobsub command.
+                
+        if project.server == '':
+            stop_command = ['jobsub']
+        else:
+            stop_command = ['jobsub']
+
+        # General options.
+            
+        stop_command.append('--group=%s' % project_utilities.get_experiment())
+        stop_command.append('-f %s' % setupscript)
+        if project.server == '':
+            stop_command.append('-q')       # Mail on error (only).
+            stop_command.append('--grid')
+            stop_command.append('--opportunistic')
+        else:
+            if stage.resource != '':
+                command.append('--resource-provides=usage_model=%s' % stage.resource)
+            elif project.resource != '':
+                stop_command.append('--resource-provides=usage_model=%s' % project.resource)
+            if stage.lines != '':
+                command.append('--lines=%s' % stage.lines)
+            elif project.lines != '':
+                stop_command.append('--lines=%s' % project.lines)
+            if stage.site != '':
+                command.append('--site=%s' % stage.site)
+            elif project.site != '':
+                stop_command.append('--site=%s' % project.site)
+        if project.os != '':
+            stop_command.append('--OS=%s' % project.os)
+
+        # Stop project script.
+
+        if project.server == '':
+            stop_command.append(workstopname)
+        else:
+            workstopurl = "file://%s/%s" % (stage.workdir, workstopname)
+            stop_command.append(workstopurl)
+
+        # Sam options.
+
+        stop_command.extend([' --sam_station', project_utilities.get_experiment(),
+                             ' --sam_project', prjname,
+                             ' -g'])
+
+        # Output directory.
+
+        stop_command.extend([' --logdir', stage.logdir])
+
+        # Create dagNabbit.py configuration script in the work directory.
+
+        dagfilepath = os.path.join(stage.workdir, 'submit.dag')
+        dag = open(dagfilepath, 'w')
+
+        # Write start section.
+
+        dag.write('<serial>\n')
+        first = True
+        for word in start_command:
+            if not first:
+                dag.write(' ')
+            dag.write(word)
+            if word[:6] == 'jobsub':
+                dag.write(' -n')
+            first = False
+        dag.write('\n</serial>\n')
+
+        # Write main section.
+
+        dag.write('<parallel>\n')
+        for process in range(command_njobs):
+            first = True
+            skip = False
+            for word in command:
+                if skip:
+                    skip = False
+                else:
+                    if word == '-N':
+                        skip = True
+                    else:
+                        if not first:
+                            dag.write(' ')
+                        if word[:6] == 'jobsub':
+                            word = 'jobsub'
+                        dag.write(word)
+                        if word[:6] == 'jobsub':
+                            dag.write(' -n')
+                        first = False
+            dag.write(' --process %d\n' % process)
+        dag.write('</parallel>\n')
+
+        # Write stop section.
+
+        dag.write('<serial>\n')
+        first = True
+        for word in stop_command:
+            if not first:
+                dag.write(' ')
+            dag.write(word)
+            if word[:6] == 'jobsub':
+                dag.write(' -n')
+            first = False
+        dag.write('\n</serial>\n')
+        dag.close()
+
+        # Update the main submission command to use dagNabbit.py instead of jobsub.
+
+        if project.server == '':
+            command = ['dagNabbit.py', '-i', dagfilepath, '-s']
+        else:
+            command = ['jobsub_submit_dag']
+            command.append('--group=%s' % project_utilities.get_experiment())
+            if project.server != '-':
+                command.append('--jobsub-server=%s' % project.server)
+            dagfileurl = 'file://'+ dagfilepath
+            command.append(dagfileurl)
+
+    os.chdir(stage.workdir)
+
+    checked_file = os.path.join(stage.logdir, 'checked')
+    if not makeup:
+
+        # For submit action, invoke the job submission command.
+
+        subprocess.call(command)
+        if project_utilities.safeexist(checked_file):
+            os.remove(checked_file)
+
+    else:
+
+        # For makeup action, abort if makeup job count is zero for some reason.
+
+        if makeup_count > 0:
+            subprocess.call(command)
+            if project_utilities.safeexist(checked_file):
+                os.remove(checked_file)
+        else:
+            print 'Makeup action aborted because makeup job count is zero.'
+
+# Submit/makeup action.
+
+def dosubmit(project, stage, makeup=False):
+
+    # Make sure we have a kerberos ticket.
+
+    project_utilities.test_ticket()
+
+    # Make or check directories.
+
+    if not makeup:
+        stage.makedirs()
+    else:
+        stage.checkdirs()
+
+    # Check input files.
+
+    stage.checkinput()
+
+    # Make sure output and log directories are empty (submit only).
+
+    if not makeup:
+        if len(os.listdir(stage.outdir)) != 0:
+            raise RuntimeError, 'Output directory %s is not empty.' % stage.outdir
+        if len(os.listdir(stage.logdir)) != 0:
+            raise RuntimeError, 'Log directory %s is not empty.' % stage.logdir
+
+    # Copy files to workdir.
+
+    result = fill_workdir(project, stage, makeup)
+    if result == None:
+        raise RuntimeError, 'Problem copying files to workdir.'
+    input_list_name = result[0]
+    makeup_count = result[1]
+    makeup_defname = result[2]
+    workname = result[3]
+
+    # Issue jobsub command to submit jobs.
+
+    dojobsub(project, stage, makeup, input_list_name, makeup_count, makeup_defname, workname)
+
+    # Done (success).
+
+    return 0
+
+# Merge histogram files.
+# If mergehist is True, merge histograms using "hadd -T".
+# If mergentuple is True, do full merge using "hadd".
+# If neither argument is True, do custom merge using merge program specified 
+# in xml stage.
+
+def domerge(stage, mergehist, mergentuple):
+
+    hlist = []
+    hnlist = os.path.join(stage.logdir, 'filesana.list')
+    if project_utilities.safeexist(hnlist):
+        hlist = project_utilities.saferead(hnlist)
+    else:
+        raise RuntimeError, 'No filesana.list file found, run project.py --checkana'
+
+    histurlsname_temp = 'histurls.list'
+    if os.path.exists(histurlsname_temp):
+        os.remove(histurlsname_temp)
+    histurls = open(histurlsname_temp, 'w') 
+	
+    for hist in hlist:
+        histurls.write('%s\n' % project_utilities.path_to_url(hist)) 	
+    histurls.close()
+       	
+    if len(hlist) > 0:
+        name = os.path.join(stage.outdir, 'anahist.root')
+        if name[0:6] == '/pnfs/':
+            name_temp = 'anahist.root'
+        else:
+            name_temp = name 
+		     
+        if mergehist:
+            mergecom = "hadd -T"
+        elif mergentuple:
+            mergecom = "hadd"
+        else:
+            mergecom = stage.merge
+           
+        print "Merging %d root files using %s." % (len(hlist), mergecom)
+			          			         
+        if os.path.exists(name_temp):
+            os.remove(name_temp)
+        comlist = mergecom.split()
+        comlist.extend(["-v", "0", "-f", "-k", name_temp, '@' + histurlsname_temp])
+        rc = subprocess.call(comlist)
+        if rc != 0:
+            print "%s exit status %d" % (mergecom, rc)
+        if name != name_temp:
+            if project_utilities.safeexist(name):
+                os.remove(name)
+            if os.path.exists(name_temp):
+                subprocess.call(['ifdh', 'cp', name_temp, name])
+                os.remove(name_temp)
+        os.remove(histurlsname_temp)	     
+
+
+# Sam audit.
+
+def doaudit(stage):
+
+    import_samweb()
+    stage_has_input = stage.inputfile != '' or stage.inputlist != '' or stage.inputdef != ''
+    if not stage_has_input:
+        raise RuntimeError, 'No auditing for generator stage.'
+
+    # Are there other ways to get output files other than through definition!?
+
+    outputlist = []
+    outparentlist = []
+    if stage.defname != '':	
+        query = 'isparentof: (defname: %s) and availability: anylocation' %(stage.defname)
+        try:
+            outparentlist = samweb.listFiles(dimensions=query)
+            outputlist = samweb.listFiles(defname=stage.defname)
+        except:
+            raise RuntimeError, 'Error accessing sam information for definition %s.\nDoes definition exist?' % stage.defname
+    else:
+        raise RuntimeError, 'Output definition not found.'
+			
+    # To get input files one can use definition or get inputlist given to that stage or 
+    # get input files for a given stage as get_input_files(stage)
+
+    inputlist = []	
+    if stage.inputdef != '':
+        import_samweb()
+        inputlist=samweb.listFiles(defname=stage.inputdef)
+    elif stage.inputlist != '':
+        ilist = []
+        if project_utilities.safeexist(stage.inputlist):
+            ilist = project_utilities.saferead(stage.inputlist)
+            inputlist = [] 
+            for i in ilist:
+                inputlist.append(os.path.basename(string.strip(i)))	
+    else:
+        raise RuntimeError, 'Input definition and/or input list does not exist.'
+    
+    difflist = set(inputlist)^set(outparentlist)
+    mc = 0;
+    me = 0;
+    for item in difflist:
+        if item in inputlist:
+            mc = mc+1
+            if mc==1:
+                missingfilelistname = os.path.join(stage.logdir, 'missingfiles.list')
+                missingfilelist = safeopen(missingfilelistname)
+                if mc>=1:
+                    missingfilelist.write("%s\n" %item)	
+        elif item in outparentlist:
+            me = me+1
+            childcmd = 'samweb list-files "ischildof: (file_name=%s) and availability: anylocation"' %(item)
+            children = subprocess.check_output(childcmd, shell = True).splitlines()
+            rmfile = list(set(children) & set(outputlist))[0]
+            if me ==1:
+                flist = []
+                fnlist = os.path.join(stage.logdir, 'files.list')
+                if project_utilities.safeexist(fnlist):
+                    flist = project_utilities.saferead(fnlist)
+                    slist = []  
+                    for line in flist:
+                        slist.append(string.split(line)[0])
+                else:
+                    raise RuntimeError, 'No files.list file found, run project.py --check'
+
+            # Declare the content status of the file as bad in SAM.
+                        
+            sdict = {'content_status':'bad'}
+            samweb.modifyFileMetadata(rmfile, sdict)
+            print '\nDeclaring the status of the following file as bad:', rmfile
+
+            # Remove this file from the files.list in the output directory.
+
+            fn = []  
+            fn = [x for x in slist if os.path.basename(string.strip(x)) != rmfile] 
+            thefile = safeopen(fnlist)
+            for item in fn:
+                thefile.write("%s\n" % item) 
+	
+    if mc==0 and me==0:
+        print "Everything in order."
+        return 0
+    else:	
+        print 'Missing parent file(s) = ', mc
+        print 'Extra parent file(s) = ',me
+	
+    if mc != 0:
+        missingfilelist.close()	
+        print "Creating missingfiles.list in the output directory....done!"
+    if me != 0:
+        thefile.close()	
+        #os.remove("jsonfile.json")
+        print "For extra parent files, files.list redefined and content status declared as bad in SAM...done!"	     
+    
+
 # Print help.
 
 def help():
@@ -1464,7 +2242,6 @@ def main(argv):
     xmlfile = ''
     projectname = ''
     stagename = ''
-    override_merge = ''
     merge = 0
     submit = 0
     check = 0
@@ -1477,6 +2254,7 @@ def main(argv):
     makeup = 0
     clean = 0
     outdir = 0
+    logdir = 0
     fcl = 0
     defname = 0
     do_input_files = 0
@@ -1549,6 +2327,9 @@ def main(argv):
             del args[0]
         elif args[0] == '--outdir':
             outdir = 1
+            del args[0]
+        elif args[0] == '--logdir':
+            logdir = 1
             del args[0]
         elif args[0] == '--fcl':
             fcl = 1
@@ -1627,12 +2408,7 @@ def main(argv):
 
     # Convert the project element into a ProjectDef object.
 
-    project = ProjectDef(project_element, override_merge)
-
-    # Make sure that we have a kerberos ticket if we might need one to submit jobs.
-
-    if submit or makeup:
-        project_utilities.test_ticket()
+    project = ProjectDef(project_element)
 
     # Do clean action now.  Cleaning can be combined with submission.
 
@@ -1654,6 +2430,11 @@ def main(argv):
     if outdir:
         print stage.outdir
 
+    # Do outdir action now.
+
+    if logdir:
+        print stage.logdir
+
     # Do defname action now.
 
     if defname:
@@ -1667,254 +2448,16 @@ def main(argv):
         for input_file in input_files:
             print input_file
 
-    # Maybe make output and work directories.
-
-    if submit:
-        stage.makedirs()
-
-    # Check input file/list, output directory, and work directory.
-
-    if submit or check or checkana or fetchlog or makeup:
-        stage.checkinput()
-        stage.checkdirs()
-
-        # If output is on dcache, make output directory group-writable.
-
-        if stage.outdir[0:6] == '/pnfs/':
-            mode = os.stat(stage.outdir).st_mode
-            if not mode & stat.S_IWGRP:
-                mode = mode | stat.S_IWGRP
-                os.chmod(stage.outdir, mode)
-
-        # For now, also make output directory world-writable.
-
-        #if not mode & stat.S_IWOTH:
-        #    mode = mode | stat.S_IWOTH
-        #    os.chmod(stage.outdir, mode)
-
-    # For first submission, make sure output directory is empty.
-
-    if submit and len(os.listdir(stage.outdir)) != 0:
-        raise RuntimeError, 'Output directory %s is not empty.' % stage.outdir
-
-    # Do the following sections only if there is the possibility
-    # of submtting jobs (submit or makeup action).
-
-    if submit or makeup:
-
-        # If there is an input list, copy it to the work directory.
-
-        input_list_name = ''
-        if stage.inputlist != '':
-            input_list_name = os.path.basename(stage.inputlist)
-            work_list_name = os.path.join(stage.workdir, input_list_name)
-            if stage.inputlist != work_list_name:
-                input_files = project_utilities.saferead(stage.inputlist)
-                work_list = open(work_list_name, 'w')
-                for input_file in input_files:
-                    work_list.write('%s\n' % input_file.strip())
-                work_list.close()
-
-        # Now locate the fcl file on the fcl search path.
-
-        fcl = project.get_fcl(stage.fclname)
-
-        # Copy the fcl file to the work directory.
-
-        workfcl = os.path.join(stage.workdir, os.path.basename(stage.fclname))
-        if fcl != workfcl:
-            shutil.copy(fcl, workfcl)
-
-        # Construct a wrapper fcl file (called "wrapper.fcl") that will include
-        # the original fcl, plus any overrides that are dynamically generated
-        # in this script.
-
-        wrapper_fcl = open(os.path.join(stage.workdir, 'wrapper.fcl'), 'w')
-        wrapper_fcl.write('#include "%s"\n' % os.path.basename(stage.fclname))
-        wrapper_fcl.write('\n')
-
-        # Generate overrides for sam metadata fcl parameters.
-        # Only do this if our xml file appears to contain sam metadata.
-
-        xml_has_metadata = project.file_type != '' or \
-                           project.run_type != ''
-        if xml_has_metadata:
-
-            # Add overrides for FileCatalogMetadata.
-
-            if project.release_tag != '':
-                wrapper_fcl.write('services.FileCatalogMetadata.applicationVersion: "%s"\n' % \
-                                  project.release_tag)
-            else:
-                wrapper_fcl.write('services.FileCatalogMetadata.applicationVersion: "test"\n')
-            if project.file_type:
-                wrapper_fcl.write('services.FileCatalogMetadata.fileType: "%s"\n' % \
-                                  project.file_type)
-            if project.run_type:
-                wrapper_fcl.write('services.FileCatalogMetadata.runType: "%s"\n  ' % \
-                                  project.run_type)
-
-
-            # Add experiment-specific sam metadata.
-
-            sam_metadata = project_utilities.get_sam_metadata(project, stage)
-            if sam_metadata:
-                wrapper_fcl.write(sam_metadata)
-
-        wrapper_fcl.close()
-
-        # Copy and rename experiment setup script to the work directory.
-
-        setupscript = os.path.join(stage.workdir,'setup_experiment.sh')
-        shutil.copy(project_utilities.get_setup_script_path(), setupscript)
-
-        # Copy and rename batch script to the work directory.
-
-        workname = '%s-%s' % (stage.name, project.name)
-        workname = workname + os.path.splitext(project.script)[1]
-        workscript = os.path.join(stage.workdir, workname)
-        if project.script != workscript:
-            shutil.copy(project.script, workscript)
-
-        # Copy and rename sam start project script to work directory.
-
-        workstartscript = ''
-        workstartname = ''
-        if project.start_script != '':
-            workstartname = 'start-%s' % workname
-            workstartscript = os.path.join(stage.workdir, workstartname)
-            if project.start_script != workstartscript:
-                shutil.copy(project.start_script, workstartscript)
-
-        # Copy and rename sam stop project script to work directory.
-
-        workstopscript = ''
-        workstopname = ''
-        if project.stop_script != '':
-            workstopname = 'stop-%s' % workname
-            workstopscript = os.path.join(stage.workdir, workstopname)
-            if project.stop_script != workstopscript:
-                shutil.copy(project.stop_script, workstopscript)
-
-        # Copy worker initialization script to work directory.
-
-        if stage.init_script != '':
-            if not os.path.exists(stage.init_script):
-                print 'Worker initialization script %s does not exist.\n' % stage.init_script
-                return 1
-            work_init_script = os.path.join(stage.workdir, os.path.basename(stage.init_script))
-            if stage.init_script != work_init_script:
-                shutil.copy(stage.init_script, work_init_script)
-
-        # Copy worker initialization source script to work directory.
-
-        if stage.init_source != '':
-            if not os.path.exists(stage.init_source):
-                print 'Worker initialization source script %s does not exist.\n' % stage.init_source
-                return 1
-            work_init_source = os.path.join(stage.workdir, os.path.basename(stage.init_source))
-            if stage.init_source != work_init_source:
-                shutil.copy(stage.init_source, work_init_source)
-
-        # Copy worker end-of-job script to work directory.
-
-        if stage.end_script != '':
-            if not os.path.exists(stage.end_script):
-                print 'Worker end-of-job script %s does not exist.\n' % stage.end_script
-                return 1
-            work_end_script = os.path.join(stage.workdir, os.path.basename(stage.end_script))
-            if stage.end_script != work_end_script:
-                shutil.copy(stage.end_script, work_end_script)
-
-        # If this is a makeup action, find list of missing files.
-        # If sam information is present (cpids.list), create a makeup dataset.
-
-        if makeup:
-
-            checked_file = os.path.join(stage.outdir, 'checked')
-            if not project_utilities.safeexist(checked_file):
-                print 'Wait for any running jobs to finish and run project.py --check'
-                return 1
-            makeup_count = 0
-
-            # First delete bad worker subdirectories.
-
-            bad_filename = os.path.join(stage.outdir, 'bad.list')
-            if project_utilities.safeexist(bad_filename):
-                lines = project_utilities.saferead(bad_filename)
-                for line in lines:
-                    bad_subdir = line.strip()
-                    bad_path = os.path.join(stage.outdir, bad_subdir)
-                    if os.path.exists(bad_path):
-                        print 'Deleting %s' % bad_path
-                        shutil.rmtree(bad_path)
-
-            # Get a list of missing files, if any, for file list input.
-            # Regenerate the input file list in the work directory, and 
-            # set the makeup job count.
-
-            missing_files = []
-            if stage.inputdef == '':
-                missing_filename = os.path.join(stage.outdir, 'missing_files.list')
-                if project_utilities.safeexist(missing_filename):
-                    lines = project_utilities.saferead(missing_filename)
-                    for line in lines:
-                        words = string.split(line)
-                        missing_files.append(words[0])
-                makeup_count = len(missing_files)
-                print 'Makeup list contains %d files.' % makeup_count
-
-            if input_list_name != '':
-                work_list_name = os.path.join(stage.workdir, input_list_name)
-                if os.path.exists(work_list_name):
-                    os.remove(work_list_name)
-                work_list = open(work_list_name, 'w')
-                for missing_file in missing_files:
-                    work_list.write('%s\n' % missing_file)
-                work_list.close()
-
-
-            # Prepare sam-related makeup information.
-
-            import_samweb()
-
-            # Get list of successful consumer process ids.
-
-            cpids = []
-            cpids_filename = os.path.join(stage.outdir, 'cpids.list')
-            if project_utilities.safeexist(cpids_filename):
-                cpids_files = project_utilities.saferead(cpids_filename)
-                for line in cpids_files:
-                    cpids.append(line.strip())
-
-            # Create makeup dataset definition.
-
-            makeup_defname = ''
-            if len(cpids) > 0:
-                makeup_defname = samweb.makeProjectName(stage.inputdef) + '_makeup'
-
-                # Construct comma-separated list of consumer process ids.
-
-                cpids_list = ''
-                sep = ''
-                for cpid in cpids:
-                    cpids_list = cpids_list + '%s%s' % (sep, cpid)
-                    sep = ','
-
-                # Construct makeup dimension.
-                
-                dim = '(defname: %s) minus (consumer_process_id %s and consumed_status consumed)' % (stage.inputdef, cpids_list)
-
-                # Create makeup dataset definition.
-
-                print 'Creating makeup sam dataset definition %s' % makeup_defname
-                samweb.createDefinition(defname=makeup_defname, dims=dim)
-                makeup_count = samweb.countFiles(defname=makeup_defname)
-                print 'Makeup dataset contains %d files.' % makeup_count
-
     # Do actions.
 
     rc = 0
+
+    if submit or makeup:
+
+        # Submit jobs.
+
+        rc = dosubmit(project, stage, makeup)
+
     if check or checkana:
 
         # Check results from specified project stage.
@@ -1927,154 +2470,19 @@ def main(argv):
 
         rc = dofetchlog(stage)
 		   
-    # Make merged histogram or ntuple files using proper hadd option. 
-    # Makes a merged root file called anahist.root in the project output directory
-    
     if mergehist or mergentuple or merge:
-     
-        hlist = []
-	hnlist = os.path.join(stage.outdir, 'filesana.list')
-	if project_utilities.safeexist(hnlist):
-	  hlist = project_utilities.saferead(hnlist)	
-	else:
-	  print 'No filesana.list file found, run project.py --checkana'
-	  sys.exit(1)	
-	  
-	histurlsname_temp = 'histurls.list'
-        if os.path.exists(histurlsname_temp):
-             os.remove(histurlsname_temp)
-        histurls = open(histurlsname_temp, 'w') 
-	
-	for hist in hlist:
-             histurls.write('%s\n' % project_utilities.path_to_url(hist)) 	
-        histurls.close()
-       	
-        if len(hlist) > 0:
-	   name = os.path.join(stage.outdir, 'anahist.root')
-	   if name[0:6] == '/pnfs/':
-           	name_temp = 'anahist.root'
-           else:
-           	name_temp = name 
-		     
-           if mergehist:
-  		mergecom = "hadd -T"
-	   elif mergentuple:
-	     	mergecom = "hadd"
-           elif merge:
-	        mergecom = stage.merge
-           
-	   print "Merging %d root files using %s." % (len(hlist), mergecom)
-			          			         
-           if os.path.exists(name_temp):
-               os.remove(name_temp)
-           comlist = mergecom.split()
-           comlist.extend(["-v", "0", "-f", "-k", name_temp, '@' + histurlsname_temp])
-           rc = subprocess.call(comlist)
-           if rc != 0:
-               print "%s exit status %d" % (mergecom, rc)
-           if name != name_temp:
-               if project_utilities.safeexist(name):
-        	   os.remove(name)
-               if os.path.exists(name_temp):
-        	   subprocess.call(['ifdh', 'cp', name_temp, name])
-        	   os.remove(name_temp)
-           os.remove(histurlsname_temp)		     
-		     
+        
+        # Make merged histogram or ntuple files using proper hadd option. 
+        # Makes a merged root file called anahist.root in the project output directory
+    
+        domerge(stage, mergehist, mergentuple)
 		     
     if audit:
-        import_samweb()
-        stage_has_input = stage.inputfile != '' or stage.inputlist != '' or stage.inputdef != ''
-	if not stage_has_input:
-		print 'No auditing for generator stage...exiting!'
-		sys.exit(1)
-	#Are there other ways to get output files other than through definition!?
-	outputlist = []
-	outparentlist = []
-	if stage.defname != '':	
-		query = 'isparentof: (defname: %s) and availability: anylocation' %(stage.defname)
-                try:
-                    outparentlist = samweb.listFiles(dimensions=query)
-                    outputlist = samweb.listFiles(defname=stage.defname)
-                except:
-                    print 'Error accessing sam information for definition %s.' % stage.defname
-                    print 'Does definition exist?'
-                    sys.exit(1)
-	else:
-		print "Output definition not found...exiting!"
-		sys.exit(1)
-			
-	#to get input files one can use definition or get inputlist given to that stage or get input files for a given stage as get_input_files(stage)
-	inputlist = []	
-	if stage.inputdef != '':
-	        import_samweb()
-		inputlist=samweb.listFiles(defname=stage.inputdef)
-	elif stage.inputlist != '':
-		ilist = []
-		if project_utilities.safeexist(stage.inputlist):
-		    ilist = project_utilities.saferead(stage.inputlist)
-		inputlist = [] 
-		for i in ilist:
-		    inputlist.append(os.path.basename(string.strip(i)))	
-	else:
-		print "Input definition and/or input list doesn't exist...exiting!"
-		sys.exit(1)
-    
-	difflist = set(inputlist)^set(outparentlist)
-	mc = 0;
-	me = 0;
-	for item in difflist:
-		if item in inputlist:
-			mc = mc+1
-			if mc==1:
-				missingfilelistname = os.path.join(stage.outdir, 'missingfiles.list')
-    				missingfilelist = safeopen(missingfilelistname)
-			if mc>=1:
-				missingfilelist.write("%s\n" %item)	
-		elif item in outparentlist:
-			me = me+1
-			childcmd = 'samweb list-files "ischildof: (file_name=%s) and availability: anylocation"' %(item)
-			children = subprocess.check_output(childcmd, shell = True).splitlines()
-			rmfile = list(set(children) & set(outputlist))[0]
-			if me ==1:
-			   flist = []
-			   fnlist = os.path.join(stage.outdir, 'files.list')
-			   if project_utilities.safeexist(fnlist):
-			     flist = project_utilities.saferead(fnlist)
-			     slist = []  
-			     for line in flist:
-	                        slist.append(string.split(line)[0])
-			   else:
-			     print 'No files.list file found, run project.py --check'
-			     sys.exit(1)
 
-			#declare the content status of the file as bad in SAM
-                        
-                        sdict = {'content_status':'bad'}
-			samweb.modifyFileMetadata(rmfile, sdict)
-			print '\nDeclaring the status of the following file as bad:', rmfile
+        # Sam audit.
 
-			#remove this file from the files.list in the output directory
-			fn = []  
-			fn = [x for x in slist if os.path.basename(string.strip(x)) != rmfile] 
-   			thefile = safeopen(fnlist)
-		        for item in fn:
-			    thefile.write("%s\n" % item) 
-	
-	if mc==0 and me==0:
-		print "Everything in order..exiting"
-		sys.exit(1)
-	else:	
-		print 'Missing parent file(s) = ', mc
-		print 'Extra parent file(s) = ',me
-	
-	if mc != 0:
-		missingfilelist.close()	
-		print "Creating missingfiles.list in the output directory....done!"
-	if me != 0:
-	        thefile.close()	
-		#os.remove("jsonfile.json")
-		print "For extra parent files, files.list redefined and content status declared as bad in SAM...done!"	     
-    
+        doaudit(stage)
+
     if check_definition or define:
 
         # Make sam dataset definition.
@@ -2107,7 +2515,7 @@ def main(argv):
 
         # Check sam declarations.
 
-        rc = docheck_declarations(stage.outdir, declare)
+        rc = docheck_declarations(stage.logdir, declare)
 
     if test_declarations:
 
@@ -2121,7 +2529,7 @@ def main(argv):
         # Check sam disk locations.
 
         dim = project_utilities.dimensions(project, stage)
-        rc = docheck_locations(dim, stage.outdir,
+        rc = docheck_locations(dim, stage.logdir,
                                add_locations, clean_locations, remove_locations,
                                upload)
 
@@ -2132,322 +2540,6 @@ def main(argv):
         dim = project_utilities.dimensions(project, stage)
         rc = docheck_tape(dim)
 
-    if submit or makeup:
-
-        # Sam stuff.
-
-        # Get input sam dataset definition name.
-        # Can be from xml or a makeup dataset that we just created.
-
-        inputdef = stage.inputdef
-        if makeup and makeup_defname != '':
-            inputdef = makeup_defname
-
-        # Sam project name.
-
-        prjname = ''
-        if inputdef != '':
-            import_samweb()
-            prjname = samweb.makeProjectName(inputdef)
-
-        # Get proxy.
-
-        proxy = project_utilities.get_proxy()
-
-        # Get role
-
-        role = project_utilities.get_role()
-
-        # Construct jobsub command line for workers.
-
-        if project.server == '':
-            command = ['jobsub']
-        else:
-            command = ['jobsub_submit']
-        command_njobs = 1
-
-        # Jobsub options.
-        
-        command.append('--group=%s' % project_utilities.get_experiment())
-        command.append('-f %s' % setupscript)
-        if project.server == '':
-            command.append('-q')       # Mail on error (only).
-            command.append('--grid')
-            command.append('--opportunistic')
-            if proxy != '':
-                command.append('-x %s' % proxy)
-        else:
-            command.append('--role=%s' % role)
-            if project.server != '-':
-                command.append('--jobsub-server=%s' % project.server)
-            if stage.resource != '':
-                command.append('--resource-provides=usage_model=%s' % stage.resource)
-            elif project.resource != '':
-                command.append('--resource-provides=usage_model=%s' % project.resource)
-            if stage.lines != '':
-                command.append('--lines=%s' % stage.lines)
-            elif project.lines != '':
-                command.append('--lines=%s' % project.lines)
-            if stage.site != '':
-                command.append('--site=%s' % stage.site)
-            elif project.site != '':
-                command.append('--site=%s' % project.site)
-        if project.os != '':
-            command.append('--OS=%s' % project.os)
-        if submit:
-            command_njobs = stage.num_jobs
-            command.extend(['-N', '%d' % command_njobs])
-        elif makeup:
-            command_njobs = min(makeup_count, stage.num_jobs)
-            command.extend(['-N', '%d' % command_njobs])
-
-        # Batch script.
-
-        if project.server == '':
-            command.append(workname)
-        else:
-            workurl = "file://%s/%s" % (stage.workdir, workname)
-            command.append(workurl)
-
-        # Larsoft options.
-
-        command.extend([' --group', project_utilities.get_experiment()])
-        command.extend([' -g'])
-        command.extend([' -c', 'wrapper.fcl'])
-        command.extend([' --ups', project_utilities.get_ups_products()])
-        if project.release_tag != '':
-            command.extend([' -r', project.release_tag])
-        command.extend([' -b', project.release_qual])
-        if project.local_release_dir != '':
-            command.extend([' --localdir', project.local_release_dir])
-        if project.local_release_tar != '':
-            command.extend([' --localtar', project.local_release_tar])
-        command.extend([' --workdir', stage.workdir])
-        command.extend([' --outdir', stage.outdir])
-        if stage.inputfile != '':
-            command.extend([' -s', stage.inputfile])
-        elif input_list_name != '':
-            command.extend([' -S', input_list_name])
-        elif inputdef != '':
-            command.extend([' --sam_defname', inputdef,
-                            ' --sam_project', prjname])
-        if stage.inputmode != '':
-            command.extend([' --inputmode', stage.inputmode])
-        command.extend([' -n', '%d' % project.num_events])
-        command.extend([' --njobs', '%d' % stage.num_jobs ])
-        if stage.output != '':
-            command.extend([' --output', stage.output])
-        if stage.init_script != '':
-            command.extend([' --init-script',
-                            os.path.join('.', os.path.basename(stage.init_script))])
-        if stage.init_source != '':
-            command.extend([' --init-source',
-                            os.path.join('.', os.path.basename(stage.init_source))])
-        if stage.end_script != '':
-            command.extend([' --end-script',
-                            os.path.join('.', os.path.basename(stage.end_script))])
-
-        # If input is from sam, also construct a dag file.
-
-        if prjname != '':
-
-            # At this point, it is an error if the start and stop project
-            # scripts were not found.
-
-            if workstartname == '' or workstopname == '':
-                print 'Sam start or stop project script not found.'
-                sys.exit(1)
-
-            # Start project jobsub command.
-                
-            if project.server == '':
-                start_command = ['jobsub']
-            else:
-                start_command = ['jobsub']
-
-            # General options.
-            
-            start_command.append('--group=%s' % project_utilities.get_experiment())
-            start_command.append('-f %s' % setupscript)
-            if project.server == '':
-                start_command.append('-q')       # Mail on error (only).
-                start_command.append('--grid')
-                start_command.append('--opportunistic')
-            else:
-                if stage.resource != '':
-                    command.append('--resource-provides=usage_model=%s' % stage.resource)
-                elif project.resource != '':
-                    start_command.append('--resource-provides=usage_model=%s' % project.resource)
-                if stage.lines != '':
-                    command.append('--lines=%s' % stage.lines)
-                elif project.lines != '':
-                    start_command.append('--lines=%s' % project.lines)
-                if stage.site != '':
-                    command.append('--site=%s' % stage.site)
-                elif project.site != '':
-                    start_command.append('--site=%s' % project.site)
-            if project.os != '':
-                start_command.append('--OS=%s' % project.os)
-
-            # Start project script.
-
-            if project.server == '':
-                start_command.append(workstartname)
-            else:
-                workstarturl = "file://%s/%s" % (stage.workdir, workstartname)
-                start_command.append(workstarturl)
-
-            # Sam options.
-
-            start_command.extend([' --sam_station', project_utilities.get_experiment(),
-                                  ' --sam_group', project_utilities.get_experiment(),
-                                  ' --sam_defname', inputdef,
-                                  ' --sam_project', prjname,
-                                  ' -g'])
-
-            # Output directory.
-
-            start_command.extend([' --outdir', stage.outdir])
-
-            # Stop project jobsub command.
-                
-            if project.server == '':
-                stop_command = ['jobsub']
-            else:
-                stop_command = ['jobsub']
-
-            # General options.
-            
-            stop_command.append('--group=%s' % project_utilities.get_experiment())
-            stop_command.append('-f %s' % setupscript)
-            if project.server == '':
-                stop_command.append('-q')       # Mail on error (only).
-                stop_command.append('--grid')
-                stop_command.append('--opportunistic')
-            else:
-                if stage.resource != '':
-                    command.append('--resource-provides=usage_model=%s' % stage.resource)
-                elif project.resource != '':
-                    stop_command.append('--resource-provides=usage_model=%s' % project.resource)
-                if stage.lines != '':
-                    command.append('--lines=%s' % stage.lines)
-                elif project.lines != '':
-                    stop_command.append('--lines=%s' % project.lines)
-                if stage.site != '':
-                    command.append('--site=%s' % stage.site)
-                elif project.site != '':
-                    stop_command.append('--site=%s' % project.site)
-            if project.os != '':
-                stop_command.append('--OS=%s' % project.os)
-
-            # Stop project script.
-
-            if project.server == '':
-                stop_command.append(workstopname)
-            else:
-                workstopurl = "file://%s/%s" % (stage.workdir, workstopname)
-                stop_command.append(workstopurl)
-
-            # Sam options.
-
-            stop_command.extend([' --sam_station', project_utilities.get_experiment(),
-                                 ' --sam_project', prjname,
-                                 ' -g'])
-
-            # Output directory.
-
-            stop_command.extend([' --outdir', stage.outdir])
-
-            # Create dagNabbit.py configuration script in the work directory.
-
-            dagfilepath = os.path.join(stage.workdir, 'submit.dag')
-            dag = open(dagfilepath, 'w')
-
-            # Write start section.
-
-            dag.write('<serial>\n')
-            first = True
-            for word in start_command:
-                if not first:
-                    dag.write(' ')
-                dag.write(word)
-                if word[:6] == 'jobsub':
-                    dag.write(' -n')
-                first = False
-            dag.write('\n</serial>\n')
-
-            # Write main section.
-
-            dag.write('<parallel>\n')
-            for process in range(command_njobs):
-                first = True
-                skip = False
-                for word in command:
-                    if skip:
-                        skip = False
-                    else:
-                        if word == '-N':
-                            skip = True
-                        else:
-                            if not first:
-                                dag.write(' ')
-                            if word[:6] == 'jobsub':
-                                word = 'jobsub'
-                            dag.write(word)
-                            if word[:6] == 'jobsub':
-                                dag.write(' -n')
-                            first = False
-                dag.write(' --process %d\n' % process)
-            dag.write('</parallel>\n')
-
-            # Write stop section.
-
-            dag.write('<serial>\n')
-            first = True
-            for word in stop_command:
-                if not first:
-                    dag.write(' ')
-                dag.write(word)
-                if word[:6] == 'jobsub':
-                    dag.write(' -n')
-                first = False
-            dag.write('\n</serial>\n')
-            dag.close()
-
-            # Update the main submission command to use dagNabbit.py instead of jobsub.
-
-            if project.server == '':
-                command = ['dagNabbit.py', '-i', dagfilepath, '-s']
-            else:
-                command = ['jobsub_submit_dag']
-                command.append('--group=%s' % project_utilities.get_experiment())
-                if project.server != '-':
-                    command.append('--jobsub-server=%s' % project.server)
-                dagfileurl = 'file://'+ dagfilepath
-                command.append(dagfileurl)
-
-        os.chdir(stage.workdir)
-
-        checked_file = os.path.join(stage.outdir, 'checked')
-        if submit:
-
-            # For submit action, invoke the job submission command.
-
-            subprocess.call(command)
-            if project_utilities.safeexist(checked_file):
-                os.remove(checked_file)
-
-        elif makeup:
-
-            # For makeup action, abort if makeup job count is zero for some reason.
-
-            if makeup_count > 0:
-                subprocess.call(command)
-                if project_utilities.safeexist(checked_file):
-                    os.remove(checked_file)
-            else:
-                print 'Makeup action aborted because makeup job count is zero.'
-                                
     # Done.
 
     return rc

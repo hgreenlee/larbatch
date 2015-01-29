@@ -9,7 +9,7 @@
 #
 ######################################################################
 
-import os, string
+import os, string, stat
 import project_utilities
 from xmlerror import XMLError
 
@@ -26,6 +26,7 @@ class StageDef:
         self.name = ''         # Stage name.
         self.fclname = ''      # Fcl name (just name, not path).
         self.outdir = ''       # Output directory.
+        self.logdir = ''       # Log directory.
         self.workdir = ''      # Work directory.
         self.inputfile = ''    # Single input file.
         self.inputlist = ''    # Input file list.
@@ -44,7 +45,8 @@ class StageDef:
         self.site = ''         # Site.
         self.parameters = {}   # Dictionary of metadata parameters.
         self.output = ''       # Art output file name.
-
+        self.TFileName = ''    # TFile output file name.
+	
         # Extract values from xml.
 
         # Stage name (attribute).
@@ -69,6 +71,14 @@ class StageDef:
             self.outdir = outdir_elements[0].firstChild.data
         if self.outdir == '':
             raise XMLError, 'Output directory not specified for stage %s.' % self.name
+
+        # Log directory (subelement).
+
+        logdir_elements = stage_element.getElementsByTagName('logdir')
+        if logdir_elements:
+            self.logdir = logdir_elements[0].firstChild.data
+        if self.logdir == '':
+            self.logdir = self.outdir
 
         # Work directory (subelement).
 
@@ -134,6 +144,7 @@ class StageDef:
         target_size_elements = stage_element.getElementsByTagName('targetsize')
         if target_size_elements:
             self.target_size = int(target_size_elements[0].firstChild.data)
+	
 
         # Sam dataset definition name (subelement).
 
@@ -202,6 +213,12 @@ class StageDef:
         output_elements = stage_element.getElementsByTagName('output')
         if output_elements:
             self.output = output_elements[0].firstChild.data
+	    
+	# TFileName (subelement).
+
+        TFileName_elements = stage_element.getElementsByTagName('TFileName')
+        if TFileName_elements:
+            self.TFileName = TFileName_elements[0].firstChild.data     
 
         # Done.
 
@@ -213,12 +230,14 @@ class StageDef:
         result = 'Stage name = %s\n' % self.name
         result += 'Fcl filename = %s\n' % self.fclname
         result += 'Output directory = %s\n' % self.outdir
+        result += 'Log directory = %s\n' % self.logdir
         result += 'Work directory = %s\n' % self.workdir
         result += 'Input file = %s\n' % self.inputfile
         result += 'Input list = %s\n' % self.inputlist
         result += 'Input mode = %s\n' % self.inputmode
         result += 'Input sam dataset = %s\n' % self.inputdef
         result += 'Output file name = %s\n' % self.output
+        result += 'TFileName = %s\n' % self.TFileName	
         result += 'Number of jobs = %d\n' % self.num_jobs
         result += 'Output file target size = %d\n' % self.target_size
         result += 'Dataset definition name = %s\n' % self.defname
@@ -266,21 +285,39 @@ class StageDef:
                 self.num_jobs = new_num_jobs
 
 
-    # Raise an exception if output directory or work directory doesn't exist.
+    # Raise an exception if output directory, log directory, or work directory doesn't exist.
 
     def checkdirs(self):
         if not os.path.exists(self.outdir):
             raise IOError, 'Output directory %s does not exist.' % self.outdir
+        if not os.path.exists(self.logdir):
+            raise IOError, 'Log directory %s does not exist.' % self.logdir
         if not os.path.exists(self.workdir):
             raise IOError, 'Work directory %s does not exist.' % self.workdir
         return
     
-    # Make output and work directory, if they don't exist.
+    # Make output, log, and work directory, if they don't exist.
 
     def makedirs(self):
         if not os.path.exists(self.outdir):
             os.makedirs(self.outdir)
+        if not os.path.exists(self.logdir):
+            os.makedirs(self.logdir)
         if not os.path.exists(self.workdir):
             os.makedirs(self.workdir)
+
+        # If output is on dcache, make output directory group-writable.
+
+        if self.outdir[0:6] == '/pnfs/':
+            mode = os.stat(self.outdir).st_mode
+            if not mode & stat.S_IWGRP:
+                mode = mode | stat.S_IWGRP
+                os.chmod(self.outdir, mode)
+        if self.logdir[0:6] == '/pnfs/':
+            mode = os.stat(self.logdir).st_mode
+            if not mode & stat.S_IWGRP:
+                mode = mode | stat.S_IWGRP
+                os.chmod(self.logdir, mode)
+
         self.checkdirs()
         return
