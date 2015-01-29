@@ -10,7 +10,7 @@
 #
 ######################################################################
 
-import sys
+import sys, traceback
 from projectstatus import ProjectStatus
 from batchstatus import BatchStatus
 
@@ -156,6 +156,7 @@ class ProjectStatusView(tk.Frame):
             bs = BatchStatus(self.project_def)
         except:
             e = sys.exc_info()
+            traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
 
         # Update label widgets.
@@ -297,6 +298,7 @@ class ProjectStatusView(tk.Frame):
             BatchStatus.update_jobs()
         except:
             e = sys.exc_info()
+            traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
         self.update_status()
         

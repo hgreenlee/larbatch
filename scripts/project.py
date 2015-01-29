@@ -1268,7 +1268,18 @@ def doundefine(defname):
 
 # Check disk locations.  Maybe add or remove locations.
 
-def docheck_locations(dim, logdir, add, clean, remove, upload):
+def docheck_locations(dim, outdir, add, clean, remove, upload):
+
+    if add:
+        print 'Adding disk locations.'
+    elif clean:
+        print 'Cleaning disk locations.'
+    elif remove:
+        print 'Removing disk locations.'
+    elif upload:
+        print 'Uploading to FTS.'
+    else:
+        print 'Checking disk locations.'
 
     # Initialize samweb.
 
@@ -1285,11 +1296,11 @@ def docheck_locations(dim, logdir, add, clean, remove, upload):
         # Got a filename.
 
         # Look for locations on disk.
-        # Look in first level subdirectories of logdir.
+        # Look in first level subdirectories of outdir.
 
         disk_locs = []
-        for subdir in os.listdir(logdir):
-            subpath = os.path.join(logdir, subdir)
+        for subdir in os.listdir(outdir):
+            subpath = os.path.join(outdir, subdir)
             if project_utilities.fast_isdir(subpath):
                 for fn in os.listdir(subpath):
                     if fn == filename:
@@ -2529,7 +2540,7 @@ def main(argv):
         # Check sam disk locations.
 
         dim = project_utilities.dimensions(project, stage)
-        rc = docheck_locations(dim, stage.logdir,
+        rc = docheck_locations(dim, stage.outdir,
                                add_locations, clean_locations, remove_locations,
                                upload)
 

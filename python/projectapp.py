@@ -11,11 +11,12 @@
 
 # Standard imports
 
-import sys, os, subprocess
+import sys, os, subprocess, traceback
 
 # Import project.py as a module.
 
 import project
+import project_utilities
 from batchstatus import BatchStatus
 
 # Import Tkinter GUI stuff
@@ -26,6 +27,7 @@ import tkFileDialog
 import tkMessageBox
 import tkFont
 from projectview import ProjectView
+from textwindow import TextWindow
 
 ticket_ok = False
 
@@ -94,7 +96,7 @@ class ProjectApp(tk.Frame):
         # Put menu in its own frame.
 
         self.menubar = tk.Frame(self)
-        self.menubar.pack(side=tk.TOP, anchor=tk.NW)
+        self.menubar.pack(side=tk.TOP, anchor=tk.NW, expand=1, fill=tk.X)
 
         # File menu.
 
@@ -159,6 +161,11 @@ class ProjectApp(tk.Frame):
         self.output_menu.add_command(label='Check', command=self.check)
         self.output_menu.add_command(label='Checkana', command=self.checkana)
         self.output_menu.add_command(label='Fetchlog', command=self.fetchlog)
+        self.output_menu.add_separator()
+        self.output_menu.add_command(label='Histogram merge', command=self.mergehist)
+        self.output_menu.add_command(label='Ntuple merge', command=self.mergentuple)
+        self.output_menu.add_command(label='Custom merge', command=self.merge)
+        self.output_menu.add_separator()
         self.output_menu.add_command(label='Clean', command=self.clean)
         mbutton['menu'] = self.output_menu
 
@@ -171,6 +178,38 @@ class ProjectApp(tk.Frame):
         self.batch_menu.add_command(label='Makeup', command=self.makeup)
         self.batch_menu.add_command(label='Update', command=self.update_jobs)
         mbutton['menu'] = self.batch_menu
+
+        # SAM menu.
+
+        mbutton = tk.Menubutton(self.menubar, text='SAM', font=tkFont.Font(size=12))
+        mbutton.pack(side=tk.LEFT)
+        self.sam_menu = tk.Menu(mbutton)
+        self.sam_menu.add_command(label='Check Declarations', command=self.check_declarations)
+        self.sam_menu.add_command(label='Declare Files', command=self.declare)
+        self.sam_menu.add_command(label='Test Declarations', command=self.test_declarations)
+        self.sam_menu.add_separator()
+        self.sam_menu.add_command(label='Check Dataset Definition', command=self.check_definition)
+        self.sam_menu.add_command(label='Create Dataset Definition', command=self.define)
+        self.sam_menu.add_command(label='Test Dataset Definition', command=self.test_definition)
+        self.sam_menu.add_separator()
+        self.sam_menu.add_command(label='Check Locations', command=self.check_locations)
+        self.sam_menu.add_command(label='Add Disk Locations', command=self.add_locations)
+        self.sam_menu.add_command(label='Clean Disk Locations', command=self.clean_locations)
+        self.sam_menu.add_command(label='Remove Disk Locations', command=self.remove_locations)
+        self.sam_menu.add_command(label='Upload to Enstore', command=self.upload)
+        self.sam_menu.add_separator()
+        self.sam_menu.add_command(label='Audit', command=self.audit)
+        mbutton['menu'] = self.sam_menu
+
+        # Help menu.
+
+        mbutton = tk.Menubutton(self.menubar, text='Help', font=tkFont.Font(size=12))
+        mbutton.pack(side=tk.RIGHT)
+        self.help_menu = tk.Menu(mbutton)
+        self.help_menu.add_command(label='project.py help', command=self.help)
+        self.help_menu.add_command(label='XML help', command=self.xmlhelp)
+        mbutton['menu'] = self.help_menu
+
         return
 
     # Open project.
@@ -187,10 +226,11 @@ class ProjectApp(tk.Frame):
         # display a message and return without opening the file.
 
         try:
-            project_def = project.ProjectDef(project.get_project(xml_path, ''), False)
+            project_def = project.ProjectDef(project.get_project(xml_path, ''))
         except:
             e = sys.exc_info()
             message = 'Error opening %s\n%s' % (xml_path, e[1])
+            traceback.print_tb(e[2])
             tkMessageBox.showerror('', message)
             return
             
@@ -375,6 +415,7 @@ class ProjectApp(tk.Frame):
             project.docheck(self.current_project_def, self.current_stage_def, ana=False)
         except:
             e = sys.exc_info()
+            traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
         self.project_view.update_status()
 
@@ -391,6 +432,7 @@ class ProjectApp(tk.Frame):
             project.docheck(self.current_project_def, self.current_stage_def, ana=True)
         except:
             e = sys.exc_info()
+            traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
         self.project_view.update_status()
 
@@ -407,6 +449,7 @@ class ProjectApp(tk.Frame):
             project.dofetchlog(self.current_stage_def)
         except:
             e = sys.exc_info()
+            traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
 
     # Clean action.
@@ -422,6 +465,7 @@ class ProjectApp(tk.Frame):
             project.doclean(self.current_project_def, self.current_stage_name)
         except:
             e = sys.exc_info()
+            traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
         self.project_view.update_status()
 
@@ -439,6 +483,7 @@ class ProjectApp(tk.Frame):
             project.dosubmit(self.current_project_def, self.current_stage_def, makeup=False)
         except:
             e = sys.exc_info()
+            traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
         BatchStatus.update_jobs()
         self.project_view.update_status()
@@ -457,6 +502,7 @@ class ProjectApp(tk.Frame):
             project.dosubmit(self.current_project_def, self.current_stage_def, makeup=True)
         except:
             e = sys.exc_info()
+            traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
         BatchStatus.update_jobs()
         self.project_view.update_status()
@@ -465,6 +511,304 @@ class ProjectApp(tk.Frame):
 
     def update_jobs(self):
         self.project_view.update_jobs()
+
+    # Histogram merge.
+
+    def mergehist(self):
+        if self.current_project_def == None:
+            tkMessageBox.showwarning('', 'No project selected.')
+            return
+        if self.current_stage_def == None:
+            tkMessageBox.showwarning('', 'No stage selected.')
+            return
+        try:
+            project.domerge(self.current_stage_def, mergehist=True, mergentuple=False)
+        except:
+            e = sys.exc_info()
+            traceback.print_tb(e[2])
+            tkMessageBox.showerror('', e[1])
+
+    # Ntuple merge.
+
+    def mergentuple(self):
+        if self.current_project_def == None:
+            tkMessageBox.showwarning('', 'No project selected.')
+            return
+        if self.current_stage_def == None:
+            tkMessageBox.showwarning('', 'No stage selected.')
+            return
+        try:
+            project.domerge(self.current_stage_def, mergehist=False, mergentuple=True)
+        except:
+            e = sys.exc_info()
+            traceback.print_tb(e[2])
+            tkMessageBox.showerror('', e[1])
+
+    # Custom merge.
+
+    def merge(self):
+        if self.current_project_def == None:
+            tkMessageBox.showwarning('', 'No project selected.')
+            return
+        if self.current_stage_def == None:
+            tkMessageBox.showwarning('', 'No stage selected.')
+            return
+        try:
+            project.domerge(self.current_stage_def, mergehist=False, mergentuple=False)
+        except:
+            e = sys.exc_info()
+            traceback.print_tb(e[2])
+            tkMessageBox.showerror('', e[1])
+
+    # Declare files to sam.
+
+    def declare(self):
+        if self.current_project_def == None:
+            tkMessageBox.showwarning('', 'No project selected.')
+            return
+        if self.current_stage_def == None:
+            tkMessageBox.showwarning('', 'No stage selected.')
+            return
+        try:
+            project.docheck_declarations(self.current_stage_def.logdir, declare=True)
+        except:
+            e = sys.exc_info()
+            traceback.print_tb(e[2])
+            tkMessageBox.showerror('', e[1])
+
+    # Check sam declarations.
+
+    def check_declarations(self):
+        if self.current_project_def == None:
+            tkMessageBox.showwarning('', 'No project selected.')
+            return
+        if self.current_stage_def == None:
+            tkMessageBox.showwarning('', 'No stage selected.')
+            return
+        try:
+            project.docheck_declarations(self.current_stage_def.logdir, declare=False)
+        except:
+            e = sys.exc_info()
+            traceback.print_tb(e[2])
+            tkMessageBox.showerror('', e[1])
+
+    # Test sam declarations.
+
+    def test_declarations(self):
+        if self.current_project_def == None:
+            tkMessageBox.showwarning('', 'No project selected.')
+            return
+        if self.current_stage_def == None:
+            tkMessageBox.showwarning('', 'No stage selected.')
+            return
+        try:
+            dim = project_utilities.dimensions(self.current_project_def, self.current_stage_def)
+            project.dotest_declarations(dim)
+        except:
+            e = sys.exc_info()
+            traceback.print_tb(e[2])
+            tkMessageBox.showerror('', e[1])
+
+    # Create sam dataset definition.
+
+    def define(self):
+        if self.current_project_def == None:
+            tkMessageBox.showwarning('', 'No project selected.')
+            return
+        if self.current_stage_def == None:
+            tkMessageBox.showwarning('', 'No stage selected.')
+            return
+        try:
+            dim = project_utilities.dimensions(self.current_project_def, self.current_stage_def)
+            project.docheck_definition(self.current_stage_def.defname, dim, define=True)
+        except:
+            e = sys.exc_info()
+            traceback.print_tb(e[2])
+            tkMessageBox.showerror('', e[1])
+
+    # Check whether sam dataset definition exists.
+
+    def check_definition(self):
+        if self.current_project_def == None:
+            tkMessageBox.showwarning('', 'No project selected.')
+            return
+        if self.current_stage_def == None:
+            tkMessageBox.showwarning('', 'No stage selected.')
+            return
+        try:
+            dim = project_utilities.dimensions(self.current_project_def, self.current_stage_def)
+            project.docheck_definition(self.current_stage_def.defname, dim, define=False)
+        except:
+            e = sys.exc_info()
+            traceback.print_tb(e[2])
+            tkMessageBox.showerror('', e[1])
+
+    # Test sam dataset definition (list files).
+
+    def test_definition(self):
+        if self.current_project_def == None:
+            tkMessageBox.showwarning('', 'No project selected.')
+            return
+        if self.current_stage_def == None:
+            tkMessageBox.showwarning('', 'No stage selected.')
+            return
+        defname = self.current_stage_def.defname
+        if defname == '':
+            tkMessageBox.showwarning('No sam dataset definition specified.')
+            return
+        try:
+            project.dotest_definition(defname)
+        except:
+            e = sys.exc_info()
+            traceback.print_tb(e[2])
+            tkMessageBox.showerror('', e[1])
+
+    # Check locations.
+
+    def check_locations(self):
+        if self.current_project_def == None:
+            tkMessageBox.showwarning('', 'No project selected.')
+            return
+        if self.current_stage_def == None:
+            tkMessageBox.showwarning('', 'No stage selected.')
+            return
+        try:
+            dim = project_utilities.dimensions(self.current_project_def, self.current_stage_def)
+            project.docheck_locations(dim, self.current_stage_def.logdir,
+                                      add=False,
+                                      clean=False,
+                                      remove=False,
+                                      upload=False)
+        except:
+            e = sys.exc_info()
+            traceback.print_tb(e[2])
+            tkMessageBox.showerror('', e[1])
+
+    # Add disk locations.
+
+    def add_locations(self):
+        if self.current_project_def == None:
+            tkMessageBox.showwarning('', 'No project selected.')
+            return
+        if self.current_stage_def == None:
+            tkMessageBox.showwarning('', 'No stage selected.')
+            return
+        try:
+            dim = project_utilities.dimensions(self.current_project_def, self.current_stage_def)
+            project.docheck_locations(dim, self.current_stage_def.outdir,
+                                      add=True,
+                                      clean=False,
+                                      remove=False,
+                                      upload=False)
+        except:
+            e = sys.exc_info()
+            traceback.print_tb(e[2])
+            tkMessageBox.showerror('', e[1])
+
+    # Clean disk locations.
+
+    def clean_locations(self):
+        if self.current_project_def == None:
+            tkMessageBox.showwarning('', 'No project selected.')
+            return
+        if self.current_stage_def == None:
+            tkMessageBox.showwarning('', 'No stage selected.')
+            return
+        try:
+            dim = project_utilities.dimensions(self.current_project_def, self.current_stage_def)
+            project.docheck_locations(dim, self.current_stage_def.outdir,
+                                      add=False,
+                                      clean=True,
+                                      remove=False,
+                                      upload=False)
+        except:
+            e = sys.exc_info()
+            traceback.print_tb(e[2])
+            tkMessageBox.showerror('', e[1])
+
+    # Remove disk locations.
+
+    def remove_locations(self):
+        if self.current_project_def == None:
+            tkMessageBox.showwarning('', 'No project selected.')
+            return
+        if self.current_stage_def == None:
+            tkMessageBox.showwarning('', 'No stage selected.')
+            return
+        try:
+            dim = project_utilities.dimensions(self.current_project_def, self.current_stage_def)
+            project.docheck_locations(dim, self.current_stage_def.outdir,
+                                      add=False,
+                                      clean=False,
+                                      remove=True,
+                                      upload=False)
+        except:
+            e = sys.exc_info()
+            traceback.print_tb(e[2])
+            tkMessageBox.showerror('', e[1])
+
+    # Upload.
+
+    def upload(self):
+        if self.current_project_def == None:
+            tkMessageBox.showwarning('', 'No project selected.')
+            return
+        if self.current_stage_def == None:
+            tkMessageBox.showwarning('', 'No stage selected.')
+            return
+        try:
+            dim = project_utilities.dimensions(self.current_project_def, self.current_stage_def)
+            project.docheck_locations(dim, self.current_stage_def.outdir,
+                                      add=False,
+                                      clean=False,
+                                      remove=False,
+                                      upload=True)
+        except:
+            e = sys.exc_info()
+            traceback.print_tb(e[2])
+            tkMessageBox.showerror('', e[1])
+
+    # Do a SAM audit.
+
+    def audit(self):
+        if self.current_project_def == None:
+            tkMessageBox.showwarning('', 'No project selected.')
+            return
+        if self.current_stage_def == None:
+            tkMessageBox.showwarning('', 'No stage selected.')
+            return
+        try:
+            project.doaudit(self.current_stage_def)
+        except:
+            e = sys.exc_info()
+            traceback.print_tb(e[2])
+            tkMessageBox.showerror('', e[1])
+
+    # Help method.
+
+    def help(self):
+
+        # Capture output from project.py --help.
+        # Because of the way this command is implemented in project.py, we have
+        # to run in a separate process, not just call method help of project module.
+
+        command = ['project.py', '--help']
+        helptext = subprocess.check_output(command)
+        w = TextWindow()
+        w.insert(tk.END, helptext)
+
+    # XML help method.
+
+    def xmlhelp(self):
+
+        # Capture output from project.py --xmlhelp.
+        # Because of the way this command is implemented in project.py, we have
+        # to run in a separate process, not just call method xmlhelp of project module.
+
+        command = ['project.py', '--xmlhelp']
+        helptext = subprocess.check_output(command)
+        w = TextWindow()
+        w.insert(tk.END, helptext)
 
     # Close window.
 
