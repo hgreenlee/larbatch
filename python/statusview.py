@@ -25,12 +25,14 @@ import tkFont
 kEXISTS = 1
 kNFILE = 2
 kNEV = 3
-kNERROR = 4
-kNMISS = 5
-kIDLE = 6
-kRUNNING = 7
-kHELD = 8
-kOTHER = 9
+kNANA = 4
+kNERROR = 5
+kNMISS = 6
+kIDLE = 7
+kRUNNING = 8
+kHELD = 9
+kOTHER = 10
+kEND = 11
 
 # Project widget class
 
@@ -56,6 +58,7 @@ class ProjectStatusView(tk.Frame):
         self.exists_labels = {}
         self.nfile_labels = {}
         self.nev_labels = {}
+        self.nana_labels = {}
         self.nerror_labels = {}
         self.nmiss_labels = {}
         self.nidle_labels = {}
@@ -88,7 +91,8 @@ class ProjectStatusView(tk.Frame):
         check_button = tk.Button(self.files_cat, bg='lightgray', text='Check',
                                  command=self.parent.parent.check)
         check_button.pack(side=tk.RIGHT)
-        self.files_cat.grid(row=0, column=kEXISTS, columnspan=5, sticky=tk.N+tk.E+tk.W+tk.S)
+        self.files_cat.grid(row=0, column=kEXISTS, columnspan=kIDLE-kEXISTS, 
+                            sticky=tk.N+tk.E+tk.W+tk.S)
         self.batch_cat = tk.Frame(self, bd=1, relief=tk.SUNKEN)
         batch_label = tk.Label(self.batch_cat, bg='lightgray', relief=tk.FLAT, text='Batch Jobs',
                                padx=10, font=tkFont.Font(size=12))
@@ -96,7 +100,8 @@ class ProjectStatusView(tk.Frame):
         batch_button = tk.Button(self.batch_cat, bg='lightgray', text='Update',
                                  command=self.update_jobs)
         batch_button.pack(side=tk.RIGHT)
-        self.batch_cat.grid(row=0, column=kIDLE, columnspan=4, sticky=tk.N+tk.E+tk.W+tk.S)
+        self.batch_cat.grid(row=0, column=kIDLE, columnspan=kEND-kIDLE,
+                            sticky=tk.N+tk.E+tk.W+tk.S)
 
         # Add column headings.
 
@@ -108,14 +113,18 @@ class ProjectStatusView(tk.Frame):
                                     padx=10, font=tkFont.Font(size=12))
         self.exists_head.grid(row=1, column=kEXISTS, sticky=tk.N+tk.E+tk.W+tk.S)
         self.columnconfigure(kEXISTS, weight=1)
-        self.nfile_head = tk.Label(self, bg='lightgray', relief=tk.RIDGE, text='Files',
+        self.nfile_head = tk.Label(self, bg='lightgray', relief=tk.RIDGE, text='Art Files',
                                    padx=10, font=tkFont.Font(size=12))
         self.nfile_head.grid(row=1, column=kNFILE, sticky=tk.N+tk.E+tk.W+tk.S)
         self.columnconfigure(kNFILE, weight=1)
         self.nev_head = tk.Label(self, bg='lightgray', relief=tk.RIDGE, text='Events',
                                  padx=10, font=tkFont.Font(size=12))
         self.nev_head.grid(row=1, column=kNEV, sticky=tk.N+tk.E+tk.W+tk.S)
-        self.columnconfigure(kNEV, weight=1)
+        self.columnconfigure(kNANA, weight=1)
+        self.nana_head = tk.Label(self, bg='lightgray', relief=tk.RIDGE, text='Ana Files',
+                                  padx=10, font=tkFont.Font(size=12))
+        self.nana_head.grid(row=1, column=kNANA, sticky=tk.N+tk.E+tk.W+tk.S)
+        self.columnconfigure(kNANA, weight=1)
         self.nerror_head = tk.Label(self, bg='lightgray', relief=tk.RIDGE, text='Errors',
                                     padx=10, font=tkFont.Font(size=12))
         self.nerror_head.grid(row=1, column=kNERROR, sticky=tk.N+tk.E+tk.W+tk.S)
@@ -169,6 +178,8 @@ class ProjectStatusView(tk.Frame):
             self.nfile_labels[key].grid_forget()
         for key in self.nev_labels.keys():
             self.nev_labels[key].grid_forget()
+        for key in self.nana_labels.keys():
+            self.nana_labels[key].grid_forget()
         for key in self.nerror_labels.keys():
             self.nerror_labels[key].grid_forget()
         for key in self.nmiss_labels.keys():
@@ -213,10 +224,6 @@ class ProjectStatusView(tk.Frame):
                 self.nfile_labels[stage.name] = tk.Label(self, bg='white', relief=tk.RIDGE,
                                                          font=tkFont.Font(size=12))
             self.nfile_labels[stage.name]['text'] = str(ss.nfile)
-            if ss.nfile == 0:
-                self.nfile_labels[stage.name]['fg'] = 'red'
-            else:
-                self.nfile_labels[stage.name]['fg'] = 'black'
             self.nfile_labels[stage.name].grid(row=row, column=kNFILE, sticky=tk.N+tk.E+tk.W+tk.S)
             self.rowconfigure(row, weight=1)
 
@@ -224,11 +231,14 @@ class ProjectStatusView(tk.Frame):
                 self.nev_labels[stage.name] = tk.Label(self, bg='white', relief=tk.RIDGE,
                                                        font=tkFont.Font(size=12))
             self.nev_labels[stage.name]['text'] = str(ss.nev)
-            if ss.nev == 0:
-                self.nev_labels[stage.name]['fg'] = 'red'
-            else:
-                self.nev_labels[stage.name]['fg'] = 'black'
             self.nev_labels[stage.name].grid(row=row, column=kNEV, sticky=tk.N+tk.E+tk.W+tk.S)
+            self.rowconfigure(row, weight=1)
+
+            if not self.nana_labels.has_key(stage.name):
+                self.nana_labels[stage.name] = tk.Label(self, bg='white', relief=tk.RIDGE,
+                                                        font=tkFont.Font(size=12))
+            self.nana_labels[stage.name]['text'] = str(ss.nana)
+            self.nana_labels[stage.name].grid(row=row, column=kNANA, sticky=tk.N+tk.E+tk.W+tk.S)
             self.rowconfigure(row, weight=1)
 
             if not self.nerror_labels.has_key(stage.name):

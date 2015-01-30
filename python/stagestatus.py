@@ -26,8 +26,9 @@ class StageStatus:
 
         self.stage = stage               # Stage name.
         self.exists = False              # Does logdir exist?
-        self.nfile = 0                   # Number of good files.
-        self.nev = 0                     # Number of good events.
+        self.nfile = 0                   # Number of good art files.
+        self.nev = 0                     # Number of good art events.
+        self.nana = 0                    # Number of good non-art root files.
         self.nerror = 0                  # Number of workers with errors.
         self.nmiss = 0                   # Number of unprocessed input files.
 
@@ -50,6 +51,7 @@ class StageStatus:
             self.exists = True
             self.nfile = 0
             self.nev = 0
+            self.nana = 0
             self.nerror = 0
             self.nmiss = 0
 
@@ -63,6 +65,14 @@ class StageStatus:
                     if len(words) >= 2:
                         self.nfile = self.nfile + 1
                         self.nev = self.nev + int(words[1])
+
+            # Count good files analysis root files.
+
+            filesana = os.path.join(logdir, 'filesana.list')
+            if project_utilities.safeexist(filesana):
+                lines = project_utilities.saferead(filesana)
+                for line in lines:
+                    self.nana = self.nana + 1
 
             # Count errors.
 

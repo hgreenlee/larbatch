@@ -342,9 +342,9 @@ def dostatus(project):
         stage_status = project_status.get_stage_status(stagename)
         b_stage_status = batch_status.get_stage_status(stagename)
         if stage_status.exists:
-            print '\nStage %s: %d good output files, %d events, %d errors, %d missing files.' % (
-                stagename, stage_status.nfile, stage_status.nev, stage_status.nerror, 
-                stage_status.nmiss)
+            print '\nStage %s: %d art files, %d events, %d analysis files, %d errors, %d missing files.' % (
+                stagename, stage_status.nfile, stage_status.nev, stage_status.nana, 
+                stage_status.nerror, stage_status.nmiss)
         else:
             print '\nStage %s output directory does not exist.' % stagename
         print 'Stage %s batch jobs: %d idle, %d running, %d held, %d other.' % (
