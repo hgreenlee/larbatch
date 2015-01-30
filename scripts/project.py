@@ -2075,10 +2075,8 @@ def domerge(stage, mergehist, mergentuple):
        	
     if len(hlist) > 0:
         name = os.path.join(stage.outdir, 'anahist.root')
-        if name[0:6] == '/pnfs/':
-            name_temp = 'anahist.root'
-        else:
-            name_temp = name 
+	if project_utilities.safeexist(name):
+                os.remove(name)
 		     
         if mergehist:
             mergecom = "hadd -T"
@@ -2089,19 +2087,14 @@ def domerge(stage, mergehist, mergentuple):
            
         print "Merging %d root files using %s." % (len(hlist), mergecom)
 			          			         
-        if os.path.exists(name_temp):
-            os.remove(name_temp)
+        if os.path.exists(name):
+            os.remove(name)
         comlist = mergecom.split()
-        comlist.extend(["-v", "0", "-f", "-k", name_temp, '@' + histurlsname_temp])
+        comlist.extend(["-v", "0", "-f", "-k", name, '@' + histurlsname_temp])
         rc = subprocess.call(comlist)
         if rc != 0:
             print "%s exit status %d" % (mergecom, rc)
-        if name != name_temp:
-            if project_utilities.safeexist(name):
-                os.remove(name)
-            if os.path.exists(name_temp):
-                subprocess.call(['ifdh', 'cp', name_temp, name])
-                os.remove(name_temp)
+   
         os.remove(histurlsname_temp)	     
 
 
