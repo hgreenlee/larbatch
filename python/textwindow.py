@@ -79,3 +79,8 @@ class TextWindow():
     def insert(self, pos, text):
         self.text.insert(pos, text)
 
+    # Insert text at and of buffer.
+
+    def append(self, text):
+        self.insert(tk.END, text)
+

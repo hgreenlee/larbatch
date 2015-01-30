@@ -96,7 +96,7 @@ class ProjectApp(tk.Frame):
         # Put menu in its own frame.
 
         self.menubar = tk.Frame(self)
-        self.menubar.pack(side=tk.TOP, anchor=tk.NW, expand=1, fill=tk.X)
+        self.menubar.pack(side=tk.TOP, fill=tk.X)
 
         # File menu.
 
@@ -795,7 +795,7 @@ class ProjectApp(tk.Frame):
         command = ['project.py', '--help']
         helptext = subprocess.check_output(command)
         w = TextWindow()
-        w.insert(tk.END, helptext)
+        w.append(helptext)
 
     # XML help method.
 
@@ -808,7 +808,7 @@ class ProjectApp(tk.Frame):
         command = ['project.py', '--xmlhelp']
         helptext = subprocess.check_output(command)
         w = TextWindow()
-        w.insert(tk.END, helptext)
+        w.append(helptext)
 
     # Close window.
 

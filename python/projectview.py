@@ -31,8 +31,6 @@ class ProjectView(tk.Frame):
 
         tk.Frame.__init__(self, self.parent)
         self.pack(expand=1, fill=tk.BOTH)
-        self.rowconfigure(1, weight=1)
-        self.columnconfigure(0, weight=1)
 
         # Make widgets that belong to this widget.
 
@@ -43,26 +41,37 @@ class ProjectView(tk.Frame):
 
     def make_widgets(self):
 
-        # Add a label which will display the current project xml file path.
+        # Add a frame for information labels.
 
-        self.path = tk.Label(self, relief=tk.SUNKEN)
-        self.path.grid(row=0, column=0, sticky=tk.N+tk.E+tk.W)
+        self.infoframe = tk.Frame(self, relief=tk.FLAT, bg='aliceblue')
+        self.infoframe.pack(side=tk.TOP, fill=tk.X)
+        self.infoframe.columnconfigure(1, weight=1)
 
-        # Add a label which will display the current project name.
+        # Add a label in info frame which will display the current project xml file path.
 
-        self.label = tk.Label(self, relief=tk.SUNKEN)
-        self.label.grid(row=1, column=0, sticky=tk.N+tk.E+tk.W)
+        self.pathlabel = tk.Label(self.infoframe, relief=tk.FLAT, bg='aliceblue', text='XML Path:')
+        self.pathlabel.grid(row=0, column=0)
+        self.path = tk.Label(self.infoframe, relief=tk.SUNKEN, bg='white')
+        self.path.grid(row=0, column=1, sticky=tk.E+tk.W)
+
+        # Add a label in info frame which will display the current project name.
+
+        self.projectlabel = tk.Label(self.infoframe, relief=tk.FLAT, bg='aliceblue', 
+                                     text='Project:')
+        self.projectlabel.grid(row=1, column=0)
+        self.projectname = tk.Label(self.infoframe, relief=tk.SUNKEN, bg='white')
+        self.projectname.grid(row=1, column=1, sticky=tk.E+tk.W)
 
         # Add a project status view.
 
         self.ps = ProjectStatusView(self)
-        self.ps.grid(row=2, column=0, sticky=tk.N+tk.E+tk.W+tk.S)
+        self.ps.pack(side=tk.BOTTOM, expand=1, fill=tk.BOTH)
 
     # Select the project.
 
     def set_project(self, project_name, xml_path, project_def):
         self.path['text'] = xml_path
-        self.label['text'] = project_name
+        self.projectname['text'] = project_name
         if project_def != None:
             self.ps.set_project(project_def)
 
@@ -88,7 +97,7 @@ class ProjectView(tk.Frame):
         # of it any more.  It is owned by window manager.
 
         w = TextWindow()
-        w.insert(tk.END, xmltext)
+        w.append(xmltext)
 
     # Update status view.
 
