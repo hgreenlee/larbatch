@@ -1487,7 +1487,7 @@ def fill_workdir(project, stage, makeup):
     # Copy the fcl file to the work directory.
 
     workfcl = os.path.join(stage.workdir, os.path.basename(stage.fclname))
-    if fcl != workfcl:
+    if os.path.abspath(fcl) != os.path.abspath(workfcl):
         shutil.copy(fcl, workfcl)
 
     # Construct a wrapper fcl file (called "wrapper.fcl") that will include
