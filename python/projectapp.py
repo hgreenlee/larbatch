@@ -80,14 +80,27 @@ class ProjectApp(tk.Frame):
 
     def make_widgets(self):
 
-        # Make menu bar.
+        self.rowconfigure(2, weight=1)
+        self.columnconfigure(0, weight=1)
+
+        # Make menu bar (row 0).
 
         self.make_menubar()
 
-        # Add project view widget.
+        # Add project view widget (row 1).
 
         self.project_view = ProjectView(self)
-        self.project_view.pack(side=tk.BOTTOM, expand=1, fill=tk.BOTH)
+        self.project_view.grid(row=1, column=0, sticky=tk.E+tk.W)
+
+        # Add console window widget (row 2).
+
+        self.console = TextWindow(self)
+        self.console.grid(row=2, column=0, sticky=tk.N+tk.E+tk.W+tk.S)
+
+        # From now on, send standard and diagnostic output to console window.
+
+        sys.stdout = self.console
+        sys.stderr = self.console
 
     # Make a menubar widget.
 
@@ -96,7 +109,7 @@ class ProjectApp(tk.Frame):
         # Put menu in its own frame.
 
         self.menubar = tk.Frame(self)
-        self.menubar.pack(side=tk.TOP, fill=tk.X)
+        self.menubar.grid(row=0, column=0, sticky=tk.E+tk.W)
 
         # File menu.
 

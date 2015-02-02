@@ -4,11 +4,13 @@
 # Name: textwindow.py
 #
 # Purpose: Python class for displaying arbitrary text in a scrolling
-#          top level window.
+#          window or frame.
 #
 # Created: 28-Jan-2015  Herbert Greenlee
 #
 ######################################################################
+
+import sys
 
 # Import GUI stuff
 
@@ -16,30 +18,39 @@ import Tkinter as tk
 
 # Project widget class
 
-class TextWindow():
+class TextWindow(tk.Frame):
 
     # Constructor.
 
-    def __init__(self):
+    def __init__(self, parent=None, rows=24, columns=80):
 
-        # Make a Toplevel widget.
+        # Parent window.
 
-        self.window = tk.Toplevel()
-        self.window.rowconfigure(0, weight=1)
-        self.window.columnconfigure(0, weight=1)
+        if parent == None:
+            self.parent = tk.Toplevel()
+        else:
+            self.parent = parent
+
+        # Register our outermost frame in the parent window.
+
+        tk.Frame.__init__(self, self.parent)
+        if parent == None:
+            self.pack(expand=1, fill=tk.BOTH)
+        self.rowconfigure(0, weight=1)
+        self.columnconfigure(0, weight=1)
 
         # Add an empty text widget.
 
-        self.text = tk.Text(self.window, height=24, width=80, wrap=tk.NONE)
+        self.text = tk.Text(self, height=rows, width=columns, wrap=tk.NONE)
         self.text.grid(row=0, column=0, sticky=tk.N+tk.E+tk.W+tk.S)
 
         # Make scroll bars, but don't grid them yet.
 
-        self.vbar = tk.Scrollbar(self.window, orient=tk.VERTICAL, command=self.text.yview)
+        self.vbar = tk.Scrollbar(self, orient=tk.VERTICAL, command=self.text.yview)
         self.text['yscrollcommand'] = self.vbar.set
         self.vbar_visible = 0
 
-        self.hbar = tk.Scrollbar(self.window, orient=tk.HORIZONTAL, command=self.text.xview)
+        self.hbar = tk.Scrollbar(self, orient=tk.HORIZONTAL, command=self.text.xview)
         self.text['xscrollcommand'] = self.hbar.set
         self.hbar_visible = 0
 
@@ -78,9 +89,17 @@ class TextWindow():
 
     def insert(self, pos, text):
         self.text.insert(pos, text)
+        self.check_scroll()
 
     # Insert text at and of buffer.
 
     def append(self, text):
         self.insert(tk.END, text)
+
+
+    # File methods.
+
+    def write(self, text):
+        self.append(text)
+        self.text.yview_moveto(1.0)   # Scroll to bottom
 
