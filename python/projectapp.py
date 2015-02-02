@@ -860,7 +860,7 @@ class ProjectApp(tk.Frame):
         # to run in a separate process, not just call method help of project module.
 
         command = ['project.py', '--help']
-        helptext = subprocess.check_output(command, stderr=sys.stderr)
+        helptext = subprocess.check_output(command)
         w = TextWindow()
         w.append(helptext)
 
@@ -873,7 +873,7 @@ class ProjectApp(tk.Frame):
         # to run in a separate process, not just call method xmlhelp of project module.
 
         command = ['project.py', '--xmlhelp']
-        helptext = subprocess.check_output(command, stderr=sys.stderr)
+        helptext = subprocess.check_output(command)
         w = TextWindow()
         w.append(helptext)
 

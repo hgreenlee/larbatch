@@ -76,7 +76,7 @@ def fileEnstoreChecksum(path):
             # New (clever, efficient, obscure...) way of accessing dCache 
             # stored checksum using srm.
             cmd = ['srmls', '-2', '-l', srm_url]
-            srmout = subprocess.check_output(cmd, stderr=sys.stderr)
+            srmout = subprocess.check_output(cmd)
             first = True
             crc0 = 0
             for line in string.split(srmout, '\n'):

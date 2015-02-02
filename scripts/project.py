@@ -2155,7 +2155,7 @@ def doaudit(stage):
         elif item in outparentlist:
             me = me+1
             childcmd = 'samweb list-files "ischildof: (file_name=%s) and availability: anylocation"' %(item)
-            children = subprocess.check_output(childcmd, shell=True, stderr=sys.stderr).splitlines()
+            children = subprocess.check_output(childcmd, shell=True).splitlines()
             rmfile = list(set(children) & set(outputlist))[0]
             if me ==1:
                 flist = []

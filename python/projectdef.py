@@ -167,8 +167,7 @@ class ProjectDef:
 
         script_path = ''
         try:
-            script_path = subprocess.check_output(['which', self.script],
-                                                  stderr=sys.stderr).splitlines()[0].strip()
+            script_path = subprocess.check_output(['which', self.script]).splitlines()[0].strip()
         except:
             pass
         if script_path == '' or not os.access(script_path, os.X_OK):
@@ -182,8 +181,8 @@ class ProjectDef:
         
         script_path = ''
         try:
-            script_path = subprocess.check_output(['which', self.start_script],
-                                                  stderr=sys.stderr).splitlines()[0].strip()
+            script_path = subprocess.check_output(['which',
+                                                   self.start_script]).splitlines()[0].strip()
         except:
             pass
         self.start_script = script_path
@@ -192,8 +191,8 @@ class ProjectDef:
         
         script_path = ''
         try:
-            script_path = subprocess.check_output(['which', self.stop_script],
-                                                  stderr=sys.stderr).splitlines()[0].strip()
+            script_path = subprocess.check_output(['which',
+                                                   self.stop_script]).splitlines()[0].strip()
         except:
             pass
         self.stop_script = script_path

@@ -127,7 +127,7 @@ def get_user():
 
     # Get information about our ticket.
 
-    for line in subprocess.check_output('klist', stderr=sys.stderr).splitlines():
+    for line in subprocess.check_output('klist').splitlines():
         pattern = 'Default principal:'
         n = line.find(pattern)
         if n >= 0:
@@ -217,7 +217,7 @@ def saferead(path):
         return lines
     if path[0:6] == '/pnfs/':
         test_proxy()
-        lines = subprocess.check_output(['ifdh', 'cp', path, '/dev/fd/1'], stderr=sys.stderr)
+        lines = subprocess.check_output(['ifdh', 'cp', path, '/dev/fd/1'])
     else:
         lines = open(path).readlines()
     return lines

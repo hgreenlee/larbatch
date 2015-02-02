@@ -86,7 +86,7 @@ class BatchStatus:
         command.append('--group=%s' % project_utilities.get_experiment())
         command.append('--user=%s' % project_utilities.get_user())
         command.append('--role=%s' % project_utilities.get_role())
-        jobs = subprocess.check_output(command, stderr=sys.stderr).splitlines()
+        jobs = subprocess.check_output(command).splitlines()
 
     # Return jobs list.
 
