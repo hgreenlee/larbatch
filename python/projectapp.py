@@ -12,6 +12,7 @@
 # Standard imports
 
 import sys, os, subprocess, traceback
+from sets import Set
 
 # Import project.py as a module.
 
@@ -190,6 +191,7 @@ class ProjectApp(tk.Frame):
         self.batch_menu.add_command(label='Submit', command=self.submit)
         self.batch_menu.add_command(label='Makeup', command=self.makeup)
         self.batch_menu.add_command(label='Update', command=self.update_jobs)
+        self.batch_menu.add_command(label='Kill', command=self.kill_jobs)
         mbutton['menu'] = self.batch_menu
 
         # SAM menu.
@@ -525,6 +527,58 @@ class ProjectApp(tk.Frame):
     def update_jobs(self):
         self.project_view.update_jobs()
 
+    # Kill jobs action.
+
+    def kill_jobs(self):
+        if self.current_project_def == None:
+            tkMessageBox.showwarning('', 'No project selected.')
+            return
+        if self.current_stage_def == None:
+            tkMessageBox.showwarning('', 'No stage selected.')
+            return
+
+        try:
+            BatchStatus.update_jobs()
+            jobs = BatchStatus.get_jobs()
+        except:
+            e = sys.exc_info()
+            traceback.print_tb(e[2])
+            tkMessageBox.showerror('', e[1])
+
+        # Figure out which clusters to kill.
+        
+        cluster_ids = Set()
+        for job in jobs:
+            words = job.split()
+            if len(words) >= 2:
+                jobid = words[0]
+                script = words[-1]
+                workscript = '%s-%s.sh' % (self.current_stage_def.name,
+                                           self.current_project_def.name)
+                if script.find(workscript) == 0:
+                    cp_server = jobid.split('@')
+                    if len(cp_server) == 2:
+                        clusproc = cp_server[0]
+                        server = cp_server[1]
+                        cp = clusproc.split('.')
+                        if len(cp) == 2:
+                            cluster = cp[0]
+                            process = cp[1]
+                            cluster_id = '%s@%s' % (cluster, server)
+                            if not cluster_id in cluster_ids:
+                                cluster_ids.add(cluster_id)
+
+        # Actually issue kill commands.
+
+        for cluster_id in cluster_ids:
+            print 'Kill cluster id %s' % cluster_id
+            command = ['jobsub_rm']
+            command.append('--jobid=%s' % cluster_id)
+            subprocess.call(command)
+
+        self.update_jobs()
+                           
+        
     # Histogram merge.
 
     def mergehist(self):

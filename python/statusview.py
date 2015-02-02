@@ -332,7 +332,7 @@ class ProjectStatusView(tk.Frame):
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
         self.update_status()
-        
+
     # Click on stage mouse event callback.
 
     def click_stage(self, event):

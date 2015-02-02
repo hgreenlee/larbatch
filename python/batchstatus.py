@@ -87,6 +87,14 @@ class BatchStatus:
         command.append('--role=%s' % project_utilities.get_role())
         jobs = subprocess.check_output(command).splitlines()
 
+    # Return jobs list.
+
+    @staticmethod
+    def get_jobs():
+
+        global jobs
+        return jobs    
+
     # Get stage status for specified stage.
     # Returns 4-tuple (# idle, # running, # held, # other).
 
