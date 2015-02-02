@@ -574,7 +574,7 @@ class ProjectApp(tk.Frame):
             print 'Kill cluster id %s' % cluster_id
             command = ['jobsub_rm']
             command.append('--jobid=%s' % cluster_id)
-            subprocess.call(command)
+            subprocess.call(command, stdout=sys.stdout, stderr=sys.stderr)
 
         self.update_jobs()
                            
@@ -860,7 +860,7 @@ class ProjectApp(tk.Frame):
         # to run in a separate process, not just call method help of project module.
 
         command = ['project.py', '--help']
-        helptext = subprocess.check_output(command)
+        helptext = subprocess.check_output(command, stderr=sys.stderr)
         w = TextWindow()
         w.append(helptext)
 
@@ -873,7 +873,7 @@ class ProjectApp(tk.Frame):
         # to run in a separate process, not just call method xmlhelp of project module.
 
         command = ['project.py', '--xmlhelp']
-        helptext = subprocess.check_output(command)
+        helptext = subprocess.check_output(command, stderr=sys.stderr)
         w = TextWindow()
         w.append(helptext)
 

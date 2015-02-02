@@ -9,7 +9,7 @@
 #
 ######################################################################
 
-import os, string, subprocess
+import sys, os, string, subprocess
 from xmlerror import XMLError
 from stagedef import StageDef
 
@@ -167,9 +167,8 @@ class ProjectDef:
 
         script_path = ''
         try:
-            proc = subprocess.Popen(['which', self.script], stdout=subprocess.PIPE)
-            script_path = proc.stdout.readlines()[0].strip()
-            proc.wait()
+            script_path = subprocess.check_output(['which', self.script],
+                                                  stderr=sys.stderr).splitlines()[0].strip()
         except:
             pass
         if script_path == '' or not os.access(script_path, os.X_OK):
@@ -183,9 +182,8 @@ class ProjectDef:
         
         script_path = ''
         try:
-            proc = subprocess.Popen(['which', self.start_script], stdout=subprocess.PIPE)
-            script_path = proc.stdout.readlines()[0].strip()
-            proc.wait()
+            script_path = subprocess.check_output(['which', self.start_script],
+                                                  stderr=sys.stderr).splitlines()[0].strip()
         except:
             pass
         self.start_script = script_path
@@ -194,9 +192,8 @@ class ProjectDef:
         
         script_path = ''
         try:
-            proc = subprocess.Popen(['which', self.stop_script], stdout=subprocess.PIPE)
-            script_path = proc.stdout.readlines()[0].strip()
-            proc.wait()
+            script_path = subprocess.check_output(['which', self.stop_script],
+                                                  stderr=sys.stderr).splitlines()[0].strip()
         except:
             pass
         self.stop_script = script_path

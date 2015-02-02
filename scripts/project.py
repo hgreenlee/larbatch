@@ -211,7 +211,7 @@ class SafeFile:
             proxy_ok = project_utilities.test_proxy()
         self.destination = destination
         if project_utilities.safeexist(self.destination):
-            subprocess.call(['ifdh', 'rm', self.destination])
+            subprocess.call(['ifdh', 'rm', self.destination], stdout=sys.stdout, stderr=sys.stderr)
         self.filename = os.path.basename(destination)
         if os.path.exists(self.filename):
             os.remove(self.filename)
@@ -229,7 +229,8 @@ class SafeFile:
     def close(self):
         if self.file is not None and not self.file.closed:
             self.file.close()
-        subprocess.call(['ifdh', 'cp', self.filename, self.destination])
+        subprocess.call(['ifdh', 'cp', self.filename, self.destination],
+                        stdout=sys.stdout, stderr=sys.stderr)
         os.remove(self.filename)
         self.destination = ''
         self.filename = ''
@@ -1109,7 +1110,7 @@ def dofetchlog(stage):
                     command = ['jobsub_fetchlog']
                     command.append('--jobid=%s' % logid)
                     command.append('--dest-dir=%s' % logdir)
-                    rc = subprocess.call(command)
+                    rc = subprocess.call(command, stdout=sys.stdout, stderr=sys.stderr)
 
                     # Done.
 
@@ -1410,7 +1411,9 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
 
                     loc_filename = os.path.join(loc, filename)
                     print 'Copying %s to dropbox directory %s.' % (filename, dropbox)
-                    subprocess.call(['ifdh', 'cp', '--force=gridftp', loc_filename, dropbox_filename])
+                    subprocess.call(['ifdh', 'cp', '--force=gridftp', loc_filename,
+                                     dropbox_filename],
+                                    stdout=sys.stdout, stderr=sys.stderr)
 
     return 0
 
@@ -1989,7 +1992,7 @@ def dojobsub(project, stage, makeup, input_list_name, makeup_count, makeup_defna
 
         # For submit action, invoke the job submission command.
 
-        subprocess.call(command)
+        subprocess.call(command, stdout=sys.stdout, stderr=sys.stderr)
         if project_utilities.safeexist(checked_file):
             os.remove(checked_file)
 
@@ -1998,7 +2001,7 @@ def dojobsub(project, stage, makeup, input_list_name, makeup_count, makeup_defna
         # For makeup action, abort if makeup job count is zero for some reason.
 
         if makeup_count > 0:
-            subprocess.call(command)
+            subprocess.call(command, stdout=sys.stdout, stderr=sys.stderr)
             if project_utilities.safeexist(checked_file):
                 os.remove(checked_file)
         else:
@@ -2091,7 +2094,7 @@ def domerge(stage, mergehist, mergentuple):
             os.remove(name)
         comlist = mergecom.split()
         comlist.extend(["-v", "0", "-f", "-k", name, '@' + histurlsname_temp])
-        rc = subprocess.call(comlist)
+        rc = subprocess.call(comlist, stdout=sys.stdout, stderr=sys.stderr)
         if rc != 0:
             print "%s exit status %d" % (mergecom, rc)
    
@@ -2152,7 +2155,7 @@ def doaudit(stage):
         elif item in outparentlist:
             me = me+1
             childcmd = 'samweb list-files "ischildof: (file_name=%s) and availability: anylocation"' %(item)
-            children = subprocess.check_output(childcmd, shell = True).splitlines()
+            children = subprocess.check_output(childcmd, shell=True, stderr=sys.stderr).splitlines()
             rmfile = list(set(children) & set(outputlist))[0]
             if me ==1:
                 flist = []

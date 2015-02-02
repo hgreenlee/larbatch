@@ -96,10 +96,61 @@ class TextWindow(tk.Frame):
     def append(self, text):
         self.insert(tk.END, text)
 
+    # File-like methods.
 
-    # File methods.
+    # If they want our file descriptor, tell them 2 for now (standard error).
+    # Python docs say not to implement this method if it doesn't make sense
+    # for your file-like object.  But subprocess(stderr=) doesn't work without 
+    # this method.
+
+    def fileno(self):
+        return 2
+
+    # Close/flush file (don't do anything).
+
+    def close(self):
+        return
+    def flush(self):
+        return
+
+    # Is this a tty?
+
+    def isatty(self):
+        return False
+
+    # Read methods (raise IOError).
+
+    def next(self):
+        raise IOError, 'File is not open for reading.'
+    def read(self, size=0):
+        raise IOError, 'File is not open for reading.'
+    def readline(self, size=0):
+        raise IOError, 'File is not open for reading.'
+    def readlines(self, size=0):
+        raise IOError, 'File is not open for reading.'
+    def readline(self, size=0):
+        raise IOError, 'File is not open for reading.'
+    def seek(self, offset, pos=0):
+        raise IOError, 'File is not open for reading.'
+
+    # Current position.
+
+    def tell(self):
+        return len(self.text['text'])
+
+    # Truncate.
+
+    def truncate(self, size=0):
+        self.text['text'] = self.text['text'][0:size]
+        self.check_scroll()
+        self.text.yview_moveto(1.0)   # Scroll to bottom
+
+    # Write methods.
 
     def write(self, text):
         self.append(text)
         self.text.yview_moveto(1.0)   # Scroll to bottom
-
+    def writelines(self, lines):
+        for line in lines:
+            self.append(line)
+        self.text.yview_moveto(1.0)   # Scroll to bottom
