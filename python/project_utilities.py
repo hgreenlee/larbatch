@@ -185,7 +185,7 @@ def safeexist(path):
 def test_ticket():
     global ticket_ok
     if not ticket_ok:
-        ok = subprocess.call(['klist', '-s'])
+        ok = subprocess.call(['klist', '-s'], stdout=sys.stdout, stderr=sys.stderr)
         if ok != 0:
             raise RuntimeError, 'Please get a kerberos ticket.'
         ticket_ok = True
@@ -203,7 +203,7 @@ def test_proxy():
 
     if not proxy_ok:
         try:
-            subprocess.check_call(['voms-proxy-info', '-exists'], stdout=-1)
+            subprocess.check_call(['voms-proxy-info', '-exists'], stdout=-1, stderr=-1)
             proxy_ok = True
         except:
             raise RuntimeError, 'Please get a grid proxy.'
@@ -217,8 +217,7 @@ def saferead(path):
         return lines
     if path[0:6] == '/pnfs/':
         test_proxy()
-        proc = subprocess.Popen(['ifdh', 'cp', path, '/dev/fd/1'], stdout=subprocess.PIPE)
-        lines = proc.stdout.readlines()
+        lines = subprocess.check_output(['ifdh', 'cp', path, '/dev/fd/1'])
     else:
         lines = open(path).readlines()
     return lines
@@ -310,7 +309,7 @@ def path_to_local(path):
             # Use ifdh to make local copy of file.
 
             #print 'Copying %s to %s.' % (path, local)
-            rc = subprocess.call(['ifdh', 'cp', path, local])
+            rc = subprocess.call(['ifdh', 'cp', path, local], stdout=sys.stdout, stderr=sys.stderr)
             if rc == 0:
                 rc = wait_for_stat(local)
                 if rc == 0:

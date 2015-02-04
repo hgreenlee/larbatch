@@ -187,6 +187,7 @@ class StageDef:
         resource_elements = stage_element.getElementsByTagName('resource')
         if resource_elements:
             self.resource = resource_elements[0].firstChild.data
+            self.resource = ''.join(self.resource.split())
 
         # Lines (subelement).
 
@@ -199,6 +200,7 @@ class StageDef:
         site_elements = stage_element.getElementsByTagName('site')
         if site_elements:
             self.site = site_elements[0].firstChild.data
+            self.site = ''.join(self.site.split())
 
         # Dictionary of metadata parameters
 
