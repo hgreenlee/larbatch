@@ -1351,7 +1351,7 @@ if [ $stat -ne 0 ]; then
   echo "ifdh cp failed with status ${stat}."
   exit $stat
 fi
-if [ $statout -ne 0 ];
+if [ $statout -ne 0 ]; then
   exit $statout
 fi
 
