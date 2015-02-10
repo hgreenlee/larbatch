@@ -1985,6 +1985,7 @@ def dojobsub(project, stage, makeup, input_list_name, makeup_count, makeup_defna
             dagfileurl = 'file://'+ dagfilepath
             command.append(dagfileurl)
 
+    curdir = os.getcwd()
     os.chdir(stage.workdir)
 
     checked_file = os.path.join(stage.logdir, 'checked')
@@ -2006,6 +2007,7 @@ def dojobsub(project, stage, makeup, input_list_name, makeup_count, makeup_defna
                 os.remove(checked_file)
         else:
             print 'Makeup action aborted because makeup job count is zero.'
+    os.chdir(curdir)
 
 # Submit/makeup action.
 
