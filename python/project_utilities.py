@@ -217,7 +217,7 @@ def saferead(path):
         return lines
     if path[0:6] == '/pnfs/':
         test_proxy()
-        lines = subprocess.check_output(['ifdh', 'cp', path, '/dev/fd/1'])
+        lines = subprocess.check_output(['ifdh', 'cp', path, '/dev/fd/1']).splitlines()
     else:
         lines = open(path).readlines()
     return lines
