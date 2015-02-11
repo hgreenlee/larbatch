@@ -1540,7 +1540,7 @@ def fill_workdir(project, stage, makeup):
 
     # Copy and rename batch script to the work directory.
 
-    workname = '%s-%s' % (stage.name, project.name)
+    workname = '%s-%s-%s' % (stage.name, project.name, project.release_tag)
     workname = workname + os.path.splitext(project.script)[1]
     workscript = os.path.join(stage.workdir, workname)
     if project.script != workscript:
