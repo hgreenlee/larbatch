@@ -64,7 +64,7 @@ class BatchStatus:
                 # Loop over stages.
 
                 for stage in self.project.stages:
-                    workscript = '%s-%s.sh' % (stage.name, project.name)
+                    workscript = '%s-%s-%s.sh' % (stage.name, project.name, project.release_tag)
                     if script.find(workscript) == 0:
                         if state == 'I':
                             self.stage_stats[stage.name][0] = self.stage_stats[stage.name][0] + 1

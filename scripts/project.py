@@ -191,60 +191,62 @@ proxy_ok = False
 # Temporary file is opened in current directory and copied to final destination
 # on close using ifdh.
 
-class SafeFile:
+#class SafeFile:
 
-    # Constructor.
+#    # Constructor.
 
-    def __init__(self, destination=''):
-        self.destination = ''
-        self.filename = ''
-        self.file = None
-        if destination != '':
-            self.open(destination)
-        return
+#    def __init__(self, destination=''):
+#        self.destination = ''
+#        self.filename = ''
+#        self.file = None
+#        if destination != '':
+#            self.open(destination)
+#        return
 
-    # Open method.
+#    # Open method.
     
-    def open(self, destination):
-        global proxy_ok
-        if not proxy_ok:
-            proxy_ok = project_utilities.test_proxy()
-        self.destination = destination
-        if project_utilities.safeexist(self.destination):
-            subprocess.call(['ifdh', 'rm', self.destination], stdout=sys.stdout, stderr=sys.stderr)
-        self.filename = os.path.basename(destination)
-        if os.path.exists(self.filename):
-            os.remove(self.filename)
-        self.file = open(self.filename, 'w')
-        return self.file
+#    def open(self, destination):
+#        global proxy_ok
+#        if not proxy_ok:
+#            proxy_ok = project_utilities.test_proxy()
+#        self.destination = destination
+#        if project_utilities.safeexist(self.destination):
+#            subprocess.call(['ifdh', 'rm', self.destination], stdout=sys.stdout, stderr=sys.stderr)
+#        self.filename = os.path.basename(destination)
+#        if os.path.exists(self.filename):
+#            os.remove(self.filename)
+#        self.file = open(self.filename, 'w')
+#        return self.file
 
-    # Write method.
+#    # Write method.
 
-    def write(self, line):
-        self.file.write(line)
-        return
+#    def write(self, line):
+#        self.file.write(line)
+#        return
 
-    # Close method.
+#    # Close method.
 
-    def close(self):
-        if self.file is not None and not self.file.closed:
-            self.file.close()
-        subprocess.call(['ifdh', 'cp', self.filename, self.destination],
-                        stdout=sys.stdout, stderr=sys.stderr)
-        os.remove(self.filename)
-        self.destination = ''
-        self.filename = ''
-        self.file = None
-        return
+#    def close(self):
+#        if self.file is not None and not self.file.closed:
+#            self.file.close()
+#        subprocess.call(['ifdh', 'cp', self.filename, self.destination],
+#                        stdout=sys.stdout, stderr=sys.stderr)
+#        os.remove(self.filename)
+#        self.destination = ''
+#        self.filename = ''
+#        self.file = None
+#        return
 
 # Function for opening files for writing using either python's built-in
 # file object or SafeFile for dCache/pnfs files, as appropriate.
 
 def safeopen(destination):
-    if destination[0:6] == '/pnfs/':
-        file = SafeFile(destination)
-    else:
-        file = open(destination, 'w')
+    #if destination[0:6] == '/pnfs/':
+    #    file = SafeFile(destination)
+    #else:
+    if project_utilities.safeexist(destination):
+        os.remove(destination)
+    file = open(destination, 'w')
     return file
 
 # Function to make sure samweb_cli module is imported.
@@ -1538,7 +1540,7 @@ def fill_workdir(project, stage, makeup):
 
     # Copy and rename batch script to the work directory.
 
-    workname = '%s-%s' % (stage.name, project.name)
+    workname = '%s-%s-%s' % (stage.name, project.name, project.release_tag)
     workname = workname + os.path.splitext(project.script)[1]
     workscript = os.path.join(stage.workdir, workname)
     if project.script != workscript:
@@ -1985,6 +1987,7 @@ def dojobsub(project, stage, makeup, input_list_name, makeup_count, makeup_defna
             dagfileurl = 'file://'+ dagfilepath
             command.append(dagfileurl)
 
+    curdir = os.getcwd()
     os.chdir(stage.workdir)
 
     checked_file = os.path.join(stage.logdir, 'checked')
@@ -2006,6 +2009,7 @@ def dojobsub(project, stage, makeup, input_list_name, makeup_count, makeup_defna
                 os.remove(checked_file)
         else:
             print 'Makeup action aborted because makeup job count is zero.'
+    os.chdir(curdir)
 
 # Submit/makeup action.
 

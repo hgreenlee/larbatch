@@ -1342,7 +1342,7 @@ stat=$?
 if [ $stat -ne 0 ]; then
   echo "ifdh cp failed with status ${stat}."
 fi
-statout=stat
+statout=$stat
 
 echo "ifdh cp -r $IFDH_OPT out ${OUTDIR}/$OUTPUT_SUBDIR"
 ifdh cp -r $IFDH_OPT out ${OUTDIR}/$OUTPUT_SUBDIR
@@ -1351,7 +1351,7 @@ if [ $stat -ne 0 ]; then
   echo "ifdh cp failed with status ${stat}."
   exit $stat
 fi
-if [ $statout -ne 0 ];
+if [ $statout -ne 0 ]; then
   exit $statout
 fi
 

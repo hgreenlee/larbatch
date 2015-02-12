@@ -41,7 +41,7 @@ class TextWindow(tk.Frame):
 
         # Add an empty text widget.
 
-        self.text = tk.Text(self, height=rows, width=columns, wrap=tk.NONE)
+        self.text = tk.Text(self, height=rows, width=columns, wrap=tk.NONE, takefocus=0)
         self.text.grid(row=0, column=0, sticky=tk.N+tk.E+tk.W+tk.S)
 
         # Make scroll bars, but don't grid them yet.

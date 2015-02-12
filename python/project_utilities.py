@@ -215,11 +215,11 @@ def saferead(path):
     lines = []
     if os.path.getsize(path) == 0:
         return lines
-    if path[0:6] == '/pnfs/':
-        test_proxy()
-        lines = subprocess.check_output(['ifdh', 'cp', path, '/dev/fd/1'])
-    else:
-        lines = open(path).readlines()
+    #if path[0:6] == '/pnfs/':
+    #    test_proxy()
+    #    lines = subprocess.check_output(['ifdh', 'cp', path, '/dev/fd/1']).splitlines()
+    #else:
+    lines = open(path).readlines()
     return lines
 
 # Like os.path.isdir, but faster by avoiding unnecessary i/o.
@@ -278,51 +278,52 @@ def path_to_local(path):
     #     method will not do any copy and will return the input path.
     #     
 
-    global proxy_ok
-    result = ''
+    #global proxy_ok
+    #result = ''
 
     # Is this a pnfs path?
+    # Turn off special treatment of pnfs paths (always use posix access).
 
-    if path[0:6] == '/pnfs/':
+    #if path[0:6] == '/pnfs/':
 
-        # Is there a temp directory?
+    #    # Is there a temp directory?
 
-        local = ''
-        if os.environ.has_key('TMPDIR'):
-            tmpdir = os.environ['TMPDIR']
-            mode = os.stat(tmpdir).st_mode
-            if stat.S_ISDIR(mode) and os.access(tmpdir, os.W_OK):
-                local = os.path.join(tmpdir, os.path.basename(path))
+    #    local = ''
+    #    if os.environ.has_key('TMPDIR'):
+    #        tmpdir = os.environ['TMPDIR']
+    #        mode = os.stat(tmpdir).st_mode
+    #        if stat.S_ISDIR(mode) and os.access(tmpdir, os.W_OK):
+    #            local = os.path.join(tmpdir, os.path.basename(path))
 
-        if local != '':
+    #    if local != '':
 
-            # Do local copy.
+    #        # Do local copy.
 
-            if not proxy_ok:
-                proxy_ok = test_proxy()
+    #        if not proxy_ok:
+    #            proxy_ok = test_proxy()
 
-            # Make sure local path doesn't already exist (ifdh cp may fail).
+    #        # Make sure local path doesn't already exist (ifdh cp may fail).
 
-            if os.path.exists(local):
-                os.remove(local)
+    #        if os.path.exists(local):
+    #            os.remove(local)
 
-            # Use ifdh to make local copy of file.
+    #        # Use ifdh to make local copy of file.
 
-            #print 'Copying %s to %s.' % (path, local)
-            rc = subprocess.call(['ifdh', 'cp', path, local], stdout=sys.stdout, stderr=sys.stderr)
-            if rc == 0:
-                rc = wait_for_stat(local)
-                if rc == 0:
+    #        #print 'Copying %s to %s.' % (path, local)
+    #        rc = subprocess.call(['ifdh', 'cp', path, local], stdout=sys.stdout, stderr=sys.stderr)
+    #        if rc == 0:
+    #            rc = wait_for_stat(local)
+    #            if rc == 0:
 
-                    # Copy succeeded.
+    #                # Copy succeeded.
 
-                    result = local
+    #                result = local
 
-    else:
+    #else:
 
-        # Not a pnfs path.
+    #    # Not a pnfs path.
 
-        result = path
+    result = path
 
     return result
 
