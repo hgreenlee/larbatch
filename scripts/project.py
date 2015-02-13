@@ -173,7 +173,7 @@
 #
 ######################################################################
 
-import sys, os, stat, string, subprocess, shutil, urllib, json
+import sys, os, stat, string, subprocess, shutil, urllib, json, getpass
 from xml.dom.minidom import parse
 import project_utilities, root_metadata
 from projectdef import ProjectDef
@@ -2082,9 +2082,16 @@ def domerge(stage, mergehist, mergentuple):
        	
     if len(hlist) > 0:
         name = os.path.join(stage.outdir, 'anahist.root')
-	if project_utilities.safeexist(name):
-                os.remove(name)
-		     
+        if name[0:6] == '/pnfs/':
+            exp = project_utilities.get_experiment()
+            name_temp = 'anahist.root'
+            if not os.path.exists('/scratch/'+exp+'/'+getpass.getuser()+'/mergentuple'):
+                os.makedirs('/scratch/'+exp+'/'+getpass.getuser()+'/mergentuple')
+                if os.path.exists('/scratch/'+exp+'/'+getpass.getuser()+'/mergentuple'):
+                    name_temp = '/scratch/'+exp+'/'+getpass.getuser()+'/mergentuple/anahist.root'
+        else:
+            name_temp = name
+
         if mergehist:
             mergecom = "hadd -T"
         elif mergentuple:
@@ -2094,14 +2101,19 @@ def domerge(stage, mergehist, mergentuple):
            
         print "Merging %d root files using %s." % (len(hlist), mergecom)
 			          			         
-        if os.path.exists(name):
-            os.remove(name)
+        if os.path.exists(name_temp):
+            os.remove(name_temp)
         comlist = mergecom.split()
-        comlist.extend(["-v", "0", "-f", "-k", name, '@' + histurlsname_temp])
+        comlist.extend(["-v", "0", "-f", "-k", name_temp, '@' + histurlsname_temp])
         rc = subprocess.call(comlist, stdout=sys.stdout, stderr=sys.stderr)
         if rc != 0:
             print "%s exit status %d" % (mergecom, rc)
-   
+        if name != name_temp:
+            if project_utilities.safeexist(name):
+                os.remove(name)
+            if os.path.exists(name_temp):
+                subprocess.call(['ifdh', 'cp', name_temp, name])
+                os.remove(name_temp)
         os.remove(histurlsname_temp)	     
 
 
