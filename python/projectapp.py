@@ -553,8 +553,9 @@ class ProjectApp(tk.Frame):
             if len(words) >= 2:
                 jobid = words[0]
                 script = words[-1]
-                workscript = '%s-%s.sh' % (self.current_stage_def.name,
-                                           self.current_project_def.name)
+                workscript = '%s-%s-%s.sh' % (self.current_stage_def.name,
+                                           self.current_project_def.name,
+                                           self.current_project_def.release_tag)
                 if script.find(workscript) == 0:
                     cp_server = jobid.split('@')
                     if len(cp_server) == 2:
