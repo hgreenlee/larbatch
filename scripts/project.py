@@ -519,7 +519,10 @@ def check_root_file(path, logdir):
 	if url != path and not proxy_ok:
             proxy_ok = project_utilities.test_proxy()
         print 'Generating root metadata for file %s.' % os.path.basename(path)
-        md = root_metadata.get_external_metadata(path)
+        try:
+            md = root_metadata.get_external_metadata(path)
+        except:
+            md = {}
 	
         if md.has_key('events'):
 
