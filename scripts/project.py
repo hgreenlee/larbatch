@@ -1475,6 +1475,8 @@ def fill_workdir(project, stage, makeup):
     makeup_count = 0
     makeup_defname = ''
     workname = ''
+    workstartname = ''
+    workstopname = ''
 
     # If there is an input list, copy it to the work directory.
 
@@ -1688,11 +1690,11 @@ def fill_workdir(project, stage, makeup):
             makeup_count = samweb.countFiles(defname=makeup_defname)
             print 'Makeup dataset contains %d files.' % makeup_count
 
-    return input_list_name, makeup_count, makeup_defname, workname
+    return input_list_name, makeup_count, makeup_defname, workname, workstartname, workstopname
 
 # Issue jobsub submit command.
 
-def dojobsub(project, stage, makeup, input_list_name, makeup_count, makeup_defname, workname):
+def dojobsub(project, stage, makeup, input_list_name, makeup_count, makeup_defname, workname, workstartname, workstopname):
 
     # Sam stuff.
 
@@ -2050,10 +2052,12 @@ def dosubmit(project, stage, makeup=False):
     makeup_count = result[1]
     makeup_defname = result[2]
     workname = result[3]
+    workstartname = result[4]
+    workstopname = result[5]
 
     # Issue jobsub command to submit jobs.
 
-    dojobsub(project, stage, makeup, input_list_name, makeup_count, makeup_defname, workname)
+    dojobsub(project, stage, makeup, input_list_name, makeup_count, makeup_defname, workname, workstartname, workstopname)
 
     # Done (success).
 
