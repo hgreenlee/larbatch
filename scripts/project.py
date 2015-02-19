@@ -173,7 +173,7 @@
 #
 ######################################################################
 
-import sys, os, stat, string, subprocess, shutil, urllib, json
+import sys, os, stat, string, subprocess, shutil, urllib, json, getpass
 from xml.dom.minidom import parse
 import project_utilities, root_metadata
 from projectdef import ProjectDef
@@ -519,7 +519,10 @@ def check_root_file(path, logdir):
 	if url != path and not proxy_ok:
             proxy_ok = project_utilities.test_proxy()
         print 'Generating root metadata for file %s.' % os.path.basename(path)
-        md = root_metadata.get_external_metadata(path)
+        try:
+            md = root_metadata.get_external_metadata(path)
+        except:
+            md = {}
 	
         if md.has_key('events'):
 
@@ -1472,6 +1475,8 @@ def fill_workdir(project, stage, makeup):
     makeup_count = 0
     makeup_defname = ''
     workname = ''
+    workstartname = ''
+    workstopname = ''
 
     # If there is an input list, copy it to the work directory.
 
@@ -1685,11 +1690,11 @@ def fill_workdir(project, stage, makeup):
             makeup_count = samweb.countFiles(defname=makeup_defname)
             print 'Makeup dataset contains %d files.' % makeup_count
 
-    return input_list_name, makeup_count, makeup_defname, workname
+    return input_list_name, makeup_count, makeup_defname, workname, workstartname, workstopname
 
 # Issue jobsub submit command.
 
-def dojobsub(project, stage, makeup, input_list_name, makeup_count, makeup_defname, workname):
+def dojobsub(project, stage, makeup, input_list_name, makeup_count, makeup_defname, workname, workstartname, workstopname):
 
     # Sam stuff.
 
@@ -2047,10 +2052,12 @@ def dosubmit(project, stage, makeup=False):
     makeup_count = result[1]
     makeup_defname = result[2]
     workname = result[3]
+    workstartname = result[4]
+    workstopname = result[5]
 
     # Issue jobsub command to submit jobs.
 
-    dojobsub(project, stage, makeup, input_list_name, makeup_count, makeup_defname, workname)
+    dojobsub(project, stage, makeup, input_list_name, makeup_count, makeup_defname, workname, workstartname, workstopname)
 
     # Done (success).
 
@@ -2082,9 +2089,16 @@ def domerge(stage, mergehist, mergentuple):
        	
     if len(hlist) > 0:
         name = os.path.join(stage.outdir, 'anahist.root')
-	if project_utilities.safeexist(name):
-                os.remove(name)
-		     
+        if name[0:6] == '/pnfs/':
+            exp = project_utilities.get_experiment()
+            name_temp = 'anahist.root'
+            if not os.path.exists('/scratch/'+exp+'/'+getpass.getuser()+'/mergentuple'):
+                os.makedirs('/scratch/'+exp+'/'+getpass.getuser()+'/mergentuple')
+                if os.path.exists('/scratch/'+exp+'/'+getpass.getuser()+'/mergentuple'):
+                    name_temp = '/scratch/'+exp+'/'+getpass.getuser()+'/mergentuple/anahist.root'
+        else:
+            name_temp = name
+
         if mergehist:
             mergecom = "hadd -T"
         elif mergentuple:
@@ -2094,14 +2108,19 @@ def domerge(stage, mergehist, mergentuple):
            
         print "Merging %d root files using %s." % (len(hlist), mergecom)
 			          			         
-        if os.path.exists(name):
-            os.remove(name)
+        if os.path.exists(name_temp):
+            os.remove(name_temp)
         comlist = mergecom.split()
-        comlist.extend(["-v", "0", "-f", "-k", name, '@' + histurlsname_temp])
+        comlist.extend(["-v", "0", "-f", "-k", name_temp, '@' + histurlsname_temp])
         rc = subprocess.call(comlist, stdout=sys.stdout, stderr=sys.stderr)
         if rc != 0:
             print "%s exit status %d" % (mergecom, rc)
-   
+        if name != name_temp:
+            if project_utilities.safeexist(name):
+                os.remove(name)
+            if os.path.exists(name_temp):
+                subprocess.call(['ifdh', 'cp', name_temp, name])
+                os.remove(name_temp)
         os.remove(histurlsname_temp)	     
 
 
