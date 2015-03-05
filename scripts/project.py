@@ -1465,21 +1465,13 @@ def docheck_tape(dim):
 
     return 0
 
-# Copy files to workdir.
-# On success, returns 4-tuple: (input_list_name, makeup_count, makeup_defname, workname).
-# On error, return None
+# Copy files to workdir and issue jobsub submit command.
 
-def fill_workdir(project, stage, makeup):
-
-    input_list_name = ''
-    makeup_count = 0
-    makeup_defname = ''
-    workname = ''
-    workstartname = ''
-    workstopname = ''
+def dojobsub(project, stage, makeup):
 
     # If there is an input list, copy it to the work directory.
 
+    input_list_name = ''
     if stage.inputlist != '':
         input_list_name = os.path.basename(stage.inputlist)
         work_list_name = os.path.join(stage.workdir, input_list_name)
@@ -1575,8 +1567,8 @@ def fill_workdir(project, stage, makeup):
 
     if stage.init_script != '':
         if not os.path.exists(stage.init_script):
-            print 'Worker initialization script %s does not exist.\n' % stage.init_script
-            return None
+            raise RuntimeError, 'Worker initialization script %s does not exist.\n' % \
+                stage.init_script
         work_init_script = os.path.join(stage.workdir, os.path.basename(stage.init_script))
         if stage.init_script != work_init_script:
             shutil.copy(stage.init_script, work_init_script)
@@ -1585,8 +1577,8 @@ def fill_workdir(project, stage, makeup):
 
     if stage.init_source != '':
         if not os.path.exists(stage.init_source):
-            print 'Worker initialization source script %s does not exist.\n' % stage.init_source
-            return None
+            raise RuntimeError, 'Worker initialization source script %s does not exist.\n' % \
+                stage.init_source
         work_init_source = os.path.join(stage.workdir, os.path.basename(stage.init_source))
         if stage.init_source != work_init_source:
             shutil.copy(stage.init_source, work_init_source)
@@ -1595,8 +1587,7 @@ def fill_workdir(project, stage, makeup):
 
     if stage.end_script != '':
         if not os.path.exists(stage.end_script):
-            print 'Worker end-of-job script %s does not exist.\n' % stage.end_script
-            return None
+            raise RuntimeError, 'Worker end-of-job script %s does not exist.\n' % stage.end_script
         work_end_script = os.path.join(stage.workdir, os.path.basename(stage.end_script))
         if stage.end_script != work_end_script:
             shutil.copy(stage.end_script, work_end_script)
@@ -1608,8 +1599,7 @@ def fill_workdir(project, stage, makeup):
 
         checked_file = os.path.join(stage.logdir, 'checked')
         if not project_utilities.safeexist(checked_file):
-            print 'Wait for any running jobs to finish and run project.py --check'
-            return None
+            raise RuntimeError, 'Wait for any running jobs to finish and run project.py --check'
         makeup_count = 0
 
         # First delete bad worker subdirectories.
@@ -1689,12 +1679,6 @@ def fill_workdir(project, stage, makeup):
             samweb.createDefinition(defname=makeup_defname, dims=dim)
             makeup_count = samweb.countFiles(defname=makeup_defname)
             print 'Makeup dataset contains %d files.' % makeup_count
-
-    return input_list_name, makeup_count, makeup_defname, workname, workstartname, workstopname
-
-# Issue jobsub submit command.
-
-def dojobsub(project, stage, makeup, input_list_name, makeup_count, makeup_defname, workname, workstartname, workstopname):
 
     # Sam stuff.
 
@@ -2043,21 +2027,9 @@ def dosubmit(project, stage, makeup=False):
         if len(os.listdir(stage.logdir)) != 0:
             raise RuntimeError, 'Log directory %s is not empty.' % stage.logdir
 
-    # Copy files to workdir.
+    # Copy files to workdir and issue jobsub command to submit jobs.
 
-    result = fill_workdir(project, stage, makeup)
-    if result == None:
-        raise RuntimeError, 'Problem copying files to workdir.'
-    input_list_name = result[0]
-    makeup_count = result[1]
-    makeup_defname = result[2]
-    workname = result[3]
-    workstartname = result[4]
-    workstopname = result[5]
-
-    # Issue jobsub command to submit jobs.
-
-    dojobsub(project, stage, makeup, input_list_name, makeup_count, makeup_defname, workname, workstartname, workstopname)
+    dojobsub(project, stage, makeup)
 
     # Done (success).
 
