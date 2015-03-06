@@ -160,10 +160,16 @@ class ProjectStatusView(tk.Frame):
 
     def update_status(self):
 
+        top=self.winfo_toplevel()
+        old_cursor = top['cursor']
         try:
+            top['cursor'] = 'watch'
+            top.update_idletasks()
             ps = ProjectStatus(self.project_def)
             bs = BatchStatus(self.project_def)
+            top['cursor'] = old_cursor
         except:
+            top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
@@ -325,9 +331,15 @@ class ProjectStatusView(tk.Frame):
     # Update jobs button.
 
     def update_jobs(self):
+        top=self.winfo_toplevel()
+        old_cursor = top['cursor']
         try:
+            top['cursor'] = 'watch'
+            top.update_idletasks()
             BatchStatus.update_jobs()
+            top['cursor'] = old_cursor
         except:
+            top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
