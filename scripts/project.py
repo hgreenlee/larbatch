@@ -1803,16 +1803,17 @@ def dojobsub(project, stage, makeup):
             
         start_command.append('--group=%s' % project_utilities.get_experiment())
         start_command.append('-f %s' % setupscript)
+        start_command.append('--role=%s' % role)
         if stage.resource != '':
-            command.append('--resource-provides=usage_model=%s' % stage.resource)
+            start_command.append('--resource-provides=usage_model=%s' % stage.resource)
         elif project.resource != '':
             start_command.append('--resource-provides=usage_model=%s' % project.resource)
         if stage.lines != '':
-            command.append('--lines=%s' % stage.lines)
+            start_command.append('--lines=%s' % stage.lines)
         elif project.lines != '':
             start_command.append('--lines=%s' % project.lines)
         if stage.site != '':
-            command.append('--site=%s' % stage.site)
+            start_command.append('--site=%s' % stage.site)
         elif project.site != '':
             start_command.append('--site=%s' % project.site)
         if project.os != '':
@@ -1843,16 +1844,17 @@ def dojobsub(project, stage, makeup):
             
         stop_command.append('--group=%s' % project_utilities.get_experiment())
         stop_command.append('-f %s' % setupscript)
+        stop_command.append('--role=%s' % role)
         if stage.resource != '':
-            command.append('--resource-provides=usage_model=%s' % stage.resource)
+            stop_command.append('--resource-provides=usage_model=%s' % stage.resource)
         elif project.resource != '':
             stop_command.append('--resource-provides=usage_model=%s' % project.resource)
         if stage.lines != '':
-            command.append('--lines=%s' % stage.lines)
+            stop_command.append('--lines=%s' % stage.lines)
         elif project.lines != '':
             stop_command.append('--lines=%s' % project.lines)
         if stage.site != '':
-            command.append('--site=%s' % stage.site)
+            stop_command.append('--site=%s' % stage.site)
         elif project.site != '':
             stop_command.append('--site=%s' % project.site)
         if project.os != '':
@@ -1935,6 +1937,7 @@ def dojobsub(project, stage, makeup):
         command.append('--group=%s' % project_utilities.get_experiment())
         if project.server != '-' and project.server != '':
             command.append('--jobsub-server=%s' % project.server)
+        command.append('--role=%s' % role)
         dagfileurl = 'file://'+ dagfilepath
         command.append(dagfileurl)
 
