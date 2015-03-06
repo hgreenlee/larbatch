@@ -83,8 +83,8 @@
 # <os>      - Specify batch OS (comma-separated list: SL5,SL6).
 #             Default let jobsub decide.
 # <server>  - Jobsub server (expert option, jobsub_submit --jobsub-server=...).
-#             If blank, use jobsub_tools.  If "-" (hyphen), use jobsub_client, but 
-#             omit --jobsub-server option (use default server).
+#             If "" (blank), "-" (hyphen), or missing, omit --jobsub-server
+#             option (use default server).
 # <resource> - Jobsub resources (comma-separated list: DEDICATED,OPPORTUNISTIC,
 #              OFFSITE,FERMICLOUD,PAID_CLOUD,FERMICLOUD8G).
 #              Default: DEDICATED,OPPORTUNISTIC.
@@ -1706,10 +1706,7 @@ def dojobsub(project, stage, makeup):
 
     # Construct jobsub command line for workers.
 
-    if project.server == '':
-        command = ['jobsub']
-    else:
-        command = ['jobsub_submit']
+    command = ['jobsub_submit']
     command_njobs = 1
 
     # Jobsub options.
@@ -1717,28 +1714,21 @@ def dojobsub(project, stage, makeup):
     command.append('--group=%s' % project_utilities.get_experiment())
     setupscript = os.path.join(stage.workdir,'setup_experiment.sh')
     command.append('-f %s' % setupscript)
-    if project.server == '':
-        command.append('-q')       # Mail on error (only).
-        command.append('--grid')
-        command.append('--opportunistic')
-        if proxy != '':
-            command.append('-x %s' % proxy)
-    else:
-        command.append('--role=%s' % role)
-        if project.server != '-':
-            command.append('--jobsub-server=%s' % project.server)
-        if stage.resource != '':
-            command.append('--resource-provides=usage_model=%s' % stage.resource)
-        elif project.resource != '':
-            command.append('--resource-provides=usage_model=%s' % project.resource)
-        if stage.lines != '':
-            command.append('--lines=%s' % stage.lines)
-        elif project.lines != '':
-            command.append('--lines=%s' % project.lines)
-        if stage.site != '':
-            command.append('--site=%s' % stage.site)
-        elif project.site != '':
-            command.append('--site=%s' % project.site)
+    command.append('--role=%s' % role)
+    if project.server != '-' and project.server != '':
+        command.append('--jobsub-server=%s' % project.server)
+    if stage.resource != '':
+        command.append('--resource-provides=usage_model=%s' % stage.resource)
+    elif project.resource != '':
+        command.append('--resource-provides=usage_model=%s' % project.resource)
+    if stage.lines != '':
+        command.append('--lines=%s' % stage.lines)
+    elif project.lines != '':
+        command.append('--lines=%s' % project.lines)
+    if stage.site != '':
+        command.append('--site=%s' % stage.site)
+    elif project.site != '':
+        command.append('--site=%s' % project.site)
     if project.os != '':
         command.append('--OS=%s' % project.os)
     if not makeup:
@@ -1750,11 +1740,8 @@ def dojobsub(project, stage, makeup):
 
     # Batch script.
 
-    if project.server == '':
-        command.append(workname)
-    else:
-        workurl = "file://%s/%s" % (stage.workdir, workname)
-        command.append(workurl)
+    workurl = "file://%s/%s" % (stage.workdir, workname)
+    command.append(workurl)
 
     # Larsoft options.
 
@@ -1810,42 +1797,31 @@ def dojobsub(project, stage, makeup):
 
         # Start project jobsub command.
                 
-        if project.server == '':
-            start_command = ['jobsub']
-        else:
-            start_command = ['jobsub']
+        start_command = ['jobsub']
 
         # General options.
             
         start_command.append('--group=%s' % project_utilities.get_experiment())
         start_command.append('-f %s' % setupscript)
-        if project.server == '':
-            start_command.append('-q')       # Mail on error (only).
-            start_command.append('--grid')
-            start_command.append('--opportunistic')
-        else:
-            if stage.resource != '':
-                command.append('--resource-provides=usage_model=%s' % stage.resource)
-            elif project.resource != '':
-                start_command.append('--resource-provides=usage_model=%s' % project.resource)
-            if stage.lines != '':
-                command.append('--lines=%s' % stage.lines)
-            elif project.lines != '':
-                start_command.append('--lines=%s' % project.lines)
-            if stage.site != '':
-                command.append('--site=%s' % stage.site)
-            elif project.site != '':
-                start_command.append('--site=%s' % project.site)
+        if stage.resource != '':
+            command.append('--resource-provides=usage_model=%s' % stage.resource)
+        elif project.resource != '':
+            start_command.append('--resource-provides=usage_model=%s' % project.resource)
+        if stage.lines != '':
+            command.append('--lines=%s' % stage.lines)
+        elif project.lines != '':
+            start_command.append('--lines=%s' % project.lines)
+        if stage.site != '':
+            command.append('--site=%s' % stage.site)
+        elif project.site != '':
+            start_command.append('--site=%s' % project.site)
         if project.os != '':
             start_command.append('--OS=%s' % project.os)
 
         # Start project script.
 
-        if project.server == '':
-            start_command.append(workstartname)
-        else:
-            workstarturl = "file://%s/%s" % (stage.workdir, workstartname)
-            start_command.append(workstarturl)
+        workstarturl = "file://%s/%s" % (stage.workdir, workstartname)
+        start_command.append(workstarturl)
 
         # Sam options.
 
@@ -1861,42 +1837,31 @@ def dojobsub(project, stage, makeup):
 
         # Stop project jobsub command.
                 
-        if project.server == '':
-            stop_command = ['jobsub']
-        else:
-            stop_command = ['jobsub']
+        stop_command = ['jobsub']
 
         # General options.
             
         stop_command.append('--group=%s' % project_utilities.get_experiment())
         stop_command.append('-f %s' % setupscript)
-        if project.server == '':
-            stop_command.append('-q')       # Mail on error (only).
-            stop_command.append('--grid')
-            stop_command.append('--opportunistic')
-        else:
-            if stage.resource != '':
-                command.append('--resource-provides=usage_model=%s' % stage.resource)
-            elif project.resource != '':
-                stop_command.append('--resource-provides=usage_model=%s' % project.resource)
-            if stage.lines != '':
-                command.append('--lines=%s' % stage.lines)
-            elif project.lines != '':
-                stop_command.append('--lines=%s' % project.lines)
-            if stage.site != '':
-                command.append('--site=%s' % stage.site)
-            elif project.site != '':
-                stop_command.append('--site=%s' % project.site)
+        if stage.resource != '':
+            command.append('--resource-provides=usage_model=%s' % stage.resource)
+        elif project.resource != '':
+            stop_command.append('--resource-provides=usage_model=%s' % project.resource)
+        if stage.lines != '':
+            command.append('--lines=%s' % stage.lines)
+        elif project.lines != '':
+            stop_command.append('--lines=%s' % project.lines)
+        if stage.site != '':
+            command.append('--site=%s' % stage.site)
+        elif project.site != '':
+            stop_command.append('--site=%s' % project.site)
         if project.os != '':
             stop_command.append('--OS=%s' % project.os)
 
         # Stop project script.
 
-        if project.server == '':
-            stop_command.append(workstopname)
-        else:
-            workstopurl = "file://%s/%s" % (stage.workdir, workstopname)
-            stop_command.append(workstopurl)
+        workstopurl = "file://%s/%s" % (stage.workdir, workstopname)
+        stop_command.append(workstopurl)
 
         # Sam options.
 
@@ -1964,17 +1929,14 @@ def dojobsub(project, stage, makeup):
         dag.write('\n</serial>\n')
         dag.close()
 
-        # Update the main submission command to use dagNabbit.py instead of jobsub.
+        # Update the main submission command to use jobsub_submit_dag instead of jobsub_submit.
 
-        if project.server == '':
-            command = ['dagNabbit.py', '-i', dagfilepath, '-s']
-        else:
-            command = ['jobsub_submit_dag']
-            command.append('--group=%s' % project_utilities.get_experiment())
-            if project.server != '-':
-                command.append('--jobsub-server=%s' % project.server)
-            dagfileurl = 'file://'+ dagfilepath
-            command.append(dagfileurl)
+        command = ['jobsub_submit_dag']
+        command.append('--group=%s' % project_utilities.get_experiment())
+        if project.server != '-' and project.server != '':
+            command.append('--jobsub-server=%s' % project.server)
+        dagfileurl = 'file://'+ dagfilepath
+        command.append(dagfileurl)
 
     curdir = os.getcwd()
     os.chdir(stage.workdir)
