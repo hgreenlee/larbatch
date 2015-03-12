@@ -240,9 +240,15 @@ class ProjectApp(tk.Frame):
         # This step can raise an exception for several reasons.  In that case, 
         # display a message and return without opening the file.
 
+        top=self.winfo_toplevel()
+        old_cursor = top['cursor']
         try:
+            top['cursor'] = 'watch'
+            top.update_idletasks()
             project_def = project.ProjectDef(project.get_project(xml_path, ''))
+            top['cursor'] = old_cursor
         except:
+            top['cursor'] = old_cursor
             e = sys.exc_info()
             message = 'Error opening %s\n%s' % (xml_path, e[1])
             traceback.print_tb(e[2])
@@ -426,9 +432,15 @@ class ProjectApp(tk.Frame):
         if self.current_stage_def == None:
             tkMessageBox.showwarning('', 'No stage selected.')
             return
+        top=self.winfo_toplevel()
+        old_cursor = top['cursor']
         try:
+            top['cursor'] = 'watch'
+            top.update_idletasks()
             project.docheck(self.current_project_def, self.current_stage_def, ana=False)
+            top['cursor'] = old_cursor
         except:
+            top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
@@ -443,9 +455,15 @@ class ProjectApp(tk.Frame):
         if self.current_stage_def == None:
             tkMessageBox.showwarning('', 'No stage selected.')
             return
+        top=self.winfo_toplevel()
+        old_cursor = top['cursor']
         try:
+            top['cursor'] = 'watch'
+            top.update_idletasks()
             project.docheck(self.current_project_def, self.current_stage_def, ana=True)
+            top['cursor'] = old_cursor
         except:
+            top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
@@ -460,9 +478,15 @@ class ProjectApp(tk.Frame):
         if self.current_stage_def == None:
             tkMessageBox.showwarning('', 'No stage selected.')
             return
+        top=self.winfo_toplevel()
+        old_cursor = top['cursor']
         try:
+            top['cursor'] = 'watch'
+            top.update_idletasks()
             project.dofetchlog(self.current_stage_def)
+            top['cursor'] = old_cursor
         except:
+            top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
@@ -476,9 +500,15 @@ class ProjectApp(tk.Frame):
         if self.current_stage_def == None:
             tkMessageBox.showwarning('', 'No stage selected.')
             return
+        top=self.winfo_toplevel()
+        old_cursor = top['cursor']
         try:
+            top['cursor'] = 'watch'
+            top.update_idletasks()
             project.doclean(self.current_project_def, self.current_stage_name)
+            top['cursor'] = old_cursor
         except:
+            top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
@@ -494,9 +524,15 @@ class ProjectApp(tk.Frame):
             tkMessageBox.showwarning('', 'No stage selected.')
             return
 
+        top=self.winfo_toplevel()
+        old_cursor = top['cursor']
         try:
+            top['cursor'] = 'watch'
+            top.update_idletasks()
             project.dosubmit(self.current_project_def, self.current_stage_def, makeup=False)
+            top['cursor'] = old_cursor
         except:
+            top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
@@ -513,9 +549,15 @@ class ProjectApp(tk.Frame):
             tkMessageBox.showwarning('', 'No stage selected.')
             return
 
+        top=self.winfo_toplevel()
+        old_cursor = top['cursor']
         try:
+            top['cursor'] = 'watch'
+            top.update_idletasks()
             project.dosubmit(self.current_project_def, self.current_stage_def, makeup=True)
+            top['cursor'] = old_cursor
         except:
+            top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
@@ -537,10 +579,16 @@ class ProjectApp(tk.Frame):
             tkMessageBox.showwarning('', 'No stage selected.')
             return
 
+        top=self.winfo_toplevel()
+        old_cursor = top['cursor']
         try:
+            top['cursor'] = 'watch'
+            top.update_idletasks()
             BatchStatus.update_jobs()
             jobs = BatchStatus.get_jobs()
+            top['cursor'] = old_cursor
         except:
+            top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
@@ -589,9 +637,15 @@ class ProjectApp(tk.Frame):
         if self.current_stage_def == None:
             tkMessageBox.showwarning('', 'No stage selected.')
             return
+        top=self.winfo_toplevel()
+        old_cursor = top['cursor']
         try:
+            top['cursor'] = 'watch'
+            top.update_idletasks()
             project.domerge(self.current_stage_def, mergehist=True, mergentuple=False)
+            top['cursor'] = old_cursor
         except:
+            top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
@@ -605,9 +659,15 @@ class ProjectApp(tk.Frame):
         if self.current_stage_def == None:
             tkMessageBox.showwarning('', 'No stage selected.')
             return
+        top=self.winfo_toplevel()
+        old_cursor = top['cursor']
         try:
+            top['cursor'] = 'watch'
+            top.update_idletasks()
             project.domerge(self.current_stage_def, mergehist=False, mergentuple=True)
+            top['cursor'] = old_cursor
         except:
+            top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
@@ -621,9 +681,15 @@ class ProjectApp(tk.Frame):
         if self.current_stage_def == None:
             tkMessageBox.showwarning('', 'No stage selected.')
             return
+        top=self.winfo_toplevel()
+        old_cursor = top['cursor']
         try:
+            top['cursor'] = 'watch'
+            top.update_idletasks()
             project.domerge(self.current_stage_def, mergehist=False, mergentuple=False)
+            top['cursor'] = old_cursor
         except:
+            top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
@@ -637,9 +703,15 @@ class ProjectApp(tk.Frame):
         if self.current_stage_def == None:
             tkMessageBox.showwarning('', 'No stage selected.')
             return
+        top=self.winfo_toplevel()
+        old_cursor = top['cursor']
         try:
+            top['cursor'] = 'watch'
+            top.update_idletasks()
             project.docheck_declarations(self.current_stage_def.logdir, declare=True)
+            top['cursor'] = old_cursor
         except:
+            top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
@@ -653,9 +725,15 @@ class ProjectApp(tk.Frame):
         if self.current_stage_def == None:
             tkMessageBox.showwarning('', 'No stage selected.')
             return
+        top=self.winfo_toplevel()
+        old_cursor = top['cursor']
         try:
+            top['cursor'] = 'watch'
+            top.update_idletasks()
             project.docheck_declarations(self.current_stage_def.logdir, declare=False)
+            top['cursor'] = old_cursor
         except:
+            top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
@@ -669,10 +747,16 @@ class ProjectApp(tk.Frame):
         if self.current_stage_def == None:
             tkMessageBox.showwarning('', 'No stage selected.')
             return
+        top=self.winfo_toplevel()
+        old_cursor = top['cursor']
         try:
+            top['cursor'] = 'watch'
+            top.update_idletasks()
             dim = project_utilities.dimensions(self.current_project_def, self.current_stage_def)
             project.dotest_declarations(dim)
+            top['cursor'] = old_cursor
         except:
+            top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
@@ -686,10 +770,16 @@ class ProjectApp(tk.Frame):
         if self.current_stage_def == None:
             tkMessageBox.showwarning('', 'No stage selected.')
             return
+        top=self.winfo_toplevel()
+        old_cursor = top['cursor']
         try:
+            top['cursor'] = 'watch'
+            top.update_idletasks()
             dim = project_utilities.dimensions(self.current_project_def, self.current_stage_def)
             project.docheck_definition(self.current_stage_def.defname, dim, define=True)
+            top['cursor'] = old_cursor
         except:
+            top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
@@ -703,10 +793,16 @@ class ProjectApp(tk.Frame):
         if self.current_stage_def == None:
             tkMessageBox.showwarning('', 'No stage selected.')
             return
+        top=self.winfo_toplevel()
+        old_cursor = top['cursor']
         try:
+            top['cursor'] = 'watch'
+            top.update_idletasks()
             dim = project_utilities.dimensions(self.current_project_def, self.current_stage_def)
             project.docheck_definition(self.current_stage_def.defname, dim, define=False)
+            top['cursor'] = old_cursor
         except:
+            top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
@@ -724,9 +820,15 @@ class ProjectApp(tk.Frame):
         if defname == '':
             tkMessageBox.showwarning('No sam dataset definition specified.')
             return
+        top=self.winfo_toplevel()
+        old_cursor = top['cursor']
         try:
+            top['cursor'] = 'watch'
+            top.update_idletasks()
             project.dotest_definition(defname)
+            top['cursor'] = old_cursor
         except:
+            top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
@@ -740,14 +842,20 @@ class ProjectApp(tk.Frame):
         if self.current_stage_def == None:
             tkMessageBox.showwarning('', 'No stage selected.')
             return
+        top=self.winfo_toplevel()
+        old_cursor = top['cursor']
         try:
+            top['cursor'] = 'watch'
+            top.update_idletasks()
             dim = project_utilities.dimensions(self.current_project_def, self.current_stage_def)
             project.docheck_locations(dim, self.current_stage_def.logdir,
                                       add=False,
                                       clean=False,
                                       remove=False,
                                       upload=False)
+            top['cursor'] = old_cursor
         except:
+            top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
@@ -761,14 +869,20 @@ class ProjectApp(tk.Frame):
         if self.current_stage_def == None:
             tkMessageBox.showwarning('', 'No stage selected.')
             return
+        top=self.winfo_toplevel()
+        old_cursor = top['cursor']
         try:
+            top['cursor'] = 'watch'
+            top.update_idletasks()
             dim = project_utilities.dimensions(self.current_project_def, self.current_stage_def)
             project.docheck_locations(dim, self.current_stage_def.outdir,
                                       add=True,
                                       clean=False,
                                       remove=False,
                                       upload=False)
+            top['cursor'] = old_cursor
         except:
+            top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
@@ -782,14 +896,20 @@ class ProjectApp(tk.Frame):
         if self.current_stage_def == None:
             tkMessageBox.showwarning('', 'No stage selected.')
             return
+        top=self.winfo_toplevel()
+        old_cursor = top['cursor']
         try:
+            top['cursor'] = 'watch'
+            top.update_idletasks()
             dim = project_utilities.dimensions(self.current_project_def, self.current_stage_def)
             project.docheck_locations(dim, self.current_stage_def.outdir,
                                       add=False,
                                       clean=True,
                                       remove=False,
                                       upload=False)
+            top['cursor'] = old_cursor
         except:
+            top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
@@ -803,14 +923,20 @@ class ProjectApp(tk.Frame):
         if self.current_stage_def == None:
             tkMessageBox.showwarning('', 'No stage selected.')
             return
+        top=self.winfo_toplevel()
+        old_cursor = top['cursor']
         try:
+            top['cursor'] = 'watch'
+            top.update_idletasks()
             dim = project_utilities.dimensions(self.current_project_def, self.current_stage_def)
             project.docheck_locations(dim, self.current_stage_def.outdir,
                                       add=False,
                                       clean=False,
                                       remove=True,
                                       upload=False)
+            top['cursor'] = old_cursor
         except:
+            top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
@@ -824,14 +950,20 @@ class ProjectApp(tk.Frame):
         if self.current_stage_def == None:
             tkMessageBox.showwarning('', 'No stage selected.')
             return
+        top=self.winfo_toplevel()
+        old_cursor = top['cursor']
         try:
+            top['cursor'] = 'watch'
+            top.update_idletasks()
             dim = project_utilities.dimensions(self.current_project_def, self.current_stage_def)
             project.docheck_locations(dim, self.current_stage_def.outdir,
                                       add=False,
                                       clean=False,
                                       remove=False,
                                       upload=True)
+            top['cursor'] = old_cursor
         except:
+            top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
@@ -845,9 +977,15 @@ class ProjectApp(tk.Frame):
         if self.current_stage_def == None:
             tkMessageBox.showwarning('', 'No stage selected.')
             return
+        top=self.winfo_toplevel()
+        old_cursor = top['cursor']
         try:
+            top['cursor'] = 'watch'
+            top.update_idletasks()
             project.doaudit(self.current_stage_def)
+            top['cursor'] = old_cursor
         except:
+            top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
