@@ -1803,7 +1803,7 @@ def dojobsub(project, stage, makeup):
             
         start_command.append('--group=%s' % project_utilities.get_experiment())
         start_command.append('-f %s' % setupscript)
-        start_command.append('--role=%s' % role)
+        #start_command.append('--role=%s' % role)
         if stage.resource != '':
             start_command.append('--resource-provides=usage_model=%s' % stage.resource)
         elif project.resource != '':
@@ -1844,7 +1844,7 @@ def dojobsub(project, stage, makeup):
             
         stop_command.append('--group=%s' % project_utilities.get_experiment())
         stop_command.append('-f %s' % setupscript)
-        stop_command.append('--role=%s' % role)
+        #stop_command.append('--role=%s' % role)
         if stage.resource != '':
             stop_command.append('--resource-provides=usage_model=%s' % stage.resource)
         elif project.resource != '':
@@ -1910,6 +1910,8 @@ def dojobsub(project, stage, makeup):
                             dag.write(' ')
                         if word[:6] == 'jobsub':
                             word = 'jobsub'
+                        if word[:7] == '--role=':
+                            word = ''
                         dag.write(word)
                         if word[:6] == 'jobsub':
                             dag.write(' -n')

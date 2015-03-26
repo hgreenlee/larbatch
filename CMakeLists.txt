@@ -19,7 +19,7 @@ include(CetCMakeEnv)
 cet_cmake_env( noarch )
 
 # Make sure cetbuildtools is set up (version is minimum)
-find_ups_product(cetbuildtools v4_00_00)
+find_ups_product(cetbuildtools v4_09_00)
 
 # source code
 add_subdirectory(ups)
