@@ -99,43 +99,42 @@ def fileEnstoreChecksum(path):
 
 def get_external_metadata(inputfile):
 
-	# define an empty python dictionary
-	md = {}
+    # define an empty python dictionary
+    md = {}
 
-        # Check whether this file exists.
-        if not os.path.exists(inputfile):
-            return md
+    # Check whether this file exists.
+    if not os.path.exists(inputfile):
+        return md
             
-	# Get the other meta data field parameters						
-	md['file_name'] =  os.path.basename(inputfile)
-	md['file_size'] =  str(os.path.getsize(inputfile))
-	md['crc'] = fileEnstoreChecksum(inputfile)
+    # Get the other meta data field parameters						
+    md['file_name'] =  os.path.basename(inputfile)
+    md['file_size'] =  str(os.path.getsize(inputfile))
+    md['crc'] = fileEnstoreChecksum(inputfile)
 
-	# Root checks.
+    # Root checks.
 
-        file = project_utilities.SafeTFile(inputfile)
-        if file and file.IsOpen() and not file.IsZombie():
+    file = project_utilities.SafeTFile(inputfile)
+    if file and file.IsOpen() and not file.IsZombie():
 
-            # Root file opened successfully.
+        # Root file opened successfully.
             
-            obj = file.Get('Events')
-            if obj and obj.InheritsFrom('TTree'):
+        obj = file.Get('Events')
+        if obj and obj.InheritsFrom('TTree'):
 
-                # This has a TTree names Events.
+            # This has a TTree names Events.
 
-                nev = obj.GetEntriesFast()
-                md['events'] = str(nev)
-        else:
+            nev = obj.GetEntriesFast()
+            md['events'] = str(nev)
+    else:
 
-            # Root file could not be opened.
+        # Root file could not be opened.
 
-            md = {}
+        md = {}
 	
-	return md
+    return md
 
 if __name__ == "__main__":
-	md = get_external_metadata(str(sys.argv[1]))
-	#print md	
-	mdtext = json.dumps(md, sys.stdout, indent=2, sort_keys=True)
-	print mdtext
-	sys.exit(0)	
+    md = get_external_metadata(str(sys.argv[1]))
+    mdtext = json.dumps(md, indent=2, sort_keys=True)
+    print mdtext
+    sys.exit(0)	
