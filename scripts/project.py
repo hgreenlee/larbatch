@@ -1518,7 +1518,7 @@ def dojobsub(project, stage, makeup):
             wrapper_fcl.write('services.FileCatalogMetadata.fileType: "%s"\n' % \
                               project.file_type)
         if project.run_type:
-            wrapper_fcl.write('services.FileCatalogMetadata.runType: "%s"\n  ' % \
+            wrapper_fcl.write('services.FileCatalogMetadata.runType: "%s"\n' % \
                               project.run_type)
 
 
