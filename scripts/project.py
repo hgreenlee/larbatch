@@ -354,6 +354,60 @@ def dostatus(project):
             stagename, b_stage_status[0], b_stage_status[1], b_stage_status[2], b_stage_status[3])
     return
 
+
+# Recursively extract project names from an xml element.
+
+def find_project_names(element):
+
+    project_names = []
+
+    # First check if the input element is a project.  In that case, return a 
+    # list containing the project name as the single element of the list.
+
+    if element.nodeName == 'project':
+        projectname = element.attributes['name'].firstChild.data
+        project_names.append(projectname)
+
+    else:
+
+        # Input element is not a project.
+        # Loop over subelements.
+
+        subelements = element.getElementsByTagName('*')
+        for subelement in subelements:
+            names = find_project_names(subelement)
+            project_names.extend(names)
+
+    # Done.
+
+    return project_names
+
+
+# Extract all project names from the specified xml file.
+
+def get_project_names(xmlfile):
+    
+    # Parse xml (returns xml document).
+
+    if xmlfile == '-':
+        xml = sys.stdin
+    else:
+        xml = urllib.urlopen(xmlfile)
+    doc = parse(xml)
+
+    # Extract root element.
+
+    root = doc.documentElement
+
+    # Find project names in the root element.
+    
+    project_names = find_project_names(root)
+
+    # Done.
+
+    return project_names
+
+
 # This is a recursive function that looks for project
 # subelements within the input element.  It returns the
 # first matching element that it finds, or None.
@@ -396,7 +450,7 @@ def find_project(element, projectname, stagename):
     # If we fell out of the loop, return None.
 
     return None
-    
+
 
 # Extract the specified project element from xml file.
 # Project elements can exist at any depth inside xml file.
