@@ -2445,8 +2445,11 @@ def main(argv):
     # Get the selected project element.
 
     project = select_project(projects, projectname, stagename)
-    if projectname == '':
-        projectname = project.name
+    if project != None:
+        if projectname == '':
+            projectname = project.name
+    else:
+        raise RuntimeError, 'No project selected.\n'
 
     # Do clean action now.  Cleaning can be combined with submission.
 
