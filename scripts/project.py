@@ -358,22 +358,38 @@ def dostatus(project):
 # subelements within the input element.  It returns the
 # first matching element that it finds, or None.
 
-def find_project(element, projectname):
+def find_project(element, projectname, stagename):
 
-    # First check if the input element is a project.
-    # If it is, and if the name matches, return that.
+    # First check if the input element is a project and if the project name matches.
 
     if element.nodeName == 'project' and \
        (projectname == '' or \
         (element.attributes.has_key('name') and
          projectname == element.attributes['name'].firstChild.data)):
-        return element
 
-    # Loop over subelements.
+       # Next, check whether this project contains a matching stage.
+
+       if stagename == '':
+
+           # Null stage name matches anything.
+
+           return element
+
+       else:
+
+           # Loop over stage elemsnts.
+
+           stage_elements = element.getElementsByTagName('stage')
+           for stage_element in stage_elements:
+               if stage_element.attributes.has_key('name') and \
+                       stage_element.attributes['name'].firstChild.data == stagename:
+                   return element
+
+    # Input element didn't match.  Loop over subelements.
 
     subelements = element.getElementsByTagName('*')
     for subelement in subelements:
-        project = find_project(subelement, projectname)
+        project = find_project(subelement, projectname, stagename)
         if project is not None:
             return project
 
@@ -386,7 +402,7 @@ def find_project(element, projectname):
 # Project elements can exist at any depth inside xml file.
 # Return project Element or None.
 
-def get_project(xmlfile, projectname):
+def get_project(xmlfile, projectname, stagename):
 
     # Parse xml (returns xml document).
 
@@ -402,7 +418,7 @@ def get_project(xmlfile, projectname):
 
     # Find project element.
     
-    project = find_project(root, projectname)
+    project = find_project(root, projectname, stagename)
     if project is None:
         return None
 
@@ -2367,7 +2383,7 @@ def main(argv):
 
     # Get the project element.
 
-    project_element = get_project(xmlfile, projectname)
+    project_element = get_project(xmlfile, projectname, stagename)
     if project_element is None:
         if projectname == '':
             print 'Could not find unique project in xml file %s.' % xmlfile
