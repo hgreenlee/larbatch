@@ -395,43 +395,45 @@ def docleanx(projects, projectname, stagename):
 
 # Stage status fuction.
 
-def dostatus(project):
+def dostatus(projects):
 
-    project_status = ProjectStatus(project)
-    batch_status = BatchStatus(project)
+    project_status = ProjectStatus(projects)
+    batch_status = BatchStatus(projects)
 
-    print 'Project %s:' % project.name
+    for project in projects:
 
-    # Loop over stages.
+        print '\nProject %s:' % project.name
 
-    for stage in project.stages:
+        # Loop over stages.
 
-        stagename = stage.name
-        stage_status = project_status.get_stage_status(stagename)
-        b_stage_status = batch_status.get_stage_status(stagename)
-        if stage_status.exists:
-            print '\nStage %s: %d art files, %d events, %d analysis files, %d errors, %d missing files.' % (
-                stagename, stage_status.nfile, stage_status.nev, stage_status.nana, 
-                stage_status.nerror, stage_status.nmiss)
-        else:
-            print '\nStage %s output directory does not exist.' % stagename
-        print 'Stage %s batch jobs: %d idle, %d running, %d held, %d other.' % (
-            stagename, b_stage_status[0], b_stage_status[1], b_stage_status[2], b_stage_status[3])
+        for stage in project.stages:
+
+            stagename = stage.name
+            stage_status = project_status.get_stage_status(stagename)
+            b_stage_status = batch_status.get_stage_status(stagename)
+            if stage_status.exists:
+                print '\nStage %s: %d art files, %d events, %d analysis files, %d errors, %d missing files.' % (
+                    stagename, stage_status.nfile, stage_status.nev, stage_status.nana, 
+                    stage_status.nerror, stage_status.nmiss)
+            else:
+                print '\nStage %s output directory does not exist.' % stagename
+            print 'Stage %s batch jobs: %d idle, %d running, %d held, %d other.' % (
+                stagename, b_stage_status[0], b_stage_status[1], b_stage_status[2], b_stage_status[3])
     return
 
 
-# Recursively extract project names from an xml element.
+# Recursively extract projects from an xml element.
 
-def find_project_names(element):
+def find_projects(element):
 
-    project_names = []
+    projects = []
 
     # First check if the input element is a project.  In that case, return a 
     # list containing the project name as the single element of the list.
 
     if element.nodeName == 'project':
-        projectname = element.attributes['name'].firstChild.data
-        project_names.append(projectname)
+        project = ProjectDef(element)
+        projects.append(project)
 
     else:
 
@@ -440,17 +442,17 @@ def find_project_names(element):
 
         subelements = element.getElementsByTagName('*')
         for subelement in subelements:
-            names = find_project_names(subelement)
-            project_names.extend(names)
+            subprojects = find_projects(subelement)
+            projects.extend(subprojects)
 
     # Done.
 
-    return project_names
+    return projects
 
 
-# Extract all project names from the specified xml file.
+# Extract all projects from the specified xml file.
 
-def get_project_names(xmlfile):
+def get_projects(xmlfile):
     
     # Parse xml (returns xml document).
 
@@ -466,90 +468,26 @@ def get_project_names(xmlfile):
 
     # Find project names in the root element.
     
-    project_names = find_project_names(root)
+    projects = find_projects(root)
 
     # Done.
 
-    return project_names
+    return projects
 
 
-# This is a recursive function that looks for project
-# subelements within the input element.  It returns the
-# first matching element that it finds, or None.
+# Select the specified project.
 
-def find_project(element, projectname, stagename):
+def select_project(projects, projectname, stagename):
 
-    # First check if the input element is a project and if the project name matches.
+    for project in projects:
+        if projectname == '' or projectname == project.name:
+            for stage in project.stages:
+                if stagename == '' or stagename == stage.name:
+                    return project
 
-    if element.nodeName == 'project' and \
-       (projectname == '' or \
-        (element.attributes.has_key('name') and
-         projectname == element.attributes['name'].firstChild.data)):
-
-       # Next, check whether this project contains a matching stage.
-
-       if stagename == '':
-
-           # Null stage name matches anything.
-
-           return element
-
-       else:
-
-           # Loop over stage elemsnts.
-
-           stage_elements = element.getElementsByTagName('stage')
-           for stage_element in stage_elements:
-               if stage_element.attributes.has_key('name') and \
-                       stage_element.attributes['name'].firstChild.data == stagename:
-                   return element
-
-    # Input element didn't match.  Loop over subelements.
-
-    subelements = element.getElementsByTagName('*')
-    for subelement in subelements:
-        project = find_project(subelement, projectname, stagename)
-        if project is not None:
-            return project
-
-    # If we fell out of the loop, return None.
+    # Failure if we fall out of the loop.
 
     return None
-
-
-# Extract the specified project element from xml file.
-# Project elements can exist at any depth inside xml file.
-# Return project Element or None.
-
-def get_project(xmlfile, projectname, stagename):
-
-    # Parse xml (returns xml document).
-
-    if xmlfile == '-':
-        xml = sys.stdin
-    else:
-        xml = urllib.urlopen(xmlfile)
-    doc = parse(xml)
-
-    # Extract root element.
-
-    root = doc.documentElement
-
-    # Find project element.
-    
-    project = find_project(root, projectname, stagename)
-    if project is None:
-        return None
-
-    # Check that project element has "name" attribute.
-    
-    if not project.attributes.has_key('name'):
-        print 'Project element does not have "name" attribute.'
-        return None
-
-    # Success.
-
-    return project
 
 # Parse directory name of type <cluster>_<process> and return
 # a 2-tuple of integers or None.
@@ -2500,29 +2438,25 @@ def main(argv):
         print 'More than one action was specified.'
         return 1
 
-    # Get the project element.
+    # Extract all project definitions.
 
-    project_element = get_project(xmlfile, projectname, stagename)
-    if project_element is None:
-        if projectname == '':
-            print 'Could not find unique project in xml file %s.' % xmlfile
-        else:
-            print 'Could not find project %s in xml file %s.' % (projectname, xmlfile)
-        return 1
+    projects = get_projects(xmlfile)
 
-    # Convert the project element into a ProjectDef object.
+    # Get the selected project element.
 
-    project = ProjectDef(project_element)
+    project = select_project(projects, projectname, stagename)
+    if projectname == '':
+        projectname = project.name
 
     # Do clean action now.  Cleaning can be combined with submission.
 
     if clean:
-        doclean(project, stagename)
+        docleanx(projects, projectname, stagename)
 
     # Do stage_status now.
 
     if stage_status:
-        dostatus(project)
+        dostatus(projects)
         return 0
 
     # Get the current stage definition.

@@ -247,11 +247,9 @@ class ProjectApp(tk.Frame):
         try:
             top['cursor'] = 'watch'
             top.update_idletasks()
-            project_names = project.get_project_names(xml_path)
-            for project_name in project_names:
-                project_def = project.ProjectDef(project.get_project(xml_path, project_name, ''))
-                project_defs.append(project_def)
-                
+            new_project_defs = project.get_projects(xml_path)
+            if len(new_project_defs) > 0:
+                project_defs.extend(new_project_defs)
             top['cursor'] = old_cursor
         except:
             top['cursor'] = old_cursor
