@@ -328,6 +328,71 @@ def doclean(project, stagename):
 
     return
 
+
+# Multi-project clean function.
+
+def docleanx(projects, projectname, stagename):
+    print projectname, stagename
+
+    # Loop over projects and stages.
+    # Clean all stages beginning with the specified project/stage.
+    # For empty project/stage name, clean all stages.
+    #
+    # For safety, only clean directories if the uid of the
+    # directory owner matches the current uid or effective uid.
+    # Do this even if the delete operation is allowed by filesystem
+    # permissions (directories may be group- or public-write
+    # because of batch system).
+
+    match = 0
+    projectmatch = 0
+    uid = os.getuid()
+    euid = os.geteuid()
+    for project in projects:
+        for stage in project.stages:
+            if projectname == '' or project.name == projectname:
+                projectmatch = 1
+            if projectmatch and (stagename == '' or stage.name == stagename):
+                match = 1
+            if match:
+
+                # Clean this stage outdir.
+
+                if os.path.exists(stage.outdir):
+                    dir_uid = os.stat(stage.outdir).st_uid
+                    if dir_uid == uid or dir_uid == euid:
+                        print 'Clean directory %s.' % stage.outdir
+                        shutil.rmtree(stage.outdir)
+                    else:
+                        print 'Owner mismatch, delete %s manually.' % stage.outdir
+                        sys.exit(1)
+
+                # Clean this stage logdir.
+
+                if os.path.exists(stage.logdir):
+                    dir_uid = os.stat(stage.logdir).st_uid
+                    if dir_uid == uid or dir_uid == euid:
+                        print 'Clean directory %s.' % stage.logdir
+                        shutil.rmtree(stage.logdir)
+                    else:
+                        print 'Owner mismatch, delete %s manually.' % stage.logdir
+                        sys.exit(1)
+
+                # Clean this stage workdir.
+
+                if os.path.exists(stage.workdir):
+                    dir_uid = os.stat(stage.workdir).st_uid
+                    if dir_uid == uid or dir_uid == euid:
+                        print 'Clean directory %s.' % stage.workdir
+                        shutil.rmtree(stage.workdir)
+                    else:
+                        print 'Owner mismatch, delete %s manually.' % stage.workdir
+                        sys.exit(1)
+
+    # Done.
+
+    return
+
 # Stage status fuction.
 
 def dostatus(project):
