@@ -195,9 +195,9 @@ class ProjectApp(tk.Frame):
         self.batch_menu.add_command(label='Kill', command=self.kill_jobs)
         mbutton['menu'] = self.batch_menu
 
-        # SAM menu.
+        # SAM-art menu.
 
-        mbutton = tk.Menubutton(self.menubar, text='SAM', font=tkFont.Font(size=12))
+        mbutton = tk.Menubutton(self.menubar, text='SAM-art', font=tkFont.Font(size=12))
         mbutton.pack(side=tk.LEFT)
         self.sam_menu = tk.Menu(mbutton)
         self.sam_menu.add_command(label='Check Declarations', command=self.check_declarations)
