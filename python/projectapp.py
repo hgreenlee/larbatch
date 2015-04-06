@@ -101,8 +101,8 @@ class ProjectApp(tk.Frame):
 
         # From now on, send standard and diagnostic output to console window.
 
-        #sys.stdout = self.console
-        #sys.stderr = self.console
+        sys.stdout = self.console
+        sys.stderr = self.console
 
     # Make a menubar widget.
 
@@ -260,13 +260,16 @@ class ProjectApp(tk.Frame):
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', message)
             return
-            
-        xml_name = os.path.basename(xml_path)
-        n = xml_name.find('.xml')
-        if n > 0:
-            project_name = xml_name[0: n]
+
+        if len(project_defs) > 0:
+            project_name = project_defs[0].name
         else:
-            project_name = xml_name        
+            xml_name = os.path.basename(xml_path)
+            n = xml_name.find('.xml')
+            if n > 0:
+                project_name = xml_name[0: n]
+            else:
+                project_name = xml_name        
 
         # See if this project is already in the list of open projects.
         # If so, just choose this project, but don't open it again.
