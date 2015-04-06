@@ -25,11 +25,11 @@ class BatchStatus:
 
     # Constructor.
 
-    def __init__(self, project):
+    def __init__(self, projects):
 
         # Initialize attributes.
 
-        self.project = project
+        self.projects = projects
 
         # The status for each stage is a 4-tuple of integers consisting
         # of the following values.
@@ -39,17 +39,18 @@ class BatchStatus:
         # 4. Number of batch jobs in any other stage.
 
         self.stage_stats = {}
-        self.update(project)
+        self.update(projects)
         
 
     # Update data for the specified project.
 
-    def update(self, project):
+    def update(self, projects):
 
         global jobs
 
-        for stage in project.stages:
-            self.stage_stats[stage.name] = [0, 0, 0, 0]
+        for project in projects:
+            for stage in project.stages:
+                self.stage_stats[stage.name] = [0, 0, 0, 0]
 
         # Get information from the batch system.
 
@@ -63,17 +64,22 @@ class BatchStatus:
 
                 # Loop over stages.
 
-                for stage in self.project.stages:
-                    workscript = '%s-%s-%s.sh' % (stage.name, project.name, project.release_tag)
-                    if script.find(workscript) == 0:
-                        if state == 'I':
-                            self.stage_stats[stage.name][0] = self.stage_stats[stage.name][0] + 1
-                        elif state == 'R':
-                            self.stage_stats[stage.name][1] = self.stage_stats[stage.name][1] + 1
-                        elif state == 'H':
-                            self.stage_stats[stage.name][2] = self.stage_stats[stage.name][2] + 1
-                        else:
-                            self.stage_stats[stage.name][3] = self.stage_stats[stage.name][3] + 1
+                for project in projects:
+                    for stage in project.stages:
+                        workscript = '%s-%s-%s.sh' % (stage.name, project.name, project.release_tag)
+                        if script.find(workscript) == 0:
+                            if state == 'I':
+                                self.stage_stats[stage.name][0] = \
+                                self.stage_stats[stage.name][0] + 1
+                            elif state == 'R':
+                                self.stage_stats[stage.name][1] = \
+                                self.stage_stats[stage.name][1] + 1
+                            elif state == 'H':
+                                self.stage_stats[stage.name][2] = \
+                                self.stage_stats[stage.name][2] + 1
+                            else:
+                                self.stage_stats[stage.name][3] = \
+                                self.stage_stats[stage.name][3] + 1
 
     # Update jobs list.
 

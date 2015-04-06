@@ -40,11 +40,11 @@ class ProjectStatusView(tk.Frame):
 
     # Constructor.
 
-    def __init__(self, parent, project_def=None):
+    def __init__(self, parent, project_defs=[]):
 
 
         self.parent = parent
-        self.project_def = project_def
+        self.project_defs = project_defs
 
         # Register our outermost frame in the parent window.
 
@@ -69,7 +69,7 @@ class ProjectStatusView(tk.Frame):
         # Make widgets that belong to this widget.
 
         self.make_widgets()
-        if self.project_def != None:
+        if len(self.project_defs) > 0:
             self.update_status()
 
     # Make widgets.
@@ -152,8 +152,8 @@ class ProjectStatusView(tk.Frame):
 
     # Set or update project definition.
 
-    def set_project(self, project_def):
-        self.project_def = project_def
+    def set_project(self, project_defs):
+        self.project_defs = project_defs
         self.update_status()
 
     # Update status display.
@@ -165,8 +165,8 @@ class ProjectStatusView(tk.Frame):
         try:
             top['cursor'] = 'watch'
             top.update_idletasks()
-            ps = ProjectStatus(self.project_def)
-            bs = BatchStatus(self.project_def)
+            ps = ProjectStatus(self.project_defs)
+            bs = BatchStatus(self.project_defs)
             top['cursor'] = old_cursor
         except:
             top['cursor'] = old_cursor
@@ -200,104 +200,114 @@ class ProjectStatusView(tk.Frame):
             self.nother_labels[key].grid_forget()
 
         row = 1
-        for stage in self.project_def.stages:
-            row = row + 1
-            ss = ps.get_stage_status(stage.name)
-            bss = bs.get_stage_status(stage.name)
+        for project_def in self.project_defs:
+            for stage in project_def.stages:
+                row = row + 1
+                ss = ps.get_stage_status(stage.name)
+                bss = bs.get_stage_status(stage.name)
 
-            if not self.stage_name_labels.has_key(stage.name):
-                self.stage_name_labels[stage.name] = tk.Label(self, bg='powderblue',
-                                                              relief=tk.RIDGE,
-                                                              padx=10, pady=5,
+                if not self.stage_name_labels.has_key(stage.name):
+                    self.stage_name_labels[stage.name] = tk.Label(self, bg='powderblue',
+                                                                  relief=tk.RIDGE,
+                                                                  padx=10, pady=5,
+                                                                  font=tkFont.Font(size=12))
+                self.stage_name_labels[stage.name]['text'] = stage.name
+                self.stage_name_labels[stage.name].bind('<Button-1>', self.click_stage)
+                self.stage_name_labels[stage.name].grid(row=row, column=0,
+                                                        sticky=tk.N+tk.E+tk.W+tk.S)
+                self.rowconfigure(row, weight=1)
+
+                if not self.exists_labels.has_key(stage.name):
+                    self.exists_labels[stage.name] = tk.Label(self, bg='aliceblue', relief=tk.RIDGE,
                                                               font=tkFont.Font(size=12))
-            self.stage_name_labels[stage.name]['text'] = stage.name
-            self.stage_name_labels[stage.name].bind('<Button-1>', self.click_stage)
-            self.stage_name_labels[stage.name].grid(row=row, column=0, sticky=tk.N+tk.E+tk.W+tk.S)
-            self.rowconfigure(row, weight=1)
+                if ss.exists:
+                    self.exists_labels[stage.name]['text'] = 'Yes'
+                    self.exists_labels[stage.name]['fg'] = 'black'
+                else:
+                    self.exists_labels[stage.name]['text'] = 'No'
+                    self.exists_labels[stage.name]['fg'] = 'red'
+                self.exists_labels[stage.name].grid(row=row, column=kEXISTS,
+                                                    sticky=tk.N+tk.E+tk.W+tk.S)
+                self.rowconfigure(row, weight=1)
 
-            if not self.exists_labels.has_key(stage.name):
-                self.exists_labels[stage.name] = tk.Label(self, bg='aliceblue', relief=tk.RIDGE,
-                                                          font=tkFont.Font(size=12))
-            if ss.exists:
-                self.exists_labels[stage.name]['text'] = 'Yes'
-                self.exists_labels[stage.name]['fg'] = 'black'
-            else:
-                self.exists_labels[stage.name]['text'] = 'No'
-                self.exists_labels[stage.name]['fg'] = 'red'
-            self.exists_labels[stage.name].grid(row=row, column=kEXISTS, sticky=tk.N+tk.E+tk.W+tk.S)
-            self.rowconfigure(row, weight=1)
+                if not self.nfile_labels.has_key(stage.name):
+                    self.nfile_labels[stage.name] = tk.Label(self, bg='aliceblue', relief=tk.RIDGE,
+                                                             font=tkFont.Font(size=12))
+                self.nfile_labels[stage.name]['text'] = str(ss.nfile)
+                self.nfile_labels[stage.name].grid(row=row, column=kNFILE,
+                                                   sticky=tk.N+tk.E+tk.W+tk.S)
+                self.rowconfigure(row, weight=1)
 
-            if not self.nfile_labels.has_key(stage.name):
-                self.nfile_labels[stage.name] = tk.Label(self, bg='aliceblue', relief=tk.RIDGE,
-                                                         font=tkFont.Font(size=12))
-            self.nfile_labels[stage.name]['text'] = str(ss.nfile)
-            self.nfile_labels[stage.name].grid(row=row, column=kNFILE, sticky=tk.N+tk.E+tk.W+tk.S)
-            self.rowconfigure(row, weight=1)
+                if not self.nev_labels.has_key(stage.name):
+                    self.nev_labels[stage.name] = tk.Label(self, bg='aliceblue', relief=tk.RIDGE,
+                                                           font=tkFont.Font(size=12))
+                self.nev_labels[stage.name]['text'] = str(ss.nev)
+                self.nev_labels[stage.name].grid(row=row, column=kNEV, sticky=tk.N+tk.E+tk.W+tk.S)
+                self.rowconfigure(row, weight=1)
 
-            if not self.nev_labels.has_key(stage.name):
-                self.nev_labels[stage.name] = tk.Label(self, bg='aliceblue', relief=tk.RIDGE,
-                                                       font=tkFont.Font(size=12))
-            self.nev_labels[stage.name]['text'] = str(ss.nev)
-            self.nev_labels[stage.name].grid(row=row, column=kNEV, sticky=tk.N+tk.E+tk.W+tk.S)
-            self.rowconfigure(row, weight=1)
-
-            if not self.nana_labels.has_key(stage.name):
-                self.nana_labels[stage.name] = tk.Label(self, bg='aliceblue', relief=tk.RIDGE,
-                                                        font=tkFont.Font(size=12))
-            self.nana_labels[stage.name]['text'] = str(ss.nana)
-            self.nana_labels[stage.name].grid(row=row, column=kNANA, sticky=tk.N+tk.E+tk.W+tk.S)
-            self.rowconfigure(row, weight=1)
-
-            if not self.nerror_labels.has_key(stage.name):
-                self.nerror_labels[stage.name] = tk.Label(self, bg='aliceblue', relief=tk.RIDGE,
-                                                          font=tkFont.Font(size=12))
-            self.nerror_labels[stage.name]['text'] = str(ss.nerror)
-            if ss.nerror == 0:
-                self.nerror_labels[stage.name]['fg'] = 'black'
-            else:
-                self.nerror_labels[stage.name]['fg'] = 'red'
-            self.nerror_labels[stage.name].grid(row=row, column=kNERROR, sticky=tk.N+tk.E+tk.W+tk.S)
-            self.rowconfigure(row, weight=1)
-
-            if not self.nmiss_labels.has_key(stage.name):
-                self.nmiss_labels[stage.name] = tk.Label(self, bg='aliceblue', relief=tk.RIDGE,
-                                                         font=tkFont.Font(size=12))
-            self.nmiss_labels[stage.name]['text'] = str(ss.nmiss)
-            if ss.nmiss == 0:
-                self.nmiss_labels[stage.name]['fg'] = 'black'
-            else:
-                self.nmiss_labels[stage.name]['fg'] = 'red'
-            self.nmiss_labels[stage.name].grid(row=row, column=kNMISS, sticky=tk.N+tk.E+tk.W+tk.S)
-            self.rowconfigure(row, weight=1)
-
-            if not self.nidle_labels.has_key(stage.name):
-                self.nidle_labels[stage.name] = tk.Label(self, bg='lightcyan', relief=tk.RIDGE,
-                                                         font=tkFont.Font(size=12))
-            self.nidle_labels[stage.name]['text'] = bss[0]
-            self.nidle_labels[stage.name].grid(row=row, column=kIDLE, sticky=tk.N+tk.E+tk.W+tk.S)
-            self.rowconfigure(row, weight=1)
-
-            if not self.nrunning_labels.has_key(stage.name):
-                self.nrunning_labels[stage.name] = tk.Label(self, bg='lightcyan', relief=tk.RIDGE,
+                if not self.nana_labels.has_key(stage.name):
+                    self.nana_labels[stage.name] = tk.Label(self, bg='aliceblue', relief=tk.RIDGE,
                                                             font=tkFont.Font(size=12))
-            self.nrunning_labels[stage.name]['text'] = bss[1]
-            self.nrunning_labels[stage.name].grid(row=row,
-                                                  column=kRUNNING, sticky=tk.N+tk.E+tk.W+tk.S)
-            self.rowconfigure(row, weight=1)
+                self.nana_labels[stage.name]['text'] = str(ss.nana)
+                self.nana_labels[stage.name].grid(row=row, column=kNANA, sticky=tk.N+tk.E+tk.W+tk.S)
+                self.rowconfigure(row, weight=1)
 
-            if not self.nheld_labels.has_key(stage.name):
-                self.nheld_labels[stage.name] = tk.Label(self, bg='lightcyan', relief=tk.RIDGE,
-                                                         font=tkFont.Font(size=12))
-            self.nheld_labels[stage.name]['text'] = bss[2]
-            self.nheld_labels[stage.name].grid(row=row, column=kHELD, sticky=tk.N+tk.E+tk.W+tk.S)
-            self.rowconfigure(row, weight=1)
+                if not self.nerror_labels.has_key(stage.name):
+                    self.nerror_labels[stage.name] = tk.Label(self, bg='aliceblue', relief=tk.RIDGE,
+                                                              font=tkFont.Font(size=12))
+                self.nerror_labels[stage.name]['text'] = str(ss.nerror)
+                if ss.nerror == 0:
+                    self.nerror_labels[stage.name]['fg'] = 'black'
+                else:
+                    self.nerror_labels[stage.name]['fg'] = 'red'
+                self.nerror_labels[stage.name].grid(row=row, column=kNERROR,
+                                                    sticky=tk.N+tk.E+tk.W+tk.S)
+                self.rowconfigure(row, weight=1)
 
-            if not self.nother_labels.has_key(stage.name):
-                self.nother_labels[stage.name] = tk.Label(self, bg='lightcyan', relief=tk.RIDGE,
-                                                          font=tkFont.Font(size=12))
-            self.nother_labels[stage.name]['text'] = bss[3]
-            self.nother_labels[stage.name].grid(row=row, column=kOTHER, sticky=tk.N+tk.E+tk.W+tk.S)
-            self.rowconfigure(row, weight=1)
+                if not self.nmiss_labels.has_key(stage.name):
+                    self.nmiss_labels[stage.name] = tk.Label(self, bg='aliceblue', relief=tk.RIDGE,
+                                                             font=tkFont.Font(size=12))
+                self.nmiss_labels[stage.name]['text'] = str(ss.nmiss)
+                if ss.nmiss == 0:
+                    self.nmiss_labels[stage.name]['fg'] = 'black'
+                else:
+                    self.nmiss_labels[stage.name]['fg'] = 'red'
+                self.nmiss_labels[stage.name].grid(row=row, column=kNMISS,
+                                                   sticky=tk.N+tk.E+tk.W+tk.S)
+                self.rowconfigure(row, weight=1)
+
+                if not self.nidle_labels.has_key(stage.name):
+                    self.nidle_labels[stage.name] = tk.Label(self, bg='lightcyan', relief=tk.RIDGE,
+                                                             font=tkFont.Font(size=12))
+                self.nidle_labels[stage.name]['text'] = bss[0]
+                self.nidle_labels[stage.name].grid(row=row, column=kIDLE,
+                                                   sticky=tk.N+tk.E+tk.W+tk.S)
+                self.rowconfigure(row, weight=1)
+
+                if not self.nrunning_labels.has_key(stage.name):
+                    self.nrunning_labels[stage.name] = tk.Label(self, bg='lightcyan',
+                                                                relief=tk.RIDGE,
+                                                                font=tkFont.Font(size=12))
+                self.nrunning_labels[stage.name]['text'] = bss[1]
+                self.nrunning_labels[stage.name].grid(row=row,
+                                                      column=kRUNNING, sticky=tk.N+tk.E+tk.W+tk.S)
+                self.rowconfigure(row, weight=1)
+
+                if not self.nheld_labels.has_key(stage.name):
+                    self.nheld_labels[stage.name] = tk.Label(self, bg='lightcyan', relief=tk.RIDGE,
+                                                             font=tkFont.Font(size=12))
+                self.nheld_labels[stage.name]['text'] = bss[2]
+                self.nheld_labels[stage.name].grid(row=row, column=kHELD,
+                                                   sticky=tk.N+tk.E+tk.W+tk.S)
+                self.rowconfigure(row, weight=1)
+
+                if not self.nother_labels.has_key(stage.name):
+                    self.nother_labels[stage.name] = tk.Label(self, bg='lightcyan', relief=tk.RIDGE,
+                                                              font=tkFont.Font(size=12))
+                self.nother_labels[stage.name]['text'] = bss[3]
+                self.nother_labels[stage.name].grid(row=row, column=kOTHER,
+                                                    sticky=tk.N+tk.E+tk.W+tk.S)
+                self.rowconfigure(row, weight=1)
 
         
     # Highlight stage.

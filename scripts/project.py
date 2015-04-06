@@ -328,6 +328,71 @@ def doclean(project, stagename):
 
     return
 
+
+# Multi-project clean function.
+
+def docleanx(projects, projectname, stagename):
+    print projectname, stagename
+
+    # Loop over projects and stages.
+    # Clean all stages beginning with the specified project/stage.
+    # For empty project/stage name, clean all stages.
+    #
+    # For safety, only clean directories if the uid of the
+    # directory owner matches the current uid or effective uid.
+    # Do this even if the delete operation is allowed by filesystem
+    # permissions (directories may be group- or public-write
+    # because of batch system).
+
+    match = 0
+    projectmatch = 0
+    uid = os.getuid()
+    euid = os.geteuid()
+    for project in projects:
+        for stage in project.stages:
+            if projectname == '' or project.name == projectname:
+                projectmatch = 1
+            if projectmatch and (stagename == '' or stage.name == stagename):
+                match = 1
+            if match:
+
+                # Clean this stage outdir.
+
+                if os.path.exists(stage.outdir):
+                    dir_uid = os.stat(stage.outdir).st_uid
+                    if dir_uid == uid or dir_uid == euid:
+                        print 'Clean directory %s.' % stage.outdir
+                        shutil.rmtree(stage.outdir)
+                    else:
+                        print 'Owner mismatch, delete %s manually.' % stage.outdir
+                        sys.exit(1)
+
+                # Clean this stage logdir.
+
+                if os.path.exists(stage.logdir):
+                    dir_uid = os.stat(stage.logdir).st_uid
+                    if dir_uid == uid or dir_uid == euid:
+                        print 'Clean directory %s.' % stage.logdir
+                        shutil.rmtree(stage.logdir)
+                    else:
+                        print 'Owner mismatch, delete %s manually.' % stage.logdir
+                        sys.exit(1)
+
+                # Clean this stage workdir.
+
+                if os.path.exists(stage.workdir):
+                    dir_uid = os.stat(stage.workdir).st_uid
+                    if dir_uid == uid or dir_uid == euid:
+                        print 'Clean directory %s.' % stage.workdir
+                        shutil.rmtree(stage.workdir)
+                    else:
+                        print 'Owner mismatch, delete %s manually.' % stage.workdir
+                        sys.exit(1)
+
+    # Done.
+
+    return
+
 # Stage status fuction.
 
 def dostatus(project):
@@ -354,39 +419,109 @@ def dostatus(project):
             stagename, b_stage_status[0], b_stage_status[1], b_stage_status[2], b_stage_status[3])
     return
 
+
+# Recursively extract project names from an xml element.
+
+def find_project_names(element):
+
+    project_names = []
+
+    # First check if the input element is a project.  In that case, return a 
+    # list containing the project name as the single element of the list.
+
+    if element.nodeName == 'project':
+        projectname = element.attributes['name'].firstChild.data
+        project_names.append(projectname)
+
+    else:
+
+        # Input element is not a project.
+        # Loop over subelements.
+
+        subelements = element.getElementsByTagName('*')
+        for subelement in subelements:
+            names = find_project_names(subelement)
+            project_names.extend(names)
+
+    # Done.
+
+    return project_names
+
+
+# Extract all project names from the specified xml file.
+
+def get_project_names(xmlfile):
+    
+    # Parse xml (returns xml document).
+
+    if xmlfile == '-':
+        xml = sys.stdin
+    else:
+        xml = urllib.urlopen(xmlfile)
+    doc = parse(xml)
+
+    # Extract root element.
+
+    root = doc.documentElement
+
+    # Find project names in the root element.
+    
+    project_names = find_project_names(root)
+
+    # Done.
+
+    return project_names
+
+
 # This is a recursive function that looks for project
 # subelements within the input element.  It returns the
 # first matching element that it finds, or None.
 
-def find_project(element, projectname):
+def find_project(element, projectname, stagename):
 
-    # First check if the input element is a project.
-    # If it is, and if the name matches, return that.
+    # First check if the input element is a project and if the project name matches.
 
     if element.nodeName == 'project' and \
        (projectname == '' or \
         (element.attributes.has_key('name') and
          projectname == element.attributes['name'].firstChild.data)):
-        return element
 
-    # Loop over subelements.
+       # Next, check whether this project contains a matching stage.
+
+       if stagename == '':
+
+           # Null stage name matches anything.
+
+           return element
+
+       else:
+
+           # Loop over stage elemsnts.
+
+           stage_elements = element.getElementsByTagName('stage')
+           for stage_element in stage_elements:
+               if stage_element.attributes.has_key('name') and \
+                       stage_element.attributes['name'].firstChild.data == stagename:
+                   return element
+
+    # Input element didn't match.  Loop over subelements.
 
     subelements = element.getElementsByTagName('*')
     for subelement in subelements:
-        project = find_project(subelement, projectname)
+        project = find_project(subelement, projectname, stagename)
         if project is not None:
             return project
 
     # If we fell out of the loop, return None.
 
     return None
-    
+
 
 # Extract the specified project element from xml file.
 # Project elements can exist at any depth inside xml file.
 # Return project Element or None.
 
-def get_project(xmlfile, projectname):
+def get_project(xmlfile, projectname, stagename):
 
     # Parse xml (returns xml document).
 
@@ -402,7 +537,7 @@ def get_project(xmlfile, projectname):
 
     # Find project element.
     
-    project = find_project(root, projectname)
+    project = find_project(root, projectname, stagename)
     if project is None:
         return None
 
@@ -2367,7 +2502,7 @@ def main(argv):
 
     # Get the project element.
 
-    project_element = get_project(xmlfile, projectname)
+    project_element = get_project(xmlfile, projectname, stagename)
     if project_element is None:
         if projectname == '':
             print 'Could not find unique project in xml file %s.' % xmlfile
