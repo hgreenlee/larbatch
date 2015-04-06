@@ -23,7 +23,7 @@ class ProjectView(tk.Frame):
 
     # Constructor.
 
-    def __init__(self, parent, project_name=None, xml_path=None, project_def=None):
+    def __init__(self, parent, project_name=None, xml_path=None, project_defs=[]):
 
         self.parent = parent
 
@@ -35,7 +35,7 @@ class ProjectView(tk.Frame):
         # Make widgets that belong to this widget.
 
         self.make_widgets()
-        self.set_project(project_name, xml_path, project_def)       
+        self.set_project(project_name, xml_path, project_defs)
 
     # Make widgets.
 
@@ -69,11 +69,11 @@ class ProjectView(tk.Frame):
 
     # Select the project.
 
-    def set_project(self, project_name, xml_path, project_def):
+    def set_project(self, project_name, xml_path, project_defs):
         self.path['text'] = xml_path
         self.projectname['text'] = project_name
-        if project_def != None:
-            self.ps.set_project(project_def)
+        if len(project_defs) > 0:
+            self.ps.set_project(project_defs)
 
     # Make a top level window for displaying xml.
 

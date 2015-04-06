@@ -18,18 +18,19 @@ class ProjectStatus:
 
     # Constructor.
 
-    def __init__(self, project):
+    def __init__(self, projects):
 
         # Initialize attributes.
 
-        self.project = project
+        self.projects = projects
         self.stats = {}
-        for stage in self.project.stages:
-            self.stats[stage.name] = StageStatus(stage)
+        for project in projects:
+            for stage in project.stages:
+                self.stats[stage.name] = StageStatus(stage)
 
     # Update data for the specified project.
 
-    def update(self, project):
+    def update(self):
 
         # Update all stages.
 
