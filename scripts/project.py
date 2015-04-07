@@ -187,56 +187,6 @@ samweb = None           # SAMWebClient object
 extractor_dict = None   # Metadata extractor
 proxy_ok = False
 
-# File-like class for writing files in pnfs space.
-# Temporary file is opened in current directory and copied to final destination
-# on close using ifdh.
-
-#class SafeFile:
-
-#    # Constructor.
-
-#    def __init__(self, destination=''):
-#        self.destination = ''
-#        self.filename = ''
-#        self.file = None
-#        if destination != '':
-#            self.open(destination)
-#        return
-
-#    # Open method.
-    
-#    def open(self, destination):
-#        global proxy_ok
-#        if not proxy_ok:
-#            proxy_ok = project_utilities.test_proxy()
-#        self.destination = destination
-#        if project_utilities.safeexist(self.destination):
-#            subprocess.call(['ifdh', 'rm', self.destination], stdout=sys.stdout, stderr=sys.stderr)
-#        self.filename = os.path.basename(destination)
-#        if os.path.exists(self.filename):
-#            os.remove(self.filename)
-#        self.file = open(self.filename, 'w')
-#        return self.file
-
-#    # Write method.
-
-#    def write(self, line):
-#        self.file.write(line)
-#        return
-
-#    # Close method.
-
-#    def close(self):
-#        if self.file is not None and not self.file.closed:
-#            self.file.close()
-#        subprocess.call(['ifdh', 'cp', self.filename, self.destination],
-#                        stdout=sys.stdout, stderr=sys.stderr)
-#        os.remove(self.filename)
-#        self.destination = ''
-#        self.filename = ''
-#        self.file = None
-#        return
-
 # Function for opening files for writing using either python's built-in
 # file object or SafeFile for dCache/pnfs files, as appropriate.
 

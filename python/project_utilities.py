@@ -141,18 +141,6 @@ def get_user():
 
     raise RuntimeError, 'Unable to determine authenticated user.'        
 
-# Get proxy path.
-
-def get_proxy():
-    exp = get_experiment()
-    role = get_role()
-    user = getpass.getuser()
-    if role == 'Production':
-        result = '/scratch/%s/grid/%s.%s.Production.proxy' % (user, user, exp)
-    else:
-        result = '/scratch/%s/grid/%s.%s.proxy' % (user, user, exp)
-    return result
-
 # Function to optionally convert a filesystem path into an xrootd url.
 # Only affects paths in /pnfs space.
 
@@ -191,15 +179,67 @@ def test_ticket():
         ticket_ok = True
     return ticket_ok
 
+# Get grid proxy.
+# This implementation should be good enough for experiments in the fermilab VO.
+# Experiments not in the fermilab VO (lbne/dune) should override this function
+# in experiment_utilities.py.
+
+def get_proxy():
+
+    global proxy_ok
+    proxy_ok = False
+
+    # First, make sure we have a kerberos ticket.
+
+    krb_ok = test_ticket()
+    if krb_ok:
+
+        # Get kca certificate.
+
+        kca_ok = False
+        try:
+            subprocess.check_call(['kx509'], stdout=-1, stderr=-1)
+            kca_ok = True
+        except:
+            pass
+
+        if kca_ok:
+
+            # Get proxy.
+
+            cmd=['voms-proxy-init',
+                 '-noregen',
+                 '-rfc',
+                 '-voms',
+                 'fermilab:/fermilab/%s/Role=%s' % (get_experiment(), get_role())]
+            try:
+                subprocess.check_call(cmd, stdout=-1, stderr=-1)
+                proxy_ok = True
+            except:
+                pass
+
+    # Done
+
+    return proxy_ok
+
+
 # Test whether user has a valid grid proxy.  Raise exception if no.
 
 def test_proxy():
     global proxy_ok
+    if not proxy_ok:
+        try:
+            subprocess.check_call(['voms-proxy-info', '-exists'], stdout=-1, stderr=-1)
+            proxy_ok = True
+        except:
+            pass
 
-    # Disable proxy check if we have a valid kerberos ticket, 
-    # as we currently don't use it.
+    # If at this point we don't have a grid proxy, try to get one.
 
-    proxy_ok = test_ticket()
+    if not proxy_ok:
+        get_proxy()
+
+    # Final checkout.
 
     if not proxy_ok:
         try:
@@ -216,7 +256,7 @@ def saferead(path):
     if os.path.getsize(path) == 0:
         return lines
     #if path[0:6] == '/pnfs/':
-    #    test_proxy()
+    #    test_ticket()
     #    lines = subprocess.check_output(['ifdh', 'cp', path, '/dev/fd/1']).splitlines()
     #else:
     lines = open(path).readlines()
@@ -299,8 +339,7 @@ def path_to_local(path):
 
     #        # Do local copy.
 
-    #        if not proxy_ok:
-    #            proxy_ok = test_proxy()
+    #        test_ticket()
 
     #        # Make sure local path doesn't already exist (ifdh cp may fail).
 
