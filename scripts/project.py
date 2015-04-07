@@ -1088,9 +1088,10 @@ def dofetchlog(stage):
     stage.checkinput()
     stage.checkdirs()
 
-    # Look for a file called "env.txt" in any subdirectory of
+    # Look for files called "env.txt" in any subdirectory of
     # stage.logdir.
 
+    logids = []
     for dirpath, dirnames, filenames in os.walk(stage.logdir):
         for filename in filenames:
             if filename == 'env.txt':
@@ -1115,6 +1116,7 @@ def dofetchlog(stage):
                     name = varsplit[0].strip()
                     if name == 'JOBSUBPARENTJOBID':
                         logid = varsplit[1].strip()
+                        logids.append(logid)
                         break
 
                 # JOBSUBJOBID
@@ -1125,50 +1127,56 @@ def dofetchlog(stage):
                         name = varsplit[0].strip()
                         if name == 'JOBSUBJOBID':
                             logid = varsplit[1].strip()
+
+                            # Fix up the log file id by changing the process
+                            # number to zero.
+
+                            logsplit = logid.split('@', 1)
+                            cluster_process = logsplit[0]
+                            server = logsplit[1]
+                            cluster = cluster_process.split('.', 1)[0]
+                            logid = cluster + '.0' + '@' + server
+                            logids.append(logid)
                             break
 
-                if logid != '':
+    # Process all of the log ids that we found.
 
-                    # Fix up the log file id by changing the process
-                    # number to zero.
+    if len(logids) > 0:
 
-                    logsplit = logid.split('@', 1)
-                    cluster_process = logsplit[0]
-                    server = logsplit[1]
-                    cluster = cluster_process.split('.', 1)[0]
-                    logid = cluster + '.0' + '@' + server
+        # Make a directory to receive log files.
 
-                    # Make a directory to receive log files.
+        logdir = os.path.join(stage.logdir, 'log')
+        if project_utilities.safeexist(logdir):
+            shutil.rmtree(logdir)
+        os.mkdir(logdir)
 
-                    logdir = os.path.join(stage.logdir, 'log')
-                    if project_utilities.safeexist(logdir):
-                        shutil.rmtree(logdir)
-                    os.mkdir(logdir)
+        # Loop over log ids.
                     
-                    # Do the actual fetch.
-                    # Tarball is fetched into current directory, and unpacked
-                    # into log directory.
+        for logid in set(logids):
 
-                    print 'Fetching log files for id %s' % logid
-                    command = ['jobsub_fetchlog']
-                    command.append('--jobid=%s' % logid)
-                    command.append('--dest-dir=%s' % logdir)
-                    rc = subprocess.call(command, stdout=sys.stdout, stderr=sys.stderr)
+            # Do the actual fetch.
+            # Tarball is fetched into current directory, and unpacked
+            # into log directory.
 
-                    # Done.
+            print 'Fetching log files for id %s' % logid
+            command = ['jobsub_fetchlog']
+            command.append('--jobid=%s' % logid)
+            command.append('--dest-dir=%s' % logdir)
+            rc = subprocess.call(command, stdout=sys.stdout, stderr=sys.stderr)
 
-                    if rc != 0:
-                        print 'Failed to fetch log files.'
-                    return rc
+        return 0
 
-    # Done (failure).
-    # If we fall out of the loop, we didn't find a file called env.txt, or
-    # it didn't contain the right environment variables we need.
-    # In this case, the most likely explanation is that no workers have
-    # completed yet.
+    else:
 
-    print 'Failed to fetch log files.'
-    return 1
+        # Done (failure).
+        # If we fall out of the loop, we didn't find any files called env.txt, or
+        # they didn't contain the right environment variables we need.
+        # In this case, the most likely explanation is that no workers have
+        # completed yet.
+
+        print 'Failed to fetch log files.'
+        return 1
+
 
 # Check sam declarations.
 
