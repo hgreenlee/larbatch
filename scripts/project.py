@@ -489,6 +489,14 @@ def select_project(projects, projectname, stagename):
 
     return None
 
+
+# Extract the specified project element from xml file.
+
+def get_project(xmlfile, projectname='', stagename=''):
+    projects = get_projects(xmlfile)
+    project = select_project(projects, projectname, stagename)
+    return project
+
 # Parse directory name of type <cluster>_<process> and return
 # a 2-tuple of integers or None.
 
