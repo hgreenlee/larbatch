@@ -397,10 +397,17 @@ def docleanx(projects, projectname, stagename):
 
 def dostatus(projects):
 
-    project_status = ProjectStatus(projects)
-    batch_status = BatchStatus(projects)
+    # For backward compatibility, allow this function to be called with 
+    # either a single project or a list of projects.
 
-    for project in projects:
+    prjs = projects
+    if type(projects) != type([]) and type(projects) != type(()):
+        prjs = [projects]
+
+    project_status = ProjectStatus(prjs)
+    batch_status = BatchStatus(prjs)
+
+    for project in prjs:
 
         print '\nProject %s:' % project.name
 
