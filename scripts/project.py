@@ -1180,20 +1180,23 @@ def dofetchlog(stage):
 
 # Check sam declarations.
 
-def docheck_declarations(logdir, declare):
+def docheck_declarations(logdir, declare, ana=False):
 
     # Initialize samweb.
 
     import_samweb()
 
-    # Loop over root files listed in files.list.
+    # Loop over root files listed in files.list or filesana.list.
 
     roots = []
-    fnlist = os.path.join(logdir, 'files.list')
+    listname = 'files.list'
+    if ana:
+        listname = 'filesana.list'
+    fnlist = os.path.join(logdir, listname)
     if project_utilities.safeexist(fnlist):
         roots = project_utilities.saferead(fnlist)
     else:
-        print 'No files.list file found, run project.py --check'
+        print 'No %s file found, run project.py --check' % listname
         sys.exit(1)
 
     for root in roots:
