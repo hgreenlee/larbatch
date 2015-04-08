@@ -218,6 +218,8 @@ def import_samweb():
         samweb = samweb_cli.SAMWebClient(experiment=exp)
         import extractor_dict
 
+    os.environ['SSL_CERT_DIR'] = '/etc/grid-security/certificates'
+
 
 # Clean function.
 
