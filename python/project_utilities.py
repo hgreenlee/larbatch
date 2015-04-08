@@ -229,7 +229,7 @@ def test_proxy():
     global proxy_ok
     if not proxy_ok:
         try:
-            subprocess.check_call(['voms-proxy-info', '-exists'], stdout=-1, stderr=-1)
+            subprocess.check_call(['voms-proxy-info', '-exists', '-acissuer'], stdout=-1, stderr=-1)
             proxy_ok = True
         except:
             pass
