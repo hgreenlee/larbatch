@@ -1201,6 +1201,8 @@ def docheck_declarations(logdir, declare):
     for root in roots:
         path = string.strip(root)
         fn = os.path.basename(path)
+        dirpath = os.path.dirname(path)
+        dirname = os.path.basename(dirpath)
 
         # Check metadata
 
@@ -1218,7 +1220,19 @@ def docheck_declarations(logdir, declare):
         else:
             if declare:
                 print 'Declaring: %s' % fn
-                md = extractor_dict.getmetadata(path)
+                jsonfile = os.path.join(logdir, os.path.join(dirname, fn)) + '.json'
+                mdjson = {}
+                if project_utilities.safeexist(jsonfile):
+                    mdlines = project_utilities.saferead(jsonfile)
+                    mdtext = ''
+                    for line in mdlines:
+                        mdtext = mdtext + line
+                    try:
+                        md = json.loads(mdtext)
+                        mdjson = md
+                    except:
+                        pass
+                md = extractor_dict.getmetadata(path, mdjson)
                 samweb.declareFile(md=md)
             else:
                 print 'Not declared: %s' % fn
