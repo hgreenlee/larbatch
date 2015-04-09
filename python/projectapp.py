@@ -195,9 +195,9 @@ class ProjectApp(tk.Frame):
         self.batch_menu.add_command(label='Kill', command=self.kill_jobs)
         mbutton['menu'] = self.batch_menu
 
-        # SAM menu.
+        # SAM-art menu.
 
-        mbutton = tk.Menubutton(self.menubar, text='SAM', font=tkFont.Font(size=12))
+        mbutton = tk.Menubutton(self.menubar, text='SAM-art', font=tkFont.Font(size=12))
         mbutton.pack(side=tk.LEFT)
         self.sam_menu = tk.Menu(mbutton)
         self.sam_menu.add_command(label='Check Declarations', command=self.check_declarations)
@@ -215,6 +215,30 @@ class ProjectApp(tk.Frame):
         self.sam_menu.add_command(label='Upload to Enstore', command=self.upload)
         self.sam_menu.add_separator()
         self.sam_menu.add_command(label='Audit', command=self.audit)
+        mbutton['menu'] = self.sam_menu
+
+        # SAM-ana menu.
+
+        mbutton = tk.Menubutton(self.menubar, text='SAM-ana', font=tkFont.Font(size=12))
+        mbutton.pack(side=tk.LEFT)
+        self.sam_menu = tk.Menu(mbutton)
+        self.sam_menu.add_command(label='Check Declarations', command=self.check_ana_declarations)
+        self.sam_menu.add_command(label='Declare Files', command=self.declare_ana)
+        self.sam_menu.add_command(label='Test Declarations', command=self.test_ana_declarations)
+        #self.sam_menu.add_separator()
+        #self.sam_menu.add_command(label='Check Dataset Definition',
+        #                          command=self.check_ana_definition)
+        #self.sam_menu.add_command(label='Create Dataset Definition', command=self.define_ana)
+        #self.sam_menu.add_command(label='Test Dataset Definition',
+        #                          command=self.test_ana_definition)
+        #self.sam_menu.add_separator()
+        #self.sam_menu.add_command(label='Check Locations', command=self.check_ana_locations)
+        #self.sam_menu.add_command(label='Add Disk Locations', command=self.add_ana_locations)
+        #self.sam_menu.add_command(label='Clean Disk Locations', command=self.clean_ana_locations)
+        #self.sam_menu.add_command(label='Remove Disk Locations', command=self.remove_ana_locations#)
+        #self.sam_menu.add_command(label='Upload to Enstore', command=self.upload_ana)
+        #self.sam_menu.add_separator()
+        #self.sam_menu.add_command(label='Audit', command=self.audit_ana)
         mbutton['menu'] = self.sam_menu
 
         # Help menu.
@@ -722,7 +746,7 @@ class ProjectApp(tk.Frame):
 
     # Declare files to sam.
 
-    def declare(self):
+    def declare(self, ana=False):
         if self.current_project_def == None:
             tkMessageBox.showwarning('', 'No project selected.')
             return
@@ -734,17 +758,22 @@ class ProjectApp(tk.Frame):
         try:
             top['cursor'] = 'watch'
             top.update_idletasks()
-            project.docheck_declarations(self.current_stage_def.logdir, declare=True)
+            project.docheck_declarations(self.current_stage_def.logdir, declare=True, ana=ana)
             top['cursor'] = old_cursor
         except:
             top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
+
+    # Declare analysis files to sam.
+
+    def declare_ana(self):
+        self.declare(ana=True)
 
     # Check sam declarations.
 
-    def check_declarations(self):
+    def check_declarations(self, ana=False):
         if self.current_project_def == None:
             tkMessageBox.showwarning('', 'No project selected.')
             return
@@ -756,7 +785,7 @@ class ProjectApp(tk.Frame):
         try:
             top['cursor'] = 'watch'
             top.update_idletasks()
-            project.docheck_declarations(self.current_stage_def.logdir, declare=False)
+            project.docheck_declarations(self.current_stage_def.logdir, declare=False, ana=ana)
             top['cursor'] = old_cursor
         except:
             top['cursor'] = old_cursor
@@ -764,9 +793,14 @@ class ProjectApp(tk.Frame):
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
 
+    # Check sam analysis file declarations.
+
+    def check_ana_declarations(self):
+        self.check_declarations(ana=True)
+
     # Test sam declarations.
 
-    def test_declarations(self):
+    def test_declarations(self, ana=False):
         if self.current_project_def == None:
             tkMessageBox.showwarning('', 'No project selected.')
             return
@@ -778,7 +812,8 @@ class ProjectApp(tk.Frame):
         try:
             top['cursor'] = 'watch'
             top.update_idletasks()
-            dim = project_utilities.dimensions(self.current_project_def, self.current_stage_def)
+            dim = project_utilities.dimensions(self.current_project_def, self.current_stage_def,
+                                               ana=ana)
             project.dotest_declarations(dim)
             top['cursor'] = old_cursor
         except:
@@ -786,6 +821,11 @@ class ProjectApp(tk.Frame):
             e = sys.exc_info()
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
+
+    # Test sam analysis file declarations.
+
+    def test_ana_declarations(self):
+        self.test_declarations(ana=True)
 
     # Create sam dataset definition.
 
