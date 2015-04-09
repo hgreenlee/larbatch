@@ -1311,8 +1311,31 @@ fi
 
 # Do root file checks.
 
+# Randomize names of root files that have a corresponding json file.
+# These are normally histogram files.  Art files do not have external
+# json metadata at this point.
+
 for root in *.root; do
-  root_metadata.py $root > ${root}.json
+  if [ -f ${root}.json ]; then
+    base=`basename $root`_${PROCESS}_`date +%Y%m%d%H%M%S`
+    mv $root ${base}.root
+    mv ${root}.json ${base}.root.json
+  fi
+done
+
+# Calculate root metadata for all root files and save as json file.
+# If json metadata already exists, merge with newly geneated root metadata.
+
+for root in *.root; do
+  json=${root}.json
+  if [ -f $json ]; then
+    root_metadata.py $root > ${json}2
+    merge_json.py $json ${json}2 > ${json}3
+    mv -f ${json}3 $json
+    rm ${json}2
+  else
+    root_metadata.py $root > $json
+  fi
 done
 
 # Make local files group write, if appropriate.
@@ -1354,4 +1377,3 @@ fi
 if [ $statout -ne 0 ]; then
   exit $statout
 fi
-

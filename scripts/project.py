@@ -38,6 +38,7 @@
 # --makeup     - Submit makeup jobs for specified stage.
 # --clean      - Delete output from specified project and stage.
 # --declare    - Declare files to sam.
+# --declare_ana - Declare analysis files to sam.
 # --add_locations    - Check sam disk locations and add missing ones.
 # --clean_locations  - Check sam disk locations and remove non-existent ones.
 # --remove_locations - Remove all sam disk locations, whether or not file exists.
@@ -54,6 +55,7 @@
 # --fcl        - Print the fcl file name and version for stage.
 # --defname    - Print sam dataset definition name for stage.
 # --input_files        - Print all input files.
+#
 # --check_declarations - Check whether data files are declared to sam.
 # --test_declarations  - Print a summary of files returned by sam query.
 # --check_locations    - Check sam locations and report the following:
@@ -65,6 +67,9 @@
 # --check_definition   - Reports whether the sam dataset definition associated
 #                        with this project/stage exists, or needs to be created.
 # --test_definition    - Print a summary of files returned by dataset definition.
+#
+# --check_declarations_ana - Check whether analysis files are declared to sam.
+# --test_declarations_ana - Print a summary of analysis files returned by sam query.
 #
 ######################################################################
 #
@@ -187,56 +192,6 @@ samweb = None           # SAMWebClient object
 extractor_dict = None   # Metadata extractor
 proxy_ok = False
 
-# File-like class for writing files in pnfs space.
-# Temporary file is opened in current directory and copied to final destination
-# on close using ifdh.
-
-#class SafeFile:
-
-#    # Constructor.
-
-#    def __init__(self, destination=''):
-#        self.destination = ''
-#        self.filename = ''
-#        self.file = None
-#        if destination != '':
-#            self.open(destination)
-#        return
-
-#    # Open method.
-    
-#    def open(self, destination):
-#        global proxy_ok
-#        if not proxy_ok:
-#            proxy_ok = project_utilities.test_proxy()
-#        self.destination = destination
-#        if project_utilities.safeexist(self.destination):
-#            subprocess.call(['ifdh', 'rm', self.destination], stdout=sys.stdout, stderr=sys.stderr)
-#        self.filename = os.path.basename(destination)
-#        if os.path.exists(self.filename):
-#            os.remove(self.filename)
-#        self.file = open(self.filename, 'w')
-#        return self.file
-
-#    # Write method.
-
-#    def write(self, line):
-#        self.file.write(line)
-#        return
-
-#    # Close method.
-
-#    def close(self):
-#        if self.file is not None and not self.file.closed:
-#            self.file.close()
-#        subprocess.call(['ifdh', 'cp', self.filename, self.destination],
-#                        stdout=sys.stdout, stderr=sys.stderr)
-#        os.remove(self.filename)
-#        self.destination = ''
-#        self.filename = ''
-#        self.file = None
-#        return
-
 # Function for opening files for writing using either python's built-in
 # file object or SafeFile for dCache/pnfs files, as appropriate.
 
@@ -267,6 +222,8 @@ def import_samweb():
         import samweb_cli
         samweb = samweb_cli.SAMWebClient(experiment=exp)
         import extractor_dict
+
+    os.environ['SSL_CERT_DIR'] = '/etc/grid-security/certificates'
 
 
 # Clean function.
@@ -328,66 +285,139 @@ def doclean(project, stagename):
 
     return
 
-# Stage status fuction.
 
-def dostatus(project):
+# Multi-project clean function.
 
-    project_status = ProjectStatus(project)
-    batch_status = BatchStatus(project)
+def docleanx(projects, projectname, stagename):
+    print projectname, stagename
 
-    print 'Project %s:' % project.name
+    # Loop over projects and stages.
+    # Clean all stages beginning with the specified project/stage.
+    # For empty project/stage name, clean all stages.
+    #
+    # For safety, only clean directories if the uid of the
+    # directory owner matches the current uid or effective uid.
+    # Do this even if the delete operation is allowed by filesystem
+    # permissions (directories may be group- or public-write
+    # because of batch system).
 
-    # Loop over stages.
+    match = 0
+    projectmatch = 0
+    uid = os.getuid()
+    euid = os.geteuid()
+    for project in projects:
+        for stage in project.stages:
+            if projectname == '' or project.name == projectname:
+                projectmatch = 1
+            if projectmatch and (stagename == '' or stage.name == stagename):
+                match = 1
+            if match:
 
-    for stage in project.stages:
+                # Clean this stage outdir.
 
-        stagename = stage.name
-        stage_status = project_status.get_stage_status(stagename)
-        b_stage_status = batch_status.get_stage_status(stagename)
-        if stage_status.exists:
-            print '\nStage %s: %d art files, %d events, %d analysis files, %d errors, %d missing files.' % (
-                stagename, stage_status.nfile, stage_status.nev, stage_status.nana, 
-                stage_status.nerror, stage_status.nmiss)
-        else:
-            print '\nStage %s output directory does not exist.' % stagename
-        print 'Stage %s batch jobs: %d idle, %d running, %d held, %d other.' % (
-            stagename, b_stage_status[0], b_stage_status[1], b_stage_status[2], b_stage_status[3])
+                if os.path.exists(stage.outdir):
+                    dir_uid = os.stat(stage.outdir).st_uid
+                    if dir_uid == uid or dir_uid == euid:
+                        print 'Clean directory %s.' % stage.outdir
+                        shutil.rmtree(stage.outdir)
+                    else:
+                        print 'Owner mismatch, delete %s manually.' % stage.outdir
+                        sys.exit(1)
+
+                # Clean this stage logdir.
+
+                if os.path.exists(stage.logdir):
+                    dir_uid = os.stat(stage.logdir).st_uid
+                    if dir_uid == uid or dir_uid == euid:
+                        print 'Clean directory %s.' % stage.logdir
+                        shutil.rmtree(stage.logdir)
+                    else:
+                        print 'Owner mismatch, delete %s manually.' % stage.logdir
+                        sys.exit(1)
+
+                # Clean this stage workdir.
+
+                if os.path.exists(stage.workdir):
+                    dir_uid = os.stat(stage.workdir).st_uid
+                    if dir_uid == uid or dir_uid == euid:
+                        print 'Clean directory %s.' % stage.workdir
+                        shutil.rmtree(stage.workdir)
+                    else:
+                        print 'Owner mismatch, delete %s manually.' % stage.workdir
+                        sys.exit(1)
+
+    # Done.
+
     return
 
-# This is a recursive function that looks for project
-# subelements within the input element.  It returns the
-# first matching element that it finds, or None.
+# Stage status fuction.
 
-def find_project(element, projectname):
+def dostatus(projects):
 
-    # First check if the input element is a project.
-    # If it is, and if the name matches, return that.
+    # For backward compatibility, allow this function to be called with 
+    # either a single project or a list of projects.
 
-    if element.nodeName == 'project' and \
-       (projectname == '' or \
-        (element.attributes.has_key('name') and
-         projectname == element.attributes['name'].firstChild.data)):
-        return element
+    prjs = projects
+    if type(projects) != type([]) and type(projects) != type(()):
+        prjs = [projects]
 
-    # Loop over subelements.
+    project_status = ProjectStatus(prjs)
+    batch_status = BatchStatus(prjs)
 
-    subelements = element.getElementsByTagName('*')
-    for subelement in subelements:
-        project = find_project(subelement, projectname)
-        if project is not None:
-            return project
+    for project in prjs:
 
-    # If we fell out of the loop, return None.
+        print '\nProject %s:' % project.name
 
-    return None
+        # Loop over stages.
+
+        for stage in project.stages:
+
+            stagename = stage.name
+            stage_status = project_status.get_stage_status(stagename)
+            b_stage_status = batch_status.get_stage_status(stagename)
+            if stage_status.exists:
+                print '\nStage %s: %d art files, %d events, %d analysis files, %d errors, %d missing files.' % (
+                    stagename, stage_status.nfile, stage_status.nev, stage_status.nana, 
+                    stage_status.nerror, stage_status.nmiss)
+            else:
+                print '\nStage %s output directory does not exist.' % stagename
+            print 'Stage %s batch jobs: %d idle, %d running, %d held, %d other.' % (
+                stagename, b_stage_status[0], b_stage_status[1], b_stage_status[2], b_stage_status[3])
+    return
+
+
+# Recursively extract projects from an xml element.
+
+def find_projects(element):
+
+    projects = []
+
+    # First check if the input element is a project.  In that case, return a 
+    # list containing the project name as the single element of the list.
+
+    if element.nodeName == 'project':
+        project = ProjectDef(element)
+        projects.append(project)
+
+    else:
+
+        # Input element is not a project.
+        # Loop over subelements.
+
+        subelements = element.getElementsByTagName('*')
+        for subelement in subelements:
+            subprojects = find_projects(subelement)
+            projects.extend(subprojects)
+
+    # Done.
+
+    return projects
+
+
+# Extract all projects from the specified xml file.
+
+def get_projects(xmlfile):
     
-
-# Extract the specified project element from xml file.
-# Project elements can exist at any depth inside xml file.
-# Return project Element or None.
-
-def get_project(xmlfile, projectname):
-
     # Parse xml (returns xml document).
 
     if xmlfile == '-':
@@ -400,20 +430,35 @@ def get_project(xmlfile, projectname):
 
     root = doc.documentElement
 
-    # Find project element.
+    # Find project names in the root element.
     
-    project = find_project(root, projectname)
-    if project is None:
-        return None
+    projects = find_projects(root)
 
-    # Check that project element has "name" attribute.
-    
-    if not project.attributes.has_key('name'):
-        print 'Project element does not have "name" attribute.'
-        return None
+    # Done.
 
-    # Success.
+    return projects
 
+
+# Select the specified project.
+
+def select_project(projects, projectname, stagename):
+
+    for project in projects:
+        if projectname == '' or projectname == project.name:
+            for stage in project.stages:
+                if stagename == '' or stagename == stage.name:
+                    return project
+
+    # Failure if we fall out of the loop.
+
+    return None
+
+
+# Extract the specified project element from xml file.
+
+def get_project(xmlfile, projectname='', stagename=''):
+    projects = get_projects(xmlfile)
+    project = select_project(projects, projectname, stagename)
     return project
 
 # Parse directory name of type <cluster>_<process> and return
@@ -1050,9 +1095,10 @@ def dofetchlog(stage):
     stage.checkinput()
     stage.checkdirs()
 
-    # Look for a file called "env.txt" in any subdirectory of
+    # Look for files called "env.txt" in any subdirectory of
     # stage.logdir.
 
+    logids = []
     for dirpath, dirnames, filenames in os.walk(stage.logdir):
         for filename in filenames:
             if filename == 'env.txt':
@@ -1077,6 +1123,7 @@ def dofetchlog(stage):
                     name = varsplit[0].strip()
                     if name == 'JOBSUBPARENTJOBID':
                         logid = varsplit[1].strip()
+                        logids.append(logid)
                         break
 
                 # JOBSUBJOBID
@@ -1087,72 +1134,83 @@ def dofetchlog(stage):
                         name = varsplit[0].strip()
                         if name == 'JOBSUBJOBID':
                             logid = varsplit[1].strip()
+
+                            # Fix up the log file id by changing the process
+                            # number to zero.
+
+                            logsplit = logid.split('@', 1)
+                            cluster_process = logsplit[0]
+                            server = logsplit[1]
+                            cluster = cluster_process.split('.', 1)[0]
+                            logid = cluster + '.0' + '@' + server
+                            logids.append(logid)
                             break
 
-                if logid != '':
+    # Process all of the log ids that we found.
 
-                    # Fix up the log file id by changing the process
-                    # number to zero.
+    if len(logids) > 0:
 
-                    logsplit = logid.split('@', 1)
-                    cluster_process = logsplit[0]
-                    server = logsplit[1]
-                    cluster = cluster_process.split('.', 1)[0]
-                    logid = cluster + '.0' + '@' + server
+        # Make a directory to receive log files.
 
-                    # Make a directory to receive log files.
+        logdir = os.path.join(stage.logdir, 'log')
+        if project_utilities.safeexist(logdir):
+            shutil.rmtree(logdir)
+        os.mkdir(logdir)
 
-                    logdir = os.path.join(stage.logdir, 'log')
-                    if project_utilities.safeexist(logdir):
-                        shutil.rmtree(logdir)
-                    os.mkdir(logdir)
+        # Loop over log ids.
                     
-                    # Do the actual fetch.
-                    # Tarball is fetched into current directory, and unpacked
-                    # into log directory.
+        for logid in set(logids):
 
-                    print 'Fetching log files for id %s' % logid
-                    command = ['jobsub_fetchlog']
-                    command.append('--jobid=%s' % logid)
-                    command.append('--dest-dir=%s' % logdir)
-                    rc = subprocess.call(command, stdout=sys.stdout, stderr=sys.stderr)
+            # Do the actual fetch.
+            # Tarball is fetched into current directory, and unpacked
+            # into log directory.
 
-                    # Done.
+            print 'Fetching log files for id %s' % logid
+            command = ['jobsub_fetchlog']
+            command.append('--jobid=%s' % logid)
+            command.append('--dest-dir=%s' % logdir)
+            rc = subprocess.call(command, stdout=sys.stdout, stderr=sys.stderr)
 
-                    if rc != 0:
-                        print 'Failed to fetch log files.'
-                    return rc
+        return 0
 
-    # Done (failure).
-    # If we fall out of the loop, we didn't find a file called env.txt, or
-    # it didn't contain the right environment variables we need.
-    # In this case, the most likely explanation is that no workers have
-    # completed yet.
+    else:
 
-    print 'Failed to fetch log files.'
-    return 1
+        # Done (failure).
+        # If we fall out of the loop, we didn't find any files called env.txt, or
+        # they didn't contain the right environment variables we need.
+        # In this case, the most likely explanation is that no workers have
+        # completed yet.
+
+        print 'Failed to fetch log files.'
+        return 1
+
 
 # Check sam declarations.
 
-def docheck_declarations(logdir, declare):
+def docheck_declarations(logdir, declare, ana=False):
 
     # Initialize samweb.
 
     import_samweb()
 
-    # Loop over root files listed in files.list.
+    # Loop over root files listed in files.list or filesana.list.
 
     roots = []
-    fnlist = os.path.join(logdir, 'files.list')
+    listname = 'files.list'
+    if ana:
+        listname = 'filesana.list'
+    fnlist = os.path.join(logdir, listname)
     if project_utilities.safeexist(fnlist):
         roots = project_utilities.saferead(fnlist)
     else:
-        print 'No files.list file found, run project.py --check'
+        print 'No %s file found, run project.py --check' % listname
         sys.exit(1)
 
     for root in roots:
         path = string.strip(root)
         fn = os.path.basename(path)
+        dirpath = os.path.dirname(path)
+        dirname = os.path.basename(dirpath)
 
         # Check metadata
 
@@ -1170,8 +1228,27 @@ def docheck_declarations(logdir, declare):
         else:
             if declare:
                 print 'Declaring: %s' % fn
-                md = extractor_dict.getmetadata(path)
-                samweb.declareFile(md=md)
+                jsonfile = os.path.join(logdir, os.path.join(dirname, fn)) + '.json'
+                mdjson = {}
+                if project_utilities.safeexist(jsonfile):
+                    mdlines = project_utilities.saferead(jsonfile)
+                    mdtext = ''
+                    for line in mdlines:
+                        mdtext = mdtext + line
+                    try:
+                        md = json.loads(mdtext)
+                        mdjson = md
+                    except:
+                        pass
+                md = {}
+                if ana:
+                    md = mdjson
+                else:
+                    md = extractor_dict.getmetadata(path, mdjson)
+                if len(md) > 0:
+                    samweb.declareFile(md=md)
+                else:
+                    print 'No sam metadata found for %s.' % fn
             else:
                 print 'Not declared: %s' % fn
 
@@ -1518,7 +1595,7 @@ def dojobsub(project, stage, makeup):
             wrapper_fcl.write('services.FileCatalogMetadata.fileType: "%s"\n' % \
                               project.file_type)
         if project.run_type:
-            wrapper_fcl.write('services.FileCatalogMetadata.runType: "%s"\n  ' % \
+            wrapper_fcl.write('services.FileCatalogMetadata.runType: "%s"\n' % \
                               project.run_type)
 
 
@@ -2228,10 +2305,13 @@ def main(argv):
     defname = 0
     do_input_files = 0
     declare = 0
+    declare_ana = 0
     define = 0
     undefine = 0
     check_declarations = 0
+    check_declarations_ana = 0
     test_declarations = 0
+    test_declarations_ana = 0
     check_definition = 0
     test_definition = 0
     add_locations = 0
@@ -2312,6 +2392,9 @@ def main(argv):
         elif args[0] == '--declare':
             declare = 1
             del args[0]
+        elif args[0] == '--declare_ana':
+            declare_ana = 1
+            del args[0]
         elif args[0] == '--define':
             define = 1
             del args[0]
@@ -2321,8 +2404,14 @@ def main(argv):
         elif args[0] == '--check_declarations':
             check_declarations = 1
             del args[0]
+        elif args[0] == '--check_declarations_ana':
+            check_declarations_ana = 1
+            del args[0]
         elif args[0] == '--test_declarations':
             test_declarations = 1
+            del args[0]
+        elif args[0] == '--test_declarations_ana':
+            test_declarations_ana = 1
             del args[0]
         elif args[0] == '--check_definition':
             check_definition = 1
@@ -2360,34 +2449,33 @@ def main(argv):
     
     # Make sure that no more than one action was specified (except clean and info options).
 
-    num_action = submit + check + checkana + fetchlog + merge + mergehist + mergentuple + audit + stage_status + makeup + define + undefine + declare
+    num_action = submit + check + checkana + fetchlog + merge + mergehist + mergentuple + audit + stage_status + makeup + define + undefine + declare + declare_ana
     if num_action > 1:
         print 'More than one action was specified.'
         return 1
 
-    # Get the project element.
+    # Extract all project definitions.
 
-    project_element = get_project(xmlfile, projectname)
-    if project_element is None:
+    projects = get_projects(xmlfile)
+
+    # Get the selected project element.
+
+    project = select_project(projects, projectname, stagename)
+    if project != None:
         if projectname == '':
-            print 'Could not find unique project in xml file %s.' % xmlfile
-        else:
-            print 'Could not find project %s in xml file %s.' % (projectname, xmlfile)
-        return 1
-
-    # Convert the project element into a ProjectDef object.
-
-    project = ProjectDef(project_element)
+            projectname = project.name
+    else:
+        raise RuntimeError, 'No project selected.\n'
 
     # Do clean action now.  Cleaning can be combined with submission.
 
     if clean:
-        doclean(project, stagename)
+        docleanx(projects, projectname, stagename)
 
     # Do stage_status now.
 
     if stage_status:
-        dostatus(project)
+        dostatus(projects)
         return 0
 
     # Get the current stage definition.
@@ -2484,13 +2572,26 @@ def main(argv):
 
         # Check sam declarations.
 
-        rc = docheck_declarations(stage.logdir, declare)
+        rc = docheck_declarations(stage.logdir, declare, ana=False)
+
+    if check_declarations_ana or declare_ana:
+
+        # Check sam analysis declarations.
+
+        rc = docheck_declarations(stage.logdir, declare_ana, ana=True)
 
     if test_declarations:
 
         # Print summary of declared files.
 
-        dim = project_utilities.dimensions(project, stage)
+        dim = project_utilities.dimensions(project, stage, ana=False)
+        rc = dotest_declarations(dim)
+
+    if test_declarations_ana:
+
+        # Print summary of declared files.
+
+        dim = project_utilities.dimensions(project, stage, ana=True)
         rc = dotest_declarations(dim)
 
     if check_locations or add_locations or clean_locations or remove_locations or upload:

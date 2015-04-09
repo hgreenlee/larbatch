@@ -61,11 +61,12 @@ class ProjectApp(tk.Frame):
         # Current project and stage (menu settable).
 
         self.current_project_name = ''
+        self.current_project_defs = []
         self.current_project_def = None
         self.current_stage_name = ''
         self.current_stage_def = None
 
-        # Known projects (3-tuple: project_name, xml_path, project_def)
+        # Known projects (3-tuple: project_name, xml_path, project_defs)
 
         self.projects = []
 
@@ -126,7 +127,7 @@ class ProjectApp(tk.Frame):
         mbutton = tk.Menubutton(self.menubar, text='View', font=tkFont.Font(size=12))
         mbutton.pack(side=tk.LEFT)
         view_menu = tk.Menu(mbutton)
-        view_menu.add_command(label='XML', command=self.xml_view)
+        view_menu.add_command(label='XML', command=self.xml_display)
         mbutton['menu'] = view_menu
 
         # Project menu.
@@ -194,9 +195,9 @@ class ProjectApp(tk.Frame):
         self.batch_menu.add_command(label='Kill', command=self.kill_jobs)
         mbutton['menu'] = self.batch_menu
 
-        # SAM menu.
+        # SAM-art menu.
 
-        mbutton = tk.Menubutton(self.menubar, text='SAM', font=tkFont.Font(size=12))
+        mbutton = tk.Menubutton(self.menubar, text='SAM-art', font=tkFont.Font(size=12))
         mbutton.pack(side=tk.LEFT)
         self.sam_menu = tk.Menu(mbutton)
         self.sam_menu.add_command(label='Check Declarations', command=self.check_declarations)
@@ -214,6 +215,30 @@ class ProjectApp(tk.Frame):
         self.sam_menu.add_command(label='Upload to Enstore', command=self.upload)
         self.sam_menu.add_separator()
         self.sam_menu.add_command(label='Audit', command=self.audit)
+        mbutton['menu'] = self.sam_menu
+
+        # SAM-ana menu.
+
+        mbutton = tk.Menubutton(self.menubar, text='SAM-ana', font=tkFont.Font(size=12))
+        mbutton.pack(side=tk.LEFT)
+        self.sam_menu = tk.Menu(mbutton)
+        self.sam_menu.add_command(label='Check Declarations', command=self.check_ana_declarations)
+        self.sam_menu.add_command(label='Declare Files', command=self.declare_ana)
+        self.sam_menu.add_command(label='Test Declarations', command=self.test_ana_declarations)
+        #self.sam_menu.add_separator()
+        #self.sam_menu.add_command(label='Check Dataset Definition',
+        #                          command=self.check_ana_definition)
+        #self.sam_menu.add_command(label='Create Dataset Definition', command=self.define_ana)
+        #self.sam_menu.add_command(label='Test Dataset Definition',
+        #                          command=self.test_ana_definition)
+        #self.sam_menu.add_separator()
+        #self.sam_menu.add_command(label='Check Locations', command=self.check_ana_locations)
+        #self.sam_menu.add_command(label='Add Disk Locations', command=self.add_ana_locations)
+        #self.sam_menu.add_command(label='Clean Disk Locations', command=self.clean_ana_locations)
+        #self.sam_menu.add_command(label='Remove Disk Locations', command=self.remove_ana_locations#)
+        #self.sam_menu.add_command(label='Upload to Enstore', command=self.upload_ana)
+        #self.sam_menu.add_separator()
+        #self.sam_menu.add_command(label='Audit', command=self.audit_ana)
         mbutton['menu'] = self.sam_menu
 
         # Help menu.
@@ -236,16 +261,19 @@ class ProjectApp(tk.Frame):
             d = tkFileDialog.Open(filetypes=types, parent=self.root)
             xml_path = d.show()
 
-        # Parse xml into ProjectDef object, and from that extract project name.
+        # Parse xml into ProjectDef objects.
         # This step can raise an exception for several reasons.  In that case, 
         # display a message and return without opening the file.
 
         top=self.winfo_toplevel()
         old_cursor = top['cursor']
+        project_defs = []
         try:
             top['cursor'] = 'watch'
             top.update_idletasks()
-            project_def = project.ProjectDef(project.get_project(xml_path, ''))
+            new_project_defs = project.get_projects(xml_path)
+            if len(new_project_defs) > 0:
+                project_defs.extend(new_project_defs)
             top['cursor'] = old_cursor
         except:
             top['cursor'] = old_cursor
@@ -254,8 +282,16 @@ class ProjectApp(tk.Frame):
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', message)
             return
-            
-        project_name = project_def.name
+
+        if len(project_defs) > 0:
+            project_name = project_defs[0].name
+        else:
+            xml_name = os.path.basename(xml_path)
+            n = xml_name.find('.xml')
+            if n > 0:
+                project_name = xml_name[0: n]
+            else:
+                project_name = xml_name        
 
         # See if this project is already in the list of open projects.
         # If so, just choose this project, but don't open it again.
@@ -268,7 +304,7 @@ class ProjectApp(tk.Frame):
 
         # Add this project to the list of known projects.
 
-        self.projects.append((project_name, xml_path, project_def))
+        self.projects.append((project_name, xml_path, project_defs))
 
         # Update project menu.
 
@@ -284,6 +320,7 @@ class ProjectApp(tk.Frame):
 
     def choose_project(self, value):
         self.current_project_name = ''
+        self.current_project_defs = []
         self.current_project_def = None
         self.current_stage_name = ''
         self.current_stage_def = None
@@ -291,22 +328,23 @@ class ProjectApp(tk.Frame):
         for project_tuple in self.projects:
             project_name = project_tuple[0]
             xml_path = project_tuple[1]
-            project_def = project_tuple[2]
+            project_defs = project_tuple[2]
             if project_name == value:
                 self.current_project_name = value
-                self.current_project_def = project_def
+                self.current_project_defs = project_defs
 
                 # Update project view widget.
 
-                self.project_view.set_project(project_name, xml_path, project_def)
+                self.project_view.set_project(project_name, xml_path, project_defs)
 
                 # Update stage menu.
 
                 self.stage_menu.delete(3, tk.END)
                 self.stage_menu.add_separator()
-                for stage in project_def.stages:
-                    callback = tk._setit(tk.StringVar(), stage.name, callback=self.choose_stage)
-                    self.stage_menu.add_command(label=stage.name, command=callback)
+                for project_def in project_defs:
+                    for stage in project_def.stages:
+                        callback = tk._setit(tk.StringVar(), stage.name, callback=self.choose_stage)
+                        self.stage_menu.add_command(label=stage.name, command=callback)
 
                 return
     
@@ -317,11 +355,12 @@ class ProjectApp(tk.Frame):
     # Choose stage.
 
     def choose_stage(self, value):
-        if self.current_project_def != None:
-            for stage in self.current_project_def.stages:
+        for project_def in self.current_project_defs:
+            for stage in project_def.stages:
                 if stage.name == value:
                     self.current_stage_name = value
                     self.current_stage_def = stage
+                    self.current_project_def = project_def
                     self.project_view.highlight_stage(self.current_stage_name)
 
     # Key event handlers.
@@ -383,45 +422,55 @@ class ProjectApp(tk.Frame):
 
     # Select XML view.
 
-    def xml_view(self):
+    def xml_display(self):
         self.project_view.make_xml_window()
 
     # Select next stage.
 
     def next_stage(self):
-        if self.current_project_def != None:
+
+        # Loop over project_defs.
+
+        found = False
+        for project_def in self.current_project_defs:
 
             # Cycle through stages.
 
-            found = False
-            for stage in self.current_project_def.stages:
+            for stage in project_def.stages:
                 if found:
                     self.choose_stage(stage.name)
                     return
                 if stage.name == self.current_stage_name:
                     found = True
 
-            # Choose first stage if we fell out of the loop.
+        # Choose first stage if we fell out of the loop.
 
-            self.choose_stage(self.current_project_def.stages[0].name)
+        if len(self.current_project_defs) > 0:
+            self.choose_stage(self.current_project_defs[0].stages[0].name)
 
     # Select previous stage.
 
     def previous_stage(self):
-        if self.current_project_def != None:
+
+        # Loop over project_defs.
+
+        previous_stage_name = ''
+        if len(self.current_project_defs) > 0:
+            previous_stage_name = self.current_project_defs[-1].stages[-1].name
+        for project_def in self.current_project_defs:
 
             # Cycle through stages.
 
-            previous_stage_name = self.current_project_def.stages[-1].name
-            for stage in self.current_project_def.stages:
+            for stage in project_def.stages:
                 if stage.name == self.current_stage_name:
                     self.choose_stage(previous_stage_name)
                     return
                 previous_stage_name = stage.name
 
-            # Choose last stage if we fell out of the loop.
+        # Choose last stage if we fell out of the loop.
 
-            self.choose_stage(self.current_project_def.stages[-1].name)
+        if len(self.current_project_defs) > 0:
+            self.choose_stage(self.current_project_defs[-1].stages[-1].name)
 
     # Check action.
 
@@ -505,7 +554,8 @@ class ProjectApp(tk.Frame):
         try:
             top['cursor'] = 'watch'
             top.update_idletasks()
-            project.doclean(self.current_project_def, self.current_stage_name)
+            project.docleanx(self.current_project_defs, self.current_project_def.name, 
+                             self.current_stage_name)
             top['cursor'] = old_cursor
         except:
             top['cursor'] = old_cursor
@@ -696,7 +746,7 @@ class ProjectApp(tk.Frame):
 
     # Declare files to sam.
 
-    def declare(self):
+    def declare(self, ana=False):
         if self.current_project_def == None:
             tkMessageBox.showwarning('', 'No project selected.')
             return
@@ -708,17 +758,22 @@ class ProjectApp(tk.Frame):
         try:
             top['cursor'] = 'watch'
             top.update_idletasks()
-            project.docheck_declarations(self.current_stage_def.logdir, declare=True)
+            project.docheck_declarations(self.current_stage_def.logdir, declare=True, ana=ana)
             top['cursor'] = old_cursor
         except:
             top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
+
+    # Declare analysis files to sam.
+
+    def declare_ana(self):
+        self.declare(ana=True)
 
     # Check sam declarations.
 
-    def check_declarations(self):
+    def check_declarations(self, ana=False):
         if self.current_project_def == None:
             tkMessageBox.showwarning('', 'No project selected.')
             return
@@ -730,7 +785,7 @@ class ProjectApp(tk.Frame):
         try:
             top['cursor'] = 'watch'
             top.update_idletasks()
-            project.docheck_declarations(self.current_stage_def.logdir, declare=False)
+            project.docheck_declarations(self.current_stage_def.logdir, declare=False, ana=ana)
             top['cursor'] = old_cursor
         except:
             top['cursor'] = old_cursor
@@ -738,9 +793,14 @@ class ProjectApp(tk.Frame):
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
 
+    # Check sam analysis file declarations.
+
+    def check_ana_declarations(self):
+        self.check_declarations(ana=True)
+
     # Test sam declarations.
 
-    def test_declarations(self):
+    def test_declarations(self, ana=False):
         if self.current_project_def == None:
             tkMessageBox.showwarning('', 'No project selected.')
             return
@@ -752,7 +812,8 @@ class ProjectApp(tk.Frame):
         try:
             top['cursor'] = 'watch'
             top.update_idletasks()
-            dim = project_utilities.dimensions(self.current_project_def, self.current_stage_def)
+            dim = project_utilities.dimensions(self.current_project_def, self.current_stage_def,
+                                               ana=ana)
             project.dotest_declarations(dim)
             top['cursor'] = old_cursor
         except:
@@ -760,6 +821,11 @@ class ProjectApp(tk.Frame):
             e = sys.exc_info()
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
+
+    # Test sam analysis file declarations.
+
+    def test_ana_declarations(self):
+        self.test_declarations(ana=True)
 
     # Create sam dataset definition.
 
