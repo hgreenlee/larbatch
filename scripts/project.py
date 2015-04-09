@@ -38,6 +38,7 @@
 # --makeup     - Submit makeup jobs for specified stage.
 # --clean      - Delete output from specified project and stage.
 # --declare    - Declare files to sam.
+# --declare_ana - Declare analysis files to sam.
 # --add_locations    - Check sam disk locations and add missing ones.
 # --clean_locations  - Check sam disk locations and remove non-existent ones.
 # --remove_locations - Remove all sam disk locations, whether or not file exists.
@@ -54,6 +55,7 @@
 # --fcl        - Print the fcl file name and version for stage.
 # --defname    - Print sam dataset definition name for stage.
 # --input_files        - Print all input files.
+#
 # --check_declarations - Check whether data files are declared to sam.
 # --test_declarations  - Print a summary of files returned by sam query.
 # --check_locations    - Check sam locations and report the following:
@@ -65,6 +67,9 @@
 # --check_definition   - Reports whether the sam dataset definition associated
 #                        with this project/stage exists, or needs to be created.
 # --test_definition    - Print a summary of files returned by dataset definition.
+#
+# --check_declarations_ana - Check whether analysis files are declared to sam.
+# --test_declarations_ana - Print a summary of analysis files returned by sam query.
 #
 ######################################################################
 #
@@ -1204,6 +1209,8 @@ def docheck_declarations(logdir, declare, ana=False):
     for root in roots:
         path = string.strip(root)
         fn = os.path.basename(path)
+        dirpath = os.path.dirname(path)
+        dirname = os.path.basename(dirpath)
 
         # Check metadata
 
@@ -1221,8 +1228,27 @@ def docheck_declarations(logdir, declare, ana=False):
         else:
             if declare:
                 print 'Declaring: %s' % fn
-                md = extractor_dict.getmetadata(path)
-                samweb.declareFile(md=md)
+                jsonfile = os.path.join(logdir, os.path.join(dirname, fn)) + '.json'
+                mdjson = {}
+                if project_utilities.safeexist(jsonfile):
+                    mdlines = project_utilities.saferead(jsonfile)
+                    mdtext = ''
+                    for line in mdlines:
+                        mdtext = mdtext + line
+                    try:
+                        md = json.loads(mdtext)
+                        mdjson = md
+                    except:
+                        pass
+                md = {}
+                if ana:
+                    md = mdjson
+                else:
+                    md = extractor_dict.getmetadata(path, mdjson)
+                if len(md) > 0:
+                    samweb.declareFile(md=md)
+                else:
+                    print 'No sam metadata found for %s.' % fn
             else:
                 print 'Not declared: %s' % fn
 
@@ -2279,10 +2305,13 @@ def main(argv):
     defname = 0
     do_input_files = 0
     declare = 0
+    declare_ana = 0
     define = 0
     undefine = 0
     check_declarations = 0
+    check_declarations_ana = 0
     test_declarations = 0
+    test_declarations_ana = 0
     check_definition = 0
     test_definition = 0
     add_locations = 0
@@ -2363,6 +2392,9 @@ def main(argv):
         elif args[0] == '--declare':
             declare = 1
             del args[0]
+        elif args[0] == '--declare_ana':
+            declare_ana = 1
+            del args[0]
         elif args[0] == '--define':
             define = 1
             del args[0]
@@ -2372,8 +2404,14 @@ def main(argv):
         elif args[0] == '--check_declarations':
             check_declarations = 1
             del args[0]
+        elif args[0] == '--check_declarations_ana':
+            check_declarations_ana = 1
+            del args[0]
         elif args[0] == '--test_declarations':
             test_declarations = 1
+            del args[0]
+        elif args[0] == '--test_declarations_ana':
+            test_declarations_ana = 1
             del args[0]
         elif args[0] == '--check_definition':
             check_definition = 1
@@ -2411,7 +2449,7 @@ def main(argv):
     
     # Make sure that no more than one action was specified (except clean and info options).
 
-    num_action = submit + check + checkana + fetchlog + merge + mergehist + mergentuple + audit + stage_status + makeup + define + undefine + declare
+    num_action = submit + check + checkana + fetchlog + merge + mergehist + mergentuple + audit + stage_status + makeup + define + undefine + declare + declare_ana
     if num_action > 1:
         print 'More than one action was specified.'
         return 1
@@ -2534,13 +2572,26 @@ def main(argv):
 
         # Check sam declarations.
 
-        rc = docheck_declarations(stage.logdir, declare)
+        rc = docheck_declarations(stage.logdir, declare, ana=False)
+
+    if check_declarations_ana or declare_ana:
+
+        # Check sam analysis declarations.
+
+        rc = docheck_declarations(stage.logdir, declare_ana, ana=True)
 
     if test_declarations:
 
         # Print summary of declared files.
 
-        dim = project_utilities.dimensions(project, stage)
+        dim = project_utilities.dimensions(project, stage, ana=False)
+        rc = dotest_declarations(dim)
+
+    if test_declarations_ana:
+
+        # Print summary of declared files.
+
+        dim = project_utilities.dimensions(project, stage, ana=True)
         rc = dotest_declarations(dim)
 
     if check_locations or add_locations or clean_locations or remove_locations or upload:

@@ -488,7 +488,7 @@ def get_setup_script_path():
 # Function to return dimension string for project, stage.
 # This function should be overridden in experiment_utilities.py
 
-def dimensions(project, stage):
+def dimensions(project, stage, ana=False):
     raise RuntimeError, 'Function dimensions not implemented.'
 
 # Import experiment-specific utilities.  In this imported module, one can 

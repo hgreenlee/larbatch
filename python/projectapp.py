@@ -223,8 +223,8 @@ class ProjectApp(tk.Frame):
         mbutton.pack(side=tk.LEFT)
         self.sam_menu = tk.Menu(mbutton)
         self.sam_menu.add_command(label='Check Declarations', command=self.check_ana_declarations)
-        #self.sam_menu.add_command(label='Declare Files', command=self.declare_ana)
-        #self.sam_menu.add_command(label='Test Declarations', command=self.test_ana_declarations)
+        self.sam_menu.add_command(label='Declare Files', command=self.declare_ana)
+        self.sam_menu.add_command(label='Test Declarations', command=self.test_ana_declarations)
         #self.sam_menu.add_separator()
         #self.sam_menu.add_command(label='Check Dataset Definition',
         #                          command=self.check_ana_definition)
@@ -746,7 +746,7 @@ class ProjectApp(tk.Frame):
 
     # Declare files to sam.
 
-    def declare(self):
+    def declare(self, ana=False):
         if self.current_project_def == None:
             tkMessageBox.showwarning('', 'No project selected.')
             return
@@ -758,13 +758,18 @@ class ProjectApp(tk.Frame):
         try:
             top['cursor'] = 'watch'
             top.update_idletasks()
-            project.docheck_declarations(self.current_stage_def.logdir, declare=True)
+            project.docheck_declarations(self.current_stage_def.logdir, declare=True, ana=ana)
             top['cursor'] = old_cursor
         except:
             top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
+
+    # Declare analysis files to sam.
+
+    def declare_ana(self):
+        self.declare(ana=True)
 
     # Check sam declarations.
 
@@ -795,7 +800,7 @@ class ProjectApp(tk.Frame):
 
     # Test sam declarations.
 
-    def test_declarations(self):
+    def test_declarations(self, ana=False):
         if self.current_project_def == None:
             tkMessageBox.showwarning('', 'No project selected.')
             return
@@ -807,7 +812,8 @@ class ProjectApp(tk.Frame):
         try:
             top['cursor'] = 'watch'
             top.update_idletasks()
-            dim = project_utilities.dimensions(self.current_project_def, self.current_stage_def)
+            dim = project_utilities.dimensions(self.current_project_def, self.current_stage_def,
+                                               ana=ana)
             project.dotest_declarations(dim)
             top['cursor'] = old_cursor
         except:
@@ -815,6 +821,11 @@ class ProjectApp(tk.Frame):
             e = sys.exc_info()
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
+
+    # Test sam analysis file declarations.
+
+    def test_ana_declarations(self):
+        self.test_declarations(ana=True)
 
     # Create sam dataset definition.
 
