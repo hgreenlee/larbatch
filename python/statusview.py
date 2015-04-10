@@ -85,6 +85,9 @@ class ProjectStatusView(tk.Frame):
         files_label = tk.Label(self.files_cat, bg='lightsteelblue', relief=tk.FLAT, text='Output',
                                   padx=10, font=tkFont.Font(size=12))
         files_label.pack(side=tk.LEFT, expand=1, fill=tk.BOTH)
+        fetchlog_button = tk.Button(self.files_cat, bg='lightcyan', activebackground='aliceblue',
+                                    text='Fetchlog', command=self.parent.parent.fetchlog)
+        fetchlog_button.pack(side=tk.RIGHT)
         checkana_button = tk.Button(self.files_cat, bg='lightcyan', activebackground='aliceblue',
                                     text='CheckAna', command=self.parent.parent.checkana)
         checkana_button.pack(side=tk.RIGHT)
@@ -100,6 +103,12 @@ class ProjectStatusView(tk.Frame):
         batch_button = tk.Button(self.batch_cat, bg='lightcyan', activebackground='aliceblue', 
                                  text='Update', command=self.update_jobs)
         batch_button.pack(side=tk.RIGHT)
+        makeup_button = tk.Button(self.batch_cat, bg='lightcyan', activebackground='aliceblue', 
+                                 text='Makeup', command=self.parent.parent.makeup)
+        makeup_button.pack(side=tk.RIGHT)
+        submit_button = tk.Button(self.batch_cat, bg='lightcyan', activebackground='aliceblue', 
+                                 text='Submit', command=self.parent.parent.submit)
+        submit_button.pack(side=tk.RIGHT)
         self.batch_cat.grid(row=0, column=kIDLE, columnspan=kEND-kIDLE,
                             sticky=tk.N+tk.E+tk.W+tk.S)
 
