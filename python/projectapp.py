@@ -209,6 +209,7 @@ class ProjectApp(tk.Frame):
         self.sam_menu.add_command(label='Test Dataset Definition', command=self.test_definition)
         self.sam_menu.add_separator()
         self.sam_menu.add_command(label='Check Locations', command=self.check_locations)
+        self.sam_menu.add_command(label='Check Tape Locations', command=self.check_tape)
         self.sam_menu.add_command(label='Add Disk Locations', command=self.add_locations)
         self.sam_menu.add_command(label='Clean Disk Locations', command=self.clean_locations)
         self.sam_menu.add_command(label='Remove Disk Locations', command=self.remove_locations)
@@ -231,12 +232,13 @@ class ProjectApp(tk.Frame):
         self.sam_menu.add_command(label='Create Dataset Definition', command=self.define_ana)
         self.sam_menu.add_command(label='Test Dataset Definition',
                                   command=self.test_ana_definition)
-        #self.sam_menu.add_separator()
-        #self.sam_menu.add_command(label='Check Locations', command=self.check_ana_locations)
-        #self.sam_menu.add_command(label='Add Disk Locations', command=self.add_ana_locations)
-        #self.sam_menu.add_command(label='Clean Disk Locations', command=self.clean_ana_locations)
-        #self.sam_menu.add_command(label='Remove Disk Locations', command=self.remove_ana_locations#)
-        #self.sam_menu.add_command(label='Upload to Enstore', command=self.upload_ana)
+        self.sam_menu.add_separator()
+        self.sam_menu.add_command(label='Check Locations', command=self.check_ana_locations)
+        self.sam_menu.add_command(label='Check Tape Locations', command=self.check_ana_tape)
+        self.sam_menu.add_command(label='Add Disk Locations', command=self.add_ana_locations)
+        self.sam_menu.add_command(label='Clean Disk Locations', command=self.clean_ana_locations)
+        self.sam_menu.add_command(label='Remove Disk Locations', command=self.remove_ana_locations)
+        self.sam_menu.add_command(label='Upload to Enstore', command=self.upload_ana)
         #self.sam_menu.add_separator()
         #self.sam_menu.add_command(label='Audit', command=self.audit_ana)
         mbutton['menu'] = self.sam_menu
@@ -964,6 +966,40 @@ class ProjectApp(tk.Frame):
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
 
+    # Check locations for analysis files.
+
+    def check_ana_locations(self):
+        self.check_locations(ana=True)
+
+    # Check tape locations.
+
+    def check_tape(self, ana=False):
+        if self.current_project_def == None:
+            tkMessageBox.showwarning('', 'No project selected.')
+            return
+        if self.current_stage_def == None:
+            tkMessageBox.showwarning('', 'No stage selected.')
+            return
+        top=self.winfo_toplevel()
+        old_cursor = top['cursor']
+        try:
+            top['cursor'] = 'watch'
+            top.update_idletasks()
+            dim = project_utilities.dimensions(self.current_project_def, self.current_stage_def,
+                                               ana=ana)
+            project.docheck_tape(dim)
+            top['cursor'] = old_cursor
+        except:
+            top['cursor'] = old_cursor
+            e = sys.exc_info()
+            traceback.print_tb(e[2])
+            tkMessageBox.showerror('', e[1])
+
+    # Check tape locations for analysis files.
+
+    def check_ana_tape(self):
+        self.check_tape(ana=True)
+
     # Add disk locations.
 
     def add_locations(self, ana=False):
@@ -991,6 +1027,11 @@ class ProjectApp(tk.Frame):
             e = sys.exc_info()
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
+
+    # Add disk locations for analysis files.
+
+    def add_ana_locations(self):
+        self.add_locations(ana=True)
 
     # Clean disk locations.
 
@@ -1020,6 +1061,11 @@ class ProjectApp(tk.Frame):
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
 
+    # Clean disk locations for analysis files.
+
+    def clean_ana_locations(self):
+        self.clean_locations(ana=True)
+
     # Remove disk locations.
 
     def remove_locations(self, ana=False):
@@ -1048,6 +1094,11 @@ class ProjectApp(tk.Frame):
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
 
+    # Remove disk locations for analysis files.
+
+    def remove_ana_locations(self):
+        self.remove_locations(ana=True)
+
     # Upload.
 
     def upload(self, ana=False):
@@ -1075,6 +1126,11 @@ class ProjectApp(tk.Frame):
             e = sys.exc_info()
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
+
+    # Upload analysis files.
+
+    def upload_ana(self):
+        self.upload(ana=True)
 
     # Do a SAM audit.
 

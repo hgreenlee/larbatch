@@ -38,16 +38,21 @@
 # --makeup     - Submit makeup jobs for specified stage.
 # --clean      - Delete output from specified project and stage.
 # --declare    - Declare files to sam.
-# --declare_ana- Declare analysis files to sam.
 # --add_locations    - Check sam disk locations and add missing ones.
 # --clean_locations  - Check sam disk locations and remove non-existent ones.
 # --remove_locations - Remove all sam disk locations, whether or not file exists.
 # --upload     - Upload files to enstore.
 # --define     - Make sam dataset definition.
-# --define_ana - Make sam dataset definition for analysis files.
 # --undefine   - Delete sam dataset definition.
 # --audit      - compare input files to output files and look for extra 
 #		 or misssing files and take subsequent action
+#
+# --declare_ana          - Declare analysis files to sam.
+# --add_locations_ana    - Check sam analysis file disk locations and add missing ones.
+# --clean_locations_ana  - Check analysis file sam disk locations and remove non-existent ones.
+# --remove_locations_ana - Remove all analysis sam disk locations, whether or not file exists.
+# --upload_ana           - Upload analysis files to enstore.
+# --define_ana           - Make sam dataset definition for analysis files.
 #
 # Information only actions:
 #
@@ -70,12 +75,19 @@
 # --test_definition    - Print a summary of files returned by dataset definition.
 #
 # --check_declarations_ana - Check whether analysis files are declared to sam.
-# --test_declarations_ana - Print a summary of analysis files returned by sam query.
-# --check_definition_ana - Reports whether the sam analysis dataset definition
-#                          associated with this project/stage exists, or needs to 
-#                          be created.
-# --test_definition_ana - Print a summary of files returned by analysis dataset 
-#                         definition.
+# --test_declarations_ana  - Print a summary of analysis files returned by sam query.
+# --check_locations_ana    - Check sam locations for analysis files and report the 
+#                            following:
+#                            a) Files that lack any location.
+#                            b) Disk locations that can be added.
+#                            c) Incorrect disk locations that should be removed.
+# --check_tape_ana         - Check analysis file sam tape locations.
+#                            Reports any files that lack tape (enstore) locations.
+# --check_definition_ana   - Reports whether the sam analysis dataset definition
+#                            associated with this project/stage exists, or needs to 
+#                            be created.
+# --test_definition_ana    - Print a summary of files returned by analysis dataset 
+#                            definition.
 #
 ######################################################################
 #
@@ -2335,11 +2347,17 @@ def main(argv):
     test_definition = 0
     test_definition_ana = 0
     add_locations = 0
+    add_locations_ana = 0
     check_locations = 0
+    check_locations_ana = 0
     upload = 0
+    upload_ana = 0
     check_tape = 0
+    check_tape_ana = 0
     clean_locations = 0
+    clean_locations_ana = 0
     remove_locations = 0
+    remove_locations_ana = 0
 
     args = argv[1:]
     while len(args) > 0:
@@ -2451,20 +2469,38 @@ def main(argv):
         elif args[0] == '--add_locations':
             add_locations = 1
             del args[0]
+        elif args[0] == '--add_locations_ana':
+            add_locations_ana = 1
+            del args[0]
         elif args[0] == '--check_locations':
             check_locations = 1
+            del args[0]
+        elif args[0] == '--check_locations_ana':
+            check_locations_ana = 1
             del args[0]
         elif args[0] == '--upload':
             upload = 1
             del args[0]
+        elif args[0] == '--upload_ana':
+            upload_ana = 1
+            del args[0]
         elif args[0] == '--check_tape':
             check_tape = 1
+            del args[0]
+        elif args[0] == '--check_tape_ana':
+            check_tape_ana = 1
             del args[0]
         elif args[0] == '--clean_locations':
             clean_locations = 1
             del args[0]
+        elif args[0] == '--clean_locations_ana':
+            clean_locations_ana = 1
+            del args[0]
         elif args[0] == '--remove_locations':
             remove_locations = 1
+            del args[0]
+        elif args[0] == '--remove_locations_ana':
+            remove_locations_ana = 1
             del args[0]
         else:
             print 'Unknown option %s' % args[0]
@@ -2651,11 +2687,28 @@ def main(argv):
                                add_locations, clean_locations, remove_locations,
                                upload)
 
+    if check_locations_ana or add_locations_ana or clean_locations_ana or \
+       remove_locations_ana or upload_ana:
+
+        # Check sam disk locations.
+
+        dim = project_utilities.dimensions(project, stage, ana=True)
+        rc = docheck_locations(dim, stage.outdir,
+                               add_locations_ana, clean_locations_ana, remove_locations_ana,
+                               upload_ana)
+
     if check_tape:
 
         # Check sam tape locations.
 
         dim = project_utilities.dimensions(project, stage)
+        rc = docheck_tape(dim)
+
+    if check_tape_ana:
+
+        # Check analysis file sam tape locations.
+
+        dim = project_utilities.dimensions(project, stage, ana=True)
         rc = docheck_tape(dim)
 
     # Done.
