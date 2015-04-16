@@ -35,7 +35,9 @@ class StageDef:
         self.num_jobs = default_num_jobs # Number of jobs.
         self.target_size = 0   # Target size for output files.
         self.defname = ''      # Sam dataset definition name.
+        self.ana_defname = ''  # Sam dataset definition name.
         self.data_tier = ''    # Sam data tier.
+        self.ana_data_tier = '' # Sam data tier.
         self.init_script = ''  # Worker initialization script.
         self.init_source = ''  # Worker initialization bash source script.
         self.end_script = ''   # Worker end-of-job script.
@@ -152,11 +154,23 @@ class StageDef:
         if defname_elements:
             self.defname = defname_elements[0].firstChild.data
 
+        # Sam analysis dataset definition name (subelement).
+
+        ana_defname_elements = stage_element.getElementsByTagName('anadefname')
+        if ana_defname_elements:
+            self.ana_defname = ana_defname_elements[0].firstChild.data
+
         # Sam data tier (subelement).
 
         data_tier_elements = stage_element.getElementsByTagName('datatier')
         if data_tier_elements:
             self.data_tier = data_tier_elements[0].firstChild.data
+
+        # Sam analysis data tier (subelement).
+
+        ana_data_tier_elements = stage_element.getElementsByTagName('anadatatier')
+        if ana_data_tier_elements:
+            self.ana_data_tier = ana_data_tier_elements[0].firstChild.data
 
         # Worker initialization script (subelement).
 
@@ -243,7 +257,9 @@ class StageDef:
         result += 'Number of jobs = %d\n' % self.num_jobs
         result += 'Output file target size = %d\n' % self.target_size
         result += 'Dataset definition name = %s\n' % self.defname
-        result += 'Data tier = %s' % self.defname
+        result += 'Analysis dataset definition name = %s\n' % self.ana_defname
+        result += 'Data tier = %s' % self.data_tier
+        result += 'Analysis data tier = %s' % self.ana_data_tier
         result += 'Worker initialization script = %s\n' % self.init_script
         result += 'Worker initialization source script = %s\n' % self.init_source
         result += 'Worker end-of-job script = %s\n' % self.end_script

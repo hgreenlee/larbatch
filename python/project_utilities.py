@@ -27,6 +27,7 @@ ROOT.gErrorIgnoreLevel = ROOT.kError
 sys.argv = myargv
 
 proxy_ok = False
+kca_ok = False
 ticket_ok = False
 ticket_user = ''
 
@@ -179,6 +180,33 @@ def test_ticket():
         ticket_ok = True
     return ticket_ok
 
+
+# Get kca certificate.
+
+def get_kca():
+
+    global kca_ok
+    kca_ok = False
+
+    # First, make sure we have a kerberos ticket.
+
+    krb_ok = test_ticket()
+    if krb_ok:
+
+        # Get kca certificate.
+
+        kca_ok = False
+        try:
+            subprocess.check_call(['kx509'], stdout=-1, stderr=-1)
+            kca_ok = True
+        except:
+            pass
+
+    # Done
+
+    return kca_ok
+
+
 # Get grid proxy.
 # This implementation should be good enough for experiments in the fermilab VO.
 # Experiments not in the fermilab VO (lbne/dune) should override this function
@@ -196,13 +224,7 @@ def get_proxy():
 
         # Get kca certificate.
 
-        kca_ok = False
-        try:
-            subprocess.check_call(['kx509'], stdout=-1, stderr=-1)
-            kca_ok = True
-        except:
-            pass
-
+        kca_ok = get_kca()
         if kca_ok:
 
             # Get proxy.
@@ -223,12 +245,40 @@ def get_proxy():
     return proxy_ok
 
 
-# Test whether user has a valid grid proxy.  Raise exception if no.
+# Test whether user has a valid kca certificate.  If not, try to get a new one.
+
+def test_kca():
+    global kca_ok
+    if not kca_ok:
+        try:
+            subprocess.check_call(['voms-proxy-info', '-exists'], stdout=-1, stderr=-1)
+            kca_ok = True
+        except:
+            pass
+
+    # If at this point we don't have a kca certificate, try to get one.
+
+    if not kca_ok:
+        get_kca()
+
+    # Final checkout.
+
+    if not kca_ok:
+        try:
+            subprocess.check_call(['voms-proxy-info', '-exists'], stdout=-1, stderr=-1)
+            kca_ok = True
+        except:
+            raise RuntimeError, 'Please get a kca certificate.'
+    return kca_ok
+
+
+# Test whether user has a valid grid proxy.  If not, try to get a new one.
 
 def test_proxy():
     global proxy_ok
     if not proxy_ok:
         try:
+            subprocess.check_call(['voms-proxy-info', '-exists'], stdout=-1, stderr=-1)
             subprocess.check_call(['voms-proxy-info', '-exists', '-acissuer'], stdout=-1, stderr=-1)
             proxy_ok = True
         except:
@@ -244,6 +294,7 @@ def test_proxy():
     if not proxy_ok:
         try:
             subprocess.check_call(['voms-proxy-info', '-exists'], stdout=-1, stderr=-1)
+            subprocess.check_call(['voms-proxy-info', '-exists', '-acissuer'], stdout=-1, stderr=-1)
             proxy_ok = True
         except:
             raise RuntimeError, 'Please get a grid proxy.'

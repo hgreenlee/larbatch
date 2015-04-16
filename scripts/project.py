@@ -38,7 +38,6 @@
 # --makeup     - Submit makeup jobs for specified stage.
 # --clean      - Delete output from specified project and stage.
 # --declare    - Declare files to sam.
-# --declare_ana - Declare analysis files to sam.
 # --add_locations    - Check sam disk locations and add missing ones.
 # --clean_locations  - Check sam disk locations and remove non-existent ones.
 # --remove_locations - Remove all sam disk locations, whether or not file exists.
@@ -47,6 +46,13 @@
 # --undefine   - Delete sam dataset definition.
 # --audit      - compare input files to output files and look for extra 
 #		 or misssing files and take subsequent action
+#
+# --declare_ana          - Declare analysis files to sam.
+# --add_locations_ana    - Check sam analysis file disk locations and add missing ones.
+# --clean_locations_ana  - Check analysis file sam disk locations and remove non-existent ones.
+# --remove_locations_ana - Remove all analysis sam disk locations, whether or not file exists.
+# --upload_ana           - Upload analysis files to enstore.
+# --define_ana           - Make sam dataset definition for analysis files.
 #
 # Information only actions:
 #
@@ -69,7 +75,19 @@
 # --test_definition    - Print a summary of files returned by dataset definition.
 #
 # --check_declarations_ana - Check whether analysis files are declared to sam.
-# --test_declarations_ana - Print a summary of analysis files returned by sam query.
+# --test_declarations_ana  - Print a summary of analysis files returned by sam query.
+# --check_locations_ana    - Check sam locations for analysis files and report the 
+#                            following:
+#                            a) Files that lack any location.
+#                            b) Disk locations that can be added.
+#                            c) Incorrect disk locations that should be removed.
+# --check_tape_ana         - Check analysis file sam tape locations.
+#                            Reports any files that lack tape (enstore) locations.
+# --check_definition_ana   - Reports whether the sam analysis dataset definition
+#                            associated with this project/stage exists, or needs to 
+#                            be created.
+# --test_definition_ana    - Print a summary of files returned by analysis dataset 
+#                            definition.
 #
 ######################################################################
 #
@@ -150,7 +168,9 @@
 #                       this attribute may override <numjobs> in the downward
 #                       direction (i.e. <numjobs> is the maximum number of jobs).
 # <stage><defname> - Sam output dataset defition name (default none).
+# <stage><anadefname> - Sam analysis output dataset defition name (default none).
 # <stage><datatier> - Sam data tier (default none).
+# <stage><anadatatier> - Sam analysis data tier (default none).
 # <stage><initscript> - Worker initialization script (condor_lar.sh --init-script).
 # <stage><initsource> - Worker initialization bash source script (condor_lar.sh --init-source).
 # <stage><endscript>  - Worker end-of-job script (condor_lar.sh --end-script).
@@ -1246,6 +1266,7 @@ def docheck_declarations(logdir, declare, ana=False):
                 else:
                     md = extractor_dict.getmetadata(path, mdjson)
                 if len(md) > 0:
+                    project_utilities.test_kca()
                     samweb.declareFile(md=md)
                 else:
                     print 'No sam metadata found for %s.' % fn
@@ -1297,6 +1318,7 @@ def docheck_definition(defname, dim, define):
     else:
         if define:
             print 'Creating definition %s.' % defname
+            project_utilities.test_kca()
             samweb.createDefinition(defname=defname, dims=dim)
         else:
             print 'Definition should be created: %s' % defname
@@ -1343,6 +1365,7 @@ def doundefine(defname):
 
     if def_exists:
         print 'Deleting definition: %s' % defname
+        project_utilities.test_kca()
         samweb.deleteDefinition(defname=defname)
     else:
         print 'No such definition: %s' % defname
@@ -1462,6 +1485,7 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
             loc = node + loc.split(':')[-1]
             if add:
                 print 'Adding location: %s.' % loc
+                project_utilities.test_kca()
                 samweb.addFileLocation(filenameorid=filename, location=loc)
             elif not upload:
                 print 'Can add location: %s.' % loc
@@ -1469,6 +1493,7 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
         for loc in locs_to_remove:
             if clean or remove:
                 print 'Removing location: %s.' % loc
+                project_utilities.test_kca()
                 samweb.removeFileLocation(filenameorid=filename, location=loc)
             elif not upload:
                 print 'Should remove location: %s.' % loc
@@ -1736,6 +1761,7 @@ def dojobsub(project, stage, makeup):
 
         makeup_defname = ''
         if len(cpids) > 0:
+            project_utilities.test_kca()
             makeup_defname = samweb.makeProjectName(stage.inputdef) + '_makeup'
 
             # Construct comma-separated list of consumer process ids.
@@ -1753,6 +1779,7 @@ def dojobsub(project, stage, makeup):
             # Create makeup dataset definition.
 
             print 'Creating makeup sam dataset definition %s' % makeup_defname
+            project_utilities.test_kca()
             samweb.createDefinition(defname=makeup_defname, dims=dim)
             makeup_count = samweb.countFiles(defname=makeup_defname)
             print 'Makeup dataset contains %d files.' % makeup_count
@@ -1771,6 +1798,7 @@ def dojobsub(project, stage, makeup):
     prjname = ''
     if inputdef != '':
         import_samweb()
+        project_utilities.test_kca()
         prjname = samweb.makeProjectName(inputdef)
 
     # Get proxy.
@@ -2210,6 +2238,7 @@ def doaudit(stage):
             # Declare the content status of the file as bad in SAM.
                         
             sdict = {'content_status':'bad'}
+            project_utilities.test_kca()
             samweb.modifyFileMetadata(rmfile, sdict)
             print '\nDeclaring the status of the following file as bad:', rmfile
 
@@ -2307,19 +2336,28 @@ def main(argv):
     declare = 0
     declare_ana = 0
     define = 0
+    define_ana = 0
     undefine = 0
     check_declarations = 0
     check_declarations_ana = 0
     test_declarations = 0
     test_declarations_ana = 0
     check_definition = 0
+    check_definition_ana = 0
     test_definition = 0
+    test_definition_ana = 0
     add_locations = 0
+    add_locations_ana = 0
     check_locations = 0
+    check_locations_ana = 0
     upload = 0
+    upload_ana = 0
     check_tape = 0
+    check_tape_ana = 0
     clean_locations = 0
+    clean_locations_ana = 0
     remove_locations = 0
+    remove_locations_ana = 0
 
     args = argv[1:]
     while len(args) > 0:
@@ -2398,6 +2436,9 @@ def main(argv):
         elif args[0] == '--define':
             define = 1
             del args[0]
+        elif args[0] == '--define_ana':
+            define_ana = 1
+            del args[0]
         elif args[0] == '--undefine':
             undefine = 1
             del args[0]
@@ -2416,26 +2457,50 @@ def main(argv):
         elif args[0] == '--check_definition':
             check_definition = 1
             del args[0]
+        elif args[0] == '--check_definition_ana':
+            check_definition_ana = 1
+            del args[0]
         elif args[0] == '--test_definition':
             test_definition = 1
+            del args[0]
+        elif args[0] == '--test_definition_ana':
+            test_definition_ana = 1
             del args[0]
         elif args[0] == '--add_locations':
             add_locations = 1
             del args[0]
+        elif args[0] == '--add_locations_ana':
+            add_locations_ana = 1
+            del args[0]
         elif args[0] == '--check_locations':
             check_locations = 1
+            del args[0]
+        elif args[0] == '--check_locations_ana':
+            check_locations_ana = 1
             del args[0]
         elif args[0] == '--upload':
             upload = 1
             del args[0]
+        elif args[0] == '--upload_ana':
+            upload_ana = 1
+            del args[0]
         elif args[0] == '--check_tape':
             check_tape = 1
+            del args[0]
+        elif args[0] == '--check_tape_ana':
+            check_tape_ana = 1
             del args[0]
         elif args[0] == '--clean_locations':
             clean_locations = 1
             del args[0]
+        elif args[0] == '--clean_locations_ana':
+            clean_locations_ana = 1
+            del args[0]
         elif args[0] == '--remove_locations':
             remove_locations = 1
+            del args[0]
+        elif args[0] == '--remove_locations_ana':
+            remove_locations_ana = 1
             del args[0]
         else:
             print 'Unknown option %s' % args[0]
@@ -2449,7 +2514,7 @@ def main(argv):
     
     # Make sure that no more than one action was specified (except clean and info options).
 
-    num_action = submit + check + checkana + fetchlog + merge + mergehist + mergentuple + audit + stage_status + makeup + define + undefine + declare + declare_ana
+    num_action = submit + check + checkana + fetchlog + merge + mergehist + mergentuple + audit + stage_status + makeup + define + define_ana + undefine + declare + declare_ana
     if num_action > 1:
         print 'More than one action was specified.'
         return 1
@@ -2547,8 +2612,18 @@ def main(argv):
         if stage.defname == '':
             print 'No sam dataset definition name specified for this stage.'
             return 1
-        dim = project_utilities.dimensions(project, stage)
+        dim = project_utilities.dimensions(project, stage, ana=False)
         rc = docheck_definition(stage.defname, dim, define)
+
+    if check_definition_ana or define_ana:
+
+        # Make sam dataset definition for analysis files.
+
+        if stage.ana_defname == '':
+            print 'No sam analysis dataset definition name specified for this stage.'
+            return 1
+        dim = project_utilities.dimensions(project, stage, ana=True)
+        rc = docheck_definition(stage.ana_defname, dim, define_ana)
 
     if test_definition:
 
@@ -2558,6 +2633,15 @@ def main(argv):
             print 'No sam dataset definition name specified for this stage.'
             return 1
         rc = dotest_definition(stage.defname)
+
+    if test_definition_ana:
+
+        # Print summary of files returned by analysis dataset definition.
+
+        if stage.ana_defname == '':
+            print 'No sam dataset definition name specified for this stage.'
+            return 1
+        rc = dotest_definition(stage.ana_defname)
 
     if undefine:
 
@@ -2603,11 +2687,28 @@ def main(argv):
                                add_locations, clean_locations, remove_locations,
                                upload)
 
+    if check_locations_ana or add_locations_ana or clean_locations_ana or \
+       remove_locations_ana or upload_ana:
+
+        # Check sam disk locations.
+
+        dim = project_utilities.dimensions(project, stage, ana=True)
+        rc = docheck_locations(dim, stage.outdir,
+                               add_locations_ana, clean_locations_ana, remove_locations_ana,
+                               upload_ana)
+
     if check_tape:
 
         # Check sam tape locations.
 
         dim = project_utilities.dimensions(project, stage)
+        rc = docheck_tape(dim)
+
+    if check_tape_ana:
+
+        # Check analysis file sam tape locations.
+
+        dim = project_utilities.dimensions(project, stage, ana=True)
         rc = docheck_tape(dim)
 
     # Done.
