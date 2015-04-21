@@ -27,6 +27,7 @@ class ProjectDef:
         self.name= ''                     # Project name.
         self.num_events = 0               # Total events (all jobs).
         self.num_jobs = 1                 # Number of jobs.
+        self.max_files_per_job = 0   # Max number of files per job.
         self.os = ''                      # Batch OS.
         self.resource = 'DEDICATED,OPPORTUNISTIC' # Jobsub resources.
         self.lines = ''                   # Arbitrary condor commands.
@@ -68,6 +69,12 @@ class ProjectDef:
         num_jobs_elements = project_element.getElementsByTagName('numjobs')
         if num_jobs_elements:
             self.num_jobs = int(num_jobs_elements[0].firstChild.data)
+
+        # Max Number of files per jobs.
+
+        max_files_per_job_elements = project_element.getElementsByTagName('maxfilesperjob')
+        if max_files_per_job_elements:
+            self.max_files_per_job = int(max_files_per_job_elements[0].firstChild.data)
 
         # OS (subelement).
 
@@ -223,7 +230,8 @@ class ProjectDef:
         for stage_element in stage_elements:
             self.stages.append(StageDef(stage_element, 
                                         default_input_list, 
-                                        self.num_jobs, 
+                                        self.num_jobs,
+                                        self.max_files_per_job,
                                         self.merge))
             default_input_list = os.path.join(self.stages[-1].logdir, 'files.list')
 
@@ -245,6 +253,7 @@ class ProjectDef:
         result = 'Project name = %s\n' % self.name
         result += 'Total events = %d\n' % self.num_events
         result += 'Number of jobs = %d\n' % self.num_jobs
+        result += 'Max files per job = %d\n' % self.max_files_per_job
         result += 'OS = %s\n' % self.os
         result += 'Resource = %s\n' % self.resource
         result += 'Lines = %s\n' % self.lines

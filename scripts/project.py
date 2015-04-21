@@ -103,6 +103,10 @@
 # <numevents> - Total number of events (required).
 # <numjobs> - Number of worker jobs (default 1).  This value can be
 #             overridden for individual stages by <stage><numjobs>.
+# <maxfilesperjob> - Maximum number of files to deliver to a single job
+#             Useful in case you want to limit output file size or keep
+#             1 -> 1 correlation between input and output. can be overwritten
+#             by <stage><maxfilesperjob>
 # <os>      - Specify batch OS (comma-separated list: SL5,SL6).
 #             Default let jobsub decide.
 # <server>  - Jobsub server (expert option, jobsub_submit --jobsub-server=...).
@@ -164,6 +168,9 @@
 #             (if any) will be used as input to the current production stage
 #             (must have been checked using option --check).
 # <stage><numjobs> - Number of worker jobs (default 1).
+# <stage><maxfilesperjob> - Maximum number of files to deliver to a single job
+#             Useful in case you want to limit output file size or keep
+#             1 -> 1 correlation between input and output
 # <stage><targetsize> - Specify target size for output files.  If specified,
 #                       this attribute may override <numjobs> in the downward
 #                       direction (i.e. <numjobs> is the maximum number of jobs).
@@ -1847,6 +1854,14 @@ def dojobsub(project, stage, makeup):
 
     workurl = "file://%s/%s" % (stage.workdir, workname)
     command.append(workurl)
+
+    # check if there is a request for max num of files per job
+    # and add that if to the condor_lar.sh line
+
+    if stage.max_files_per_job != 0:
+        command_max_files_per_job = stage.max_files_per_job
+        command.extend(['--nfile', '%d' % command_max_files_per_job])
+        print 'Setting the max files to %d' % command_max_files_per_job
 
     # Larsoft options.
 
