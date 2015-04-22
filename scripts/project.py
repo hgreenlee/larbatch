@@ -1578,6 +1578,10 @@ def docheck_tape(dim):
 
 def dojobsub(project, stage, makeup):
 
+    # Process map, to be filled later if we need one.
+
+    procmap = ''
+
     # If there is an input list, copy it to the work directory.
 
     input_list_name = ''
@@ -1751,6 +1755,39 @@ def dojobsub(project, stage, makeup):
                 work_list.write('%s\n' % missing_file)
             work_list.close()
 
+        # In case of making up generation jobs, produce a procmap file
+        # for missing jobs that will ensure that made up generation
+        # jobs get a unique subrun.
+
+        if stage.inputdef == '' and stage.inputfile == '' and stage.inputlist == '':
+            procs = set(range(project.num_jobs))
+
+            # Loop over good output files to extract existing
+            # process numbers and determine missing process numbers.
+
+            output_files = os.path.join(stage.logdir, 'files.list')
+            if project_utilities.safeexist(output_files):
+                lines = project_utilities.saferead(output_files)
+                for line in lines:
+                    dir = os.path.basename(os.path.dirname(line))
+                    dir_parts = dir.split('_')
+                    if len(dir_parts) > 1:
+                        proc = int(dir_parts[1])
+                        if proc in procs:
+                            procs.remove(proc)
+                if len(procs) != makeup_count:
+                    raise RuntimeError, 'Makeup process list has different length than makeup count.'
+
+                # Generate process map.
+
+                if len(procs) > 0:
+                    procmap = 'procmap.txt'
+                    procmap_path = os.path.join(stage.workdir, procmap)
+                    procmap_file = open(procmap_path, 'w')
+                    for proc in procs:
+                        procmap_file.write('%d\n' % proc)
+                    procmap_file.close()
+
         # Prepare sam-related makeup information.
 
         import_samweb()
@@ -1807,10 +1844,6 @@ def dojobsub(project, stage, makeup):
         import_samweb()
         project_utilities.test_kca()
         prjname = samweb.makeProjectName(inputdef)
-
-    # Get proxy.
-
-    proxy = project_utilities.get_proxy()
 
     # Get role
 
@@ -1890,6 +1923,8 @@ def dojobsub(project, stage, makeup):
         command.extend([' --inputmode', stage.inputmode])
     command.extend([' -n', '%d' % project.num_events])
     command.extend([' --njobs', '%d' % stage.num_jobs ])
+    if procmap != '':
+        command.extend([' --procmap', procmap])
     if stage.output != '':
         command.extend([' --output', stage.output])
     if stage.TFileName != '':
