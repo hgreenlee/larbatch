@@ -1321,7 +1321,7 @@ fi
 
 for root in *.root; do
   if [ -f ${root}.json ]; then
-    base=`basename $root`_${PROCESS}_`date +%Y%m%d%H%M%S`
+    base=`basename $root .root`_${PROCESS}_`date +%Y%m%d%H%M%S`
     mv $root ${base}.root
     mv ${root}.json ${base}.root.json
   fi
