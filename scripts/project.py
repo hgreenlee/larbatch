@@ -103,6 +103,10 @@
 # <numevents> - Total number of events (required).
 # <numjobs> - Number of worker jobs (default 1).  This value can be
 #             overridden for individual stages by <stage><numjobs>.
+# <maxfilesperjob> - Maximum number of files to deliver to a single job
+#             Useful in case you want to limit output file size or keep
+#             1 -> 1 correlation between input and output. can be overwritten
+#             by <stage><maxfilesperjob>
 # <os>      - Specify batch OS (comma-separated list: SL5,SL6).
 #             Default let jobsub decide.
 # <server>  - Jobsub server (expert option, jobsub_submit --jobsub-server=...).
@@ -164,6 +168,9 @@
 #             (if any) will be used as input to the current production stage
 #             (must have been checked using option --check).
 # <stage><numjobs> - Number of worker jobs (default 1).
+# <stage><maxfilesperjob> - Maximum number of files to deliver to a single job
+#             Useful in case you want to limit output file size or keep
+#             1 -> 1 correlation between input and output
 # <stage><targetsize> - Specify target size for output files.  If specified,
 #                       this attribute may override <numjobs> in the downward
 #                       direction (i.e. <numjobs> is the maximum number of jobs).
@@ -1571,6 +1578,10 @@ def docheck_tape(dim):
 
 def dojobsub(project, stage, makeup):
 
+    # Process map, to be filled later if we need one.
+
+    procmap = ''
+
     # If there is an input list, copy it to the work directory.
 
     input_list_name = ''
@@ -1744,6 +1755,39 @@ def dojobsub(project, stage, makeup):
                 work_list.write('%s\n' % missing_file)
             work_list.close()
 
+        # In case of making up generation jobs, produce a procmap file
+        # for missing jobs that will ensure that made up generation
+        # jobs get a unique subrun.
+
+        if stage.inputdef == '' and stage.inputfile == '' and stage.inputlist == '':
+            procs = set(range(project.num_jobs))
+
+            # Loop over good output files to extract existing
+            # process numbers and determine missing process numbers.
+
+            output_files = os.path.join(stage.logdir, 'files.list')
+            if project_utilities.safeexist(output_files):
+                lines = project_utilities.saferead(output_files)
+                for line in lines:
+                    dir = os.path.basename(os.path.dirname(line))
+                    dir_parts = dir.split('_')
+                    if len(dir_parts) > 1:
+                        proc = int(dir_parts[1])
+                        if proc in procs:
+                            procs.remove(proc)
+                if len(procs) != makeup_count:
+                    raise RuntimeError, 'Makeup process list has different length than makeup count.'
+
+                # Generate process map.
+
+                if len(procs) > 0:
+                    procmap = 'procmap.txt'
+                    procmap_path = os.path.join(stage.workdir, procmap)
+                    procmap_file = open(procmap_path, 'w')
+                    for proc in procs:
+                        procmap_file.write('%d\n' % proc)
+                    procmap_file.close()
+
         # Prepare sam-related makeup information.
 
         import_samweb()
@@ -1801,10 +1845,6 @@ def dojobsub(project, stage, makeup):
         project_utilities.test_kca()
         prjname = samweb.makeProjectName(inputdef)
 
-    # Get proxy.
-
-    proxy = project_utilities.get_proxy()
-
     # Get role
 
     role = project_utilities.get_role()
@@ -1848,6 +1888,14 @@ def dojobsub(project, stage, makeup):
     workurl = "file://%s/%s" % (stage.workdir, workname)
     command.append(workurl)
 
+    # check if there is a request for max num of files per job
+    # and add that if to the condor_lar.sh line
+
+    if stage.max_files_per_job != 0:
+        command_max_files_per_job = stage.max_files_per_job
+        command.extend(['--nfile', '%d' % command_max_files_per_job])
+        print 'Setting the max files to %d' % command_max_files_per_job
+
     # Larsoft options.
 
     command.extend([' --group', project_utilities.get_experiment()])
@@ -1875,6 +1923,8 @@ def dojobsub(project, stage, makeup):
         command.extend([' --inputmode', stage.inputmode])
     command.extend([' -n', '%d' % project.num_events])
     command.extend([' --njobs', '%d' % stage.num_jobs ])
+    if procmap != '':
+        command.extend([' --procmap', procmap])
     if stage.output != '':
         command.extend([' --output', stage.output])
     if stage.TFileName != '':

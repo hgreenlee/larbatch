@@ -19,7 +19,7 @@ class StageDef:
 
     # Constructor.
 
-    def __init__(self, stage_element, default_input_list, default_num_jobs, default_merge):
+    def __init__(self, stage_element, default_input_list, default_num_jobs, default_max_files_per_job, default_merge):
 
         # Assign default values.
         
@@ -33,6 +33,7 @@ class StageDef:
         self.inputmode = ''    # Input file type (none or textfile)
         self.inputdef = ''     # Input sam dataset definition.
         self.num_jobs = default_num_jobs # Number of jobs.
+        self.max_files_per_job = default_max_files_per_job #max num of files per job
         self.target_size = 0   # Target size for output files.
         self.defname = ''      # Sam dataset definition name.
         self.ana_defname = ''  # Sam dataset definition name.
@@ -140,6 +141,12 @@ class StageDef:
         num_jobs_elements = stage_element.getElementsByTagName('numjobs')
         if num_jobs_elements:
             self.num_jobs = int(num_jobs_elements[0].firstChild.data)
+
+        # Max Number of files per jobs.
+
+        max_files_per_job_elements = stage_element.getElementsByTagName('maxfilesperjob')
+        if max_files_per_job_elements:
+            self.max_files_per_job = int(max_files_per_job_elements[0].firstChild.data)
 
         # Target size for output files (subelement).
 
@@ -255,6 +262,7 @@ class StageDef:
         result += 'Output file name = %s\n' % self.output
         result += 'TFileName = %s\n' % self.TFileName	
         result += 'Number of jobs = %d\n' % self.num_jobs
+        result += 'Max files per job = %d\n' % self.max_files_per_job
         result += 'Output file target size = %d\n' % self.target_size
         result += 'Dataset definition name = %s\n' % self.defname
         result += 'Analysis dataset definition name = %s\n' % self.ana_defname
