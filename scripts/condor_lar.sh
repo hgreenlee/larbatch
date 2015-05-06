@@ -855,7 +855,7 @@ if [ x$LOCALTAR != x ]; then
     setup ifdhc
   fi
   echo "IFDHC_DIR=$IFDHC_DIR"
-  ifdh cp $IFDH_OPT $LOCALTAR local.tar
+  ifdh cp $LOCALTAR local.tar
   stat=$?
   if [ $stat -ne 0 ]; then
     echo "ifdh cp failed with status ${stat}."
@@ -937,7 +937,7 @@ if [ $USE_SAM -eq 0 -a x$INFILE != x ]; then
   NFILE_TOTAL=1
   LOCAL_INFILE=`basename $INFILE`
   echo "Copying $INFILE"
-  ifdh cp $IFDH_OPT $INFILE $LOCAL_INFILE
+  ifdh cp $INFILE $LOCAL_INFILE
   stat=$?
   if [ $stat -ne 0 ]; then
     echo "ifdh cp failed with status ${stat}."
@@ -1034,7 +1034,7 @@ elif [ $USE_SAM -eq 0 -a x$INLIST != x ]; then
 	fi
       fi
       echo "Copying $infile"
-      ifdh cp $IFDH_OPT $infile $LOCAL_INFILE
+      ifdh cp $infile $LOCAL_INFILE
       stat=$?
       if [ $stat -ne 0 ]; then
         echo "ifdh cp failed with status ${stat}."
