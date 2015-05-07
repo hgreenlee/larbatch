@@ -2188,8 +2188,8 @@ def domerge(stage, mergehist, mergentuple):
             name_temp = 'anahist.root'
             if not os.path.exists('/scratch/'+exp+'/'+getpass.getuser()+'/mergentuple'):
                 os.makedirs('/scratch/'+exp+'/'+getpass.getuser()+'/mergentuple')
-                if os.path.exists('/scratch/'+exp+'/'+getpass.getuser()+'/mergentuple'):
-                    name_temp = '/scratch/'+exp+'/'+getpass.getuser()+'/mergentuple/anahist.root'
+            if os.path.exists('/scratch/'+exp+'/'+getpass.getuser()+'/mergentuple'):
+                name_temp = '/scratch/'+exp+'/'+getpass.getuser()+'/mergentuple/anahist.root'
         else:
             name_temp = name
 

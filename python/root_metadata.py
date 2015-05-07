@@ -118,14 +118,36 @@ def get_external_metadata(inputfile):
     if file and file.IsOpen() and not file.IsZombie():
 
         # Root file opened successfully.
+        # Get number of events.
             
         obj = file.Get('Events')
         if obj and obj.InheritsFrom('TTree'):
 
-            # This has a TTree names Events.
+            # This has a TTree named Events.
 
             nev = obj.GetEntriesFast()
             md['events'] = str(nev)
+
+        # Get runs and subruns fro SubRuns tree.
+
+        subrun_tree = file.Get('SubRuns')
+        if subrun_tree and subrun_tree.InheritsFrom('TTree'):
+            md['subruns'] = []
+            nsubruns = subrun_tree.GetEntriesFast()
+            tfr = ROOT.TTreeFormula('subruns',
+                                    'SubRunAuxiliary.id_.run_.run_',
+                                    subrun_tree)
+            tfs = ROOT.TTreeFormula('subruns',
+                                    'SubRunAuxiliary.id_.subRun_',
+                                    subrun_tree)
+            for entry in range(nsubruns):
+                subrun_tree.GetEntry(entry)
+                run = tfr.EvalInstance64()
+                subrun = tfs.EvalInstance64()
+                run_subrun = (run, subrun)
+                if not run_subrun in md['subruns']:
+                    md['subruns'].append(run_subrun)
+
     else:
 
         # Root file could not be opened.
