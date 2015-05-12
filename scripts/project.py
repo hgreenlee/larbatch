@@ -204,6 +204,41 @@
 #             error of the fcl file isn't found.
 #
 ######################################################################
+#
+# Bookkeeping Files
+# -----------------
+#
+# Project.py uses bookkeeping files that it manages to record the state
+# of project jobs.  These bookkeeping files are stored in the log
+# directoroy of each project stage (XML element <logdir>).  Most of these
+# files are gnerated or updated after a "check" operation (project.py --check).
+#
+# Here is a list of all bookkeeping files used by project.py:
+#
+# checked - A file with empty contents used to record the timestamp
+#           of the latest check for this stage.
+# files.list - A list of all good art output files (full paths), one file
+#              per line.
+# events.list - A list of all good art output files (full paths), one
+#               file per line, plus on the same line the number of events.
+# filesana.list - A list of all good non-art output root files (full
+#                 paths), one file per line.
+# transferred_uris.list - A list of input files that were successfully
+#                         processed.  This file is a concatenated version of 
+#                         "transferred_uris.list" files from successful
+#                         process subdirectories.
+# missing_files.list - A list of input files that were not successfully
+#                      processeed.
+# bad.list - A list of failed process subdirectories.
+# sam_projects.list - A list of at sam projects from successful processes.
+#                     This file is a concatenated and sorted version of
+#                     "sam_project.txt" files from successful process 
+#                     subdirectories.
+# cpids.list - A list of successful sam consumer process ids.  This file
+#              is a concatenated version of "cpid.txt" files from
+#              successful process subdirectories.
+#
+######################################################################
 
 import sys, os, stat, string, subprocess, shutil, urllib, json, getpass
 from xml.dom.minidom import parse
