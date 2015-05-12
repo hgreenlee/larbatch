@@ -523,35 +523,6 @@ def get_project(xmlfile, projectname='', stagename=''):
     project = select_project(projects, projectname, stagename)
     return project
 
-# Check a single root file by reading precalculted metadata information.
-# This method may raise an exception if json file is not valid.
-
-def check_root_json(json_path):
-
-    # Default result
-
-    nevroot = -1
-
-    # Read contents of json file and convert to a single string.
-
-    lines = project_utilities.saferead(json_path)
-    s = ''
-    for line in lines:
-        s = s + line
-
-    # Convert json string to python dictionary.
-
-    md = json.loads(s)
-
-    # Extract number of events from metadata.
-
-    if len(md.keys()) > 0:
-        nevroot = 0
-        if md.has_key('events'):
-            nevroot = int(md['events'])
-
-    return nevroot
-    
 # Check a single root file.
 # Returns an int containing following information.
 # 1.  Number of event (>0) in TTree named "Events."
@@ -578,9 +549,6 @@ def check_root_file(path, logdir):
     if project_utilities.safeexist(json_path):
         # Get number of events from precalculated metadata.
         try:
-	    # do not call check_root_json, to accommodate merging this json with the TFile json
-	    # The "md" dictionary obtained will be useful through the code!
-	    # nevroot = check_root_json(json_path)
 	    lines = project_utilities.saferead(json_path)
      	    s = ''
             for line in lines:
@@ -595,60 +563,6 @@ def check_root_file(path, logdir):
             json_ok = True
         except:
             nevroot = -1
-
-    if not json_ok: 
-        
-	# Make root metadata.
-	
-        url = project_utilities.path_to_url(path)
-	if url != path and not proxy_ok:
-            proxy_ok = project_utilities.test_proxy()
-        print 'Generating root metadata for file %s.' % os.path.basename(path)
-        try:
-            md = root_metadata.get_external_metadata(path)
-        except:
-            md = {}
-	
-        if md.has_key('events'):
-
-            # Art root file if dictionary has events key.
-            nevroot = int(md['events'])
-
-        elif len(md.keys()) > 0:
-
-            # No events key, but non-empty dictionary, so histo/ntuple root file.
-            nevroot = 0
-        else:
-            # Empty dictionary is invalid root file.
-            nevroot = -1
-	    	
-    # if the root file is a TFile (hist or ntuple file) 
-    # append information from TFile metadata service (previously saved in 
-    # a standard "anahist.json" file) to a more appropriately named final
-    # json file that will be created here
-    if nevroot == 0:
-       temp = os.path.join(os.path.dirname(path), 'anahist.json')
-       if project_utilities.safeexist(temp):
-         lines = project_utilities.saferead(temp)
-         s1 = ''
-         for line in lines:
-           s1 = s1 + line
-         # Convert json string to python dictionary.
-         md1 = json.loads(s1) 
-         os.remove(temp) 
-         md = dict(md.items()+md1.items())   
-       else:
-           pass   
-           
-    if nevroot ==0 or not json_ok:     
-           
-       mdtext = json.dumps(md, sys.stdout, indent=2, sort_keys=True)
-       if project_utilities.safeexist(json_path):
-    	   os.remove(json_path)
-       json_file = safeopen(json_path)
-       json_file.write(mdtext)
-       json_file.close()
-        
     return nevroot
 
 
