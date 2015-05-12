@@ -523,28 +523,6 @@ def get_project(xmlfile, projectname='', stagename=''):
     project = select_project(projects, projectname, stagename)
     return project
 
-# Parse directory name of type <cluster>_<process> and return
-# a 2-tuple of integers or None.
-
-def parsedir(dirname):
-
-    # This method separates a directory name of the form
-    # <cluster>_<process> into a 2-tuple of integers (cluster, process).
-    # If the directory is not of the proper form, return None.
-
-    result = None
-
-    if string.count(dirname, '_') == 1:
-        n = string.index(dirname, '_')
-        try:
-            cluster = int(dirname[0:n])
-            process = int(dirname[n+1:])
-            result = (cluster, process)
-        except:
-            pass
-    
-    return result
-
 # Check a single root file by reading precalculted metadata information.
 # This method may raise an exception if json file is not valid.
 
