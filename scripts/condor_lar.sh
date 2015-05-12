@@ -25,7 +25,6 @@
 #
 # Sam and parallel project options.
 #
-# --sam_url <arg>         - Specify url of samweb server.
 # --sam_user <arg>        - Specify sam user (default $GRID_USER).
 # --sam_group <arg>       - Specify sam group (default --group option).
 # --sam_station <arg>     - Specify sam station (default --group option).
