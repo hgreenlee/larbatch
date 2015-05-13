@@ -450,15 +450,16 @@ def dostatus(projects):
 
 # Recursively extract projects from an xml element.
 
-def find_projects(element):
+def find_projects(element, default_first_input_list = ''):
 
     projects = []
+    default_input = default_first_input_list
 
     # First check if the input element is a project.  In that case, return a 
     # list containing the project name as the single element of the list.
 
     if element.nodeName == 'project':
-        project = ProjectDef(element)
+        project = ProjectDef(element, default_input)
         projects.append(project)
 
     else:
@@ -468,8 +469,11 @@ def find_projects(element):
 
         subelements = element.getElementsByTagName('*')
         for subelement in subelements:
-            subprojects = find_projects(subelement)
+            subprojects = find_projects(subelement, default_input)
             projects.extend(subprojects)
+            if len(projects) > 0:
+                if len(projects[-1].stages) > 0:
+                    default_input = os.path.join(projects[-1].stages[-1].logdir, 'files.list')
 
     # Done.
 
