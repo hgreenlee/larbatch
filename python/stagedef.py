@@ -32,6 +32,12 @@ class StageDef:
         self.inputlist = ''    # Input file list.
         self.inputmode = ''    # Input file type (none or textfile)
         self.inputdef = ''     # Input sam dataset definition.
+        self.pubs_input = 0    # Pubs input mode.
+        self.input_run = 0     # Pubs input run.
+        self.input_subrun = 0  # Pubs input subrun number.
+        self.pubs_output = 0   # Pubs output mode.
+        self.output_run = 0    # Pubs output run.
+        self.output_subrun = 0 # Pubs output subrun number.
         self.num_jobs = default_num_jobs # Number of jobs.
         self.max_files_per_job = default_max_files_per_job #max num of files per job
         self.target_size = 0   # Target size for output files.
@@ -259,6 +265,12 @@ class StageDef:
         result += 'Input list = %s\n' % self.inputlist
         result += 'Input mode = %s\n' % self.inputmode
         result += 'Input sam dataset = %s\n' % self.inputdef
+        result += 'Pubs input mode = %d\n' % self.pubs_input
+        result += 'Pubs input run number = %d\n' % self.input_run
+        result += 'Pubs input subrun number = %d\n' % self.input_subrun
+        result += 'Pubs output mode = %d\n' % self.pubs_output
+        result += 'Pubs output run number = %d\n' % self.output_run
+        result += 'Pubs output subrun number = %d\n' % self.output_subrun
         result += 'Output file name = %s\n' % self.output
         result += 'TFileName = %s\n' % self.TFileName	
         result += 'Number of jobs = %d\n' % self.num_jobs
@@ -279,6 +291,59 @@ class StageDef:
         for key in self.parameters:
             result += '%s: %s\n' % (key,self.parameters[key])
         return result
+
+    # Function to convert this stage for pubs input.
+
+    def pubsify_input(self, run, subrun):
+
+        # It never makes sense to specify pubs input mode if there are no 
+        # input files (i.e. generation jobs).
+
+        if self.inputfile == '' and self.inputlist == '' and self.inputdef == '':
+            return
+
+        # Set pubs input mode.
+
+        self.pubs_input = 1
+
+        # Save the run and subrun numbers.
+
+        self.input_run = run;
+        self.input_subrun = subrun;
+
+        # Insert run and subrun into input file or input file list path.
+
+        pubs_path = '%d/%d' % (run, subrun)
+        if self.inputfile != '':
+            dir = os.path.dirname(self.inputfile)
+            base = os.path.basename(self.inputfile)
+            self.inputfile = os.path.join(dir, pubs_path, base)
+        if self.inputlist != '':
+            dir = os.path.dirname(self.inputlist)
+            base = os.path.basename(self.inputlist)
+            self.inputlist = os.path.join(dir, pubs_path, base)
+
+
+    # Function to convert this stage for pubs output.
+
+    def pubsify_output(self, run, subrun):
+
+        # Set pubs mode.
+
+        self.pubs_output = 1
+
+        # Save the run and subrun numbers.
+
+        self.output_run = run;
+        self.output_subrun = subrun;
+
+        # Append run and subrun to workdir, outdir, and logdir.
+
+        pubs_path = '%d/%d' % (run, subrun)
+        self.workdir = os.path.join(self.workdir, pubs_path)
+        self.outdir = os.path.join(self.outdir, pubs_path)
+        self.logdir = os.path.join(self.logdir, pubs_path)
+
 
     # Raise an exception if any specified input file/list doesn't exist.
     # (We don't currently check sam input datasets).

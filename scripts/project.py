@@ -21,6 +21,10 @@
 # --tmpdir <tempdir>  - Override TMPDIR internally.  If TMPDIR is set
 #                       use ifdh cp instead of xrootd for accessing
 #                       content of root files in dCache.
+# --pubs_input <run> <subrun> - Modifies selected stage to specify pubs input.
+# --pubs_output <run> <subrun> - Modifies selected stage to specify pubs output.
+# --pubs <run> <subrun> - Equivalent to --pubs_input <run> <subrun> and 
+#                         --pubs_output <run> <subrun>
 #
 # Actions (specify one):
 #
@@ -720,10 +724,15 @@ def docheck(project, stage, ana):
     uris = []         # List of input files processed successfully.
     bad_workers = []  # List of bad worker subdirectories.
 
-    subdirs = os.listdir(stage.logdir)
-    for subdir in subdirs:
+    for log_subpath, subdirs, files in os.walk(stage.logdir):
+
+        # Only examine files in leaf directories.
+
+        if len(subdirs) != 0:
+            continue
+
+        subdir = os.path.relpath(log_subpath, stage.logdir)
         out_subpath = os.path.join(stage.outdir, subdir)
-        log_subpath = os.path.join(stage.logdir, subdir)
         dirok = project_utilities.fast_isdir(log_subpath)
 
         # Update list of sam projects from start job.
@@ -892,7 +901,7 @@ def docheck(project, stage, ana):
     # Generate "missing_files.list."
 
     nmiss = 0
-    if stage.inputdef == '':
+    if stage.inputdef == '' and not stage.pubs_output:
         input_files = get_input_files(stage)
         if len(input_files) > 0:
             missing_files = list(set(input_files) - set(uris))
@@ -1807,12 +1816,13 @@ def dojobsub(project, stage, makeup):
         command.append('--site=%s' % project.site)
     if project.os != '':
         command.append('--OS=%s' % project.os)
-    if not makeup:
-        command_njobs = stage.num_jobs
-        command.extend(['-N', '%d' % command_njobs])
-    else:
-        command_njobs = min(makeup_count, stage.num_jobs)
-        command.extend(['-N', '%d' % command_njobs])
+    if not stage.pubs_output:
+        if not makeup:
+            command_njobs = stage.num_jobs
+            command.extend(['-N', '%d' % command_njobs])
+        else:
+            command_njobs = min(makeup_count, stage.num_jobs)
+            command.extend(['-N', '%d' % command_njobs])
 
     # Batch script.
 
@@ -1843,6 +1853,12 @@ def dojobsub(project, stage, makeup):
     command.extend([' --workdir', stage.workdir])
     command.extend([' --outdir', stage.outdir])
     command.extend([' --logdir', stage.logdir])
+
+    # Set the process number for pubs jobs that are the first in the chain.
+
+    if not stage.pubs_input and stage.pubs_output and stage.output_subrun > 0:
+        command.extend(['--process', '%d' % (stage.output_subrun-1)])
+
     if stage.inputfile != '':
         command.extend([' -s', stage.inputfile])
     elif input_list_name != '':
@@ -2060,6 +2076,17 @@ def dosubmit(project, stage, makeup=False):
     # Make sure we have a kerberos ticket.
 
     project_utilities.test_ticket()
+
+    # In pubs mode, unconditionally delete any existing work, log, or output
+    # directories, since there is no separate makeup action for pubs mode.
+
+    if stage.pubs_output:
+        if project_utilities.safeexist(stage.workdir):
+            shutil.rmtree(stage.workdir)
+        if project_utilities.safeexist(stage.outdir):
+            shutil.rmtree(stage.outdir)
+        if project_utilities.safeexist(stage.logdir):
+            shutil.rmtree(stage.logdir)
 
     # Make or check directories.
 
@@ -2300,6 +2327,12 @@ def main(argv):
     stagename = ''
     merge = 0
     submit = 0
+    pubs_input = 0
+    pubs_input_run = 0
+    pubs_input_subrun = 0
+    pubs_output = 0
+    pubs_output_run = 0
+    pubs_output_subrun = 0
     check = 0
     checkana = 0
     fetchlog = 0
@@ -2363,6 +2396,24 @@ def main(argv):
         elif args[0] == '--submit':
             submit = 1
             del args[0]
+        elif args[0] == '--pubs_input' and len(args) > 2:
+            pubs_input = 1
+            pubs_input_run = int(args[1])
+            pubs_input_subrun = int(args[2])
+            del args[0:3]
+        elif args[0] == '--pubs_output' and len(args) > 2:
+            pubs_output = 1
+            pubs_output_run = int(args[1])
+            pubs_output_subrun = int(args[2])
+            del args[0:3]
+        elif args[0] == '--pubs' and len(args) > 2:
+            pubs_input = 1
+            pubs_input_run = int(args[1])
+            pubs_input_subrun = int(args[2])
+            pubs_output = 1
+            pubs_output_run = int(args[1])
+            pubs_output_subrun = int(args[2])
+            del args[0:3]
         elif args[0] == '--check':
             check = 1
             del args[0]
@@ -2524,9 +2575,13 @@ def main(argv):
         dostatus(projects)
         return 0
 
-    # Get the current stage definition.
+    # Get the current stage definition, and pubsify it if necessary.
 
     stage = project.get_stage(stagename)
+    if pubs_input:
+        stage.pubsify_input(pubs_input_run, pubs_input_subrun)
+    if pubs_output:
+        stage.pubsify_output(pubs_output_run, pubs_output_subrun)
 
     # Do outdir action now.
 
