@@ -527,6 +527,58 @@ def get_project(xmlfile, projectname='', stagename=''):
     project = select_project(projects, projectname, stagename)
     return project
 
+# Extract the next sequential stage
+
+def next_stage(projects, stagename, circular=False):
+
+    # Loop over projects.
+
+    found = False
+    for project in projects:
+
+        # Loop over stages.
+
+        for stage in project.stages:
+            if found:
+                return stage
+            if stage.name == stagename:
+                found = True
+
+    # Circular mode: Choose first stage if we fell out of the loop.
+
+    if circular and len(projects) > 0 and len(projects[0].stages) > 0:
+        return projects[0].stages[0]
+
+    # Finally return None if we didn't find anything appropriate.
+
+    return None
+
+# Extract the previous sequential stage.
+
+def previous_stage(projects, stagename, circular=False):
+
+    # Initialize result None or last stage (if circular).
+
+    result = None
+    if circular and len(projects) > 0 and len(projects[-1].stages) > 0:
+        result = projects[-1].stages[-1]
+
+    # Loop over projects.
+
+    for project in projects:
+
+        # Loop over stages.
+
+        for stage in project.stages:
+            if stage.name == stagename:
+                return result
+            result = stage
+
+    # Return default answer if we fell out of the loop.
+
+    return result
+
+
 # Check a single root file.
 # Returns an int containing following information.
 # 1.  Number of event (>0) in TTree named "Events."
