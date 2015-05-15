@@ -21,6 +21,9 @@
 # --tmpdir <tempdir>  - Override TMPDIR internally.  If TMPDIR is set
 #                       use ifdh cp instead of xrootd for accessing
 #                       content of root files in dCache.
+#
+# Pubs options (combine with any action option).
+#
 # --pubs_input <run> <subrun> - Modifies selected stage to specify pubs input.
 # --pubs_output <run> <subrun> - Modifies selected stage to specify pubs output.
 # --pubs <run> <subrun> - Equivalent to --pubs_input <run> <subrun> and 
@@ -2630,8 +2633,11 @@ def main(argv):
     # Get the current stage definition, and pubsify it if necessary.
 
     stage = project.get_stage(stagename)
+    pstage = previous_stage(projects, stagename)
     if pubs_input:
-        stage.pubsify_input(pubs_input_run, pubs_input_subrun)
+        rc = stage.pubsify_input(pubs_input_run, pubs_input_subrun, pstage)
+        if rc != 0:
+            raise RuntimeError, 'Error pubsifying input.'
     if pubs_output:
         stage.pubsify_output(pubs_output_run, pubs_output_subrun)
 

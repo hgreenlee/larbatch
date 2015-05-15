@@ -293,14 +293,34 @@ class StageDef:
         return result
 
     # Function to convert this stage for pubs input.
+    # Return 0 if everything is OK.
+    # Return non-zero if any pubs input list is missing or empty.
 
-    def pubsify_input(self, run, subrun):
+    def pubsify_input(self, run, subrun, previous_stage):
 
         # It never makes sense to specify pubs input mode if there are no 
-        # input files (i.e. generation jobs).
+        # input files (i.e. generation jobs).  This is not considered an error.
 
         if self.inputfile == '' and self.inputlist == '' and self.inputdef == '':
-            return
+            return 0
+
+        # Raise an exception if there is no previous stage (with input).
+        # If you really want to use pubs to process files from pre-existing
+        # input, construct the project with a previous fake input stage.  Pubs
+        # input needs a previous stage to determine the mapping of subrun numbers.
+
+        if previous_stage == None:
+            raise RuntimeError('No previous pubs stage.')
+
+        # Pubs input is currently only supported in case of input file list,
+        # which is the default way of daisy-chaining stages without specifying
+        # any input explicitly.  Raise an exception for other input methods (single
+        # file or sam).
+
+        if self.inputfile != '':
+            raise RuntimeError, 'Pubs input for single file input is not supported.'
+        if self.inputdef != '':
+            raise RuntimeError, 'Pubs input for sam input is not supported.'
 
         # Set pubs input mode.
 
@@ -311,17 +331,91 @@ class StageDef:
         self.input_run = run;
         self.input_subrun = subrun;
 
-        # Insert run and subrun into input file or input file list path.
+        # One-to-one case handled here.
 
-        pubs_path = '%d/%d' % (run, subrun)
-        if self.inputfile != '':
-            dir = os.path.dirname(self.inputfile)
-            base = os.path.basename(self.inputfile)
-            self.inputfile = os.path.join(dir, pubs_path, base)
-        if self.inputlist != '':
+        if self.num_jobs == previous_stage.num_jobs:
+
+            # Insert run and subrun into input file list path.
+
+            pubs_path = '%d/%d' % (run, subrun)
             dir = os.path.dirname(self.inputlist)
             base = os.path.basename(self.inputlist)
             self.inputlist = os.path.join(dir, pubs_path, base)
+
+            # Verify that the input list exists and is not empty.
+
+            lines = []
+            try:
+                lines = open(self.inputlist).readlines()
+            except:
+                lines = []
+            if len(lines) == 0:
+                return 1
+
+            # Everything OK (one-to-one).
+
+            return 0
+
+        # Many-to-one case handled here.
+
+        elif self.num_jobs < previous_stage.num_jobs:
+
+            # Extract the input subrun range.
+
+            first_input_subrun = (subrun - 1) * previous_stage.num_jobs / self.num_jobs + 1
+            last_input_subrun = subrun * previous_stage.num_jobs / self.num_jobs
+
+            # Generate a new input file list, called "merged_files.list" and place 
+            # it in the same directory as the first input subrun input list.
+
+            first = True
+            dir = os.path.dirname(self.inputlist)
+            base = os.path.basename(self.inputlist)
+            for input_subrun in range(first_input_subrun, last_input_subrun+1):
+                pubs_path = '%d/%d' % (run, input_subrun)
+                inputlist = os.path.join(dir, pubs_path, base)
+                if first:
+                    first = False
+                    merged_input_path = os.path.join(dir, pubs_path, 'merged_files.list')
+                    self.inputlist = merged_input_path
+                    print 'Generating merged input list %s' % merged_input_path
+                    merged_input = open(merged_input_path, 'w')
+                lines = []
+                try:
+                    lines = open(inputlist).readlines()
+                except:
+                    lines = []
+
+                # Return an error if input can't be opened, or is empty.
+
+                if len(lines) == 0:
+                    return 1
+
+                for line in lines:
+                    merged_input.write(line)
+
+            # Done looping over input lists.
+
+            merged_input.close()
+
+            # Set the number of jobs to one, so that batch job will process the entire
+            # (possibly merged) input file list.
+
+            self.num_jobs = 1
+
+            # Everything OK (many-to-one).
+
+            return 0
+
+        # One-to-many case is not allows.
+
+        else:
+
+            raise RuntimeError, 'One-to-many pubs input is not supported.'
+
+        # Shouldn't ever fall out of loop...
+
+        return 1
 
 
     # Function to convert this stage for pubs output.
