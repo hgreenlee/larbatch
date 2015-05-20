@@ -254,6 +254,7 @@ import project_utilities, root_metadata
 from projectdef import ProjectDef
 from projectstatus import ProjectStatus
 from batchstatus import BatchStatus
+from jobsuberror import JobsubError
 
 # Do the same for samweb_cli module and global SAMWebClient object.
 
@@ -1203,7 +1204,7 @@ def dofetchlog(stage):
             jobout, joberr = jobinfo.communicate()
             rc = jobinfo.poll()
             if rc != 0:
-                raise RuntimeError, '%s returned status %d' % (command[0], rc)
+                raise JobsubError(command, rc, jobout, joberr)
 
         return 0
 
@@ -2153,7 +2154,7 @@ def dojobsub(project, stage, makeup):
         jobout, joberr = jobinfo.communicate()
         rc = jobinfo.poll()
         if rc != 0:
-            raise RuntimeError, '%s returned status %d' % (command[0], rc)
+            raise JobsubError(command, rc, jobout, joberr)
         for line in jobout.split('\n'):
             if "JobsubJobId" in line:
                 jobid = line.strip().split()[-1]
@@ -2169,7 +2170,7 @@ def dojobsub(project, stage, makeup):
             jobout, joberr = jobinfo.communicate()
             rc = jobinfo.poll()
             if rc != 0:
-                raise RuntimeError, '%s returned status %d' % (command[0], rc)
+                raise JobsubError(command, rc, jobout, joberr)
             for line in jobout.split('\n'):
                 if "JobsubJobId" in line:
                     jobid = line.strip().split()[-1]

@@ -13,6 +13,7 @@
 
 import sys, os, subprocess, traceback
 from sets import Set
+from jobsuberror import JobsubError
 
 # Import project.py as a module.
 
@@ -652,7 +653,7 @@ class ProjectApp(tk.Frame):
             jobout, joberr = jobinfo.communicate()
             rc = jobinfo.poll()
             if rc != 0:
-                raise RuntimeError, '%s returned status %d' % (command[0], rc)
+                raise JobsubError(command, rc, jobout, joberr)
 
         self.update_jobs()
                            

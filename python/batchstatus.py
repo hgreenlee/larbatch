@@ -14,6 +14,7 @@
 import sys
 import project_utilities
 import subprocess
+from jobsuberror import JobsubError
 
 # Cache jobs list independent of project.
 
@@ -96,7 +97,7 @@ class BatchStatus:
         jobout, joberr = jobinfo.communicate()
         rc = jobinfo.poll()
         if rc != 0:
-            raise RuntimeError, '%s returned status %d' % (command[0], rc)
+            raise JobsubError(command, rc, jobout, joberr)
         jobs = jobout.split('\n')
 
     # Return jobs list.

@@ -9,7 +9,7 @@ LIST(APPEND exes root_metadata.py merge_json.py emptydir.py )
 
 # Non-executable python modules that we want to be on PYTHONPATH
 
-LIST(APPEND nonexes project_utilities.py xmlerror.py projectdef.py stagedef.py projectstatus.py stagestatus.py batchstatus.py )
+LIST(APPEND nonexes project_utilities.py xmlerror.py jobsuberror.py projectdef.py stagedef.py projectstatus.py stagestatus.py batchstatus.py )
 
 # GUI modules.  These are not directly on PYTHONPATH, but can be imported from
 # subdirectory projectgui.
