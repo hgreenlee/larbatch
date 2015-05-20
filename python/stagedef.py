@@ -32,6 +32,7 @@ class StageDef:
         self.inputlist = ''    # Input file list.
         self.inputmode = ''    # Input file type (none or textfile)
         self.inputdef = ''     # Input sam dataset definition.
+        self.pubs_input_ok = 1 # Is pubs input allowed?
         self.pubs_input = 0    # Pubs input mode.
         self.input_run = 0     # Pubs input run.
         self.input_subrun = 0  # Pubs input subrun number.
@@ -141,6 +142,12 @@ class StageDef:
 
         if self.inputfile == '' and self.inputlist == '':
             self.inputlist = default_input_list
+
+        # Pubs input flag.
+
+        pubs_input_ok_elements = stage_element.getElementsByTagName('pubsinput')
+        if pubs_input_ok_elements:
+            self.pubs_input_ok = int(pubs_input_ok_elements[0].firstChild.data)
 
         # Number of jobs (subelement).
 
@@ -265,6 +272,7 @@ class StageDef:
         result += 'Input list = %s\n' % self.inputlist
         result += 'Input mode = %s\n' % self.inputmode
         result += 'Input sam dataset = %s\n' % self.inputdef
+        result += 'Pubs input allowed = %d\n' % self.pubs_input_ok
         result += 'Pubs input mode = %d\n' % self.pubs_input
         result += 'Pubs input run number = %d\n' % self.input_run
         result += 'Pubs input subrun number = %d\n' % self.input_subrun
@@ -298,6 +306,11 @@ class StageDef:
 
     def pubsify_input(self, run, subrun, previous_stage):
 
+        # Don't do anything if pubs input is disabled.
+
+        if not self.pubs_input_ok:
+            return 0
+
         # It never makes sense to specify pubs input mode if there are no 
         # input files (i.e. generation jobs).  This is not considered an error.
 
@@ -306,8 +319,9 @@ class StageDef:
 
         # Raise an exception if there is no previous stage (with input).
         # If you really want to use pubs to process files from pre-existing
-        # input, construct the project with a previous fake input stage.  Pubs
-        # input needs a previous stage to determine the mapping of subrun numbers.
+        # input, construct the project with a fake previous input stage or
+        # disable pubs input mode.  Pubs input needs a previous stage to
+        # determine the mapping of subrun numbers.
 
         if previous_stage == None:
             raise RuntimeError('No previous pubs stage.')

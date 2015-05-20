@@ -24,10 +24,7 @@
 #
 # Pubs options (combine with any action option).
 #
-# --pubs_input <run> <subrun> - Modifies selected stage to specify pubs input.
-# --pubs_output <run> <subrun> - Modifies selected stage to specify pubs output.
-# --pubs <run> <subrun> - Equivalent to --pubs_input <run> <subrun> and 
-#                         --pubs_output <run> <subrun>
+# --pubs <run> <subrun> - Modifies selected stage to specify pubs mode.
 #
 # Actions (specify one):
 #
@@ -174,6 +171,8 @@
 #             the list of files produced by the previous production stage
 #             (if any) will be used as input to the current production stage
 #             (must have been checked using option --check).
+# <stage><pubsinput> - 0 (false) or 1 (true).  If true, modify input file list
+#                      for specific run, subrun in pubs mode.  Default is true.
 # <stage><numjobs> - Number of worker jobs (default 1).
 # <stage><maxfilesperjob> - Maximum number of files to deliver to a single job
 #             Useful in case you want to limit output file size or keep
@@ -2437,12 +2436,9 @@ def main(argv):
     stagename = ''
     merge = 0
     submit = 0
-    pubs_input = 0
-    pubs_input_run = 0
-    pubs_input_subrun = 0
-    pubs_output = 0
-    pubs_output_run = 0
-    pubs_output_subrun = 0
+    pubs = 0
+    pubs_run = 0
+    pubs_subrun = 0
     check = 0
     checkana = 0
     fetchlog = 0
@@ -2506,23 +2502,10 @@ def main(argv):
         elif args[0] == '--submit':
             submit = 1
             del args[0]
-        elif args[0] == '--pubs_input' and len(args) > 2:
-            pubs_input = 1
-            pubs_input_run = int(args[1])
-            pubs_input_subrun = int(args[2])
-            del args[0:3]
-        elif args[0] == '--pubs_output' and len(args) > 2:
-            pubs_output = 1
-            pubs_output_run = int(args[1])
-            pubs_output_subrun = int(args[2])
-            del args[0:3]
         elif args[0] == '--pubs' and len(args) > 2:
-            pubs_input = 1
-            pubs_input_run = int(args[1])
-            pubs_input_subrun = int(args[2])
-            pubs_output = 1
-            pubs_output_run = int(args[1])
-            pubs_output_subrun = int(args[2])
+            pubs = 1
+            pubs_run = int(args[1])
+            pubs_subrun = int(args[2])
             del args[0:3]
         elif args[0] == '--check':
             check = 1
@@ -2689,12 +2672,11 @@ def main(argv):
 
     stage = project.get_stage(stagename)
     pstage = previous_stage(projects, stagename)
-    if pubs_input:
-        rc = stage.pubsify_input(pubs_input_run, pubs_input_subrun, pstage)
+    if pubs:
+        rc = stage.pubsify_input(pubs_run, pubs_subrun, pstage)
         if rc != 0:
             raise RuntimeError, 'Error pubsifying input.'
-    if pubs_output:
-        stage.pubsify_output(pubs_output_run, pubs_output_subrun)
+        stage.pubsify_output(pubs_run, pubs_subrun)
 
     # Do outdir action now.
 
