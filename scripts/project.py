@@ -1600,8 +1600,14 @@ def docheck_tape(dim):
     return result
 
 # Copy files to workdir and issue jobsub submit command.
+# Return jobsubid.
+# Raise exception if jobsub_submit returns a nonzero status.
 
 def dojobsub(project, stage, makeup):
+
+    # Default return.
+
+    jobid = ''
 
     # Process map, to be filled later if we need one.
 
@@ -2138,7 +2144,14 @@ def dojobsub(project, stage, makeup):
 
         # For submit action, invoke the job submission command.
 
-        subprocess.call(command, stdout=sys.stdout, stderr=sys.stderr)
+        jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        jobout, joberr = jobinfo.communicate()
+        rc = jobinfo.poll()
+        if rc != 0:
+            raise RuntimeError, '%s returned status %d' % (command[0], rc)
+        for line in jobout.split('\n'):
+            if "JobsubJobId" in line:
+                jobid = line.strip().split()[-1]
         if project_utilities.safeexist(checked_file):
             os.remove(checked_file)
 
@@ -2147,12 +2160,24 @@ def dojobsub(project, stage, makeup):
         # For makeup action, abort if makeup job count is zero for some reason.
 
         if makeup_count > 0:
-            subprocess.call(command, stdout=sys.stdout, stderr=sys.stderr)
+            jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            jobout, joberr = jobinfo.communicate()
+            rc = jobinfo.poll()
+            if rc != 0:
+                raise RuntimeError, '%s returned status %d' % (command[0], rc)
+            for line in jobout.split('\n'):
+                if "JobsubJobId" in line:
+                    jobid = line.strip().split()[-1]
             if project_utilities.safeexist(checked_file):
                 os.remove(checked_file)
         else:
             print 'Makeup action aborted because makeup job count is zero.'
     os.chdir(curdir)
+
+    # Done.
+
+    return jobid
+
 
 # Submit/makeup action.
 
@@ -2194,11 +2219,11 @@ def dosubmit(project, stage, makeup=False):
 
     # Copy files to workdir and issue jobsub command to submit jobs.
 
-    dojobsub(project, stage, makeup)
+    jobid = dojobsub(project, stage, makeup)
 
-    # Done (success).
+    # Done.
 
-    return 0
+    return jobid
 
 # Merge histogram files.
 # If mergehist is True, merge histograms using "hadd -T".
@@ -2702,7 +2727,7 @@ def main(argv):
 
         # Submit jobs.
 
-        rc = dosubmit(project, stage, makeup)
+        dosubmit(project, stage, makeup)
 
     if check or checkana:
 
