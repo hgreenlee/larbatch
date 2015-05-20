@@ -244,6 +244,8 @@
 #              is a concatenated version of "cpid.txt" files from
 #              successful process subdirectories.
 #
+# jobids.list - A list of all submitted jobsub jobids.
+#
 ######################################################################
 
 import sys, os, stat, string, subprocess, shutil, urllib, json, getpass
@@ -2223,6 +2225,24 @@ def dosubmit(project, stage, makeup=False):
     # Copy files to workdir and issue jobsub command to submit jobs.
 
     jobid = dojobsub(project, stage, makeup)
+
+    # Append jobid to file "jobids.list" in the log directory.
+
+    jobids_filename = os.path.join(stage.logdir, 'jobids.list')
+    jobids = []
+    if project_utilities.safeexist(jobids_filename):
+        lines = open(jobids_filename).readlines()
+        for line in lines:
+            id = line.strip()
+            if len(id) > 0:
+                jobids.append(id)
+    if len(jobid) > 0:
+        jobids.append(jobid)
+
+    jobid_file = open(jobids_filename, 'w')
+    for jobid in jobids:
+        jobid_file.write('%s\n' % jobid)
+    jobid_file.close()
 
     # Done.
 
