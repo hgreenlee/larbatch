@@ -648,7 +648,11 @@ class ProjectApp(tk.Frame):
             print 'Kill cluster id %s' % cluster_id
             command = ['jobsub_rm']
             command.append('--jobid=%s' % cluster_id)
-            subprocess.call(command, stdout=sys.stdout, stderr=sys.stderr)
+            jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            jobout, joberr = jobinfo.communicate()
+            rc = jobinfo.poll()
+            if rc != 0:
+                raise RuntimeError, '%s returned status %d' % (command[0], rc)
 
         self.update_jobs()
                            

@@ -92,7 +92,12 @@ class BatchStatus:
         command.append('--group=%s' % project_utilities.get_experiment())
         command.append('--user=%s' % project_utilities.get_user())
         command.append('--role=%s' % project_utilities.get_role())
-        jobs = subprocess.check_output(command).splitlines()
+        jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        jobout, joberr = jobinfo.communicate()
+        rc = jobinfo.poll()
+        if rc != 0:
+            raise RuntimeError, '%s returned status %d' % (command[0], rc)
+        jobs = jobout.split('\n')
 
     # Return jobs list.
 

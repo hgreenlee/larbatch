@@ -1197,7 +1197,11 @@ def dofetchlog(stage):
             command = ['jobsub_fetchlog']
             command.append('--jobid=%s' % logid)
             command.append('--dest-dir=%s' % logdir)
-            rc = subprocess.call(command, stdout=sys.stdout, stderr=sys.stderr)
+            jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            jobout, joberr = jobinfo.communicate()
+            rc = jobinfo.poll()
+            if rc != 0:
+                raise RuntimeError, '%s returned status %d' % (command[0], rc)
 
         return 0
 
