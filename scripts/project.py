@@ -450,15 +450,16 @@ def dostatus(projects):
 
 # Recursively extract projects from an xml element.
 
-def find_projects(element):
+def find_projects(element, default_first_input_list = ''):
 
     projects = []
+    default_input = default_first_input_list
 
     # First check if the input element is a project.  In that case, return a 
     # list containing the project name as the single element of the list.
 
     if element.nodeName == 'project':
-        project = ProjectDef(element)
+        project = ProjectDef(element, default_input)
         projects.append(project)
 
     else:
@@ -468,8 +469,11 @@ def find_projects(element):
 
         subelements = element.getElementsByTagName('*')
         for subelement in subelements:
-            subprojects = find_projects(subelement)
+            subprojects = find_projects(subelement, default_input)
             projects.extend(subprojects)
+            if len(projects) > 0:
+                if len(projects[-1].stages) > 0:
+                    default_input = os.path.join(projects[-1].stages[-1].logdir, 'files.list')
 
     # Done.
 
@@ -523,57 +527,58 @@ def get_project(xmlfile, projectname='', stagename=''):
     project = select_project(projects, projectname, stagename)
     return project
 
-# Parse directory name of type <cluster>_<process> and return
-# a 2-tuple of integers or None.
+# Extract the next sequential stage
 
-def parsedir(dirname):
+def next_stage(projects, stagename, circular=False):
 
-    # This method separates a directory name of the form
-    # <cluster>_<process> into a 2-tuple of integers (cluster, process).
-    # If the directory is not of the proper form, return None.
+    # Loop over projects.
+
+    found = False
+    for project in projects:
+
+        # Loop over stages.
+
+        for stage in project.stages:
+            if found:
+                return stage
+            if stage.name == stagename:
+                found = True
+
+    # Circular mode: Choose first stage if we fell out of the loop.
+
+    if circular and len(projects) > 0 and len(projects[0].stages) > 0:
+        return projects[0].stages[0]
+
+    # Finally return None if we didn't find anything appropriate.
+
+    return None
+
+# Extract the previous sequential stage.
+
+def previous_stage(projects, stagename, circular=False):
+
+    # Initialize result None or last stage (if circular).
 
     result = None
+    if circular and len(projects) > 0 and len(projects[-1].stages) > 0:
+        result = projects[-1].stages[-1]
 
-    if string.count(dirname, '_') == 1:
-        n = string.index(dirname, '_')
-        try:
-            cluster = int(dirname[0:n])
-            process = int(dirname[n+1:])
-            result = (cluster, process)
-        except:
-            pass
-    
+    # Loop over projects.
+
+    for project in projects:
+
+        # Loop over stages.
+
+        for stage in project.stages:
+            if stage.name == stagename:
+                return result
+            result = stage
+
+    # Return default answer if we fell out of the loop.
+
     return result
 
-# Check a single root file by reading precalculted metadata information.
-# This method may raise an exception if json file is not valid.
 
-def check_root_json(json_path):
-
-    # Default result
-
-    nevroot = -1
-
-    # Read contents of json file and convert to a single string.
-
-    lines = project_utilities.saferead(json_path)
-    s = ''
-    for line in lines:
-        s = s + line
-
-    # Convert json string to python dictionary.
-
-    md = json.loads(s)
-
-    # Extract number of events from metadata.
-
-    if len(md.keys()) > 0:
-        nevroot = 0
-        if md.has_key('events'):
-            nevroot = int(md['events'])
-
-    return nevroot
-    
 # Check a single root file.
 # Returns an int containing following information.
 # 1.  Number of event (>0) in TTree named "Events."
@@ -600,9 +605,6 @@ def check_root_file(path, logdir):
     if project_utilities.safeexist(json_path):
         # Get number of events from precalculated metadata.
         try:
-	    # do not call check_root_json, to accommodate merging this json with the TFile json
-	    # The "md" dictionary obtained will be useful through the code!
-	    # nevroot = check_root_json(json_path)
 	    lines = project_utilities.saferead(json_path)
      	    s = ''
             for line in lines:
@@ -617,60 +619,6 @@ def check_root_file(path, logdir):
             json_ok = True
         except:
             nevroot = -1
-
-    if not json_ok: 
-        
-	# Make root metadata.
-	
-        url = project_utilities.path_to_url(path)
-	if url != path and not proxy_ok:
-            proxy_ok = project_utilities.test_proxy()
-        print 'Generating root metadata for file %s.' % os.path.basename(path)
-        try:
-            md = root_metadata.get_external_metadata(path)
-        except:
-            md = {}
-	
-        if md.has_key('events'):
-
-            # Art root file if dictionary has events key.
-            nevroot = int(md['events'])
-
-        elif len(md.keys()) > 0:
-
-            # No events key, but non-empty dictionary, so histo/ntuple root file.
-            nevroot = 0
-        else:
-            # Empty dictionary is invalid root file.
-            nevroot = -1
-	    	
-    # if the root file is a TFile (hist or ntuple file) 
-    # append information from TFile metadata service (previously saved in 
-    # a standard "anahist.json" file) to a more appropriately named final
-    # json file that will be created here
-    if nevroot == 0:
-       temp = os.path.join(os.path.dirname(path), 'anahist.json')
-       if project_utilities.safeexist(temp):
-         lines = project_utilities.saferead(temp)
-         s1 = ''
-         for line in lines:
-           s1 = s1 + line
-         # Convert json string to python dictionary.
-         md1 = json.loads(s1) 
-         os.remove(temp) 
-         md = dict(md.items()+md1.items())   
-       else:
-           pass   
-           
-    if nevroot ==0 or not json_ok:     
-           
-       mdtext = json.dumps(md, sys.stdout, indent=2, sort_keys=True)
-       if project_utilities.safeexist(json_path):
-    	   os.remove(json_path)
-       json_file = safeopen(json_path)
-       json_file.write(mdtext)
-       json_file.close()
-        
     return nevroot
 
 

@@ -431,48 +431,21 @@ class ProjectApp(tk.Frame):
 
     def next_stage(self):
 
-        # Loop over project_defs.
+        stage = project.next_stage(self.current_project_defs, self.current_stage_name, 
+                                   circular=True)
+        self.choose_stage(stage.name)
+        return
 
-        found = False
-        for project_def in self.current_project_defs:
-
-            # Cycle through stages.
-
-            for stage in project_def.stages:
-                if found:
-                    self.choose_stage(stage.name)
-                    return
-                if stage.name == self.current_stage_name:
-                    found = True
-
-        # Choose first stage if we fell out of the loop.
-
-        if len(self.current_project_defs) > 0:
-            self.choose_stage(self.current_project_defs[0].stages[0].name)
 
     # Select previous stage.
 
     def previous_stage(self):
 
-        # Loop over project_defs.
+        stage = project.previous_stage(self.current_project_defs, self.current_stage_name, 
+                                       circular=True)
+        self.choose_stage(stage.name)
+        return
 
-        previous_stage_name = ''
-        if len(self.current_project_defs) > 0:
-            previous_stage_name = self.current_project_defs[-1].stages[-1].name
-        for project_def in self.current_project_defs:
-
-            # Cycle through stages.
-
-            for stage in project_def.stages:
-                if stage.name == self.current_stage_name:
-                    self.choose_stage(previous_stage_name)
-                    return
-                previous_stage_name = stage.name
-
-        # Choose last stage if we fell out of the loop.
-
-        if len(self.current_project_defs) > 0:
-            self.choose_stage(self.current_project_defs[-1].stages[-1].name)
 
     # Check action.
 

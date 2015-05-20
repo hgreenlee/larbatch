@@ -25,7 +25,6 @@
 #
 # Sam and parallel project options.
 #
-# --sam_url <arg>         - Specify url of samweb server.
 # --sam_user <arg>        - Specify sam user (default $GRID_USER).
 # --sam_group <arg>       - Specify sam group (default --group option).
 # --sam_station <arg>     - Specify sam station (default --group option).
@@ -1363,6 +1362,7 @@ for outfile in *; do
   fi
 done
 
+emptydir.py ${LOGDIR}/$OUTPUT_SUBDIR
 echo "ifdh cp -r $IFDH_OPT log ${LOGDIR}/$OUTPUT_SUBDIR"
 ifdh cp -r $IFDH_OPT log ${LOGDIR}/$OUTPUT_SUBDIR
 stat=$?
@@ -1371,6 +1371,7 @@ if [ $stat -ne 0 ]; then
 fi
 statout=$stat
 
+emptydir.py ${OUTDIR}/$OUTPUT_SUBDIR
 echo "ifdh cp -r $IFDH_OPT out ${OUTDIR}/$OUTPUT_SUBDIR"
 ifdh cp -r $IFDH_OPT out ${OUTDIR}/$OUTPUT_SUBDIR
 stat=$?
