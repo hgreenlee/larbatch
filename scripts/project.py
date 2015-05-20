@@ -717,7 +717,10 @@ def docheck(project, stage, ana):
     # In contrast, sam start and stop project jobs are named as
     # <cluster>_start and <cluster>_stop.
     #
-    # Return 0 if all checks are OK.
+    # Return 0 if all checks are OK, meaning:
+    # a) No errors detected for any process.
+    # b) At least one good root file (if not ana).
+    # Otherwise return nonzero.
     #
     # The following checks are performed.
     #
@@ -760,10 +763,6 @@ def docheck(project, stage, ana):
     import_samweb()
     has_metadata = project.file_type != '' or project.run_type != ''
     print 'Checking directory %s' % stage.logdir
-
-    # Default result is success.
-
-    result = 0
 
     # Count total number of events and root files.
 
@@ -1098,7 +1097,15 @@ def docheck(project, stage, ana):
         print '%d missing files.' % nmiss
     else:
         print '%d unconsumed files.' % nerror
-    return 0
+
+    # Return error status if any error or not good root file produced.
+
+    result = 0
+    if nerror != 0:
+        result = 1
+    if not ana and nroot_tot == 0:
+        result = 1
+    return result
 
 # Check project results in the specified directory.
 
@@ -1208,8 +1215,14 @@ def dofetchlog(stage):
 
 
 # Check sam declarations.
+# Return 0 if all files are declared or don't have internal metadata.
+# Return nonzero if some files have metadata but are are not declared.
 
 def docheck_declarations(logdir, declare, ana=False):
+
+    # Default result success (all files declared).
+
+    result = 0
 
     # Initialize samweb.
 
@@ -1225,8 +1238,7 @@ def docheck_declarations(logdir, declare, ana=False):
     if project_utilities.safeexist(fnlist):
         roots = project_utilities.saferead(fnlist)
     else:
-        print 'No %s file found, run project.py --check' % listname
-        sys.exit(1)
+        raise RuntimeError, 'No %s file found, run project.py --check' % listname
 
     for root in roots:
         path = string.strip(root)
@@ -1274,8 +1286,9 @@ def docheck_declarations(logdir, declare, ana=False):
                     print 'No sam metadata found for %s.' % fn
             else:
                 print 'Not declared: %s' % fn
+                result = 1
 
-    return 0
+    return result
 
 # Print summary of files returned by sam query.
 
@@ -1294,11 +1307,19 @@ def dotest_declarations(dim):
     return 0
 
 # Check sam dataset definition.
+# Return 0 if dataset is defined or definition name is null.
+# Return nonzero if dataset is not defined.
 
 def docheck_definition(defname, dim, define):
 
+    # Default rssult success.
+
+    result = 0
+
+    # Return success for null definition.
+
     if defname == '':
-        return 1
+        return result
 
     # Initialize samweb.
 
@@ -1323,9 +1344,10 @@ def docheck_definition(defname, dim, define):
             project_utilities.test_kca()
             samweb.createDefinition(defname=defname, dims=dim)
         else:
+            result = 1
             print 'Definition should be created: %s' % defname
 
-    return 0
+    return result
 
 # Print summary of files returned by dataset definition.
 
@@ -1375,6 +1397,7 @@ def doundefine(defname):
     return 0
 
 # Check disk locations.  Maybe add or remove locations.
+# This method only generates output and returns zero.
 
 def docheck_locations(dim, outdir, add, clean, remove, upload):
 
@@ -1526,9 +1549,15 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
 
     return 0
 
-# Check disk locations.  Maybe add or remove locations.
+# Check tape locations.
+# Return 0 if all files in sam have tape locations.
+# Return nonzero if some files in sam don't have tape locations.
 
 def docheck_tape(dim):
+
+    # Default result success.
+
+    result = 0
 
     # Initialize samweb.
 
@@ -1561,13 +1590,14 @@ def docheck_tape(dim):
         if is_on_tape:
             print 'On tape: %s' % filename
         else:
+            result = 1
             nbad = nbad + 1
             print 'Not on tape: %s' % filename
 
     print '%d files.' % ntot
     print '%d files need to be store on tape.' % nbad
 
-    return 0
+    return result
 
 # Copy files to workdir and issue jobsub submit command.
 
@@ -2678,7 +2708,7 @@ def main(argv):
 
         # Check results from specified project stage.
         
-        rc = docheck(project, stage, checkana)
+        docheck(project, stage, checkana)
 
     if fetchlog:
 
@@ -2707,7 +2737,7 @@ def main(argv):
             print 'No sam dataset definition name specified for this stage.'
             return 1
         dim = project_utilities.dimensions(project, stage, ana=False)
-        rc = docheck_definition(stage.defname, dim, define)
+        docheck_definition(stage.defname, dim, define)
 
     if check_definition_ana or define_ana:
 
@@ -2717,7 +2747,7 @@ def main(argv):
             print 'No sam analysis dataset definition name specified for this stage.'
             return 1
         dim = project_utilities.dimensions(project, stage, ana=True)
-        rc = docheck_definition(stage.ana_defname, dim, define_ana)
+        docheck_definition(stage.ana_defname, dim, define_ana)
 
     if test_definition:
 
@@ -2750,13 +2780,13 @@ def main(argv):
 
         # Check sam declarations.
 
-        rc = docheck_declarations(stage.logdir, declare, ana=False)
+        docheck_declarations(stage.logdir, declare, ana=False)
 
     if check_declarations_ana or declare_ana:
 
         # Check sam analysis declarations.
 
-        rc = docheck_declarations(stage.logdir, declare_ana, ana=True)
+        docheck_declarations(stage.logdir, declare_ana, ana=True)
 
     if test_declarations:
 
@@ -2777,9 +2807,9 @@ def main(argv):
         # Check sam disk locations.
 
         dim = project_utilities.dimensions(project, stage)
-        rc = docheck_locations(dim, stage.outdir,
-                               add_locations, clean_locations, remove_locations,
-                               upload)
+        docheck_locations(dim, stage.outdir,
+                          add_locations, clean_locations, remove_locations,
+                          upload)
 
     if check_locations_ana or add_locations_ana or clean_locations_ana or \
        remove_locations_ana or upload_ana:
@@ -2787,23 +2817,23 @@ def main(argv):
         # Check sam disk locations.
 
         dim = project_utilities.dimensions(project, stage, ana=True)
-        rc = docheck_locations(dim, stage.outdir,
-                               add_locations_ana, clean_locations_ana, remove_locations_ana,
-                               upload_ana)
+        docheck_locations(dim, stage.outdir,
+                          add_locations_ana, clean_locations_ana, remove_locations_ana,
+                          upload_ana)
 
     if check_tape:
 
         # Check sam tape locations.
 
         dim = project_utilities.dimensions(project, stage)
-        rc = docheck_tape(dim)
+        docheck_tape(dim)
 
     if check_tape_ana:
 
         # Check analysis file sam tape locations.
 
         dim = project_utilities.dimensions(project, stage, ana=True)
-        rc = docheck_tape(dim)
+        docheck_tape(dim)
 
     # Done.
 
