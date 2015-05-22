@@ -251,10 +251,10 @@
 import sys, os, stat, string, subprocess, shutil, urllib, json, getpass
 from xml.dom.minidom import parse
 import project_utilities, root_metadata
-from projectdef import ProjectDef
-from projectstatus import ProjectStatus
-from batchstatus import BatchStatus
-from jobsuberror import JobsubError
+from project_modules.projectdef import ProjectDef
+from project_modules.projectstatus import ProjectStatus
+from project_modules.batchstatus import BatchStatus
+from project_modules.jobsuberror import JobsubError
 
 # Do the same for samweb_cli module and global SAMWebClient object.
 
@@ -586,6 +586,27 @@ def previous_stage(projects, stagename, circular=False):
     # Return default answer if we fell out of the loop.
 
     return result
+
+# Extract pubsified stage from xml file.
+# Return value is a 2-tuple (project, stage).
+
+def get_pubs_stage(xmlfile, projectname, stagename, run, subrun):
+    projects = get_projects(xmlfile)
+    project = select_project(projects, projectname, stagename)
+    if project == None:
+        raise RuntimeError, 'No project selected for projectname=%s, stagename=%s' % (
+            projectname, stagename)
+    stage = project.get_stage(stagename)
+    if stage == None:
+        raise RuntimeError, 'No stage selected for projectname=%s, stagename=%s' % (
+            projectname, stagename)
+    pstage = previous_stage(projects, stagename)
+    rc = stage.pubsify_input(run, subrun, pstage)
+    if rc != 0:
+        raise RuntimeError, 'Error pubsifying input for projectname=%s, stagename=%s' % (
+            projectname, stagename)
+    stage.pubsify_output(run, subrun)
+    return project, stage
 
 
 # Check a single root file.

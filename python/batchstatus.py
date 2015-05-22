@@ -14,7 +14,7 @@
 import sys
 import project_utilities
 import subprocess
-from jobsuberror import JobsubError
+from project_modules.jobsuberror import JobsubError
 
 # Cache jobs list independent of project.
 

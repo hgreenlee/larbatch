@@ -10,7 +10,7 @@
 #
 ######################################################################
 
-from stagestatus import StageStatus
+from project_modules.stagestatus import StageStatus
 
 # Project status class.
 

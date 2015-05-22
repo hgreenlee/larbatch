@@ -11,8 +11,8 @@
 ######################################################################
 
 import sys, traceback
-from projectstatus import ProjectStatus
-from batchstatus import BatchStatus
+from project_modules.projectstatus import ProjectStatus
+from project_modules.batchstatus import BatchStatus
 
 # Import GUI stuff
 

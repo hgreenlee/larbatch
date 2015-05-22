@@ -13,13 +13,13 @@
 
 import sys, os, subprocess, traceback
 from sets import Set
-from jobsuberror import JobsubError
+from project_modules.jobsuberror import JobsubError
 
 # Import project.py as a module.
 
 import project
 import project_utilities
-from batchstatus import BatchStatus
+from project_modules.batchstatus import BatchStatus
 
 # Import Tkinter GUI stuff
 

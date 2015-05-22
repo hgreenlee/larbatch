@@ -11,7 +11,7 @@
 
 import os, string, stat
 import project_utilities
-from xmlerror import XMLError
+from project_modules.xmlerror import XMLError
 
 # Stage definition class.
 
