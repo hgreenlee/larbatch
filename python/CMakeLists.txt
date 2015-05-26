@@ -13,7 +13,7 @@ LIST(APPEND modules project_utilities.py )
 
 # Hidden python modules in subdirectory project_modules on PYTHONPATH.
 
-LIST(APPEND hidden __init__.py xmlerror.py jobsuberror.py projectdef.py stagedef.py projectstatus.py stagestatus.py batchstatus.py )
+LIST(APPEND hidden __init__.py xmlerror.py jobsuberror.py pubsinputerror.py pubsdeadenderror.py projectdef.py stagedef.py projectstatus.py stagestatus.py batchstatus.py )
 
 # GUI modules.  These are in subdirectory projectgui on PYTHONPATH.
 
