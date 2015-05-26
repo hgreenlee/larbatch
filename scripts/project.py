@@ -2713,9 +2713,7 @@ def main(argv):
     stage = project.get_stage(stagename)
     pstage = previous_stage(projects, stagename)
     if pubs:
-        rc = stage.pubsify_input(pubs_run, pubs_subrun, pstage)
-        if rc != 0:
-            raise RuntimeError, 'Error pubsifying input.'
+        stage.pubsify_input(pubs_run, pubs_subrun, pstage)
         stage.pubsify_output(pubs_run, pubs_subrun)
 
     # Do outdir action now.
