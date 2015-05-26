@@ -327,8 +327,7 @@ def doclean(project, stagename):
                     print 'Clean directory %s.' % stage.outdir
                     shutil.rmtree(stage.outdir)
                 else:
-                    print 'Owner mismatch, delete %s manually.' % stage.outdir
-                    sys.exit(1)
+                    raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.outdir
 
             # Clean this stage logdir.
 
@@ -338,8 +337,7 @@ def doclean(project, stagename):
                     print 'Clean directory %s.' % stage.logdir
                     shutil.rmtree(stage.logdir)
                 else:
-                    print 'Owner mismatch, delete %s manually.' % stage.logdir
-                    sys.exit(1)
+                    raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.logdir
 
             # Clean this stage workdir.
 
@@ -349,8 +347,7 @@ def doclean(project, stagename):
                     print 'Clean directory %s.' % stage.workdir
                     shutil.rmtree(stage.workdir)
                 else:
-                    print 'Owner mismatch, delete %s manually.' % stage.workdir
-                    sys.exit(1)
+                    raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.workdir
 
     # Done.
 
@@ -392,8 +389,7 @@ def docleanx(projects, projectname, stagename):
                         print 'Clean directory %s.' % stage.outdir
                         shutil.rmtree(stage.outdir)
                     else:
-                        print 'Owner mismatch, delete %s manually.' % stage.outdir
-                        sys.exit(1)
+                        raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.outdir
 
                 # Clean this stage logdir.
 
@@ -403,8 +399,7 @@ def docleanx(projects, projectname, stagename):
                         print 'Clean directory %s.' % stage.logdir
                         shutil.rmtree(stage.logdir)
                     else:
-                        print 'Owner mismatch, delete %s manually.' % stage.logdir
-                        sys.exit(1)
+                        raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.logdir
 
                 # Clean this stage workdir.
 
@@ -414,8 +409,7 @@ def docleanx(projects, projectname, stagename):
                         print 'Clean directory %s.' % stage.workdir
                         shutil.rmtree(stage.workdir)
                     else:
-                        print 'Owner mismatch, delete %s manually.' % stage.workdir
-                        sys.exit(1)
+                        raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.workdir
 
     # Done.
 
@@ -601,10 +595,7 @@ def get_pubs_stage(xmlfile, projectname, stagename, run, subrun):
         raise RuntimeError, 'No stage selected for projectname=%s, stagename=%s' % (
             projectname, stagename)
     pstage = previous_stage(projects, stagename)
-    rc = stage.pubsify_input(run, subrun, pstage)
-    if rc != 0:
-        raise RuntimeError, 'Error pubsifying input for projectname=%s, stagename=%s' % (
-            projectname, stagename)
+    stage.pubsify_input(run, subrun, pstage)
     stage.pubsify_output(run, subrun)
     return project, stage
 
@@ -2012,8 +2003,7 @@ def dojobsub(project, stage, makeup):
         # scripts were not found.
 
         if workstartname == '' or workstopname == '':
-            print 'Sam start or stop project script not found.'
-            sys.exit(1)
+            raise RuntimeError, 'Sam start or stop project script not found.'
 
         # Start project jobsub command.
                 

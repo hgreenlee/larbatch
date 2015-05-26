@@ -9,9 +9,11 @@
 #
 ######################################################################
 
-import os, string, stat
+import os, string, stat, math
 import project_utilities
 from project_modules.xmlerror import XMLError
+from project_modules.pubsinputerror import PubsInputError
+from project_modules.pubsdeadenderror import PubsDeadEndError
 
 # Stage definition class.
 
@@ -301,21 +303,24 @@ class StageDef:
         return result
 
     # Function to convert this stage for pubs input.
-    # Return 0 if everything is OK.
-    # Return non-zero if any pubs input list is missing or empty.
+    # Raise exception PubsInputError if some input run, subrun is 
+    # (perhaps temporarily) unavailable.
+    # Raise exception PubsDeadEndError if this run, subrun is a 
+    # pubs dead end due to merging (meaning there will never be any
+    # input).
 
     def pubsify_input(self, run, subrun, previous_stage):
 
         # Don't do anything if pubs input is disabled.
 
         if not self.pubs_input_ok:
-            return 0
+            return
 
         # It never makes sense to specify pubs input mode if there are no 
         # input files (i.e. generation jobs).  This is not considered an error.
 
         if self.inputfile == '' and self.inputlist == '' and self.inputdef == '':
-            return 0
+            return
 
         # Raise an exception if there is no previous stage (with input).
         # If you really want to use pubs to process files from pre-existing
@@ -364,11 +369,11 @@ class StageDef:
             except:
                 lines = []
             if len(lines) == 0:
-                return 1
+                raise PubsInputError(run, subrun)
 
             # Everything OK (one-to-one).
 
-            return 0
+            return
 
         # Many-to-one case handled here.
 
@@ -376,8 +381,19 @@ class StageDef:
 
             # Extract the input subrun range.
 
-            first_input_subrun = (subrun - 1) * previous_stage.num_jobs / self.num_jobs + 1
-            last_input_subrun = subrun * previous_stage.num_jobs / self.num_jobs
+            #first_input_subrun = (subrun - 1) * previous_stage.num_jobs / self.num_jobs + 1
+            #last_input_subrun = subrun * previous_stage.num_jobs / self.num_jobs
+
+            section = (subrun - 1) * self.num_jobs / previous_stage.num_jobs
+            first_input_subrun = int(math.ceil(previous_stage.num_jobs * section / self.num_jobs)) + 1
+            last_input_subrun = int(math.floor(
+                        (previous_stage.num_jobs * section + previous_stage.num_jobs - 1) \
+                            / self.num_jobs)) + 1
+
+            # Only process the first input subrun.
+
+            if subrun != first_input_subrun:
+                raise PubsDeadEndError(run, subrun)
 
             # Generate a new input file list, called "merged_files.list" and place 
             # it in the same directory as the first input subrun input list.
@@ -403,7 +419,7 @@ class StageDef:
                 # Return an error if input can't be opened, or is empty.
 
                 if len(lines) == 0:
-                    return 1
+                    raise PubsInputError(run, subrun)
 
                 for line in lines:
                     merged_input.write(line)
@@ -419,7 +435,7 @@ class StageDef:
 
             # Everything OK (many-to-one).
 
-            return 0
+            return
 
         # One-to-many case is not allows.
 
@@ -427,9 +443,9 @@ class StageDef:
 
             raise RuntimeError, 'One-to-many pubs input is not supported.'
 
-        # Shouldn't ever fall out of loop...
+        # Shouldn't ever fall out of loop.
 
-        return 1
+        return
 
 
     # Function to convert this stage for pubs output.
