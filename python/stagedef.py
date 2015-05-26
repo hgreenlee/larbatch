@@ -384,7 +384,7 @@ class StageDef:
             #first_input_subrun = (subrun - 1) * previous_stage.num_jobs / self.num_jobs + 1
             #last_input_subrun = subrun * previous_stage.num_jobs / self.num_jobs
 
-            section = (subrun - 1) * self.num_jobs / previous_stage.num_jobs
+            section = int((subrun - 1) * self.num_jobs / previous_stage.num_jobs)
             first_input_subrun = int(math.ceil(previous_stage.num_jobs * section / self.num_jobs)) + 1
             last_input_subrun = int(math.floor(
                         (previous_stage.num_jobs * section + previous_stage.num_jobs - 1) \
