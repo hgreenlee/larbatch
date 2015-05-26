@@ -2169,6 +2169,8 @@ def dojobsub(project, stage, makeup):
         for line in jobout.split('\n'):
             if "JobsubJobId" in line:
                 jobid = line.strip().split()[-1]
+        if not jobid:
+            raise JobsubError(command, rc, jobout, joberr)
         if project_utilities.safeexist(checked_file):
             os.remove(checked_file)
 
@@ -2185,6 +2187,8 @@ def dojobsub(project, stage, makeup):
             for line in jobout.split('\n'):
                 if "JobsubJobId" in line:
                     jobid = line.strip().split()[-1]
+            if not jobid:
+                raise JobsubError(command, rc, jobout, joberr)
             if project_utilities.safeexist(checked_file):
                 os.remove(checked_file)
         else:
