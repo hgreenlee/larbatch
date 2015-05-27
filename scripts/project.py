@@ -22,6 +22,10 @@
 #                       use ifdh cp instead of xrootd for accessing
 #                       content of root files in dCache.
 #
+# Pubs options (combine with any action option).
+#
+# --pubs <run> <subrun> - Modifies selected stage to specify pubs mode.
+#
 # Actions (specify one):
 #
 # [-h|--help]  - Print help (this message).
@@ -167,6 +171,8 @@
 #             the list of files produced by the previous production stage
 #             (if any) will be used as input to the current production stage
 #             (must have been checked using option --check).
+# <stage><pubsinput> - 0 (false) or 1 (true).  If true, modify input file list
+#                      for specific run, subrun in pubs mode.  Default is true.
 # <stage><numjobs> - Number of worker jobs (default 1).
 # <stage><maxfilesperjob> - Maximum number of files to deliver to a single job
 #             Useful in case you want to limit output file size or keep
@@ -238,14 +244,17 @@
 #              is a concatenated version of "cpid.txt" files from
 #              successful process subdirectories.
 #
+# jobids.list - A list of all submitted jobsub jobids.
+#
 ######################################################################
 
 import sys, os, stat, string, subprocess, shutil, urllib, json, getpass
 from xml.dom.minidom import parse
 import project_utilities, root_metadata
-from projectdef import ProjectDef
-from projectstatus import ProjectStatus
-from batchstatus import BatchStatus
+from project_modules.projectdef import ProjectDef
+from project_modules.projectstatus import ProjectStatus
+from project_modules.batchstatus import BatchStatus
+from project_modules.jobsuberror import JobsubError
 
 # Do the same for samweb_cli module and global SAMWebClient object.
 
@@ -318,8 +327,7 @@ def doclean(project, stagename):
                     print 'Clean directory %s.' % stage.outdir
                     shutil.rmtree(stage.outdir)
                 else:
-                    print 'Owner mismatch, delete %s manually.' % stage.outdir
-                    sys.exit(1)
+                    raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.outdir
 
             # Clean this stage logdir.
 
@@ -329,8 +337,7 @@ def doclean(project, stagename):
                     print 'Clean directory %s.' % stage.logdir
                     shutil.rmtree(stage.logdir)
                 else:
-                    print 'Owner mismatch, delete %s manually.' % stage.logdir
-                    sys.exit(1)
+                    raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.logdir
 
             # Clean this stage workdir.
 
@@ -340,8 +347,7 @@ def doclean(project, stagename):
                     print 'Clean directory %s.' % stage.workdir
                     shutil.rmtree(stage.workdir)
                 else:
-                    print 'Owner mismatch, delete %s manually.' % stage.workdir
-                    sys.exit(1)
+                    raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.workdir
 
     # Done.
 
@@ -383,8 +389,7 @@ def docleanx(projects, projectname, stagename):
                         print 'Clean directory %s.' % stage.outdir
                         shutil.rmtree(stage.outdir)
                     else:
-                        print 'Owner mismatch, delete %s manually.' % stage.outdir
-                        sys.exit(1)
+                        raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.outdir
 
                 # Clean this stage logdir.
 
@@ -394,8 +399,7 @@ def docleanx(projects, projectname, stagename):
                         print 'Clean directory %s.' % stage.logdir
                         shutil.rmtree(stage.logdir)
                     else:
-                        print 'Owner mismatch, delete %s manually.' % stage.logdir
-                        sys.exit(1)
+                        raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.logdir
 
                 # Clean this stage workdir.
 
@@ -405,8 +409,7 @@ def docleanx(projects, projectname, stagename):
                         print 'Clean directory %s.' % stage.workdir
                         shutil.rmtree(stage.workdir)
                     else:
-                        print 'Owner mismatch, delete %s manually.' % stage.workdir
-                        sys.exit(1)
+                        raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.workdir
 
     # Done.
 
@@ -578,6 +581,24 @@ def previous_stage(projects, stagename, circular=False):
 
     return result
 
+# Extract pubsified stage from xml file.
+# Return value is a 2-tuple (project, stage).
+
+def get_pubs_stage(xmlfile, projectname, stagename, run, subrun):
+    projects = get_projects(xmlfile)
+    project = select_project(projects, projectname, stagename)
+    if project == None:
+        raise RuntimeError, 'No project selected for projectname=%s, stagename=%s' % (
+            projectname, stagename)
+    stage = project.get_stage(stagename)
+    if stage == None:
+        raise RuntimeError, 'No stage selected for projectname=%s, stagename=%s' % (
+            projectname, stagename)
+    pstage = previous_stage(projects, stagename)
+    stage.pubsify_input(run, subrun, pstage)
+    stage.pubsify_output(run, subrun)
+    return project, stage
+
 
 # Check a single root file.
 # Returns an int containing following information.
@@ -710,7 +731,10 @@ def docheck(project, stage, ana):
     # In contrast, sam start and stop project jobs are named as
     # <cluster>_start and <cluster>_stop.
     #
-    # Return 0 if all checks are OK.
+    # Return 0 if all checks are OK, meaning:
+    # a) No errors detected for any process.
+    # b) At least one good root file (if not ana).
+    # Otherwise return nonzero.
     #
     # The following checks are performed.
     #
@@ -754,10 +778,6 @@ def docheck(project, stage, ana):
     has_metadata = project.file_type != '' or project.run_type != ''
     print 'Checking directory %s' % stage.logdir
 
-    # Default result is success.
-
-    result = 0
-
     # Count total number of events and root files.
 
     nev_tot = 0
@@ -772,10 +792,15 @@ def docheck(project, stage, ana):
     uris = []         # List of input files processed successfully.
     bad_workers = []  # List of bad worker subdirectories.
 
-    subdirs = os.listdir(stage.logdir)
-    for subdir in subdirs:
+    for log_subpath, subdirs, files in os.walk(stage.logdir):
+
+        # Only examine files in leaf directories.
+
+        if len(subdirs) != 0:
+            continue
+
+        subdir = os.path.relpath(log_subpath, stage.logdir)
         out_subpath = os.path.join(stage.outdir, subdir)
-        log_subpath = os.path.join(stage.logdir, subdir)
         dirok = project_utilities.fast_isdir(log_subpath)
 
         # Update list of sam projects from start job.
@@ -944,7 +969,7 @@ def docheck(project, stage, ana):
     # Generate "missing_files.list."
 
     nmiss = 0
-    if stage.inputdef == '':
+    if stage.inputdef == '' and not stage.pubs_output:
         input_files = get_input_files(stage)
         if len(input_files) > 0:
             missing_files = list(set(input_files) - set(uris))
@@ -1086,7 +1111,15 @@ def docheck(project, stage, ana):
         print '%d missing files.' % nmiss
     else:
         print '%d unconsumed files.' % nerror
-    return 0
+
+    # Return error status if any error or not good root file produced.
+
+    result = 0
+    if nerror != 0:
+        result = 1
+    if not ana and nroot_tot == 0:
+        result = 1
+    return result
 
 # Check project results in the specified directory.
 
@@ -1179,7 +1212,11 @@ def dofetchlog(stage):
             command = ['jobsub_fetchlog']
             command.append('--jobid=%s' % logid)
             command.append('--dest-dir=%s' % logdir)
-            rc = subprocess.call(command, stdout=sys.stdout, stderr=sys.stderr)
+            jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            jobout, joberr = jobinfo.communicate()
+            rc = jobinfo.poll()
+            if rc != 0:
+                raise JobsubError(command, rc, jobout, joberr)
 
         return 0
 
@@ -1196,8 +1233,14 @@ def dofetchlog(stage):
 
 
 # Check sam declarations.
+# Return 0 if all files are declared or don't have internal metadata.
+# Return nonzero if some files have metadata but are are not declared.
 
 def docheck_declarations(logdir, declare, ana=False):
+
+    # Default result success (all files declared).
+
+    result = 0
 
     # Initialize samweb.
 
@@ -1213,8 +1256,7 @@ def docheck_declarations(logdir, declare, ana=False):
     if project_utilities.safeexist(fnlist):
         roots = project_utilities.saferead(fnlist)
     else:
-        print 'No %s file found, run project.py --check' % listname
-        sys.exit(1)
+        raise RuntimeError, 'No %s file found, run project.py --check' % listname
 
     for root in roots:
         path = string.strip(root)
@@ -1262,8 +1304,9 @@ def docheck_declarations(logdir, declare, ana=False):
                     print 'No sam metadata found for %s.' % fn
             else:
                 print 'Not declared: %s' % fn
+                result = 1
 
-    return 0
+    return result
 
 # Print summary of files returned by sam query.
 
@@ -1282,11 +1325,19 @@ def dotest_declarations(dim):
     return 0
 
 # Check sam dataset definition.
+# Return 0 if dataset is defined or definition name is null.
+# Return nonzero if dataset is not defined.
 
 def docheck_definition(defname, dim, define):
 
+    # Default rssult success.
+
+    result = 0
+
+    # Return success for null definition.
+
     if defname == '':
-        return 1
+        return result
 
     # Initialize samweb.
 
@@ -1311,9 +1362,10 @@ def docheck_definition(defname, dim, define):
             project_utilities.test_kca()
             samweb.createDefinition(defname=defname, dims=dim)
         else:
+            result = 1
             print 'Definition should be created: %s' % defname
 
-    return 0
+    return result
 
 # Print summary of files returned by dataset definition.
 
@@ -1363,6 +1415,7 @@ def doundefine(defname):
     return 0
 
 # Check disk locations.  Maybe add or remove locations.
+# This method only generates output and returns zero.
 
 def docheck_locations(dim, outdir, add, clean, remove, upload):
 
@@ -1514,9 +1567,15 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
 
     return 0
 
-# Check disk locations.  Maybe add or remove locations.
+# Check tape locations.
+# Return 0 if all files in sam have tape locations.
+# Return nonzero if some files in sam don't have tape locations.
 
 def docheck_tape(dim):
+
+    # Default result success.
+
+    result = 0
 
     # Initialize samweb.
 
@@ -1549,17 +1608,24 @@ def docheck_tape(dim):
         if is_on_tape:
             print 'On tape: %s' % filename
         else:
+            result = 1
             nbad = nbad + 1
             print 'Not on tape: %s' % filename
 
     print '%d files.' % ntot
     print '%d files need to be store on tape.' % nbad
 
-    return 0
+    return result
 
 # Copy files to workdir and issue jobsub submit command.
+# Return jobsubid.
+# Raise exception if jobsub_submit returns a nonzero status.
 
 def dojobsub(project, stage, makeup):
+
+    # Default return.
+
+    jobid = ''
 
     # Process map, to be filled later if we need one.
 
@@ -1859,12 +1925,13 @@ def dojobsub(project, stage, makeup):
         command.append('--site=%s' % project.site)
     if project.os != '':
         command.append('--OS=%s' % project.os)
-    if not makeup:
-        command_njobs = stage.num_jobs
-        command.extend(['-N', '%d' % command_njobs])
-    else:
-        command_njobs = min(makeup_count, stage.num_jobs)
-        command.extend(['-N', '%d' % command_njobs])
+    if not stage.pubs_output:
+        if not makeup:
+            command_njobs = stage.num_jobs
+            command.extend(['-N', '%d' % command_njobs])
+        else:
+            command_njobs = min(makeup_count, stage.num_jobs)
+            command.extend(['-N', '%d' % command_njobs])
 
     # Batch script.
 
@@ -1895,6 +1962,12 @@ def dojobsub(project, stage, makeup):
     command.extend([' --workdir', stage.workdir])
     command.extend([' --outdir', stage.outdir])
     command.extend([' --logdir', stage.logdir])
+
+    # Set the process number for pubs jobs that are the first in the chain.
+
+    if not stage.pubs_input and stage.pubs_output and stage.output_subrun > 0:
+        command.extend(['--process', '%d' % (stage.output_subrun-1)])
+
     if stage.inputfile != '':
         command.extend([' -s', stage.inputfile])
     elif input_list_name != '':
@@ -1930,8 +2003,7 @@ def dojobsub(project, stage, makeup):
         # scripts were not found.
 
         if workstartname == '' or workstopname == '':
-            print 'Sam start or stop project script not found.'
-            sys.exit(1)
+            raise RuntimeError, 'Sam start or stop project script not found.'
 
         # Start project jobsub command.
                 
@@ -2089,7 +2161,16 @@ def dojobsub(project, stage, makeup):
 
         # For submit action, invoke the job submission command.
 
-        subprocess.call(command, stdout=sys.stdout, stderr=sys.stderr)
+        jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        jobout, joberr = jobinfo.communicate()
+        rc = jobinfo.poll()
+        if rc != 0:
+            raise JobsubError(command, rc, jobout, joberr)
+        for line in jobout.split('\n'):
+            if "JobsubJobId" in line:
+                jobid = line.strip().split()[-1]
+        if not jobid:
+            raise JobsubError(command, rc, jobout, joberr)
         if project_utilities.safeexist(checked_file):
             os.remove(checked_file)
 
@@ -2098,12 +2179,26 @@ def dojobsub(project, stage, makeup):
         # For makeup action, abort if makeup job count is zero for some reason.
 
         if makeup_count > 0:
-            subprocess.call(command, stdout=sys.stdout, stderr=sys.stderr)
+            jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            jobout, joberr = jobinfo.communicate()
+            rc = jobinfo.poll()
+            if rc != 0:
+                raise JobsubError(command, rc, jobout, joberr)
+            for line in jobout.split('\n'):
+                if "JobsubJobId" in line:
+                    jobid = line.strip().split()[-1]
+            if not jobid:
+                raise JobsubError(command, rc, jobout, joberr)
             if project_utilities.safeexist(checked_file):
                 os.remove(checked_file)
         else:
             print 'Makeup action aborted because makeup job count is zero.'
     os.chdir(curdir)
+
+    # Done.
+
+    return jobid
+
 
 # Submit/makeup action.
 
@@ -2112,6 +2207,17 @@ def dosubmit(project, stage, makeup=False):
     # Make sure we have a kerberos ticket.
 
     project_utilities.test_ticket()
+
+    # In pubs mode, unconditionally delete any existing work, log, or output
+    # directories, since there is no separate makeup action for pubs mode.
+
+    if stage.pubs_output:
+        if project_utilities.safeexist(stage.workdir):
+            shutil.rmtree(stage.workdir)
+        if project_utilities.safeexist(stage.outdir):
+            shutil.rmtree(stage.outdir)
+        if project_utilities.safeexist(stage.logdir):
+            shutil.rmtree(stage.logdir)
 
     # Make or check directories.
 
@@ -2134,11 +2240,29 @@ def dosubmit(project, stage, makeup=False):
 
     # Copy files to workdir and issue jobsub command to submit jobs.
 
-    dojobsub(project, stage, makeup)
+    jobid = dojobsub(project, stage, makeup)
 
-    # Done (success).
+    # Append jobid to file "jobids.list" in the log directory.
 
-    return 0
+    jobids_filename = os.path.join(stage.logdir, 'jobids.list')
+    jobids = []
+    if project_utilities.safeexist(jobids_filename):
+        lines = open(jobids_filename).readlines()
+        for line in lines:
+            id = line.strip()
+            if len(id) > 0:
+                jobids.append(id)
+    if len(jobid) > 0:
+        jobids.append(jobid)
+
+    jobid_file = open(jobids_filename, 'w')
+    for jobid in jobids:
+        jobid_file.write('%s\n' % jobid)
+    jobid_file.close()
+
+    # Done.
+
+    return jobid
 
 # Merge histogram files.
 # If mergehist is True, merge histograms using "hadd -T".
@@ -2352,6 +2476,9 @@ def main(argv):
     stagename = ''
     merge = 0
     submit = 0
+    pubs = 0
+    pubs_run = 0
+    pubs_subrun = 0
     check = 0
     checkana = 0
     fetchlog = 0
@@ -2415,6 +2542,11 @@ def main(argv):
         elif args[0] == '--submit':
             submit = 1
             del args[0]
+        elif args[0] == '--pubs' and len(args) > 2:
+            pubs = 1
+            pubs_run = int(args[1])
+            pubs_subrun = int(args[2])
+            del args[0:3]
         elif args[0] == '--check':
             check = 1
             del args[0]
@@ -2576,9 +2708,13 @@ def main(argv):
         dostatus(projects)
         return 0
 
-    # Get the current stage definition.
+    # Get the current stage definition, and pubsify it if necessary.
 
     stage = project.get_stage(stagename)
+    pstage = previous_stage(projects, stagename)
+    if pubs:
+        stage.pubsify_input(pubs_run, pubs_subrun, pstage)
+        stage.pubsify_output(pubs_run, pubs_subrun)
 
     # Do outdir action now.
 
@@ -2611,13 +2747,13 @@ def main(argv):
 
         # Submit jobs.
 
-        rc = dosubmit(project, stage, makeup)
+        dosubmit(project, stage, makeup)
 
     if check or checkana:
 
         # Check results from specified project stage.
         
-        rc = docheck(project, stage, checkana)
+        docheck(project, stage, checkana)
 
     if fetchlog:
 
@@ -2646,7 +2782,7 @@ def main(argv):
             print 'No sam dataset definition name specified for this stage.'
             return 1
         dim = project_utilities.dimensions(project, stage, ana=False)
-        rc = docheck_definition(stage.defname, dim, define)
+        docheck_definition(stage.defname, dim, define)
 
     if check_definition_ana or define_ana:
 
@@ -2656,7 +2792,7 @@ def main(argv):
             print 'No sam analysis dataset definition name specified for this stage.'
             return 1
         dim = project_utilities.dimensions(project, stage, ana=True)
-        rc = docheck_definition(stage.ana_defname, dim, define_ana)
+        docheck_definition(stage.ana_defname, dim, define_ana)
 
     if test_definition:
 
@@ -2689,13 +2825,13 @@ def main(argv):
 
         # Check sam declarations.
 
-        rc = docheck_declarations(stage.logdir, declare, ana=False)
+        docheck_declarations(stage.logdir, declare, ana=False)
 
     if check_declarations_ana or declare_ana:
 
         # Check sam analysis declarations.
 
-        rc = docheck_declarations(stage.logdir, declare_ana, ana=True)
+        docheck_declarations(stage.logdir, declare_ana, ana=True)
 
     if test_declarations:
 
@@ -2716,9 +2852,9 @@ def main(argv):
         # Check sam disk locations.
 
         dim = project_utilities.dimensions(project, stage)
-        rc = docheck_locations(dim, stage.outdir,
-                               add_locations, clean_locations, remove_locations,
-                               upload)
+        docheck_locations(dim, stage.outdir,
+                          add_locations, clean_locations, remove_locations,
+                          upload)
 
     if check_locations_ana or add_locations_ana or clean_locations_ana or \
        remove_locations_ana or upload_ana:
@@ -2726,23 +2862,23 @@ def main(argv):
         # Check sam disk locations.
 
         dim = project_utilities.dimensions(project, stage, ana=True)
-        rc = docheck_locations(dim, stage.outdir,
-                               add_locations_ana, clean_locations_ana, remove_locations_ana,
-                               upload_ana)
+        docheck_locations(dim, stage.outdir,
+                          add_locations_ana, clean_locations_ana, remove_locations_ana,
+                          upload_ana)
 
     if check_tape:
 
         # Check sam tape locations.
 
         dim = project_utilities.dimensions(project, stage)
-        rc = docheck_tape(dim)
+        docheck_tape(dim)
 
     if check_tape_ana:
 
         # Check analysis file sam tape locations.
 
         dim = project_utilities.dimensions(project, stage, ana=True)
-        rc = docheck_tape(dim)
+        docheck_tape(dim)
 
     # Done.
 

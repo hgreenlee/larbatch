@@ -11,7 +11,7 @@
 ######################################################################
 
 import os, string
-from stagedef import StageDef
+from project_modules.stagedef import StageDef
 import project_utilities
 
 # Project status class.

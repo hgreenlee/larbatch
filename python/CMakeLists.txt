@@ -7,20 +7,25 @@
 
 LIST(APPEND exes root_metadata.py merge_json.py emptydir.py )
 
-# Non-executable python modules that we want to be on PYTHONPATH
+# Python modules on PYTHONPATH.
 
-LIST(APPEND nonexes project_utilities.py xmlerror.py projectdef.py stagedef.py projectstatus.py stagestatus.py batchstatus.py )
+LIST(APPEND modules project_utilities.py )
 
-# GUI modules.  These are not directly on PYTHONPATH, but can be imported from
-# subdirectory projectgui.
+# Hidden python modules in subdirectory project_modules on PYTHONPATH.
+
+LIST(APPEND hidden __init__.py xmlerror.py jobsuberror.py pubsinputerror.py pubsdeadenderror.py projectdef.py stagedef.py projectstatus.py stagestatus.py batchstatus.py )
+
+# GUI modules.  These are in subdirectory projectgui on PYTHONPATH.
 
 LIST(APPEND guis __init__.py projectapp.py projectview.py statusview.py textwindow.py )
 
 message(STATUS "Executable python modules ${exes}")
-message(STATUS "Non-executable python modules ${nonexes}")
+message(STATUS "Python modules ${modules}")
+message(STATUS "Hidden python modules ${hidden}")
 message(STATUS "GUI python modules ${guis}")
 
 install(PROGRAMS ${exes} DESTINATION ${product}/${version}/python)
-install(FILES ${nonexes} DESTINATION ${product}/${version}/python)
+install(FILES ${modules} DESTINATION ${product}/${version}/python)
+install(FILES ${hidden} DESTINATION ${product}/${version}/python/project_modules)
 install(FILES ${guis} DESTINATION ${product}/${version}/python/project_gui_modules)
 install_scripts(LIST ${exes})

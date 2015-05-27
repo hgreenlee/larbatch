@@ -13,12 +13,13 @@
 
 import sys, os, subprocess, traceback
 from sets import Set
+from project_modules.jobsuberror import JobsubError
 
 # Import project.py as a module.
 
 import project
 import project_utilities
-from batchstatus import BatchStatus
+from project_modules.batchstatus import BatchStatus
 
 # Import Tkinter GUI stuff
 
@@ -648,7 +649,11 @@ class ProjectApp(tk.Frame):
             print 'Kill cluster id %s' % cluster_id
             command = ['jobsub_rm']
             command.append('--jobid=%s' % cluster_id)
-            subprocess.call(command, stdout=sys.stdout, stderr=sys.stderr)
+            jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            jobout, joberr = jobinfo.communicate()
+            rc = jobinfo.poll()
+            if rc != 0:
+                raise JobsubError(command, rc, jobout, joberr)
 
         self.update_jobs()
                            

@@ -10,8 +10,8 @@
 ######################################################################
 
 import sys, os, string, subprocess
-from xmlerror import XMLError
-from stagedef import StageDef
+from project_modules.xmlerror import XMLError
+from project_modules.stagedef import StageDef
 
 # Project definition class contains data parsed from project defition xml file.
 
