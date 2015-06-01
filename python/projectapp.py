@@ -105,6 +105,16 @@ class ProjectApp(tk.Frame):
         sys.stdout = self.console
         sys.stderr = self.console
 
+        # Schedule the idle callback.
+
+        self.after(120000, self.often)
+
+    # Periodic callback.
+
+    def often(self):
+        self.update_jobs()
+        self.after(120000, self.often)
+
     # Make a menubar widget.
 
     def make_menubar(self):
