@@ -1363,6 +1363,8 @@ for outfile in *; do
 done
 
 emptydir.py ${LOGDIR}/$OUTPUT_SUBDIR
+emptydir.py ${OUTDIR}/$OUTPUT_SUBDIR
+
 echo "ifdh cp -r $IFDH_OPT log ${LOGDIR}/$OUTPUT_SUBDIR"
 ifdh cp -r $IFDH_OPT log ${LOGDIR}/$OUTPUT_SUBDIR
 stat=$?
@@ -1371,7 +1373,6 @@ if [ $stat -ne 0 ]; then
 fi
 statout=$stat
 
-emptydir.py ${OUTDIR}/$OUTPUT_SUBDIR
 echo "ifdh cp -r $IFDH_OPT out ${OUTDIR}/$OUTPUT_SUBDIR"
 ifdh cp -r $IFDH_OPT out ${OUTDIR}/$OUTPUT_SUBDIR
 stat=$?
