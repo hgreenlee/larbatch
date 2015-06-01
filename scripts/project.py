@@ -24,7 +24,7 @@
 #
 # Pubs options (combine with any action option).
 #
-# --pubs <run> <subrun> - Modifies selected stage to specify pubs mode.
+# --pubs <run> <subrun> [<version>] - Modifies selected stage to specify pubs mode.
 #
 # Actions (specify one):
 #
@@ -172,7 +172,7 @@
 #             (if any) will be used as input to the current production stage
 #             (must have been checked using option --check).
 # <stage><pubsinput> - 0 (false) or 1 (true).  If true, modify input file list
-#                      for specific run, subrun in pubs mode.  Default is true.
+#                      for specific (run, subrun, version) in pubs mode.  Default is true.
 # <stage><numjobs> - Number of worker jobs (default 1).
 # <stage><maxfilesperjob> - Maximum number of files to deliver to a single job
 #             Useful in case you want to limit output file size or keep
@@ -584,7 +584,7 @@ def previous_stage(projects, stagename, circular=False):
 # Extract pubsified stage from xml file.
 # Return value is a 2-tuple (project, stage).
 
-def get_pubs_stage(xmlfile, projectname, stagename, run, subrun):
+def get_pubs_stage(xmlfile, projectname, stagename, run, subrun, version):
     projects = get_projects(xmlfile)
     project = select_project(projects, projectname, stagename)
     if project == None:
@@ -595,8 +595,8 @@ def get_pubs_stage(xmlfile, projectname, stagename, run, subrun):
         raise RuntimeError, 'No stage selected for projectname=%s, stagename=%s' % (
             projectname, stagename)
     pstage = previous_stage(projects, stagename)
-    stage.pubsify_input(run, subrun, pstage)
-    stage.pubsify_output(run, subrun)
+    stage.pubsify_input(run, subrun, version, pstage)
+    stage.pubsify_output(run, subrun, version)
     return project, stage
 
 
@@ -2479,6 +2479,7 @@ def main(argv):
     pubs = 0
     pubs_run = 0
     pubs_subrun = 0
+    pubs_version = None
     check = 0
     checkana = 0
     fetchlog = 0
@@ -2547,6 +2548,9 @@ def main(argv):
             pubs_run = int(args[1])
             pubs_subrun = int(args[2])
             del args[0:3]
+            if len(args) > 0 and args[0] != '' and args[0][0] != '-':
+                pubs_version = int(args[0])
+                del args[0]
         elif args[0] == '--check':
             check = 1
             del args[0]
@@ -2713,8 +2717,8 @@ def main(argv):
     stage = project.get_stage(stagename)
     pstage = previous_stage(projects, stagename)
     if pubs:
-        stage.pubsify_input(pubs_run, pubs_subrun, pstage)
-        stage.pubsify_output(pubs_run, pubs_subrun)
+        stage.pubsify_input(pubs_run, pubs_subrun, pubs_version, pstage)
+        stage.pubsify_output(pubs_run, pubs_subrun, pubs_version)
 
     # Do outdir action now.
 
