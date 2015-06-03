@@ -38,9 +38,11 @@ class StageDef:
         self.pubs_input = 0    # Pubs input mode.
         self.input_run = 0     # Pubs input run.
         self.input_subrun = 0  # Pubs input subrun number.
+        self.input_version = 0 # Pubs input version number.
         self.pubs_output = 0   # Pubs output mode.
         self.output_run = 0    # Pubs output run.
         self.output_subrun = 0 # Pubs output subrun number.
+        self.output_version = 0 # Pubs output version number.
         self.num_jobs = default_num_jobs # Number of jobs.
         self.max_files_per_job = default_max_files_per_job #max num of files per job
         self.target_size = 0   # Target size for output files.
@@ -278,9 +280,11 @@ class StageDef:
         result += 'Pubs input mode = %d\n' % self.pubs_input
         result += 'Pubs input run number = %d\n' % self.input_run
         result += 'Pubs input subrun number = %d\n' % self.input_subrun
+        result += 'Pubs input version number = %d\n' % self.input_version
         result += 'Pubs output mode = %d\n' % self.pubs_output
         result += 'Pubs output run number = %d\n' % self.output_run
         result += 'Pubs output subrun number = %d\n' % self.output_subrun
+        result += 'Pubs output version number = %d\n' % self.output_version
         result += 'Output file name = %s\n' % self.output
         result += 'TFileName = %s\n' % self.TFileName	
         result += 'Number of jobs = %d\n' % self.num_jobs
@@ -303,13 +307,13 @@ class StageDef:
         return result
 
     # Function to convert this stage for pubs input.
-    # Raise exception PubsInputError if some input run, subrun is 
+    # Raise exception PubsInputError if some input (run, subrun, version) is 
     # (perhaps temporarily) unavailable.
-    # Raise exception PubsDeadEndError if this run, subrun is a 
+    # Raise exception PubsDeadEndError if this (run, subrun, version) is a 
     # pubs dead end due to merging (meaning there will never be any
     # input).
 
-    def pubsify_input(self, run, subrun, previous_stage):
+    def pubsify_input(self, run, subrun, version, previous_stage):
 
         # Don't do anything if pubs input is disabled.
 
@@ -345,10 +349,11 @@ class StageDef:
 
         self.pubs_input = 1
 
-        # Save the run and subrun numbers.
+        # Save the run, subrun, and version numbers.
 
         self.input_run = run;
         self.input_subrun = subrun;
+        self.input_version = version;
 
         # One-to-one case handled here.
 
@@ -356,7 +361,10 @@ class StageDef:
 
             # Insert run and subrun into input file list path.
 
-            pubs_path = '%d/%d' % (run, subrun)
+            if version == None:
+                pubs_path = '%d/%d' % (run, subrun)
+            else:
+                pubs_path = '%d/%d/%d' % (version, run, subrun)
             dir = os.path.dirname(self.inputlist)
             base = os.path.basename(self.inputlist)
             self.inputlist = os.path.join(dir, pubs_path, base)
@@ -369,7 +377,7 @@ class StageDef:
             except:
                 lines = []
             if len(lines) == 0:
-                raise PubsInputError(run, subrun)
+                raise PubsInputError(run, subrun, version)
 
             # Everything OK (one-to-one).
 
@@ -390,7 +398,7 @@ class StageDef:
             # Only process the first input subrun.
 
             if subrun != first_input_subrun:
-                raise PubsDeadEndError(run, subrun)
+                raise PubsDeadEndError(run, subrun, version)
 
             # Generate a new input file list, called "merged_files.list" and place 
             # it in the same directory as the first input subrun input list.
@@ -399,7 +407,10 @@ class StageDef:
             dir = os.path.dirname(self.inputlist)
             base = os.path.basename(self.inputlist)
             for input_subrun in range(first_input_subrun, last_input_subrun+1):
-                pubs_path = '%d/%d' % (run, input_subrun)
+                if version == None:
+                    pubs_path = '%d/%d' % (run, input_subrun)
+                else:
+                    pubs_path = '%d/%d/%d' % (version, run, input_subrun)
                 inputlist = os.path.join(dir, pubs_path, base)
                 if first:
                     first = False
@@ -416,7 +427,7 @@ class StageDef:
                 # Return an error if input can't be opened, or is empty.
 
                 if len(lines) == 0:
-                    raise PubsInputError(run, subrun)
+                    raise PubsInputError(run, subrun, version)
 
                 for line in lines:
                     merged_input.write(line)
@@ -447,20 +458,24 @@ class StageDef:
 
     # Function to convert this stage for pubs output.
 
-    def pubsify_output(self, run, subrun):
+    def pubsify_output(self, run, subrun, version):
 
         # Set pubs mode.
 
         self.pubs_output = 1
 
-        # Save the run and subrun numbers.
+        # Save the run, subrun, and version numbers.
 
         self.output_run = run;
         self.output_subrun = subrun;
+        self.output_version = version;
 
         # Append run and subrun to workdir, outdir, and logdir.
 
-        pubs_path = '%d/%d' % (run, subrun)
+        if version == None:
+            pubs_path = '%d/%d' % (run, subrun)
+        else:
+            pubs_path = '%d/%d/%d' % (version, run, subrun)
         self.workdir = os.path.join(self.workdir, pubs_path)
         self.outdir = os.path.join(self.outdir, pubs_path)
         self.logdir = os.path.join(self.logdir, pubs_path)
