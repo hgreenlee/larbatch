@@ -31,7 +31,7 @@
 
 # Imports
 
-import sys, ifdh
+import sys, os, ifdh
 
 # Initialize ifdh.
 
@@ -102,17 +102,36 @@ def emptydir(dir, verbose):
 
     # Get contents of directory.
 
-    files = Ifdh.ls(dir, 1)
+    files = []
+    try:
+        files = Ifdh.ls(dir, 1)
+    except:
+        files = []
+        print 'Caught exception from Ifdh.ls for directory %s.' % dir
+
+    # First pass: delete files.
+
     for file in files:
 
         # Ifdh signals that a file is a directory by ending the path with '/'.
 
-        if file[-1] == '/':
-            rmdir(file[:-1], verbose)
-        else:
+        if file[-1] != '/':
             if verbose:
                 print 'Deleting %s' % file
-            Ifdh.rm(file)
+            try:
+                Ifdh.rm(file)
+            except:
+                print 'Caught exception from Ifdh.rm for file %s.' % file
+                
+
+    # Second pass: delete subdirectories.
+
+    for subdir in files:
+
+        # Ifdh signals that a file is a directory by ending the path with '/'.
+
+        if subdir[-1] == '/' and os.path.abspath(subdir) != os.path.abspath(dir):
+            rmdir(subdir[:-1], verbose)
 
 
 # Function to recursively delete a directory.
@@ -121,7 +140,11 @@ def rmdir(dir, verbose):
     emptydir(dir, verbose)
     if verbose:
         print 'Deleting directory %s' % dir
-    Ifdh.rmdir(dir)
+    try:
+        Ifdh.rmdir(dir)
+    except:
+        print 'Caught exception from Ifdh.rmdir for directory %s.' % dir
+
 
 # Command line.
 

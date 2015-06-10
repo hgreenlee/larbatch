@@ -31,6 +31,10 @@
 # --sam_defname <arg>     - Sam dataset definition name.
 # --sam_project <arg>     - Sam project name.
 # --njobs <arg>           - Parallel project with specified number of jobs (default one).
+# --single                - Specify that the output and log directories will be emptied
+#                           by the batch worker, and therefore the output and log
+#                           directories will only ever contain output from a single
+#                           worker.
 #
 # Larsoft options.
 #
@@ -184,6 +188,7 @@ SUBRUN=1
 NFILE=0
 NFILE_SKIP=0
 NJOBS=1
+SINGLE=0
 ARGS=""
 UPS_PRDS=""
 REL=""
@@ -306,6 +311,11 @@ while [ $# -gt 0 ]; do
         NJOBS=$2
         shift
       fi
+      ;;
+
+    # Single worker mode.
+    --single )
+      SINGLE=1
       ;;
 
     # Sam user.
@@ -1318,9 +1328,17 @@ fi
 # These are normally histogram files.  Art files do not have external
 # json metadata at this point.
 
+# Also randomize the names of root files if there is no input specified
+# for this job (i.e. generator jobs).
+
+ran=0
+if [ $USE_SAM -eq 0 -a x$INFILE = x -a x$INLIST = x ]; then
+  ran=1
+fi
+
 for root in *.root; do
-  if [ -f ${root}.json ]; then
-    base=`basename $root .root`_${PROCESS}_`date +%Y%m%d%H%M%S`
+  if [ -f ${root}.json -o $ran != 0 ]; then
+    base=`basename $root .root`_`uuidgen`
     mv $root ${base}.root
     mv ${root}.json ${base}.root.json
   fi
@@ -1362,8 +1380,15 @@ for outfile in *; do
   fi
 done
 
-emptydir.py ${LOGDIR}/$OUTPUT_SUBDIR
-emptydir.py ${OUTDIR}/$OUTPUT_SUBDIR
+# Clean output and log directories.
+
+if [ $SINGLE != 0 ]; then
+  emptydir.py ${LOGDIR}
+  emptydir.py ${OUTDIR}
+else
+  emptydir.py ${LOGDIR}/$OUTPUT_SUBDIR
+  emptydir.py ${OUTDIR}/$OUTPUT_SUBDIR
+fi
 
 echo "ifdh cp -r $IFDH_OPT log ${LOGDIR}/$OUTPUT_SUBDIR"
 ifdh cp -r $IFDH_OPT log ${LOGDIR}/$OUTPUT_SUBDIR

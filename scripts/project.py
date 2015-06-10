@@ -584,7 +584,7 @@ def previous_stage(projects, stagename, circular=False):
 # Extract pubsified stage from xml file.
 # Return value is a 2-tuple (project, stage).
 
-def get_pubs_stage(xmlfile, projectname, stagename, run, subrun, version):
+def get_pubs_stage(xmlfile, projectname, stagename, run, subrun, version=None):
     projects = get_projects(xmlfile)
     project = select_project(projects, projectname, stagename)
     if project == None:
@@ -1967,6 +1967,11 @@ def dojobsub(project, stage, makeup):
 
     if not stage.pubs_input and stage.pubs_output and stage.output_subrun > 0:
         command.extend(['--process', '%d' % (stage.output_subrun-1)])
+
+    # Specify single worker mode in case of pubs output.
+
+    if stage.pubs_output:
+        command.append('--single')
 
     if stage.inputfile != '':
         command.extend([' -s', stage.inputfile])
