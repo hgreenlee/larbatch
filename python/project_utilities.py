@@ -126,17 +126,24 @@ def get_user():
 
     test_ticket()
 
+
+    # Return production user name if Role is Production
+    if get_role() == 'Production':
+        return get_prouser()
+
+    else:
+    # Return user name from klist if Role is Analysis
     # Get information about our ticket.
 
-    for line in subprocess.check_output('klist').splitlines():
-        pattern = 'Default principal:'
-        n = line.find(pattern)
-        if n >= 0:
-            principal = line[n + len(pattern):].strip()
-            m = principal.find('@')
-            if m > 0:
-                ticket_user = principal[:m]
-                return ticket_user
+        for line in subprocess.check_output('klist').splitlines():
+            pattern = 'Default principal:'
+            n = line.find(pattern)
+            if n >= 0:
+                principal = line[n + len(pattern):].strip()
+                m = principal.find('@')
+                if m > 0:
+                    ticket_user = principal[:m]
+                    return ticket_user
 
     # Something went wrong...
 
@@ -541,6 +548,11 @@ def get_setup_script_path():
 
 def dimensions(project, stage, ana=False):
     raise RuntimeError, 'Function dimensions not implemented.'
+
+# Function to return the production user name
+
+def get_prouser():
+    return get_experiment() + 'pro'
 
 # Import experiment-specific utilities.  In this imported module, one can 
 # override any function or symbol defined above, or add new ones.

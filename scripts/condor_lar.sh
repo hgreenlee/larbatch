@@ -624,9 +624,11 @@ if [ $GRID -ne 0 ]; then
 
   echo "X509_USER_PROXY = $X509_USER_PROXY"
   if ! echo $X509_USER_PROXY | grep -q Production; then
-    IFDH_OPT="--force=expgridftp"
+    FORCE=expgridftp
+    IFDH_OPT="--force=$FORCE"
   else
-    IFDH_OPT="--force=gridftp"
+    FORCE=gridftp
+    IFDH_OPT="--force=$FORCE"
   fi
 fi
 echo "IFDH_OPT=$IFDH_OPT"
@@ -1382,6 +1384,7 @@ done
 
 # Clean output and log directories.
 
+export IFDH_FORCE=$FORCE
 if [ $SINGLE != 0 ]; then
   emptydir.py ${LOGDIR}
   emptydir.py ${OUTDIR}
@@ -1389,6 +1392,7 @@ else
   emptydir.py ${LOGDIR}/$OUTPUT_SUBDIR
   emptydir.py ${OUTDIR}/$OUTPUT_SUBDIR
 fi
+unset IFDH_FORCE
 
 echo "ifdh cp -r $IFDH_OPT log ${LOGDIR}/$OUTPUT_SUBDIR"
 ifdh cp -r $IFDH_OPT log ${LOGDIR}/$OUTPUT_SUBDIR
