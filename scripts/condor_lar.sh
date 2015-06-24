@@ -1392,18 +1392,30 @@ else
   emptydir.py ${LOGDIR}/$OUTPUT_SUBDIR
   emptydir.py ${OUTDIR}/$OUTPUT_SUBDIR
 fi
-unset IFDH_FORCE
 
-echo "ifdh cp -r $IFDH_OPT log ${LOGDIR}/$OUTPUT_SUBDIR"
-ifdh cp -r $IFDH_OPT log ${LOGDIR}/$OUTPUT_SUBDIR
+echo "ifdh mkdir ${LOGDIR}/$OUTPUT_SUBDIR $IFDH_OPT"
+ifdh mkdir ${LOGDIR}/$OUTPUT_SUBDIR $IFDH_OPT
+stat=$?
+if [ $stat -ne 0 ]; then
+  echo "ifdh mkdir failed with status ${stat}."
+fi
+echo "ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR"
+ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR
 stat=$?
 if [ $stat -ne 0 ]; then
   echo "ifdh cp failed with status ${stat}."
 fi
 statout=$stat
 
-echo "ifdh cp -r $IFDH_OPT out ${OUTDIR}/$OUTPUT_SUBDIR"
-ifdh cp -r $IFDH_OPT out ${OUTDIR}/$OUTPUT_SUBDIR
+echo "ifdh mkdir ${OUTDIR}/$OUTPUT_SUBDIR $IFDH_OPT"
+ifdh mkdir ${OUTDIR}/$OUTPUT_SUBDIR $IFDH_OPT
+stat=$?
+if [ $stat -ne 0 ]; then
+  echo "ifdh mkdir failed with status ${stat}."
+  exit $stat
+fi
+echo "ifdh cp -D $IFDH_OPT out/* ${OUTDIR}/$OUTPUT_SUBDIR"
+ifdh cp -D $IFDH_OPT out/* ${OUTDIR}/$OUTPUT_SUBDIR
 stat=$?
 if [ $stat -ne 0 ]; then
   echo "ifdh cp failed with status ${stat}."
