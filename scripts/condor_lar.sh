@@ -1226,7 +1226,7 @@ fi
 
 # Construct options for lar command line.
 
-LAROPT="-c $FCL"
+LAROPT="-c $FCL --rethrow-default"
 if [ -f input.list ]; then
   if [ "$INMODE" != 'textfile' ]; then
     LAROPT="$LAROPT -S input.list"
