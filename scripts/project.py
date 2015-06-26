@@ -199,6 +199,9 @@
 # <stage><output>  - Specify output file name.
 # <stage><TFileName>   - Ability to specify unique output TFile Name 
 #		         (Required when generating Metadata for TFiles)
+# <stage><jobsub>  - Arbitrary jobsub_submit option(s).  Space-separated list.
+#                    Only applies to main worker submission, not sam start/stop 
+#                    project submissions.
 #
 #
 # <fcldir>  - Directory in which to search for fcl files (optional, repeatable).
@@ -1932,6 +1935,9 @@ def dojobsub(project, stage, makeup):
         else:
             command_njobs = min(makeup_count, stage.num_jobs)
             command.extend(['-N', '%d' % command_njobs])
+    if stage.jobsub != '':
+        for word in stage.jobsub.split():
+            command.append(word)
 
     # Batch script.
 
