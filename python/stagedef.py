@@ -60,6 +60,7 @@ class StageDef:
         self.parameters = {}   # Dictionary of metadata parameters.
         self.output = ''       # Art output file name.
         self.TFileName = ''    # TFile output file name.
+        self.jobsub = ''       # Arbitrary jobsub_submit options.
 	
         # Extract values from xml.
 
@@ -260,6 +261,12 @@ class StageDef:
         if TFileName_elements:
             self.TFileName = TFileName_elements[0].firstChild.data     
 
+	# Jobsub.
+
+        jobsub_elements = stage_element.getElementsByTagName('jobsub')
+        if jobsub_elements:
+            self.jobsub = jobsub_elements[0].firstChild.data     
+
         # Done.
 
         return
@@ -304,6 +311,9 @@ class StageDef:
         result += 'Metadata parameters:\n'
         for key in self.parameters:
             result += '%s: %s\n' % (key,self.parameters[key])
+        result += 'Output file name = %s\n' % self.output
+        result += 'TFile name = %s\n' % self.TFileName
+        result += 'Jobsub_submit options = %s\n' % self.jobsub
         return result
 
     # Function to convert this stage for pubs input.
