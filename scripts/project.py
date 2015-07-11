@@ -2266,6 +2266,8 @@ def dosubmit(project, stage, makeup=False):
     if len(jobid) > 0:
         jobids.append(jobid)
 
+    if project_utilities.safeexist(jobids_filename):
+        os.remove(jobids_filename)
     jobid_file = open(jobids_filename, 'w')
     for jobid in jobids:
         jobid_file.write('%s\n' % jobid)
