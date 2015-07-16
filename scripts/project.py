@@ -779,6 +779,7 @@ def docheck(project, stage, ana):
 
     import_samweb()
     has_metadata = project.file_type != '' or project.run_type != ''
+    has_input = stage.inputfile != '' or stage.inputlist != '' or stage.inputdef != ''
     print 'Checking directory %s' % stage.logdir
 
     # Count total number of events and root files.
@@ -789,6 +790,7 @@ def docheck(project, stage, ana):
     # Loop over subdirectories (ignore files and directories named *_start and *_stop).
 
     procmap = {}      # procmap[subdir] = <list of art root files and event counts>
+    processes = []    # Integer process numbers derived from subdirectory names.
     filesana = []     # List of non-art root files.
     sam_projects = [] # List of sam projects.
     cpids = []        # List of successful sam consumer process ids.
@@ -904,6 +906,19 @@ def docheck(project, stage, ana):
                     for line in lines:
                         uri = line.strip()
                         uris.append(uri)
+
+            # Save process number, and check for duplicate process numbers
+            # (only if no input).
+
+            if not has_input:
+                subdir_split = subdir.split('_')
+                if len(subdir_split) > 1:
+                    process = int(subdir_split[1])
+                    if process in processes:
+                        print 'Duplicate process number'
+                        bad = 1
+                    else:
+                        processes.append(process)
 
             # Save information about good root files.
 
@@ -2266,6 +2281,8 @@ def dosubmit(project, stage, makeup=False):
     if len(jobid) > 0:
         jobids.append(jobid)
 
+    if project_utilities.safeexist(jobids_filename):
+        os.remove(jobids_filename)
     jobid_file = open(jobids_filename, 'w')
     for jobid in jobids:
         jobid_file.write('%s\n' % jobid)
