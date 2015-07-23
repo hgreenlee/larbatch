@@ -564,6 +564,8 @@ def get_prouser():
 #
 # 3.  Path /scratch/<experiment>/<user>
 #
+# 4.  Path /<experiment>/data/users/<user>
+#
 # Raise an exception if the scratch directory doesn't exist or is not writeable.
 
 def get_scratch_dir():
@@ -579,6 +581,8 @@ def get_scratch_dir():
 
     else:
         scratch = '/scratch/%s/%s' % (get_experiment(), get_user())
+        if not os.path.isdir(scratch) or not os.access(scratch, os.W_OK):
+            scratch = '/%s/data/users/%s' % (get_experiment(), get_user())
 
     # Checkout.
 
