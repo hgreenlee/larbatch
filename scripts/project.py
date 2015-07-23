@@ -2319,12 +2319,10 @@ def domerge(stage, mergehist, mergentuple):
     if len(hlist) > 0:
         name = os.path.join(stage.outdir, 'anahist.root')
         if name[0:6] == '/pnfs/':
-            exp = project_utilities.get_experiment()
-            name_temp = 'anahist.root'
-            if not os.path.exists('/scratch/'+exp+'/'+getpass.getuser()+'/mergentuple'):
-                os.makedirs('/scratch/'+exp+'/'+getpass.getuser()+'/mergentuple')
-            if os.path.exists('/scratch/'+exp+'/'+getpass.getuser()+'/mergentuple'):
-                name_temp = '/scratch/'+exp+'/'+getpass.getuser()+'/mergentuple/anahist.root'
+            tempdir = '%s/mergentuple' % project_utilities.get_scratch_dir()
+            if not os.path.isdir(tempdir):
+                os.makedirs(tempdir)
+            name_temp = '%s/anahist.root' % tempdir
         else:
             name_temp = name
 
