@@ -554,6 +554,46 @@ def dimensions(project, stage, ana=False):
 def get_prouser():
     return get_experiment() + 'pro'
 
+# Function to return the path of a scratch directory which can be used
+# for creating large temporary files.  The scratch directory should not 
+# be in dCache.  The default implementation here uses the following algorithm.
+#
+# 1.  Environment variable TMPDIR.
+#
+# 2.  Environment variable SCRATCH.
+#
+# 3.  Path /scratch/<experiment>/<user>
+#
+# 4.  Path /<experiment>/data/users/<user>
+#
+# Raise an exception if the scratch directory doesn't exist or is not writeable.
+
+def get_scratch_dir():
+    scratch = ''
+
+    # Get scratch directory path.
+
+    if os.environ.has_key('TMPDIR'):
+        scratch = os.environ['TMPDIR']
+
+    elif os.environ.has_key('SCRATCH'):
+        scratch = os.environ['SCRATCH']
+
+    else:
+        scratch = '/scratch/%s/%s' % (get_experiment(), get_user())
+        if not os.path.isdir(scratch) or not os.access(scratch, os.W_OK):
+            scratch = '/%s/data/users/%s' % (get_experiment(), get_user())
+
+    # Checkout.
+
+    if scratch == '':
+        raise RuntimeError, 'No scratch directory specified.'
+
+    if not os.path.isdir(scratch) or not os.access(scratch, os.W_OK):
+        raise RuntimeError, 'Scratch directory %s does not exist or is not writeable.' % scratch
+
+    return scratch
+
 # Import experiment-specific utilities.  In this imported module, one can 
 # override any function or symbol defined above, or add new ones.
 
