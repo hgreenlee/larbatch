@@ -422,6 +422,10 @@ def docleanx(projects, projectname, stagename):
 
 def dostatus(projects):
 
+    # BatchStatus constructor requires authentication.
+
+    project_utilities.test_kca()
+
     # For backward compatibility, allow this function to be called with 
     # either a single project or a list of projects.
 
@@ -2232,7 +2236,7 @@ def dosubmit(project, stage, makeup=False):
 
     # Make sure we have a kerberos ticket.
 
-    project_utilities.test_ticket()
+    project_utilities.test_kca()
 
     # In pubs mode, unconditionally delete any existing work, log, or output
     # directories, since there is no separate makeup action for pubs mode.

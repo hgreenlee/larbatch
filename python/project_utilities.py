@@ -29,7 +29,7 @@ sys.argv = myargv
 proxy_ok = False
 kca_ok = False
 ticket_ok = False
-ticket_user = ''
+kca_user = ''
 
 # Function to return the current experiment.
 # The following places for obtaining this information are
@@ -118,32 +118,64 @@ def get_user():
 
     # See if we have a cached value for user.
 
-    global ticket_user
-    if ticket_user != '':
-        return ticket_user
-
-    # First make sure we have ticket (raise exception if not).
-
-    test_ticket()
-
+    global kca_user
+    if kca_user != '':
+        return kca_user
 
     # Return production user name if Role is Production
+
     if get_role() == 'Production':
         return get_prouser()
 
     else:
-    # Return user name from klist if Role is Analysis
-    # Get information about our ticket.
 
-        for line in subprocess.check_output('klist').splitlines():
-            pattern = 'Default principal:'
-            n = line.find(pattern)
-            if n >= 0:
-                principal = line[n + len(pattern):].strip()
-                m = principal.find('@')
-                if m > 0:
-                    ticket_user = principal[:m]
-                    return ticket_user
+        # First make sure we have a kca certificate (raise exception if not).
+
+        test_kca()
+
+        # Return user name from certificate if Role is Analysis
+
+        subject = ''
+        if os.environ.has_key('X509_USER_PROXY'):
+            subject = subprocess.check_output(['voms-proxy-info',
+                                               '-file', os.environ['X509_USER_PROXY'],
+                                               '-subject'], stderr=-1)
+        elif os.environ.has_key('X509_USER_CERT') and os.environ.has_key('X509_USER_KEY'):
+            subject = subprocess.check_output(['voms-proxy-info',
+                                               '-file', os.environ['X509_USER_CERT'],
+                                               '-subject'], stderr=-1)
+        else:
+            subject = subprocess.check_output(['voms-proxy-info', '-subject'], stderr=-1)
+
+        # Get the last CN
+
+        n = subject.rfind('/CN=')
+        cn = ''
+        if n >= 0:
+            cn = subject[n+4:]
+
+        # Truncate everything after the first '/'.
+
+        n = cn.find('/')
+        if n >= 0:
+            cn = cn[:n]
+
+        # Truncate everything after the first newline.
+
+        n = cn.find('\n')
+        if n >= 0:
+            cn = cn[:n]
+
+        # Truncate everything before the first ":" (UID:).
+
+        n = cn.find(':')
+        if n >= 0:
+            cn = cn[n+1:]
+
+        # Done (maybe).
+
+        if cn != '':
+            return cn
 
     # Something went wrong...
 
@@ -258,7 +290,23 @@ def test_kca():
     global kca_ok
     if not kca_ok:
         try:
-            subprocess.check_call(['voms-proxy-info', '-exists'], stdout=-1, stderr=-1)
+            if os.environ.has_key('X509_USER_PROXY'):
+                subprocess.check_call(['voms-proxy-info',
+                                       '-file', os.environ['X509_USER_PROXY'],
+                                       '-exists'], stdout=-1, stderr=-1)
+            elif os.environ.has_key('X509_USER_CERT') and os.environ.has_key('X509_USER_KEY'):
+                subprocess.check_call(['voms-proxy-info',
+                                       '-file', os.environ['X509_USER_CERT'],
+                                       '-exists'], stdout=-1, stderr=-1)
+            else:
+                subprocess.check_call(['voms-proxy-info', '-exists'], stdout=-1, stderr=-1)
+
+                # Workaround jobsub bug by setting environment variable X509_USER_PROXY to
+                # point to the default location of the kca certificate.
+
+                x509_path = subprocess.check_output(['voms-proxy-info', '-path'], stderr=-1)
+                os.environ['X509_USER_PROXY'] = x509_path.strip()
+
             kca_ok = True
         except:
             pass
@@ -272,7 +320,16 @@ def test_kca():
 
     if not kca_ok:
         try:
-            subprocess.check_call(['voms-proxy-info', '-exists'], stdout=-1, stderr=-1)
+            if os.environ.has_key('X509_USER_PROXY'):
+                subprocess.check_call(['voms-proxy-info',
+                                       '-file', os.environ['X509_USER_PROXY'],
+                                       '-exists'], stdout=-1, stderr=-1)
+            elif os.environ.has_key('X509_USER_CERT') and os.environ.has_key('X509_USER_KEY'):
+                subprocess.check_call(['voms-proxy-info',
+                                       '-file', os.environ['X509_USER_CERT'],
+                                       '-exists'], stdout=-1, stderr=-1)
+            else:
+                subprocess.check_call(['voms-proxy-info', '-exists'], stdout=-1, stderr=-1)
             kca_ok = True
         except:
             raise RuntimeError, 'Please get a kca certificate.'
