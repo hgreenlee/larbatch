@@ -2195,11 +2195,13 @@ def dojobsub(project, stage, makeup):
         jobout, joberr = jobinfo.communicate()
         rc = jobinfo.poll()
         if rc != 0:
+            os.chdir(curdir)
             raise JobsubError(command, rc, jobout, joberr)
         for line in jobout.split('\n'):
             if "JobsubJobId" in line:
                 jobid = line.strip().split()[-1]
         if not jobid:
+            os.chdir(curdir)
             raise JobsubError(command, rc, jobout, joberr)
         if project_utilities.safeexist(checked_file):
             os.remove(checked_file)
@@ -2213,11 +2215,13 @@ def dojobsub(project, stage, makeup):
             jobout, joberr = jobinfo.communicate()
             rc = jobinfo.poll()
             if rc != 0:
+                os.chdir(curdir)
                 raise JobsubError(command, rc, jobout, joberr)
             for line in jobout.split('\n'):
                 if "JobsubJobId" in line:
                     jobid = line.strip().split()[-1]
             if not jobid:
+                os.chdir(curdir)
                 raise JobsubError(command, rc, jobout, joberr)
             if project_utilities.safeexist(checked_file):
                 os.remove(checked_file)
