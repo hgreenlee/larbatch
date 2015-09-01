@@ -809,6 +809,8 @@ def docheck(project, stage, ana):
             continue
 
         subdir = os.path.relpath(log_subpath, stage.logdir)
+        if subdir == '.':
+            continue
         out_subpath = os.path.join(stage.outdir, subdir)
         dirok = project_utilities.fast_isdir(log_subpath)
 
@@ -1170,8 +1172,7 @@ def dofetchlog(stage):
                 # 1. JOBSUBPARENTJOBID
                 # 2. JOBSUBJOBID
                 #
-                # If we find the former, use that as the log file id.
-                # If we find the latter, construct the log file id by 
+                # In either case, construct the log file id by 
                 # changing the process number to zero.
 
                 logid = ''
@@ -1185,6 +1186,15 @@ def dofetchlog(stage):
                     name = varsplit[0].strip()
                     if name == 'JOBSUBPARENTJOBID':
                         logid = varsplit[1].strip()
+
+                        # Fix up the log file id by changing the process
+                        # number to zero.
+
+                        logsplit = logid.split('@', 1)
+                        cluster_process = logsplit[0]
+                        server = logsplit[1]
+                        cluster = cluster_process.split('.', 1)[0]
+                        logid = cluster + '.0' + '@' + server
                         logids.append(logid)
                         break
 
