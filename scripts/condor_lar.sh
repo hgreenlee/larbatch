@@ -1346,6 +1346,18 @@ for root in *.root; do
   fi
 done
 
+# Temporary hack.
+# Randomize some specific filenames that don't have a corresponding json file.
+
+for root in *.root; do
+  if [ ! -f ${root}.json ]; then
+    if [ $root = reco1.root -o $root = reco2.root -o $root = merge.root ]; then
+      base=`basename $root .root`_`uuidgen`
+      mv $root ${base}.root
+    fi
+  fi
+done
+
 # Calculate root metadata for all root files and save as json file.
 # If json metadata already exists, merge with newly geneated root metadata.
 
