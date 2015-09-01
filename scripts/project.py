@@ -1328,7 +1328,15 @@ def docheck_declarations(logdir, declare, ana=False):
                     md = extractor_dict.getmetadata(path, mdjson)
                 if len(md) > 0:
                     project_utilities.test_kca()
-                    samweb.declareFile(md=md)
+
+                    # Make lack of parent files a nonfatal error.
+                    # This should probably be removed at some point.
+
+                    try:
+                        samweb.declareFile(md=md)
+                    except:
+                        del md['parents']
+                        samweb.declareFile(md=md)
                 else:
                     print 'No sam metadata found for %s.' % fn
             else:
