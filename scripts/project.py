@@ -1096,24 +1096,21 @@ def docheck(project, stage, ana):
                 nf = 0
                 nproc = 0
                 nact = 0
-                if result.has_key('consumers'):
-                    consumers = result['consumers']
-                    for consumer in consumers:
-                        if consumer.has_key('processes'):
-                            processes = consumer['processes']
-                            for process in processes:
-                                nproc = nproc + 1
-                                if process.has_key('status'):
-                                    if process['status'] == 'active':
-                                        nact = nact + 1
-                                if process.has_key('counts'):
-                                    counts = process['counts']
-                                    if counts.has_key('delivered'):
-                                        nd = nd + counts['delivered']
-                                    if counts.has_key('consumed'):
-                                        nc = nc + counts['consumed']
-                                    if counts.has_key('failed'):
-                                        nf = nf + counts['failed']
+                if result.has_key('processes'):
+                    processes = result['processes']
+                    for process in processes:
+                        nproc = nproc + 1
+                        if process.has_key('status'):
+                            if process['status'] == 'active':
+                                nact = nact + 1
+                        if process.has_key('counts'):
+                            counts = process['counts']
+                            if counts.has_key('delivered'):
+                                nd = nd + counts['delivered']
+                            if counts.has_key('consumed'):
+                                nc = nc + counts['consumed']
+                            if counts.has_key('failed'):
+                                nf = nf + counts['failed']
                 print 'Status: %s' % result['project_status']
                 print '%d total processes' % nproc
                 print '%d active processes' % nact
