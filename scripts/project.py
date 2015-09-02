@@ -1482,16 +1482,20 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
         # Got a filename.
 
         # Look for locations on disk.
-        # Look in first level subdirectories of outdir.
+        # Look subdirectories of outdir.
 
         disk_locs = []
-        for subdir in os.listdir(outdir):
-            subpath = os.path.join(outdir, subdir)
-            if project_utilities.fast_isdir(subpath):
-                for fn in os.listdir(subpath):
-                    if fn == filename:
-                        filepath = os.path.join(subpath, fn)
-                        disk_locs.append(os.path.dirname(filepath))
+        for out_subpath, subdirs, files in os.walk(outdir):
+
+            # Only examine files in leaf directories.
+
+            if len(subdirs) != 0:
+                continue
+
+            for fn in files:
+                if fn == filename:
+                    filepath = os.path.join(out_subpath, fn)
+                    disk_locs.append(os.path.dirname(filepath))
 
         # Also get sam locations.
 
