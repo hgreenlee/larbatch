@@ -1265,7 +1265,7 @@ def dofetchlog(stage):
 # Return 0 if all files are declared or don't have internal metadata.
 # Return nonzero if some files have metadata but are are not declared.
 
-def docheck_declarations(logdir, declare, ana=False):
+def docheck_declarations(logdir, outdir, declare, ana=False):
 
     # Default result success (all files declared).
 
@@ -1291,7 +1291,7 @@ def docheck_declarations(logdir, declare, ana=False):
         path = string.strip(root)
         fn = os.path.basename(path)
         dirpath = os.path.dirname(path)
-        dirname = os.path.basename(dirpath)
+        dirname = os.path.relpath(dirpath, outdir)
 
         # Check metadata
 
@@ -2885,13 +2885,13 @@ def main(argv):
 
         # Check sam declarations.
 
-        docheck_declarations(stage.logdir, declare, ana=False)
+        docheck_declarations(stage.logdir, stage.outdir, declare, ana=False)
 
     if check_declarations_ana or declare_ana:
 
         # Check sam analysis declarations.
 
-        docheck_declarations(stage.logdir, declare_ana, ana=True)
+        docheck_declarations(stage.logdir, stage.outdir, declare_ana, ana=True)
 
     if test_declarations:
 
