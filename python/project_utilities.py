@@ -147,12 +147,18 @@ def get_user():
         else:
             subject = subprocess.check_output(['voms-proxy-info', '-subject'], stderr=-1)
 
-        # Get the last CN
+        # Get the last non-numeric CN
 
-        n = subject.rfind('/CN=')
         cn = ''
-        if n >= 0:
-            cn = subject[n+4:]
+        while cn == '':
+            n = subject.rfind('/CN=')
+            if n >= 0:
+                cn = subject[n+4:]
+                if cn.strip().isdigit():
+                    cn = ''
+                    subject = subject[:n]
+            else:
+                break
 
         # Truncate everything after the first '/'.
 

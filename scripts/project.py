@@ -809,6 +809,8 @@ def docheck(project, stage, ana):
             continue
 
         subdir = os.path.relpath(log_subpath, stage.logdir)
+        if subdir == '.':
+            continue
         out_subpath = os.path.join(stage.outdir, subdir)
         dirok = project_utilities.fast_isdir(log_subpath)
 
@@ -1096,24 +1098,21 @@ def docheck(project, stage, ana):
                 nf = 0
                 nproc = 0
                 nact = 0
-                if result.has_key('consumers'):
-                    consumers = result['consumers']
-                    for consumer in consumers:
-                        if consumer.has_key('processes'):
-                            processes = consumer['processes']
-                            for process in processes:
-                                nproc = nproc + 1
-                                if process.has_key('status'):
-                                    if process['status'] == 'active':
-                                        nact = nact + 1
-                                if process.has_key('counts'):
-                                    counts = process['counts']
-                                    if counts.has_key('delivered'):
-                                        nd = nd + counts['delivered']
-                                    if counts.has_key('consumed'):
-                                        nc = nc + counts['consumed']
-                                    if counts.has_key('failed'):
-                                        nf = nf + counts['failed']
+                if result.has_key('processes'):
+                    processes = result['processes']
+                    for process in processes:
+                        nproc = nproc + 1
+                        if process.has_key('status'):
+                            if process['status'] == 'active':
+                                nact = nact + 1
+                        if process.has_key('counts'):
+                            counts = process['counts']
+                            if counts.has_key('delivered'):
+                                nd = nd + counts['delivered']
+                            if counts.has_key('consumed'):
+                                nc = nc + counts['consumed']
+                            if counts.has_key('failed'):
+                                nf = nf + counts['failed']
                 print 'Status: %s' % result['project_status']
                 print '%d total processes' % nproc
                 print '%d active processes' % nact
@@ -1173,8 +1172,7 @@ def dofetchlog(stage):
                 # 1. JOBSUBPARENTJOBID
                 # 2. JOBSUBJOBID
                 #
-                # If we find the former, use that as the log file id.
-                # If we find the latter, construct the log file id by 
+                # In either case, construct the log file id by 
                 # changing the process number to zero.
 
                 logid = ''
@@ -1188,6 +1186,15 @@ def dofetchlog(stage):
                     name = varsplit[0].strip()
                     if name == 'JOBSUBPARENTJOBID':
                         logid = varsplit[1].strip()
+
+                        # Fix up the log file id by changing the process
+                        # number to zero.
+
+                        logsplit = logid.split('@', 1)
+                        cluster_process = logsplit[0]
+                        server = logsplit[1]
+                        cluster = cluster_process.split('.', 1)[0]
+                        logid = cluster + '.0' + '@' + server
                         logids.append(logid)
                         break
 
@@ -1321,7 +1328,15 @@ def docheck_declarations(logdir, declare, ana=False):
                     md = extractor_dict.getmetadata(path, mdjson)
                 if len(md) > 0:
                     project_utilities.test_kca()
-                    samweb.declareFile(md=md)
+
+                    # Make lack of parent files a nonfatal error.
+                    # This should probably be removed at some point.
+
+                    try:
+                        samweb.declareFile(md=md)
+                    except:
+                        del md['parents']
+                        samweb.declareFile(md=md)
                 else:
                     print 'No sam metadata found for %s.' % fn
             else:
@@ -2195,11 +2210,13 @@ def dojobsub(project, stage, makeup):
         jobout, joberr = jobinfo.communicate()
         rc = jobinfo.poll()
         if rc != 0:
+            os.chdir(curdir)
             raise JobsubError(command, rc, jobout, joberr)
         for line in jobout.split('\n'):
             if "JobsubJobId" in line:
                 jobid = line.strip().split()[-1]
         if not jobid:
+            os.chdir(curdir)
             raise JobsubError(command, rc, jobout, joberr)
         if project_utilities.safeexist(checked_file):
             os.remove(checked_file)
@@ -2213,11 +2230,13 @@ def dojobsub(project, stage, makeup):
             jobout, joberr = jobinfo.communicate()
             rc = jobinfo.poll()
             if rc != 0:
+                os.chdir(curdir)
                 raise JobsubError(command, rc, jobout, joberr)
             for line in jobout.split('\n'):
                 if "JobsubJobId" in line:
                     jobid = line.strip().split()[-1]
             if not jobid:
+                os.chdir(curdir)
                 raise JobsubError(command, rc, jobout, joberr)
             if project_utilities.safeexist(checked_file):
                 os.remove(checked_file)
