@@ -272,7 +272,7 @@ def get_proxy():
         cmd=['voms-proxy-init',
              '-cert', os.environ['X509_USER_CERT'],
              '-key', os.environ['X509_USER_KEY'],
-             '-valid', '48:0' 
+             '-valid', '48:0',
              '-voms', 'fermilab:/fermilab/%s/Role=%s' % (get_experiment(), get_role())]
         try:
             subprocess.check_call(cmd, stdout=-1, stderr=-1)
