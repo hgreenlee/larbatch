@@ -1602,9 +1602,27 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
 
                     loc_filename = os.path.join(loc, filename)
                     print 'Copying %s to dropbox directory %s.' % (filename, dropbox)
+                    project_utilities.test_proxy()
+
+                    # Make sure environment variables X509_USER_CERT and X509_USER_KEY
+                    # are not defined (they confuse ifdh).
+
+                    save_vars = {}
+                    for var in ('X509_USER_CERT', 'X509_USER_KEY'):
+                        if os.environ.has_key(var):
+                            save_vars[var] = os.environ[var]
+                            del os.environ[var]
+
+                    # Do ifdh cp.
+
                     subprocess.call(['ifdh', 'cp', '--force=gridftp', loc_filename,
                                      dropbox_filename],
                                     stdout=sys.stdout, stderr=sys.stderr)
+
+                    # Restore environment variables.
+
+                    for var in save_vars.keys():
+                        os.environ[var] = save_vars[var]
 
     return 0
 
@@ -2375,7 +2393,26 @@ def domerge(stage, mergehist, mergentuple):
             if project_utilities.safeexist(name):
                 os.remove(name)
             if os.path.exists(name_temp):
+                project_utilities.test_proxy()
+
+                # Make sure environment variables X509_USER_CERT and X509_USER_KEY
+                # are not defined (they confuse ifdh).
+
+                save_vars = {}
+                for var in ('X509_USER_CERT', 'X509_USER_KEY'):
+                    if os.environ.has_key(var):
+                        save_vars[var] = os.environ[var]
+                        del os.environ[var]
+
+                # Do ifdh cp.
+
                 subprocess.call(['ifdh', 'cp', name_temp, name])
+
+                # Restore environment variables.
+
+                for var in save_vars.keys():
+                    os.environ[var] = save_vars[var]
+
                 os.remove(name_temp)
                 os.rmdir(tempdir)
         os.remove(histurlsname_temp)	     
