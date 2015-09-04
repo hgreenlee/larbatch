@@ -1335,8 +1335,9 @@ def docheck_declarations(logdir, outdir, declare, ana=False):
                     try:
                         samweb.declareFile(md=md)
                     except:
-                        del md['parents']
-                        samweb.declareFile(md=md)
+                        if md.has_key('parents'):
+                            del md['parents']
+                            samweb.declareFile(md=md)
                 else:
                     print 'No sam metadata found for %s.' % fn
             else:
