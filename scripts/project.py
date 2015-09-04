@@ -258,6 +258,7 @@ from project_modules.projectdef import ProjectDef
 from project_modules.projectstatus import ProjectStatus
 from project_modules.batchstatus import BatchStatus
 from project_modules.jobsuberror import JobsubError
+from project_modules.ifdherror import IFDHError
 
 # Do the same for samweb_cli module and global SAMWebClient object.
 
@@ -1624,7 +1625,7 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
                     if rc != 0:
                         for var in save_vars.keys():
                             os.environ[var] = save_vars[var]
-                        raise JobsubError(command, rc, jobout, joberr)
+                        raise IFDHError(command, rc, jobout, joberr)
 
                     # Restore environment variables.
 
@@ -2420,7 +2421,7 @@ def domerge(stage, mergehist, mergentuple):
                 if rc != 0:
                     for var in save_vars.keys():
                         os.environ[var] = save_vars[var]
-                    raise JobsubError(command, rc, jobout, joberr)
+                    raise IFDHError(command, rc, jobout, joberr)
 
                 # Restore environment variables.
 
