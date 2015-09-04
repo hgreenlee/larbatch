@@ -1624,7 +1624,7 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
                     if rc != 0:
                         for var in save_vars.keys():
                             os.environ[var] = save_vars[var]
-                    raise JobsubError(command, rc, jobout, joberr)
+                        raise JobsubError(command, rc, jobout, joberr)
 
                     # Restore environment variables.
 
