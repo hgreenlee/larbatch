@@ -1616,9 +1616,15 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
 
                     # Do ifdh cp.
 
-                    subprocess.call(['ifdh', 'cp', '--force=gridftp', loc_filename,
-                                     dropbox_filename],
-                                    stdout=sys.stdout, stderr=sys.stderr)
+                    command = ['ifdh', 'cp', '--force=gridftp', loc_filename, dropbox_filename]
+                    jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE,
+                                               stderr=subprocess.PIPE)
+                    jobout, joberr = jobinfo.communicate()
+                    rc = jobinfo.poll()
+                    if rc != 0:
+                        for var in save_vars.keys():
+                            os.environ[var] = save_vars[var]
+                    raise JobsubError(command, rc, jobout, joberr)
 
                     # Restore environment variables.
 
@@ -2407,7 +2413,14 @@ def domerge(stage, mergehist, mergentuple):
 
                 # Do ifdh cp.
 
-                subprocess.call(['ifdh', 'cp', name_temp, name])
+                command = ['ifdh', 'cp', name_temp, name]
+                jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                jobout, joberr = jobinfo.communicate()
+                rc = jobinfo.poll()
+                if rc != 0:
+                    for var in save_vars.keys():
+                        os.environ[var] = save_vars[var]
+                    raise JobsubError(command, rc, jobout, joberr)
 
                 # Restore environment variables.
 
