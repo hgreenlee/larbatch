@@ -33,6 +33,7 @@
 # --submit     - Submit all jobs for specified stage.
 # --check      - Check results for specified stage and print message.
 # --checkana   - Check analysis results for specified stage and print message.
+# --shorten    - Shorten root filenames to have fewer than than 200 characters.
 # --fetchlog   - Fetch jobsub logfiles (jobsub_fetchlog).
 # --mergehist  - merge histogram files using hadd -T
 # --mergentuple- merge ntuple files using hadd
@@ -251,7 +252,7 @@
 #
 ######################################################################
 
-import sys, os, stat, string, subprocess, shutil, urllib, json, getpass
+import sys, os, stat, string, subprocess, shutil, urllib, json, getpass, uuid
 from xml.dom.minidom import parse
 import project_utilities, root_metadata
 from project_modules.projectdef import ProjectDef
@@ -730,6 +731,46 @@ def get_input_files(stage):
 
     return result
 
+# Shorten root file names to have fewer than 200 characters.
+
+def doshorten(stage):
+
+    # Loop over .root files in outdir.
+
+    for out_subpath, subdirs, files in os.walk(stage.outdir):
+
+        # Only examine files in leaf directories.
+
+        if len(subdirs) != 0:
+            continue
+
+        subdir = os.path.relpath(out_subpath, stage.outdir)
+        log_subpath = os.path.join(stage.logdir, subdir)
+
+        for file in files:
+            if file[-5:] == '.root':
+                if len(file) > 200:
+
+                    # Long filenames renamed here.
+
+                    file_path = os.path.join(out_subpath, file)
+                    shortfile = file[:150] + str(uuid.uuid4()) + '.root'
+                    shortfile_path = os.path.join(out_subpath, shortfile)
+                    print '%s\n->%s\n' % (file_path, shortfile_path)
+                    os.rename(file_path, shortfile_path)
+
+                    # Also rename corresponding json file, if it exists.
+
+                    json_path = os.path.join(log_subpath, file + '.json')
+                    if project_utilities.safeexist(json_path):
+                        print 'exists'
+                        shortjson = shortfile + '.json'
+                        shortjson_path = os.path.join(log_subpath, shortjson)
+                        print '%s\n->%s\n' % (json_path, shortjson_path)
+                        os.rename(json_path, shortjson_path)
+
+    return
+
 # Check project results in the specified directory.
 
 def docheck(project, stage, ana):
@@ -761,6 +802,8 @@ def docheck(project, stage, ana):
     # 6.  For sam input, make sure that files sam_project.txt and cpid.txt are present.
     #
     # 7.  Check that any non-art root files are openable.
+    #
+    # 8.  Make sure file names do not exceed 200 characters (if sam metadata is defined).
     #
     # In analysis mode (if argumment ana != 0), skip checks 2-4, but still do
     # checks 1 and 5-7.
@@ -879,6 +922,16 @@ def docheck(project, stage, ana):
                                 olddir = os.path.basename(os.path.dirname(oldroot[0]))
                                 print 'Previous subdirectory %s' % olddir
                                 bad = 1
+
+            # Make sure root file names do not exceed 200 characters.
+
+            if not bad and has_metadata:
+                for root in roots:
+                    rootname = os.path.basename(root[0])
+                    if len(rootname) > 200:
+                        print 'Filename %s in subdirectory %s is longer than 200 characters.' % (
+                            rootname, subdir)
+                        bad = 1
 
             # Check existence of sam_project.txt and cpid.txt.
             # Update sam_projects and cpids.
@@ -2590,6 +2643,7 @@ def main(argv):
     pubs_version = None
     check = 0
     checkana = 0
+    shorten = 0
     fetchlog = 0
     mergehist = 0
     mergentuple = 0
@@ -2664,6 +2718,9 @@ def main(argv):
             del args[0]
         elif args[0] == '--checkana':
             checkana = 1
+            del args[0]
+        elif args[0] == '--shorten':
+            shorten = 1
             del args[0]
         elif args[0] == '--fetchlog':
             fetchlog = 1
@@ -2789,7 +2846,8 @@ def main(argv):
         print 'No xml file specified.  Type "project.py -h" for help.'
         return 1
     
-    # Make sure that no more than one action was specified (except clean and info options).
+    # Make sure that no more than one action was specified (except clean, shorten, and info 
+    # options).
 
     num_action = submit + check + checkana + fetchlog + merge + mergehist + mergentuple + audit + stage_status + makeup + define + define_ana + undefine + declare + declare_ana
     if num_action > 1:
@@ -2850,6 +2908,11 @@ def main(argv):
         input_files = get_input_files(stage)
         for input_file in input_files:
             print input_file
+
+    # Do shorten action now.
+
+    if shorten:
+        doshorten(stage)
 
     # Do actions.
 
