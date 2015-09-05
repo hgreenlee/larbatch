@@ -763,7 +763,6 @@ def doshorten(stage):
 
                     json_path = os.path.join(log_subpath, file + '.json')
                     if project_utilities.safeexist(json_path):
-                        print 'exists'
                         shortjson = shortfile + '.json'
                         shortjson_path = os.path.join(log_subpath, shortjson)
                         print '%s\n->%s\n' % (json_path, shortjson_path)
