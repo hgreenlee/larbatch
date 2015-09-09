@@ -749,7 +749,7 @@ def doshorten(stage):
 
         for file in files:
             if file[-5:] == '.root':
-                if len(file) > 200:
+                if len(file) >= 200:
 
                     # Long filenames renamed here.
 
@@ -927,7 +927,7 @@ def docheck(project, stage, ana):
             if not bad and has_metadata:
                 for root in roots:
                     rootname = os.path.basename(root[0])
-                    if len(rootname) > 200:
+                    if len(rootname) >= 200:
                         print 'Filename %s in subdirectory %s is longer than 200 characters.' % (
                             rootname, subdir)
                         bad = 1
