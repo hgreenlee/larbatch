@@ -262,28 +262,35 @@ def get_proxy():
     global proxy_ok
     proxy_ok = False
 
-    # First, make sure we have a kerberos ticket.
+    # Make sure we have a valid certificate.
 
-    krb_ok = test_ticket()
-    if krb_ok:
+    test_kca()
 
-        # Get kca certificate.
+    # Get proxy using either specified cert+key or default cert.
 
-        kca_ok = get_kca()
-        if kca_ok:
-
-            # Get proxy.
-
-            cmd=['voms-proxy-init',
-                 '-noregen',
-                 '-rfc',
-                 '-voms',
-                 'fermilab:/fermilab/%s/Role=%s' % (get_experiment(), get_role())]
-            try:
-                subprocess.check_call(cmd, stdout=-1, stderr=-1)
-                proxy_ok = True
-            except:
-                pass
+    if os.environ.has_key('X509_USER_CERT') and os.environ.has_key('X509_USER_KEY'):
+        cmd=['voms-proxy-init',
+             '-cert', os.environ['X509_USER_CERT'],
+             '-key', os.environ['X509_USER_KEY'],
+             '-valid', '48:0',
+             '-voms', 'fermilab:/fermilab/%s/Role=%s' % (get_experiment(), get_role())]
+        try:
+            subprocess.check_call(cmd, stdout=-1, stderr=-1)
+            proxy_ok = True
+        except:
+            pass
+        pass
+    else:
+        cmd=['voms-proxy-init',
+             '-noregen',
+             '-rfc',
+             '-voms',
+             'fermilab:/fermilab/%s/Role=%s' % (get_experiment(), get_role())]
+        try:
+            subprocess.check_call(cmd, stdout=-1, stderr=-1)
+            proxy_ok = True
+        except:
+            pass
 
     # Done
 

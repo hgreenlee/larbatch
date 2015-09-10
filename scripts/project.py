@@ -33,6 +33,7 @@
 # --submit     - Submit all jobs for specified stage.
 # --check      - Check results for specified stage and print message.
 # --checkana   - Check analysis results for specified stage and print message.
+# --shorten    - Shorten root filenames to have fewer than than 200 characters.
 # --fetchlog   - Fetch jobsub logfiles (jobsub_fetchlog).
 # --mergehist  - merge histogram files using hadd -T
 # --mergentuple- merge ntuple files using hadd
@@ -251,13 +252,14 @@
 #
 ######################################################################
 
-import sys, os, stat, string, subprocess, shutil, urllib, json, getpass
+import sys, os, stat, string, subprocess, shutil, urllib, json, getpass, uuid
 from xml.dom.minidom import parse
 import project_utilities, root_metadata
 from project_modules.projectdef import ProjectDef
 from project_modules.projectstatus import ProjectStatus
 from project_modules.batchstatus import BatchStatus
 from project_modules.jobsuberror import JobsubError
+from project_modules.ifdherror import IFDHError
 
 # Do the same for samweb_cli module and global SAMWebClient object.
 
@@ -729,6 +731,45 @@ def get_input_files(stage):
 
     return result
 
+# Shorten root file names to have fewer than 200 characters.
+
+def doshorten(stage):
+
+    # Loop over .root files in outdir.
+
+    for out_subpath, subdirs, files in os.walk(stage.outdir):
+
+        # Only examine files in leaf directories.
+
+        if len(subdirs) != 0:
+            continue
+
+        subdir = os.path.relpath(out_subpath, stage.outdir)
+        log_subpath = os.path.join(stage.logdir, subdir)
+
+        for file in files:
+            if file[-5:] == '.root':
+                if len(file) >= 200:
+
+                    # Long filenames renamed here.
+
+                    file_path = os.path.join(out_subpath, file)
+                    shortfile = file[:150] + str(uuid.uuid4()) + '.root'
+                    shortfile_path = os.path.join(out_subpath, shortfile)
+                    print '%s\n->%s\n' % (file_path, shortfile_path)
+                    os.rename(file_path, shortfile_path)
+
+                    # Also rename corresponding json file, if it exists.
+
+                    json_path = os.path.join(log_subpath, file + '.json')
+                    if project_utilities.safeexist(json_path):
+                        shortjson = shortfile + '.json'
+                        shortjson_path = os.path.join(log_subpath, shortjson)
+                        print '%s\n->%s\n' % (json_path, shortjson_path)
+                        os.rename(json_path, shortjson_path)
+
+    return
+
 # Check project results in the specified directory.
 
 def docheck(project, stage, ana):
@@ -760,6 +801,8 @@ def docheck(project, stage, ana):
     # 6.  For sam input, make sure that files sam_project.txt and cpid.txt are present.
     #
     # 7.  Check that any non-art root files are openable.
+    #
+    # 8.  Make sure file names do not exceed 200 characters (if sam metadata is defined).
     #
     # In analysis mode (if argumment ana != 0), skip checks 2-4, but still do
     # checks 1 and 5-7.
@@ -878,6 +921,16 @@ def docheck(project, stage, ana):
                                 olddir = os.path.basename(os.path.dirname(oldroot[0]))
                                 print 'Previous subdirectory %s' % olddir
                                 bad = 1
+
+            # Make sure root file names do not exceed 200 characters.
+
+            if not bad and has_metadata:
+                for root in roots:
+                    rootname = os.path.basename(root[0])
+                    if len(rootname) >= 200:
+                        print 'Filename %s in subdirectory %s is longer than 200 characters.' % (
+                            rootname, subdir)
+                        bad = 1
 
             # Check existence of sam_project.txt and cpid.txt.
             # Update sam_projects and cpids.
@@ -1265,7 +1318,7 @@ def dofetchlog(stage):
 # Return 0 if all files are declared or don't have internal metadata.
 # Return nonzero if some files have metadata but are are not declared.
 
-def docheck_declarations(logdir, declare, ana=False):
+def docheck_declarations(logdir, outdir, declare, ana=False):
 
     # Default result success (all files declared).
 
@@ -1291,7 +1344,7 @@ def docheck_declarations(logdir, declare, ana=False):
         path = string.strip(root)
         fn = os.path.basename(path)
         dirpath = os.path.dirname(path)
-        dirname = os.path.basename(dirpath)
+        dirname = os.path.relpath(dirpath, outdir)
 
         # Check metadata
 
@@ -1335,8 +1388,9 @@ def docheck_declarations(logdir, declare, ana=False):
                     try:
                         samweb.declareFile(md=md)
                     except:
-                        del md['parents']
-                        samweb.declareFile(md=md)
+                        if md.has_key('parents'):
+                            del md['parents']
+                            samweb.declareFile(md=md)
                 else:
                     print 'No sam metadata found for %s.' % fn
             else:
@@ -1482,16 +1536,20 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
         # Got a filename.
 
         # Look for locations on disk.
-        # Look in first level subdirectories of outdir.
+        # Look subdirectories of outdir.
 
         disk_locs = []
-        for subdir in os.listdir(outdir):
-            subpath = os.path.join(outdir, subdir)
-            if project_utilities.fast_isdir(subpath):
-                for fn in os.listdir(subpath):
-                    if fn == filename:
-                        filepath = os.path.join(subpath, fn)
-                        disk_locs.append(os.path.dirname(filepath))
+        for out_subpath, subdirs, files in os.walk(outdir):
+
+            # Only examine files in leaf directories.
+
+            if len(subdirs) != 0:
+                continue
+
+            for fn in files:
+                if fn == filename:
+                    filepath = os.path.join(out_subpath, fn)
+                    disk_locs.append(os.path.dirname(filepath))
 
         # Also get sam locations.
 
@@ -1598,9 +1656,33 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
 
                     loc_filename = os.path.join(loc, filename)
                     print 'Copying %s to dropbox directory %s.' % (filename, dropbox)
-                    subprocess.call(['ifdh', 'cp', '--force=gridftp', loc_filename,
-                                     dropbox_filename],
-                                    stdout=sys.stdout, stderr=sys.stderr)
+                    project_utilities.test_proxy()
+
+                    # Make sure environment variables X509_USER_CERT and X509_USER_KEY
+                    # are not defined (they confuse ifdh).
+
+                    save_vars = {}
+                    for var in ('X509_USER_CERT', 'X509_USER_KEY'):
+                        if os.environ.has_key(var):
+                            save_vars[var] = os.environ[var]
+                            del os.environ[var]
+
+                    # Do ifdh cp.
+
+                    command = ['ifdh', 'cp', '--force=gridftp', loc_filename, dropbox_filename]
+                    jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE,
+                                               stderr=subprocess.PIPE)
+                    jobout, joberr = jobinfo.communicate()
+                    rc = jobinfo.poll()
+                    if rc != 0:
+                        for var in save_vars.keys():
+                            os.environ[var] = save_vars[var]
+                        raise IFDHError(command, rc, jobout, joberr)
+
+                    # Restore environment variables.
+
+                    for var in save_vars.keys():
+                        os.environ[var] = save_vars[var]
 
     return 0
 
@@ -2371,7 +2453,33 @@ def domerge(stage, mergehist, mergentuple):
             if project_utilities.safeexist(name):
                 os.remove(name)
             if os.path.exists(name_temp):
-                subprocess.call(['ifdh', 'cp', name_temp, name])
+                project_utilities.test_proxy()
+
+                # Make sure environment variables X509_USER_CERT and X509_USER_KEY
+                # are not defined (they confuse ifdh).
+
+                save_vars = {}
+                for var in ('X509_USER_CERT', 'X509_USER_KEY'):
+                    if os.environ.has_key(var):
+                        save_vars[var] = os.environ[var]
+                        del os.environ[var]
+
+                # Do ifdh cp.
+
+                command = ['ifdh', 'cp', name_temp, name]
+                jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                jobout, joberr = jobinfo.communicate()
+                rc = jobinfo.poll()
+                if rc != 0:
+                    for var in save_vars.keys():
+                        os.environ[var] = save_vars[var]
+                    raise IFDHError(command, rc, jobout, joberr)
+
+                # Restore environment variables.
+
+                for var in save_vars.keys():
+                    os.environ[var] = save_vars[var]
+
                 os.remove(name_temp)
                 os.rmdir(tempdir)
         os.remove(histurlsname_temp)	     
@@ -2534,6 +2642,7 @@ def main(argv):
     pubs_version = None
     check = 0
     checkana = 0
+    shorten = 0
     fetchlog = 0
     mergehist = 0
     mergentuple = 0
@@ -2608,6 +2717,9 @@ def main(argv):
             del args[0]
         elif args[0] == '--checkana':
             checkana = 1
+            del args[0]
+        elif args[0] == '--shorten':
+            shorten = 1
             del args[0]
         elif args[0] == '--fetchlog':
             fetchlog = 1
@@ -2733,7 +2845,8 @@ def main(argv):
         print 'No xml file specified.  Type "project.py -h" for help.'
         return 1
     
-    # Make sure that no more than one action was specified (except clean and info options).
+    # Make sure that no more than one action was specified (except clean, shorten, and info 
+    # options).
 
     num_action = submit + check + checkana + fetchlog + merge + mergehist + mergentuple + audit + stage_status + makeup + define + define_ana + undefine + declare + declare_ana
     if num_action > 1:
@@ -2794,6 +2907,11 @@ def main(argv):
         input_files = get_input_files(stage)
         for input_file in input_files:
             print input_file
+
+    # Do shorten action now.
+
+    if shorten:
+        doshorten(stage)
 
     # Do actions.
 
@@ -2881,13 +2999,13 @@ def main(argv):
 
         # Check sam declarations.
 
-        docheck_declarations(stage.logdir, declare, ana=False)
+        docheck_declarations(stage.logdir, stage.outdir, declare, ana=False)
 
     if check_declarations_ana or declare_ana:
 
         # Check sam analysis declarations.
 
-        docheck_declarations(stage.logdir, declare_ana, ana=True)
+        docheck_declarations(stage.logdir, stage.outdir, declare_ana, ana=True)
 
     if test_declarations:
 

@@ -748,7 +748,8 @@ class ProjectApp(tk.Frame):
         try:
             top['cursor'] = 'watch'
             top.update_idletasks()
-            project.docheck_declarations(self.current_stage_def.logdir, declare=True, ana=ana)
+            project.docheck_declarations(self.current_stage_def.logdir,
+                                         self.current_stage_def.outdir, declare=True, ana=ana)
             top['cursor'] = old_cursor
         except:
             top['cursor'] = old_cursor
@@ -775,7 +776,8 @@ class ProjectApp(tk.Frame):
         try:
             top['cursor'] = 'watch'
             top.update_idletasks()
-            project.docheck_declarations(self.current_stage_def.logdir, declare=False, ana=ana)
+            project.docheck_declarations(self.current_stage_def.logdir,
+                                         self.current_stage_def.outdir, declare=False, ana=ana)
             top['cursor'] = old_cursor
         except:
             top['cursor'] = old_cursor
