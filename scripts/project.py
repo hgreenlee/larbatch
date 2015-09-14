@@ -1655,34 +1655,45 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
                     # Copy file to dropbox.
 
                     loc_filename = os.path.join(loc, filename)
-                    print 'Copying %s to dropbox directory %s.' % (filename, dropbox)
-                    project_utilities.test_proxy()
 
-                    # Make sure environment variables X509_USER_CERT and X509_USER_KEY
-                    # are not defined (they confuse ifdh).
+                    # Decide whether to use a symlink or copy.
 
-                    save_vars = {}
-                    for var in ('X509_USER_CERT', 'X509_USER_KEY'):
-                        if os.environ.has_key(var):
-                            save_vars[var] = os.environ[var]
-                            del os.environ[var]
+                    if project_utilities.mountpoint(loc_filename) == \
+                            project_utilities.mountpoint(dropbox_filename):
+                        print 'Symlinking %s to dropbox directory %s.' % (filename, dropbox)
+                        relpath = os.path.relpath(os.path.realpath(loc_filename), dropbox)
+                        os.symlink(relpath, dropbox_filename)
 
-                    # Do ifdh cp.
+                    else:
 
-                    command = ['ifdh', 'cp', '--force=gridftp', loc_filename, dropbox_filename]
-                    jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE,
-                                               stderr=subprocess.PIPE)
-                    jobout, joberr = jobinfo.communicate()
-                    rc = jobinfo.poll()
-                    if rc != 0:
+                        print 'Copying %s to dropbox directory %s.' % (filename, dropbox)
+                        project_utilities.test_proxy()
+
+                        # Make sure environment variables X509_USER_CERT and X509_USER_KEY
+                        # are not defined (they confuse ifdh).
+
+                        save_vars = {}
+                        for var in ('X509_USER_CERT', 'X509_USER_KEY'):
+                            if os.environ.has_key(var):
+                                save_vars[var] = os.environ[var]
+                                del os.environ[var]
+
+                        # Do ifdh cp.
+
+                        command = ['ifdh', 'cp', '--force=gridftp', loc_filename, dropbox_filename]
+                        jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE,
+                                                   stderr=subprocess.PIPE)
+                        jobout, joberr = jobinfo.communicate()
+                        rc = jobinfo.poll()
+                        if rc != 0:
+                            for var in save_vars.keys():
+                                os.environ[var] = save_vars[var]
+                            raise IFDHError(command, rc, jobout, joberr)
+
+                        # Restore environment variables.
+
                         for var in save_vars.keys():
                             os.environ[var] = save_vars[var]
-                        raise IFDHError(command, rc, jobout, joberr)
-
-                    # Restore environment variables.
-
-                    for var in save_vars.keys():
-                        os.environ[var] = save_vars[var]
 
     return 0
 
