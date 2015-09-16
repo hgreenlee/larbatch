@@ -664,6 +664,24 @@ def get_scratch_dir():
 
     return scratch
 
+# Function to return the mountpoint of a given path.
+
+def mountpoint(path):
+
+    # Handle symbolic links and relative paths.
+
+    path = os.path.realpath(path)
+
+    # Find mountpoint.
+
+    while not os.path.ismount(path):
+        dir = os.path.dirname(path)
+        if len(dir) >= len(path):
+            return dir
+        path = dir
+
+    return path
+
 # Import experiment-specific utilities.  In this imported module, one can 
 # override any function or symbol defined above, or add new ones.
 

@@ -187,6 +187,7 @@ class ProjectApp(tk.Frame):
         self.output_menu.add_command(label='Check', command=self.check)
         self.output_menu.add_command(label='Checkana', command=self.checkana)
         self.output_menu.add_command(label='Fetchlog', command=self.fetchlog)
+        self.output_menu.add_command(label='Shorten', command=self.shorten)
         self.output_menu.add_separator()
         self.output_menu.add_command(label='Histogram merge', command=self.mergehist)
         self.output_menu.add_command(label='Ntuple merge', command=self.mergentuple)
@@ -525,6 +526,29 @@ class ProjectApp(tk.Frame):
             e = sys.exc_info()
             traceback.print_tb(e[2])
             tkMessageBox.showerror('', e[1])
+
+    # Shorten action.
+
+    def shorten(self):
+        if self.current_project_def == None:
+            tkMessageBox.showwarning('', 'No project selected.')
+            return
+        if self.current_stage_def == None:
+            tkMessageBox.showwarning('', 'No stage selected.')
+            return
+        top=self.winfo_toplevel()
+        old_cursor = top['cursor']
+        try:
+            top['cursor'] = 'watch'
+            top.update_idletasks()
+            project.doshorten(self.current_stage_def)
+            top['cursor'] = old_cursor
+        except:
+            top['cursor'] = old_cursor
+            e = sys.exc_info()
+            traceback.print_tb(e[2])
+            tkMessageBox.showerror('', e[1])
+        self.project_view.update_status()
 
     # Clean action.
 
