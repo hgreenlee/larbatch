@@ -682,6 +682,19 @@ def mountpoint(path):
 
     return path
 
+
+# Function to escape dollar signs in string by prepending backslash (\).
+
+def dollar_escape(s):
+
+    result = ''
+    for c in s:
+        if c == '$' and ( len(result) == 0 or result[-1] != '\\'):
+            result += '\\'
+        result += c
+    return result
+
+
 # Import experiment-specific utilities.  In this imported module, one can 
 # override any function or symbol defined above, or add new ones.
 
