@@ -14,6 +14,7 @@ import sys, os, stat, time, types
 import socket
 import subprocess
 import getpass
+import uuid
 
 # Prevent root from printing garbage on initialization.
 if os.environ.has_key('TERM'):
@@ -693,6 +694,81 @@ def dollar_escape(s):
             result += '\\'
         result += c
     return result
+
+
+# Function to parse a string containing a comma- and hyphen-separated 
+# representation of a collection of positive integers into a sorted list 
+# of ints.  Raise ValueError excpetion in case of unparseable string.
+
+def parseInt(s):
+
+    result = set()
+
+    # First split string into tokens separated by commas.
+
+    for token in s.split(','):
+
+        # Plain integers handled here.
+
+        if token.strip().isdigit():
+            result.add(int(token))
+            continue
+
+        # Hyphenenated ranges handled here.
+
+        limits = token.split('-')
+        if len(limits) == 2 and limits[0].strip().isdigit() and limits[1].strip().isdigit():
+            result |= set(range(int(limits[0]), int(limits[1])+1))
+            continue
+
+        # Don't understand.
+
+        raise ValueError, 'Unparseable range token %s.' % token
+
+    # Return result in form of a sorted list.
+
+    return sorted(result)
+
+
+# Function to construct a new dataset definition from an existing definition
+# such that the new dataset definition will be limited to a specified run and
+# set of subruns.
+# Note that a SAMWebClient object must be initialized externally and passed into
+# this method.
+
+def create_limited_dataset(samweb, defname, run, subruns):
+
+    if len(subruns) == 0:
+        return ''
+
+    # Construct comma-separated list of run-subrun pairs in a form that is
+    # acceptable as sam dimension constraint.
+
+    run_subrun_dim = ''
+    for subrun in subruns:
+        if run_subrun_dim != '':
+            run_subrun_dim += ','
+        run_subrun_dim += "%d.%d" % (run, subrun)
+
+    # Take a snapshot of the original dataset definition.
+
+    snapid = samweb.takeSnapshot(defname, group=get_experiment())
+
+    # Construct dimension including run and subrun constraints.
+
+    dim="snapshot_id %d and run_number %s" % (snapid, run_subrun_dim)
+
+    # Construct a new unique definition name.
+
+    newdefname = defname + '_' + str(uuid.uuid4())
+
+    # Create definition.
+
+    samweb.createDefinition(newdefname, dim, user=get_user(), group=get_experiment())
+
+    # Done (return definition name).
+
+    return newdefname
 
 
 # Import experiment-specific utilities.  In this imported module, one can 

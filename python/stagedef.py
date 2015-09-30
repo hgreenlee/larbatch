@@ -37,11 +37,11 @@ class StageDef:
         self.pubs_input_ok = 1 # Is pubs input allowed?
         self.pubs_input = 0    # Pubs input mode.
         self.input_run = 0     # Pubs input run.
-        self.input_subrun = 0  # Pubs input subrun number.
+        self.input_subruns = [] # Pubs input subrun number(s).
         self.input_version = 0 # Pubs input version number.
         self.pubs_output = 0   # Pubs output mode.
         self.output_run = 0    # Pubs output run.
-        self.output_subrun = 0 # Pubs output subrun number.
+        self.output_subruns = [] # Pubs output subrun number.
         self.output_version = 0 # Pubs output version number.
         self.num_jobs = default_num_jobs # Number of jobs.
         self.max_files_per_job = default_max_files_per_job #max num of files per job
@@ -286,11 +286,13 @@ class StageDef:
         result += 'Pubs input allowed = %d\n' % self.pubs_input_ok
         result += 'Pubs input mode = %d\n' % self.pubs_input
         result += 'Pubs input run number = %d\n' % self.input_run
-        result += 'Pubs input subrun number = %d\n' % self.input_subrun
+        for subrun in self.input_subruns:
+            result += 'Pubs input subrun number = %d\n' % subrun
         result += 'Pubs input version number = %d\n' % self.input_version
         result += 'Pubs output mode = %d\n' % self.pubs_output
         result += 'Pubs output run number = %d\n' % self.output_run
-        result += 'Pubs output subrun number = %d\n' % self.output_subrun
+        for subrun in self.output_subruns:
+            result += 'Pubs output subrun number = %d\n' % subrun
         result += 'Pubs output version number = %d\n' % self.output_version
         result += 'Output file name = %s\n' % self.output
         result += 'TFileName = %s\n' % self.TFileName	
@@ -299,8 +301,8 @@ class StageDef:
         result += 'Output file target size = %d\n' % self.target_size
         result += 'Dataset definition name = %s\n' % self.defname
         result += 'Analysis dataset definition name = %s\n' % self.ana_defname
-        result += 'Data tier = %s' % self.data_tier
-        result += 'Analysis data tier = %s' % self.ana_data_tier
+        result += 'Data tier = %s\n' % self.data_tier
+        result += 'Analysis data tier = %s\n' % self.ana_data_tier
         result += 'Worker initialization script = %s\n' % self.init_script
         result += 'Worker initialization source script = %s\n' % self.init_source
         result += 'Worker end-of-job script = %s\n' % self.end_script
@@ -316,14 +318,50 @@ class StageDef:
         result += 'Jobsub_submit options = %s\n' % self.jobsub
         return result
 
-    # Function to convert this stage for pubs input.
-    # Raise exception PubsInputError if some input (run, subrun, version) is 
-    # (perhaps temporarily) unavailable.
-    # Raise exception PubsDeadEndError if this (run, subrun, version) is a 
-    # pubs dead end due to merging (meaning there will never be any
-    # input).
+    # The purpose of this method is to limit input to the specified run
+    # and subruns.  There are several use cases.
+    #
+    # 1.  If xml element pubsinput is false (0), do not try to limit the 
+    #     input in any way.  Just use whatever is the normal input.
+    #
+    # 2.  If input is from a sam dataset, assume that the input dataset
+    #     has been limited to the specifiec run and subruns elsewhere in
+    #     the workflow (e.g. condor_start_lar.sh).  Don't do anything in this
+    #     method.
+    #
+    # 3.  If input is from a file list (and pubsinput is true), modify the 
+    #     input list assuming that the input area as the standard pubs 
+    #     diretory structure.  There are several subcases depending on
+    #     whether there is one or multiple subruns, and whether input
+    #     to output ratio is one-to-one or many-to-run.
+    #
+    #     a) One-to-one, single subrun, reset input list to point to 
+    #        files.list from pubs input directory.  Raise PubsInputError
+    #        if input files.list does not exist.
+    #
+    #     b) Many-to-one, single subrun (merging).  Generate a new input
+    #        list with a unique name from all files.list files from all 
+    #        pubs input subrun directories.  Raise PubsDeadEndError if this
+    #        subrun is being merged into a different output subrun.  Raise
+    #        PubsInputError if not all input files.list files are (as yet)
+    #        available.
+    #
+    #     c) One-to-one, multiple subruns.  Generate a new input list with
+    #        a unique name from all files.list files from all pubs input 
+    #        subrun directories.  Raise PubsInputError if not all input
+    #        files.list files are available.
+    #
+    #     d) Many-to-one, multiple subruns.  This use case is not (yet)
+    #        supported.
+    #
+    # 4.  If input is from a singe file (and pubsinput is true), raise
+    #     an exception.  This use case doesn't make sense and isn't
+    #     supported.
+    #
+    # 5.  If no input is specified, don't do anything, since there is no
+    #     input to limit.
 
-    def pubsify_input(self, run, subrun, version, previous_stage):
+    def pubsify_input(self, run, subruns, version, previous_stage):
 
         # Don't do anything if pubs input is disabled.
 
@@ -336,24 +374,10 @@ class StageDef:
         if self.inputfile == '' and self.inputlist == '' and self.inputdef == '':
             return
 
-        # Raise an exception if there is no previous stage (with input).
-        # If you really want to use pubs to process files from pre-existing
-        # input, construct the project with a fake previous input stage or
-        # disable pubs input mode.  Pubs input needs a previous stage to
-        # determine the mapping of subrun numbers.
-
-        if previous_stage == None:
-            raise RuntimeError('No previous pubs stage.')
-
-        # Pubs input is currently only supported in case of input file list,
-        # which is the default way of daisy-chaining stages without specifying
-        # any input explicitly.  Raise an exception for other input methods (single
-        # file or sam).
+        # The case if input from a single file is not supported.  Raise an exception.
 
         if self.inputfile != '':
             raise RuntimeError, 'Pubs input for single file input is not supported.'
-        if self.inputdef != '':
-            raise RuntimeError, 'Pubs input for sam input is not supported.'
 
         # Set pubs input mode.
 
@@ -362,19 +386,35 @@ class StageDef:
         # Save the run, subrun, and version numbers.
 
         self.input_run = run;
-        self.input_subrun = subrun;
+        self.input_subruns = subruns;
         self.input_version = version;
 
-        # One-to-one case handled here.
+        # if input is from a sam dataset, set the pubs flags (as above), but don't
+        # do anything else.  Assume the input dataset has been created appropriately
+        # elsewhere to limit input to a particlar run and subrun(s).
 
-        if self.num_jobs == previous_stage.num_jobs:
+        if self.inputdef != '':
+            return
+
+        # Raise an exception if there is no previous stage (with input file).
+
+        if previous_stage == None:
+            raise RuntimeError('No previous pubs stage.')
+
+        # If we get to here, we have input from a file list and a previous stage
+        # exists.  This normally indicates a daisy chain.  This is where subcases
+        # 3 (a)-(d) are handled.
+
+        # Case 3(a), one-to-one, single subrun.
+
+        if self.num_jobs == previous_stage.num_jobs and len(subruns) == 1:
 
             # Insert run and subrun into input file list path.
 
             if version == None:
-                pubs_path = '%d/%d' % (run, subrun)
+                pubs_path = '%d/%d' % (run, subruns[0])
             else:
-                pubs_path = '%d/%d/%d' % (version, run, subrun)
+                pubs_path = '%d/%d/%d' % (version, run, subruns[0])
             dir = os.path.dirname(self.inputlist)
             base = os.path.basename(self.inputlist)
             self.inputlist = os.path.join(dir, pubs_path, base)
@@ -389,17 +429,17 @@ class StageDef:
             if len(lines) == 0:
                 raise PubsInputError(run, subrun, version)
 
-            # Everything OK (one-to-one).
+            # Everything OK (case 3(a)).
 
             return
 
-        # Many-to-one case handled here.
+        # Case 3(b), many-to-one, single subrun.
 
-        elif self.num_jobs < previous_stage.num_jobs:
+        elif self.num_jobs < previous_stage.num_jobs and len(subruns) == 1:
 
             # Extract the input subrun range.
 
-            section = int((subrun - 1) * self.num_jobs / previous_stage.num_jobs)
+            section = int((subruns[0] - 1) * self.num_jobs / previous_stage.num_jobs)
             first_input_subrun = int(math.ceil(float(previous_stage.num_jobs * section) \
                                                    / float(self.num_jobs))) + 1
             last_input_subrun = (previous_stage.num_jobs * section + previous_stage.num_jobs - 1) \
@@ -407,7 +447,7 @@ class StageDef:
 
             # Only process the first input subrun.
 
-            if subrun != first_input_subrun:
+            if subruns[0] != first_input_subrun:
                 raise PubsDeadEndError(run, subrun, version)
 
             # Generate a new input file list, called "merged_files.list" and place 
@@ -451,9 +491,15 @@ class StageDef:
 
             self.num_jobs = 1
 
-            # Everything OK (many-to-one).
+            # Everything OK (case 3(b)).
 
             return
+
+        # Case 3(d), many-to-one, multiple subruns.
+
+        elif self.num_jobs < previous_stage.num_jobs and len(subruns) != 1:
+
+            raise RuntimeError, 'Many-to-one pubs input with multiple subruns is not supported.'
 
         # One-to-many case is not allows.
 
@@ -468,7 +514,7 @@ class StageDef:
 
     # Function to convert this stage for pubs output.
 
-    def pubsify_output(self, run, subrun, version):
+    def pubsify_output(self, run, subruns, version):
 
         # Set pubs mode.
 
@@ -477,15 +523,23 @@ class StageDef:
         # Save the run, subrun, and version numbers.
 
         self.output_run = run;
-        self.output_subrun = subrun;
+        self.output_subruns = subruns;
         self.output_version = version;
 
         # Append run and subrun to workdir, outdir, and logdir.
+        # In case of multiple subruns, encode the subdir directory as "@s",
+        # which informs the batch worker to determine the subrun dynamically.
 
-        if version == None:
-            pubs_path = '%d/%d' % (run, subrun)
+        if len(subruns) == 1:
+            if version == None:
+                pubs_path = '%d/%d' % (run, subruns[0])
+            else:
+                pubs_path = '%d/%d/%d' % (version, run, subruns[0])
         else:
-            pubs_path = '%d/%d/%d' % (version, run, subrun)
+            if version == None:
+                pubs_path = '%d/@s' % run
+            else:
+                pubs_path = '%d/%d/@s' % (version, run)
         self.workdir = os.path.join(self.workdir, pubs_path)
         self.outdir = os.path.join(self.outdir, pubs_path)
         self.logdir = os.path.join(self.logdir, pubs_path)
@@ -522,6 +576,15 @@ class StageDef:
                 self.num_jobs = new_num_jobs
 
 
+    # Raise an exception if output directory or log directory doesn't exist.
+
+    def check_output_dirs(self):
+        if not os.path.exists(self.outdir):
+            raise IOError, 'Output directory %s does not exist.' % self.outdir
+        if not os.path.exists(self.logdir):
+            raise IOError, 'Log directory %s does not exist.' % self.logdir
+        return
+    
     # Raise an exception if output directory, log directory, or work directory doesn't exist.
 
     def checkdirs(self):
