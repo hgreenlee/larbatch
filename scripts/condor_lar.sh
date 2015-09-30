@@ -556,11 +556,13 @@ done
 
 echo "Nodename: `hostname -f`"
 id
+echo "Load average:"
+cat /proc/loadavg
 
 # Set defaults.
 
 if [ x$QUAL = x ]; then
-  QUAL="prof:e6"
+  QUAL="prof:e7"
 fi
 
 if [ x$SAM_GROUP = x ]; then
@@ -1182,6 +1184,8 @@ if [ $USE_SAM -ne 0 ]; then
     exit 1
   fi
 
+  echo "Starting consumer process."
+  echo "ifdh establishProcess $PURL $APPNAME $REL $NODE $SAM_USER $APPFAMILY $FCL $NFILE"
   CPID=`ifdh establishProcess $PURL $APPNAME $REL $NODE $SAM_USER $APPFAMILY $FCL $NFILE`
   if [ x$CPID = x ]; then
     echo "Unable to start consumer process for project url ${PURL}."
@@ -1346,21 +1350,11 @@ for root in *.root; do
   fi
 done
 
-# Temporary hack.
-# Randomize some specific filenames that don't have a corresponding json file.
-
-for root in *.root; do
-  if [ ! -f ${root}.json ]; then
-    if [ $root = reco1.root -o $root = reco2.root -o $root = merge.root ]; then
-      base=`basename $root .root`_`uuidgen`
-      mv $root ${base}.root
-    fi
-  fi
-done
-
 # Calculate root metadata for all root files and save as json file.
 # If json metadata already exists, merge with newly geneated root metadata.
+# Extract a subrun number, if one exists.
 
+subrun=''
 for root in *.root; do
   json=${root}.json
   if [ -f $json ]; then
@@ -1371,7 +1365,31 @@ for root in *.root; do
   else
     root_metadata.py $root > $json
   fi
+  if [ x$subrun = x ]; then
+    subrun=`subruns.py $root | awk 'NR==1{print $2}'`
+  fi
 done
+
+# Update OUTDIR and LOGDIR based on extracted run number (if any).
+
+if [ x$subrun != x ]; then
+    OUTDIR=`echo $OUTDIR | sed "s/@s/$subrun/"`
+    echo "ifdh mkdir ${OUTDIR} $IFDH_OPT"
+    ifdh mkdir ${OUTDIR} $IFDH_OPT
+    stat=$?
+    if [ $stat -ne 0 ]; then
+      echo "ifdh mkdir failed with status ${stat}."
+      exit $stat
+    fi
+    LOGDIR=`echo $LOGDIR | sed "s/@s/$subrun/"`
+    echo "ifdh mkdir ${LOGDIR} $IFDH_OPT"
+    ifdh mkdir ${LOGDIR} $IFDH_OPT
+    stat=$?
+    if [ $stat -ne 0 ]; then
+      echo "ifdh mkdir failed with status ${stat}."
+      exit $stat
+    fi
+fi
 
 # Make local files group write, if appropriate.
 
@@ -1410,6 +1428,7 @@ ifdh mkdir ${LOGDIR}/$OUTPUT_SUBDIR $IFDH_OPT
 stat=$?
 if [ $stat -ne 0 ]; then
   echo "ifdh mkdir failed with status ${stat}."
+  exit $stat
 fi
 echo "ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR"
 ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR
