@@ -263,11 +263,9 @@ from project_modules.projectstatus import ProjectStatus
 from project_modules.batchstatus import BatchStatus
 from project_modules.jobsuberror import JobsubError
 from project_modules.ifdherror import IFDHError
+import samweb_cli
 
-# Do the same for samweb_cli module and global SAMWebClient object.
-
-samweb_cli = None
-samweb = None           # SAMWebClient object
+samweb = None           # Initialized SAMWebClient object
 extractor_dict = None   # Metadata extractor
 proxy_ok = False
 
@@ -283,27 +281,20 @@ def safeopen(destination):
     file = open(destination, 'w')
     return file
 
-# Function to make sure samweb_cli module is imported.
-# Also initializes global SAMWebClient object.
+# Function to make sure global SAMWebClient object is initialized.
+# Also imports extractor_dict module.
 # This function should be called before using samweb.
 
 def import_samweb():
 
-    # Import samweb_cli module, if not already done.
+    # Get intialized samweb, if not already done.
 
-    global samweb_cli
     global samweb
     global extractor_dict
 
-    exp = project_utilities.get_experiment()
-    
-    if samweb_cli == None:
-        import samweb_cli
-        samweb = samweb_cli.SAMWebClient(experiment=exp)
+    if samweb == None:
+        samweb = project_utilities.samweb()
         import extractor_dict
-
-    os.environ['SSL_CERT_DIR'] = '/etc/grid-security/certificates'
-
 
 # Clean function.
 
@@ -2020,15 +2011,6 @@ def dojobsub(project, stage, makeup):
     inputdef = stage.inputdef
     if makeup and makeup_defname != '':
         inputdef = makeup_defname
-
-    # If pubs input mode is selected, create a new dataset with limited run and subruns.
-
-    if stage.pubs_input and inputdef != '':
-        import_samweb()
-        inputdef = project_utilities.create_limited_dataset(samweb,
-                                                            inputdef,
-                                                            stage.input_run,
-                                                            stage.input_subruns)
 
     # Sam project name.
 

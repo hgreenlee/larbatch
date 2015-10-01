@@ -15,6 +15,7 @@ import socket
 import subprocess
 import getpass
 import uuid
+import samweb_cli
 
 # Prevent root from printing garbage on initialization.
 if os.environ.has_key('TERM'):
@@ -27,10 +28,14 @@ import ROOT
 ROOT.gErrorIgnoreLevel = ROOT.kError
 sys.argv = myargv
 
+# Global variables.
+
 proxy_ok = False
 kca_ok = False
 ticket_ok = False
 kca_user = ''
+samweb_obj = None       # Initialized SAMWebClient object
+
 
 # Function to return the current experiment.
 # The following places for obtaining this information are
@@ -733,10 +738,8 @@ def parseInt(s):
 # Function to construct a new dataset definition from an existing definition
 # such that the new dataset definition will be limited to a specified run and
 # set of subruns.
-# Note that a SAMWebClient object must be initialized externally and passed into
-# this method.
 
-def create_limited_dataset(samweb, defname, run, subruns):
+def create_limited_dataset(defname, run, subruns):
 
     if len(subruns) == 0:
         return ''
@@ -752,7 +755,7 @@ def create_limited_dataset(samweb, defname, run, subruns):
 
     # Take a snapshot of the original dataset definition.
 
-    snapid = samweb.takeSnapshot(defname, group=get_experiment())
+    snapid = samweb().takeSnapshot(defname, group=get_experiment())
 
     # Construct dimension including run and subrun constraints.
 
@@ -764,11 +767,24 @@ def create_limited_dataset(samweb, defname, run, subruns):
 
     # Create definition.
 
-    samweb.createDefinition(newdefname, dim, user=get_user(), group=get_experiment())
+    samweb().createDefinition(newdefname, dim, user=get_user(), group=get_experiment())
 
     # Done (return definition name).
 
     return newdefname
+
+# Return initialized SAMWebClient object.
+
+def samweb():
+
+    global samweb_obj
+
+    if samweb_obj == None:
+        samweb_obj = samweb_cli.SAMWebClient(experiment=get_experiment())
+
+    os.environ['SSL_CERT_DIR'] = '/etc/grid-security/certificates'
+
+    return samweb_obj
 
 
 # Import experiment-specific utilities.  In this imported module, one can 

@@ -390,11 +390,13 @@ class StageDef:
         self.input_subruns = subruns;
         self.input_version = version;
 
-        # if input is from a sam dataset, set the pubs flags (as above), but don't
-        # do anything else.  Assume the input dataset has been created appropriately
-        # elsewhere to limit input to a particlar run and subrun(s).
+        # if input is from a sam dataset, create a restricted dataset that limits
+        # input files to selected run and subruns.
 
         if self.inputdef != '':
+            self.inputdef = project_utilities.create_limited_dataset(self.inputdef,
+                                                                     run,
+                                                                     subruns)
             return
 
         # Raise an exception if there is no previous stage (with input file).
