@@ -11,6 +11,7 @@
 
 import os, string, stat, math
 import project_utilities
+import uuid
 from project_modules.xmlerror import XMLError
 from project_modules.pubsinputerror import PubsInputError
 from project_modules.pubsdeadenderror import PubsDeadEndError
@@ -495,6 +496,57 @@ class StageDef:
 
             return
 
+        # Case 3(c), one-to-one, multiple subruns.
+
+        if self.num_jobs == previous_stage.num_jobs and len(subruns) > 1:
+
+            # Generate a new input file list with a unique name and place 
+            # it in the same directory as the original input list.  Note that
+            # the input list may not actually exist at this point.  If it
+            # doesn't exist, just use the same name.  If it already exists,
+            # generate a different name.
+
+            dir = os.path.dirname(self.inputlist)
+            base = os.path.basename(self.inputlist)
+            new_inputlist_path = self.inputlist
+            if os.path.exists(new_inputlist_path):
+                new_inputlist_path = '%s/%s_%s.list' % (dir, base, str(uuid.uuid4()))
+            self.inputlist = new_inputlist_path
+            print 'Generating new input list %s\n' % new_inputlist_path
+            new_inputlist_file = open(new_inputlist_path, 'w')
+
+            # Loop over subruns.  Read contents of pubs input list for each subrun.
+            # Each subrun should have only one input file (because of one-to-one).
+
+            for subrun in subruns:
+
+                if version == None:
+                    pubs_path = '%d/%d' % (run, subrun)
+                else:
+                    pubs_path = '%d/%d/%d' % (version, run, subrun)
+
+                subrun_inputlist = os.path.join(dir, pubs_path, base)
+                lines = []
+                try:
+                    lines = open(subrun_inputlist).readlines()
+                except:
+                    lines = []
+                if len(lines) == 0:
+                    raise PubsInputError, 'Trouble reading input file from %s\n' % subrun_inputlist
+                if len(lines) > 1:
+                    raise PubsInputError, 'Found multiple input files in %s\n' % subrun_inputlist
+                subrun_inputfile = lines[0].strip()
+                #print 'Adding input file %s\n' % subrun_inputfile
+                new_inputlist_file.write('%s\n' % subrun_inputfile)
+
+            # Done looping over subruns.
+
+            new_inputlist_file.close()
+
+            # Everything OK (case 3(c)).
+
+            return
+
         # Case 3(d), many-to-one, multiple subruns.
 
         elif self.num_jobs < previous_stage.num_jobs and len(subruns) != 1:
@@ -535,12 +587,13 @@ class StageDef:
                 pubs_path = '%d/%d' % (run, subruns[0])
             else:
                 pubs_path = '%d/%d/%d' % (version, run, subruns[0])
+            self.workdir = os.path.join(self.workdir, pubs_path)
         else:
             if version == None:
                 pubs_path = '%d/@s' % run
             else:
                 pubs_path = '%d/%d/@s' % (version, run)
-        self.workdir = os.path.join(self.workdir, pubs_path)
+            self.workdir = os.path.join(self.workdir, str(uuid.uuid4()))
         self.outdir = os.path.join(self.outdir, pubs_path)
         self.logdir = os.path.join(self.logdir, pubs_path)
 

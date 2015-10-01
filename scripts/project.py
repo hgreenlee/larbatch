@@ -2078,6 +2078,7 @@ def dojobsub(project, stage, makeup):
             command.extend(['-N', '%d' % command_njobs])
     else:
         command_njobs = len(stage.output_subruns)
+        command.extend(['-N', '%d' % command_njobs])
     if stage.jobsub != '':
         for word in stage.jobsub.split():
             command.append(word)
