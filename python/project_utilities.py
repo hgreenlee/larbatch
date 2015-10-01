@@ -225,7 +225,7 @@ def safeexist(path):
 def test_ticket():
     global ticket_ok
     if not ticket_ok:
-        ok = subprocess.call(['klist', '-s'], stdout=sys.stdout, stderr=sys.stderr)
+        ok = subprocess.call(['klist', '-s'], stdout=-1, stderr=-1)
         if ok != 0:
             raise RuntimeError, 'Please get a kerberos ticket.'
         ticket_ok = True
