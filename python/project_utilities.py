@@ -14,6 +14,8 @@ import sys, os, stat, time, types
 import socket
 import subprocess
 import getpass
+import uuid
+import samweb_cli
 
 # Prevent root from printing garbage on initialization.
 if os.environ.has_key('TERM'):
@@ -26,10 +28,14 @@ import ROOT
 ROOT.gErrorIgnoreLevel = ROOT.kError
 sys.argv = myargv
 
+# Global variables.
+
 proxy_ok = False
 kca_ok = False
 ticket_ok = False
 kca_user = ''
+samweb_obj = None       # Initialized SAMWebClient object
+
 
 # Function to return the current experiment.
 # The following places for obtaining this information are
@@ -219,7 +225,7 @@ def safeexist(path):
 def test_ticket():
     global ticket_ok
     if not ticket_ok:
-        ok = subprocess.call(['klist', '-s'], stdout=sys.stdout, stderr=sys.stderr)
+        ok = subprocess.call(['klist', '-s'], stdout=-1, stderr=-1)
         if ok != 0:
             raise RuntimeError, 'Please get a kerberos ticket.'
         ticket_ok = True
@@ -693,6 +699,92 @@ def dollar_escape(s):
             result += '\\'
         result += c
     return result
+
+
+# Function to parse a string containing a comma- and hyphen-separated 
+# representation of a collection of positive integers into a sorted list 
+# of ints.  Raise ValueError excpetion in case of unparseable string.
+
+def parseInt(s):
+
+    result = set()
+
+    # First split string into tokens separated by commas.
+
+    for token in s.split(','):
+
+        # Plain integers handled here.
+
+        if token.strip().isdigit():
+            result.add(int(token))
+            continue
+
+        # Hyphenenated ranges handled here.
+
+        limits = token.split('-')
+        if len(limits) == 2 and limits[0].strip().isdigit() and limits[1].strip().isdigit():
+            result |= set(range(int(limits[0]), int(limits[1])+1))
+            continue
+
+        # Don't understand.
+
+        raise ValueError, 'Unparseable range token %s.' % token
+
+    # Return result in form of a sorted list.
+
+    return sorted(result)
+
+
+# Function to construct a new dataset definition from an existing definition
+# such that the new dataset definition will be limited to a specified run and
+# set of subruns.
+
+def create_limited_dataset(defname, run, subruns):
+
+    if len(subruns) == 0:
+        return ''
+
+    # Construct comma-separated list of run-subrun pairs in a form that is
+    # acceptable as sam dimension constraint.
+
+    run_subrun_dim = ''
+    for subrun in subruns:
+        if run_subrun_dim != '':
+            run_subrun_dim += ','
+        run_subrun_dim += "%d.%d" % (run, subrun)
+
+    # Take a snapshot of the original dataset definition.
+
+    snapid = samweb().takeSnapshot(defname, group=get_experiment())
+
+    # Construct dimension including run and subrun constraints.
+
+    dim="snapshot_id %d and run_number %s" % (snapid, run_subrun_dim)
+
+    # Construct a new unique definition name.
+
+    newdefname = defname + '_' + str(uuid.uuid4())
+
+    # Create definition.
+
+    samweb().createDefinition(newdefname, dim, user=get_user(), group=get_experiment())
+
+    # Done (return definition name).
+
+    return newdefname
+
+# Return initialized SAMWebClient object.
+
+def samweb():
+
+    global samweb_obj
+
+    if samweb_obj == None:
+        samweb_obj = samweb_cli.SAMWebClient(experiment=get_experiment())
+
+    os.environ['SSL_CERT_DIR'] = '/etc/grid-security/certificates'
+
+    return samweb_obj
 
 
 # Import experiment-specific utilities.  In this imported module, one can 

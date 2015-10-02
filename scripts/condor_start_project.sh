@@ -220,6 +220,7 @@ fi
 # and its contents recursively.
 
 if [ x$LOGDIR != x ]; then
+  LOGDIR=`echo $LOGDIR | sed 's/@s/sam/'`
   OUTPUT_SUBDIR=${CLUSTER}_start
   mkdir $OUTPUT_SUBDIR
   for outfile in *; do

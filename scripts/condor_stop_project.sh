@@ -146,6 +146,7 @@ echo "Scratch directory: $TMP"
 
 # See if we need to set umask for group write.
 
+LOGDIR=`echo $LOGDIR | sed 's/@s/sam/'`
 if [ $GRID -eq 0 -a x$LOGDIR != x ]; then
   LOGUSER=`stat -c %U $LOGDIR`
   CURUSER=`whoami`

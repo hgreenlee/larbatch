@@ -25,6 +25,8 @@
 # Pubs options (combine with any action option).
 #
 # --pubs <run> <subrun> [<version>] - Modifies selected stage to specify pubs mode.
+#                                     The <subrun> can be a range or comma-separated
+#                                     list of subruns.
 #
 # Actions (specify one):
 #
@@ -203,6 +205,7 @@
 # <stage><jobsub>  - Arbitrary jobsub_submit option(s).  Space-separated list.
 #                    Only applies to main worker submission, not sam start/stop 
 #                    project submissions.
+# <stage><maxfilesperjob> - Maximum number of files to be processed in a single worker.
 #
 #
 # <fcldir>  - Directory in which to search for fcl files (optional, repeatable).
@@ -260,11 +263,9 @@ from project_modules.projectstatus import ProjectStatus
 from project_modules.batchstatus import BatchStatus
 from project_modules.jobsuberror import JobsubError
 from project_modules.ifdherror import IFDHError
+import samweb_cli
 
-# Do the same for samweb_cli module and global SAMWebClient object.
-
-samweb_cli = None
-samweb = None           # SAMWebClient object
+samweb = None           # Initialized SAMWebClient object
 extractor_dict = None   # Metadata extractor
 proxy_ok = False
 
@@ -280,27 +281,20 @@ def safeopen(destination):
     file = open(destination, 'w')
     return file
 
-# Function to make sure samweb_cli module is imported.
-# Also initializes global SAMWebClient object.
+# Function to make sure global SAMWebClient object is initialized.
+# Also imports extractor_dict module.
 # This function should be called before using samweb.
 
 def import_samweb():
 
-    # Import samweb_cli module, if not already done.
+    # Get intialized samweb, if not already done.
 
-    global samweb_cli
     global samweb
     global extractor_dict
 
-    exp = project_utilities.get_experiment()
-    
-    if samweb_cli == None:
-        import samweb_cli
-        samweb = samweb_cli.SAMWebClient(experiment=exp)
+    if samweb == None:
+        samweb = project_utilities.samweb()
         import extractor_dict
-
-    os.environ['SSL_CERT_DIR'] = '/etc/grid-security/certificates'
-
 
 # Clean function.
 
@@ -593,7 +587,7 @@ def previous_stage(projects, stagename, circular=False):
 # Extract pubsified stage from xml file.
 # Return value is a 2-tuple (project, stage).
 
-def get_pubs_stage(xmlfile, projectname, stagename, run, subrun, version=None):
+def get_pubs_stage(xmlfile, projectname, stagename, run, subruns, version=None):
     projects = get_projects(xmlfile)
     project = select_project(projects, projectname, stagename)
     if project == None:
@@ -604,8 +598,8 @@ def get_pubs_stage(xmlfile, projectname, stagename, run, subrun, version=None):
         raise RuntimeError, 'No stage selected for projectname=%s, stagename=%s' % (
             projectname, stagename)
     pstage = previous_stage(projects, stagename)
-    stage.pubsify_input(run, subrun, version, pstage)
-    stage.pubsify_output(run, subrun, version)
+    stage.pubsify_input(run, subruns, version, pstage)
+    stage.pubsify_output(run, subruns, version)
     return project, stage
 
 
@@ -822,7 +816,7 @@ def docheck(project, stage, ana):
     # generated with lines containing /dev/null.
 
     stage.checkinput()
-    stage.checkdirs()
+    stage.check_output_dirs()
 
     import_samweb()
     has_metadata = project.file_type != '' or project.run_type != ''
@@ -1090,7 +1084,7 @@ def docheck(project, stage, ana):
 
     # Make sam files.
 
-    if stage.inputdef != '':
+    if stage.inputdef != '' and not stage.pubs_input:
 
         # List of successful sam projects.
         
@@ -1180,7 +1174,7 @@ def docheck(project, stage, ana):
     checkfile = safeopen(os.path.join(stage.logdir, 'checked'))
     checkfile.close()
 
-    if stage.inputdef == '':
+    if stage.inputdef == '' or stage.pubs_input:
         print '%d processes with errors.' % nerror
         print '%d missing files.' % nmiss
     else:
@@ -1662,6 +1656,8 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
                             project_utilities.mountpoint(dropbox_filename):
                         print 'Symlinking %s to dropbox directory %s.' % (filename, dropbox)
                         relpath = os.path.relpath(os.path.realpath(loc_filename), dropbox)
+                        print 'relpath=',relpath
+                        print 'dropbox_filename=',dropbox_filename
                         os.symlink(relpath, dropbox_filename)
 
                     else:
@@ -2062,6 +2058,9 @@ def dojobsub(project, stage, makeup):
         else:
             command_njobs = min(makeup_count, stage.num_jobs)
             command.extend(['-N', '%d' % command_njobs])
+    else:
+        command_njobs = len(stage.output_subruns)
+        command.extend(['-N', '%d' % command_njobs])
     if stage.jobsub != '':
         for word in stage.jobsub.split():
             command.append(word)
@@ -2077,7 +2076,7 @@ def dojobsub(project, stage, makeup):
     if stage.max_files_per_job != 0:
         command_max_files_per_job = stage.max_files_per_job
         command.extend(['--nfile', '%d' % command_max_files_per_job])
-        print 'Setting the max files to %d' % command_max_files_per_job
+        #print 'Setting the max files to %d' % command_max_files_per_job
 
     # Larsoft options.
 
@@ -2650,7 +2649,7 @@ def main(argv):
     submit = 0
     pubs = 0
     pubs_run = 0
-    pubs_subrun = 0
+    pubs_subruns = []
     pubs_version = None
     check = 0
     checkana = 0
@@ -2719,7 +2718,7 @@ def main(argv):
         elif args[0] == '--pubs' and len(args) > 2:
             pubs = 1
             pubs_run = int(args[1])
-            pubs_subrun = int(args[2])
+            pubs_subruns = project_utilities.parseInt(args[2])
             del args[0:3]
             if len(args) > 0 and args[0] != '' and args[0][0] != '-':
                 pubs_version = int(args[0])
@@ -2894,8 +2893,8 @@ def main(argv):
     stage = project.get_stage(stagename)
     pstage = previous_stage(projects, stagename)
     if pubs:
-        stage.pubsify_input(pubs_run, pubs_subrun, pubs_version, pstage)
-        stage.pubsify_output(pubs_run, pubs_subrun, pubs_version)
+        stage.pubsify_input(pubs_run, pubs_subruns, pubs_version, pstage)
+        stage.pubsify_output(pubs_run, pubs_subruns, pubs_version)
 
     # Do outdir action now.
 

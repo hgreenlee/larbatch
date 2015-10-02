@@ -174,7 +174,12 @@ class ProjectDef:
 
         script_path = ''
         try:
-            script_path = subprocess.check_output(['which', self.script]).splitlines()[0].strip()
+            jobinfo = subprocess.Popen(['which', self.script],
+                                       stdout=subprocess.PIPE,
+                                       stderr=subprocess.PIPE)
+            jobout, joberr = jobinfo.communicate()
+            rc = jobinfo.poll()
+            script_path = jobout.splitlines()[0].strip()
         except:
             pass
         if script_path == '' or not os.access(script_path, os.X_OK):
@@ -188,8 +193,12 @@ class ProjectDef:
         
         script_path = ''
         try:
-            script_path = subprocess.check_output(['which',
-                                                   self.start_script]).splitlines()[0].strip()
+            jobinfo = subprocess.Popen(['which', self.start_script],
+                                       stdout=subprocess.PIPE,
+                                       stderr=subprocess.PIPE)
+            jobout, joberr = jobinfo.communicate()
+            rc = jobinfo.poll()
+            script_path = jobout.splitlines()[0].strip()
         except:
             pass
         self.start_script = script_path
@@ -198,8 +207,12 @@ class ProjectDef:
         
         script_path = ''
         try:
-            script_path = subprocess.check_output(['which',
-                                                   self.stop_script]).splitlines()[0].strip()
+            jobinfo = subprocess.Popen(['which', self.stop_script],
+                                       stdout=subprocess.PIPE,
+                                       stderr=subprocess.PIPE)
+            jobout, joberr = jobinfo.communicate()
+            rc = jobinfo.poll()
+            script_path = jobout.splitlines()[0].strip()
         except:
             pass
         self.stop_script = script_path
