@@ -173,18 +173,26 @@ def existdir(dir, verbose):
     # message at this point.
 
     parent = os.path.dirname(dir)
+    base = os.path.basename(dir)
     contents = []
     try:
         contents = Ifdh.ls(parent, 1)
     except:
         contents = []
 
-    # Ifdh signals that an item is a directory by adding '/' at the end.
+    # Loop over parent directory contents.
+    # Only compare the base part of the path, since the mountpoint may differ.
 
-    dirslash = dir + '/'
     for content in contents:
-        if content == dirslash:
-            return True
+
+        # Is this a directory (ifdh signals by adding '/' at end)?
+
+        if len(content) > 1 and content[-1] == '/':
+
+            # Does base match?
+
+            if os.path.basename(content[:-1]) == base:
+                return True
 
     # If we fall out of the loopp, that means we didn't find this directory 
     # in the parent directory.
