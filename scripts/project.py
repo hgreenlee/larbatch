@@ -2059,8 +2059,14 @@ def dojobsub(project, stage, makeup):
             command_njobs = min(makeup_count, stage.num_jobs)
             command.extend(['-N', '%d' % command_njobs])
     else:
-        command_njobs = len(stage.output_subruns)
-        command.extend(['-N', '%d' % command_njobs])
+        if stage.inputdef != '':
+            files_per_job = stage.max_files_per_job
+            if files_per_job == 0:
+                files_per_job = 1
+            command_njobs = (len(stage.output_subruns) + files_per_job - 1) / files_per_job
+        else:
+            command_njobs = len(stage.output_subruns)
+            command.extend(['-N', '%d' % command_njobs])
     if stage.jobsub != '':
         for word in stage.jobsub.split():
             command.append(word)
@@ -2115,7 +2121,8 @@ def dojobsub(project, stage, makeup):
     if stage.inputmode != '':
         command.extend([' --inputmode', stage.inputmode])
     command.extend([' -n', '%d' % project.num_events])
-    command.extend([' --njobs', '%d' % stage.num_jobs ])
+    if stage.inputdef == '':
+        command.extend([' --njobs', '%d' % stage.num_jobs ])
     if procmap != '':
         command.extend([' --procmap', procmap])
     if stage.output != '':
