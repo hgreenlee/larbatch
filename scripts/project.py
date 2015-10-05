@@ -2116,8 +2116,8 @@ def dojobsub(project, stage, makeup):
 
     # Specify single worker mode in case of pubs output.
 
-    #if stage.pubs_output:
-    #    command.append('--single')
+    if stage.outdir.find('/@s') > 0:
+        command.append('--single')
 
     if stage.inputfile != '':
         command.extend([' -s', stage.inputfile])
