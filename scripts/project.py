@@ -816,7 +816,15 @@ def docheck(project, stage, ana):
     # generated with lines containing /dev/null.
 
     stage.checkinput()
-    stage.check_output_dirs()
+
+    # Check that output and log directories exist.
+
+    if not os.path.exists(stage.outdir):
+        print 'Output directory %s does not exist.' % stage.outdir
+        return 1
+    if not os.path.exists(stage.logdir):
+        print 'Log directory %s does not exist.' % stage.logdir
+        return 1
 
     import_samweb()
     has_metadata = project.file_type != '' or project.run_type != ''
