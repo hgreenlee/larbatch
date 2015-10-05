@@ -1421,8 +1421,17 @@ done
 # Clean remote output and log directories.
 
 export IFDH_FORCE=$FORCE
+for dir in ${LOGDIR} ${OUTDIR}
+do
+  echo "Make sure directory ${dir}/$OUTPUT_SUBDIR exists."
+  mkdir.py -v ${dir}/$OUTPUT_SUBDIR
+  echo "Make sure directory ${dir}/$OUTPUT_SUBDIR is empty."
+  emptydir.py -v ${dir}/$OUTPUT_SUBDIR
+  mkdir.py -v ${dir}/$OUTPUT_SUBDIR
+  echo "Directory ${dir}/$OUTPUT_SUBDIR clean ok."
+done
 if [ $SINGLE != 0 ]; then
-  for dir in ${LOGDIR} ${OUTDIR} ${logdirs[*]} ${outdirs[*]}
+  for dir in ${logdirs[*]} ${outdirs[*]}
   do
     echo "Make sure directory $dir exists."
     mkdir.py -v $dir
@@ -1432,7 +1441,7 @@ if [ $SINGLE != 0 ]; then
     echo "Directory $dir/$OUTPUT_SUBDIR clean ok."
   done
 else
-  for dir in ${LOGDIR} ${OUTDIR} ${logdirs[*]} ${outdirs[*]}
+  for dir in ${logdirs[*]} ${outdirs[*]}
   do
     echo "Make sure directory ${dir}/$OUTPUT_SUBDIR exists."
     mkdir.py -v ${dir}/$OUTPUT_SUBDIR

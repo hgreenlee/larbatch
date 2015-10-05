@@ -2365,15 +2365,16 @@ def dosubmit(project, stage, makeup=False):
 
     project_utilities.test_kca()
 
-    # In pubs mode, unconditionally delete any existing work, log, or output
-    # directories, since there is no separate makeup action for pubs mode.
+    # In pubs mode, delete any existing work, log, or output
+    # directories, since there is no separate makeup action for pubs
+    # mode.
 
     if stage.pubs_output:
-        if project_utilities.safeexist(stage.workdir):
+        if project_utilities.safeexist(stage.workdir) and stage.workdir.find('/@s') < 0:
             shutil.rmtree(stage.workdir)
-        if project_utilities.safeexist(stage.outdir):
+        if project_utilities.safeexist(stage.outdir) and stage.outdir.find('/@s') < 0:
             shutil.rmtree(stage.outdir)
-        if project_utilities.safeexist(stage.logdir):
+        if project_utilities.safeexist(stage.logdir) and stage.logdir.find('/@s') < 0:
             shutil.rmtree(stage.logdir)
 
     # Make or check directories.
