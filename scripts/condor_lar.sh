@@ -1428,8 +1428,8 @@ if [ $SINGLE != 0 ]; then
     mkdir.py -v $dir
     echo "Make sure directory $dir is empty."
     emptydir.py -v $dir
-    mkdir.py -v $dir    # For safety.
-    echo "Directory $dir clean ok."
+    mkdir.py -v $dir/$OUTPUT_SUBDIR
+    echo "Directory $dir/$OUTPUT_SUBDIR clean ok."
   done
 else
   for dir in ${LOGDIR} ${OUTDIR} ${logdirs[*]} ${outdirs[*]}
@@ -1438,7 +1438,7 @@ else
     mkdir.py -v ${dir}/$OUTPUT_SUBDIR
     echo "Make sure directory ${dir}/$OUTPUT_SUBDIR is empty."
     emptydir.py -v ${dir}/$OUTPUT_SUBDIR
-    mkdir.py -v ${dir}/$OUTPUT_SUBDIR     # For safety.
+    mkdir.py -v ${dir}/$OUTPUT_SUBDIR
     echo "Directory ${dir}/$OUTPUT_SUBDIR clean ok."
   done
 fi
