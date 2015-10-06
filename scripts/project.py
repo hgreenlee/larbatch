@@ -1614,6 +1614,9 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
                     break
             if should_upload:
                 dropbox = project_utilities.get_dropbox(filename)
+                if not project_utilities.safeexist(dropbox):
+                    print 'Making dropbox directory %s.' % dropbox
+                    os.makedirs(dropbox)
                 locs_to_upload[disk_locs[0]] = dropbox
         
         # Report results and do the actual adding/removing/uploading.
@@ -2116,7 +2119,7 @@ def dojobsub(project, stage, makeup):
 
     # Specify single worker mode in case of pubs output.
 
-    if stage.outdir.find('/@s') > 0:
+    if stage.dynamic:
         command.append('--single')
 
     if stage.inputfile != '':
@@ -2369,12 +2372,12 @@ def dosubmit(project, stage, makeup=False):
     # directories, since there is no separate makeup action for pubs
     # mode.
 
-    if stage.pubs_output:
-        if project_utilities.safeexist(stage.workdir) and stage.workdir.find('/@s') < 0:
+    if stage.pubs_output and not stage.dynamic:
+        if project_utilities.safeexist(stage.workdir):
             shutil.rmtree(stage.workdir)
-        if project_utilities.safeexist(stage.outdir) and stage.outdir.find('/@s') < 0:
+        if project_utilities.safeexist(stage.outdir):
             shutil.rmtree(stage.outdir)
-        if project_utilities.safeexist(stage.logdir) and stage.logdir.find('/@s') < 0:
+        if project_utilities.safeexist(stage.logdir):
             shutil.rmtree(stage.logdir)
 
     # Make or check directories.
@@ -2390,7 +2393,7 @@ def dosubmit(project, stage, makeup=False):
 
     # Make sure output and log directories are empty (submit only).
 
-    if not makeup:
+    if not makeup and not stage.dynamic:
         if len(os.listdir(stage.outdir)) != 0:
             raise RuntimeError, 'Output directory %s is not empty.' % stage.outdir
         if len(os.listdir(stage.logdir)) != 0:

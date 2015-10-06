@@ -31,6 +31,7 @@ class StageDef:
         self.outdir = ''       # Output directory.
         self.logdir = ''       # Log directory.
         self.workdir = ''      # Work directory.
+        self.dynamic = 0       # Dynamic output/log directory.
         self.inputfile = ''    # Single input file.
         self.inputlist = ''    # Input file list.
         self.inputmode = ''    # Input file type (none or textfile)
@@ -280,6 +281,7 @@ class StageDef:
         result += 'Output directory = %s\n' % self.outdir
         result += 'Log directory = %s\n' % self.logdir
         result += 'Work directory = %s\n' % self.workdir
+        result += 'Dynamic directories = %d\n' % self.dynamic
         result += 'Input file = %s\n' % self.inputfile
         result += 'Input list = %s\n' % self.inputlist
         result += 'Input mode = %s\n' % self.inputmode
@@ -596,6 +598,7 @@ class StageDef:
             else:
                 pubs_path = '%d/%d/@s' % (version, run)
             self.workdir = os.path.join(self.workdir, str(uuid.uuid4()))
+            self.dynamic = 1
         self.outdir = os.path.join(self.outdir, pubs_path)
         self.logdir = os.path.join(self.logdir, pubs_path)
 
