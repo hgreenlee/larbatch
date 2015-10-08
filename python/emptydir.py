@@ -100,6 +100,11 @@ def help():
 
 def emptydir(dir, verbose):
 
+    # Remove trailing '/' character(s), if any (except if or until entire path is '/').
+
+    while len(dir) > 1 and dir[-1] == '/':
+        dir = dir[:-1]
+
     # Get contents of directory.
 
     files = []
@@ -126,17 +131,34 @@ def emptydir(dir, verbose):
 
     # Second pass: delete subdirectories.
 
+    first = True
     for subdir in files:
 
-        # Ifdh signals that a file is a directory by ending the path with '/'.
+        # Ifdh signals that a file is a directory by ending the path
+        # with '/'.  Ifdh seems to include the directory itself in its
+        # listing.  Furthermore, it can be hard to recognize that a
+        # listed path is identical with the original directory.
+        # However, ifdh seems to always return the directory itself as
+        # the first element of its listing (not sure if this is
+        # documented behavior.  Therefore, we only delete the first
+        # returned element if its basename doesn't match the basename
+        # of the original directory.
 
-        if subdir[-1] == '/' and os.path.abspath(subdir) != os.path.abspath(dir):
-            rmdir(subdir[:-1], verbose)
+        if subdir[-1] == '/':
+            if not first or os.path.basename(subdir[:-1]) != os.path.basename(dir):
+                rmdir(subdir[:-1], verbose)
+            first = False
 
 
 # Function to recursively delete a directory.
 
 def rmdir(dir, verbose):
+
+    # Remove trailing '/' character(s), if any (except if or until entire path is '/').
+
+    while len(dir) > 1 and dir[-1] == '/':
+        dir = dir[:-1]
+
     emptydir(dir, verbose)
     if verbose:
         print 'Deleting directory %s' % dir

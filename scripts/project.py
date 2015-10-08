@@ -816,7 +816,15 @@ def docheck(project, stage, ana):
     # generated with lines containing /dev/null.
 
     stage.checkinput()
-    stage.check_output_dirs()
+
+    # Check that output and log directories exist.
+
+    if not os.path.exists(stage.outdir):
+        print 'Output directory %s does not exist.' % stage.outdir
+        return 1
+    if not os.path.exists(stage.logdir):
+        print 'Log directory %s does not exist.' % stage.logdir
+        return 1
 
     import_samweb()
     has_metadata = project.file_type != '' or project.run_type != ''
@@ -1606,6 +1614,9 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
                     break
             if should_upload:
                 dropbox = project_utilities.get_dropbox(filename)
+                if not project_utilities.safeexist(dropbox):
+                    print 'Making dropbox directory %s.' % dropbox
+                    os.makedirs(dropbox)
                 locs_to_upload[disk_locs[0]] = dropbox
         
         # Report results and do the actual adding/removing/uploading.
@@ -2059,8 +2070,14 @@ def dojobsub(project, stage, makeup):
             command_njobs = min(makeup_count, stage.num_jobs)
             command.extend(['-N', '%d' % command_njobs])
     else:
-        command_njobs = len(stage.output_subruns)
-        command.extend(['-N', '%d' % command_njobs])
+        if stage.inputdef != '':
+            files_per_job = stage.max_files_per_job
+            if files_per_job == 0:
+                files_per_job = 1
+            command_njobs = (len(stage.output_subruns) + files_per_job - 1) / files_per_job
+        else:
+            command_njobs = len(stage.output_subruns)
+            command.extend(['-N', '%d' % command_njobs])
     if stage.jobsub != '':
         for word in stage.jobsub.split():
             command.append(word)
@@ -2102,8 +2119,8 @@ def dojobsub(project, stage, makeup):
 
     # Specify single worker mode in case of pubs output.
 
-    #if stage.pubs_output:
-    #    command.append('--single')
+    if stage.dynamic:
+        command.append('--single')
 
     if stage.inputfile != '':
         command.extend([' -s', stage.inputfile])
@@ -2115,7 +2132,8 @@ def dojobsub(project, stage, makeup):
     if stage.inputmode != '':
         command.extend([' --inputmode', stage.inputmode])
     command.extend([' -n', '%d' % project.num_events])
-    command.extend([' --njobs', '%d' % stage.num_jobs ])
+    if stage.inputdef == '':
+        command.extend([' --njobs', '%d' % stage.num_jobs ])
     if procmap != '':
         command.extend([' --procmap', procmap])
     if stage.output != '':
@@ -2350,10 +2368,11 @@ def dosubmit(project, stage, makeup=False):
 
     project_utilities.test_kca()
 
-    # In pubs mode, unconditionally delete any existing work, log, or output
-    # directories, since there is no separate makeup action for pubs mode.
+    # In pubs mode, delete any existing work, log, or output
+    # directories, since there is no separate makeup action for pubs
+    # mode.
 
-    if stage.pubs_output:
+    if stage.pubs_output and not stage.dynamic:
         if project_utilities.safeexist(stage.workdir):
             shutil.rmtree(stage.workdir)
         if project_utilities.safeexist(stage.outdir):
@@ -2374,7 +2393,7 @@ def dosubmit(project, stage, makeup=False):
 
     # Make sure output and log directories are empty (submit only).
 
-    if not makeup:
+    if not makeup and not stage.dynamic:
         if len(os.listdir(stage.outdir)) != 0:
             raise RuntimeError, 'Output directory %s is not empty.' % stage.outdir
         if len(os.listdir(stage.logdir)) != 0:

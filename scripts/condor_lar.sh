@@ -1175,7 +1175,7 @@ if [ $USE_SAM -ne 0 ]; then
   export ART_DEBUG_CONFIG=1
   APPNAME=`lar -c $FCL 2>&1 > /dev/null | grep process_name: | tr -d '"' | awk '{print $2}'`
   if [ $? -ne 0 ]; then
-     echo “lar -c $FCL failed to run. May be missing a ups product, library, or fcl file.”
+     echo "lar -c $FCL failed to run. May be missing a ups product, library, or fcl file."
      exit 1
   fi
   unset ART_DEBUG_CONFIG
@@ -1352,9 +1352,13 @@ done
 
 # Calculate root metadata for all root files and save as json file.
 # If json metadata already exists, merge with newly geneated root metadata.
-# Extract a subrun number, if one exists.
+# Extract a subrun number, if one exists.  Make remote (not necessarily unique) 
+# and local directories for root files with identifiable subrun numbers.
 
 subrun=''
+declare -a outdirs
+declare -a logdirs
+declare -a subruns
 for root in *.root; do
   json=${root}.json
   if [ -f $json ]; then
@@ -1365,31 +1369,22 @@ for root in *.root; do
   else
     root_metadata.py $root > $json
   fi
-  if [ x$subrun = x ]; then
-    subrun=`subruns.py $root | awk 'NR==1{print $2}'`
+  subrun=`subruns.py $root | awk 'NR==1{print $2}'`
+  if [ x$subrun != x ]; then
+    subruns=(${subruns[*]} $subrun)
+    outdirs[$subrun]=`echo $OUTDIR | sed "s/@s/$subrun/"`
+    echo "Output directory for subrun $subrun is ${outdirs[$subrun]}"
+    mkdir out$subrun
+    logdirs[$subrun]=`echo $LOGDIR | sed "s/@s/$subrun/"`    
+    echo "Log directory for subrun $subrun is ${logdirs[$subrun]}"
+    mkdir log$subrun
   fi
 done
 
-# Update OUTDIR and LOGDIR based on extracted run number (if any).
+# Make local output directories for files that don't have a subrun.
 
-if [ x$subrun != x ]; then
-    OUTDIR=`echo $OUTDIR | sed "s/@s/$subrun/"`
-    echo "ifdh mkdir ${OUTDIR} $IFDH_OPT"
-    ifdh mkdir ${OUTDIR} $IFDH_OPT
-    stat=$?
-    if [ $stat -ne 0 ]; then
-      echo "ifdh mkdir failed with status ${stat}."
-      exit $stat
-    fi
-    LOGDIR=`echo $LOGDIR | sed "s/@s/$subrun/"`
-    echo "ifdh mkdir ${LOGDIR} $IFDH_OPT"
-    ifdh mkdir ${LOGDIR} $IFDH_OPT
-    stat=$?
-    if [ $stat -ne 0 ]; then
-      echo "ifdh mkdir failed with status ${stat}."
-      exit $stat
-    fi
-fi
+mkdir out
+mkdir log
 
 # Make local files group write, if appropriate.
 
@@ -1398,60 +1393,105 @@ if [ $GRID -eq 0 -a $OUTUSER != $CURUSER ]; then
 fi
 
 # Stash all of the files we want to save in a local
-# directory with a unique name.  Then copy this directory
-# and its contents recursively.
+# directories with a unique name.  Then copy these directories
+# and their contents recursively.
 
-mkdir out
-mkdir log
-for outfile in *.root; do
-  mv $outfile out
+# First move .root and corresponding .json files into one subdirectory.
+# Note that .root files never get replicated.
+
+for root in *.root; do
+  subrun=`subruns.py $root | awk 'NR==1{print $2}'`
+  mv $root out$subrun
+  mv ${root}.json log$subrun
 done
+
+# Copy any remaining files into all log subdirectories.
+# These small files get replicated.
+
 for outfile in *; do
-  if [ $outfile != log -a $outfile != out ]; then
-    mv $outfile log
+  if [ -f $outfile ]; then
+    cp $outfile log
+    for subrun in ${subruns[*]}
+    do
+      cp $outfile log$subrun
+    done
   fi
 done
 
-# Clean output and log directories.
+# Clean remote output and log directories.
 
 export IFDH_FORCE=$FORCE
+for dir in ${LOGDIR} ${OUTDIR}
+do
+  echo "Make sure directory ${dir}/$OUTPUT_SUBDIR exists."
+  mkdir.py -v ${dir}/$OUTPUT_SUBDIR
+  echo "Make sure directory ${dir}/$OUTPUT_SUBDIR is empty."
+  emptydir.py -v ${dir}/$OUTPUT_SUBDIR
+  mkdir.py -v ${dir}/$OUTPUT_SUBDIR
+  echo "Directory ${dir}/$OUTPUT_SUBDIR clean ok."
+done
 if [ $SINGLE != 0 ]; then
-  emptydir.py ${LOGDIR}
-  emptydir.py ${OUTDIR}
+  for dir in ${logdirs[*]} ${outdirs[*]}
+  do
+    echo "Make sure directory $dir exists."
+    mkdir.py -v $dir
+    echo "Make sure directory $dir is empty."
+    emptydir.py -v $dir
+    mkdir.py -v $dir/$OUTPUT_SUBDIR
+    echo "Directory $dir/$OUTPUT_SUBDIR clean ok."
+  done
 else
-  emptydir.py ${LOGDIR}/$OUTPUT_SUBDIR
-  emptydir.py ${OUTDIR}/$OUTPUT_SUBDIR
+  for dir in ${logdirs[*]} ${outdirs[*]}
+  do
+    echo "Make sure directory ${dir}/$OUTPUT_SUBDIR exists."
+    mkdir.py -v ${dir}/$OUTPUT_SUBDIR
+    echo "Make sure directory ${dir}/$OUTPUT_SUBDIR is empty."
+    emptydir.py -v ${dir}/$OUTPUT_SUBDIR
+    mkdir.py -v ${dir}/$OUTPUT_SUBDIR
+    echo "Directory ${dir}/$OUTPUT_SUBDIR clean ok."
+  done
 fi
 
-echo "ifdh mkdir ${LOGDIR}/$OUTPUT_SUBDIR $IFDH_OPT"
-ifdh mkdir ${LOGDIR}/$OUTPUT_SUBDIR $IFDH_OPT
-stat=$?
-if [ $stat -ne 0 ]; then
-  echo "ifdh mkdir failed with status ${stat}."
-  exit $stat
-fi
+statout=0
+export IFDH_CP_MAXRETRIES=0
 echo "ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR"
 ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR
 stat=$?
 if [ $stat -ne 0 ]; then
   echo "ifdh cp failed with status ${stat}."
+  statout=$stat
 fi
-statout=$stat
 
-echo "ifdh mkdir ${OUTDIR}/$OUTPUT_SUBDIR $IFDH_OPT"
-ifdh mkdir ${OUTDIR}/$OUTPUT_SUBDIR $IFDH_OPT
-stat=$?
-if [ $stat -ne 0 ]; then
-  echo "ifdh mkdir failed with status ${stat}."
-  exit $stat
-fi
+for subrun in ${subruns[*]}
+do
+  echo "ifdh cp -D $IFDH_OPT log${subrun}/* ${logdirs[$subrun]}/$OUTPUT_SUBDIR"
+  ifdh cp -D $IFDH_OPT log${subrun}/* ${logdirs[$subrun]}/$OUTPUT_SUBDIR
+  stat=$?
+  if [ $stat -ne 0 ]; then
+    echo "ifdh cp failed with status ${stat}."
+    statout=$stat
+  fi
+done
+
 echo "ifdh cp -D $IFDH_OPT out/* ${OUTDIR}/$OUTPUT_SUBDIR"
 ifdh cp -D $IFDH_OPT out/* ${OUTDIR}/$OUTPUT_SUBDIR
 stat=$?
 if [ $stat -ne 0 ]; then
   echo "ifdh cp failed with status ${stat}."
-  exit $stat
+  statout=$stat
 fi
+
+for subrun in ${subruns[*]}
+do
+  echo "ifdh cp -D $IFDH_OPT out${subrun}/* ${outdirs[$subrun]}/$OUTPUT_SUBDIR"
+  ifdh cp -D $IFDH_OPT out${subrun}/* ${outdirs[$subrun]}/$OUTPUT_SUBDIR
+  stat=$?
+  if [ $stat -ne 0 ]; then
+    echo "ifdh cp failed with status ${stat}."
+    statout=$stat
+  fi
+done
+
 if [ $statout -ne 0 ]; then
   exit $statout
 fi
