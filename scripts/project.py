@@ -2114,8 +2114,8 @@ def dojobsub(project, stage, makeup):
 
     # Set the process number for pubs jobs that are the first in the chain.
 
-    if not stage.pubs_input and stage.pubs_output and stage.output_subrun > 0:
-        command.extend(['--process', '%d' % (stage.output_subrun-1)])
+    if not stage.pubs_input and stage.pubs_output and stage.output_subruns[0] > 0:
+        command.extend(['--process', '%d' % (stage.output_subruns[0]-1)])
 
     # Specify single worker mode in case of pubs output.
 
