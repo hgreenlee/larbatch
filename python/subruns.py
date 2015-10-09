@@ -60,6 +60,12 @@ def get_subruns(inputfile):
 
         result = []
 
+    # Sort in order of increasing run, then increasing subrun.
+
+    result.sort()
+
+    # Done.
+
     return result
 
 if __name__ == "__main__":
