@@ -2071,12 +2071,9 @@ def dojobsub(project, stage, makeup):
             command.extend(['-N', '%d' % command_njobs])
     else:
         if stage.inputdef != '':
-            files_per_job = stage.max_files_per_job
-            if files_per_job == 0:
-                files_per_job = 1
-            command_njobs = (len(stage.output_subruns) + files_per_job - 1) / files_per_job
+            command_njobs = stage.num_jobs
         else:
-            command_njobs = len(stage.output_subruns)
+            command_njobs = stage.num_jobs
             command.extend(['-N', '%d' % command_njobs])
     if stage.jobsub != '':
         for word in stage.jobsub.split():
