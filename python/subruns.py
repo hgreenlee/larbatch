@@ -16,6 +16,11 @@ import ROOT
 ROOT.gErrorIgnoreLevel = ROOT.kError
 sys.argv = myargv
 
+# Filter warnings.
+
+import warnings
+warnings.filterwarnings('ignore', category = RuntimeWarning, message = 'creating converter.*')
+
 # This function opens an artroot file and extracts the list of runs and subruns
 # from the SubRuns TTree.
 # A list of (run, subrun) pairs is returned as a list of 2-tuples.
