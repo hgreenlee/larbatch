@@ -1,4 +1,18 @@
 #!/usr/bin/env python
+######################################################################
+#
+# Name: subruns.py
+#
+# Purpose: Extract (run, subrun) pairs from an artroot file.  Output
+#          one (run, subrun) pair per line of output.
+#
+# Created: 13-Oct-2015  H. Greenlee
+#
+# Command line usage:
+#
+# subruns.py <artroot file>
+#
+######################################################################
 
 # Import stuff.
 
