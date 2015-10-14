@@ -1,0 +1,58 @@
+#!/usr/bin/env python
+######################################################################
+#
+# Name: stream.py
+#
+# Purpose: Extract stream name from internal sam metadata in an
+#          artroot file.
+#
+# Created: 13-Oct-2015  H. Greenlee
+#
+# Command line usage:
+#
+# stream.py <artroot file>
+#
+######################################################################
+
+# Import stuff.
+
+import sys, subprocess, json
+
+# Read and decode stream encoded in sam metadata.
+
+def get_stream(inputfile):
+
+    result = ''
+
+    # Extract sam metadata in form of json string.
+
+    jobinfo = subprocess.Popen(['sam_metadata_dumper', inputfile],
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+    jobout, joberr = jobinfo.communicate()
+    rc = jobinfo.poll()
+    if rc != 0:
+        raise RuntimeError, 'sam_metadata_dumper failed with status %d' % rc
+
+    # Decode json string to dictionary.
+
+    js = json.loads(jobout)
+    md = js[inputfile]
+
+    # Extract stream from json dictionary.
+
+    if md.has_key('data_stream'):
+        result = md['data_stream']
+    else:
+        raise RuntimeError, 'Sam metadata does not contain stream.'
+
+    # Done.
+
+    return result
+
+# Main program.
+
+if __name__ == "__main__":
+    stream = get_stream(str(sys.argv[1]))
+    print stream
+    sys.exit(0)	

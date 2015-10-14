@@ -2,7 +2,7 @@
 
 # Import stuff.
 
-import sys, os, string, subprocess, json, project_utilities
+import sys, os, string, subprocess, json, project_utilities, stream
 
 # Import ROOT (hide command line arguments).
 
@@ -15,6 +15,11 @@ if os.environ.has_key('TERM'):
 import ROOT
 ROOT.gErrorIgnoreLevel = ROOT.kError
 sys.argv = myargv
+
+# Filter warnings.
+
+import warnings
+warnings.filterwarnings('ignore', category = RuntimeWarning, message = 'creating converter.*')
 
 # Convert adler32-1 (used by dcache) to adler32-0 (used by sam).
 
@@ -147,6 +152,14 @@ def get_external_metadata(inputfile):
                 run_subrun = (run, subrun)
                 if not run_subrun in md['subruns']:
                     md['subruns'].append(run_subrun)
+
+        # Get stream name.
+
+        try:
+            stream_name = stream.get_stream(inputfile)
+            md['data_stream'] = stream_name
+        except:
+            pass
 
     else:
 

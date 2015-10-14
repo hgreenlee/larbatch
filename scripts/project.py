@@ -2071,12 +2071,9 @@ def dojobsub(project, stage, makeup):
             command.extend(['-N', '%d' % command_njobs])
     else:
         if stage.inputdef != '':
-            files_per_job = stage.max_files_per_job
-            if files_per_job == 0:
-                files_per_job = 1
-            command_njobs = (len(stage.output_subruns) + files_per_job - 1) / files_per_job
+            command_njobs = stage.num_jobs
         else:
-            command_njobs = len(stage.output_subruns)
+            command_njobs = stage.num_jobs
             command.extend(['-N', '%d' % command_njobs])
     if stage.jobsub != '':
         for word in stage.jobsub.split():
@@ -2114,8 +2111,8 @@ def dojobsub(project, stage, makeup):
 
     # Set the process number for pubs jobs that are the first in the chain.
 
-    if not stage.pubs_input and stage.pubs_output and stage.output_subrun > 0:
-        command.extend(['--process', '%d' % (stage.output_subrun-1)])
+    if not stage.pubs_input and stage.pubs_output and stage.output_subruns[0] > 0:
+        command.extend(['--process', '%d' % (stage.output_subruns[0]-1)])
 
     # Specify single worker mode in case of pubs output.
 

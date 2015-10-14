@@ -137,7 +137,10 @@ def analyze(root, level, gtrees, gbranches, doprint):
                         ntotall = ntotall + ntot
                         nzipall = nzipall + nzip
                         if doprint:
-                            comp = float(ntot) / float(nzip)
+                            if nzip != 0:
+                                comp = float(ntot) / float(nzip)
+                            else:
+                                comp = 0.
                             print '%14d%14d%8.2f  %s' % (ntot, nzip, comp, name)
 
                         # Remember information about branches.
@@ -157,7 +160,10 @@ def analyze(root, level, gtrees, gbranches, doprint):
                                 ntot = subsubbranch.GetTotBytes("*")
                                 nzip = subsubbranch.GetZipBytes("*")
                                 if doprint:
-                                    comp = float(ntot) / float(nzip)
+                                    if nzip != 0:
+                                        comp = float(ntot) / float(nzip)
+                                    else:
+                                        comp = 0.
                                     print '%14d%14d%8.2f  %s' % (ntot, nzip, comp,
                                                                  subsubbranch.GetName())
 
@@ -173,14 +179,21 @@ def analyze(root, level, gtrees, gbranches, doprint):
 
         name = 'All branches'
         if doprint:
-            comp = float(ntotall) / float(nzipall)
+            if nzipall != 0:
+                comp = float(ntotall) / float(nzipall)
+            else:
+                comp = 0.
             print '%14d%14d%8.2f  %s' % (ntotall, nzipall, comp, name)
 
             # Print average event size.
 
             nev = events.GetEntriesFast()
-            nevtot = 1.e-6 * float(ntotall) / float(nev)
-            nevzip = 1.e-6 * float(nzipall) / float(nev)
+            if nev != 0:
+                nevtot = 1.e-6 * float(ntotall) / float(nev)
+                nevzip = 1.e-6 * float(nzipall) / float(nev)
+            else:
+                nevtot = 0.
+                nevzip = 0.
             print
             print '%10d events.' % nev
             print '%7.2f Mb average size per event.' % nevtot
@@ -312,20 +325,30 @@ def main(argv):
         if key != allname:
             ntot = gbranches[key][0]
             nzip = gbranches[key][1]
-            comp = float(ntot) / float(nzip)
+            if nzip != 0:
+                comp = float(ntot) / float(nzip)
+            else:
+                comp = 0.
             print '%14d%14d%8.2f  %s' % (ntot, nzip, comp, key)
     if gbranches.has_key(allname):
         ntot = gbranches[allname][0]
         nzip = gbranches[allname][1]
-        comp = float(ntot) / float(nzip)
+        if nzip != 0:
+            comp = float(ntot) / float(nzip)
+        else:
+            comp = 0.
         print '%14d%14d%8.2f  %s' % (ntot, nzip, comp, allname)
 
     # Print average event size.
 
     if gtrees.has_key('Events'):
         nev = gtrees['Events']
-        nevtot = 1.e-6 * float(ntot) / float(nev)
-        nevzip = 1.e-6 * float(nzip) / float(nev)
+        if nev != 0:
+            nevtot = 1.e-6 * float(ntot) / float(nev)
+            nevzip = 1.e-6 * float(nzip) / float(nev)
+        else:
+            nevtot = 0.
+            nevzip = 0.
         print
         print '%10d events.' % nev
         if level > 0:

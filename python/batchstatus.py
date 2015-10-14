@@ -97,7 +97,9 @@ class BatchStatus:
         jobout, joberr = jobinfo.communicate()
         rc = jobinfo.poll()
         if rc != 0:
-            raise JobsubError(command, rc, jobout, joberr)
+            #raise JobsubError(command, rc, jobout, joberr)
+            # Simply return in case jobsub_q fails.
+            return
         jobs = jobout.split('\n')
 
     # Return jobs list.

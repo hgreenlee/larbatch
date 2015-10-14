@@ -1,4 +1,18 @@
 #!/usr/bin/env python
+######################################################################
+#
+# Name: subruns.py
+#
+# Purpose: Extract (run, subrun) pairs from an artroot file.  Output
+#          one (run, subrun) pair per line of output.
+#
+# Created: 13-Oct-2015  H. Greenlee
+#
+# Command line usage:
+#
+# subruns.py <artroot file>
+#
+######################################################################
 
 # Import stuff.
 
@@ -15,6 +29,11 @@ if os.environ.has_key('TERM'):
 import ROOT
 ROOT.gErrorIgnoreLevel = ROOT.kError
 sys.argv = myargv
+
+# Filter warnings.
+
+import warnings
+warnings.filterwarnings('ignore', category = RuntimeWarning, message = 'creating converter.*')
 
 # This function opens an artroot file and extracts the list of runs and subruns
 # from the SubRuns TTree.
@@ -59,6 +78,12 @@ def get_subruns(inputfile):
         # Root file could not be opened.
 
         result = []
+
+    # Sort in order of increasing run, then increasing subrun.
+
+    result.sort()
+
+    # Done.
 
     return result
 

@@ -327,35 +327,25 @@ class StageDef:
     # 1.  If xml element pubsinput is false (0), do not try to limit the 
     #     input in any way.  Just use whatever is the normal input.
     #
-    # 2.  If input is from a sam dataset, assume that the input dataset
-    #     has been limited to the specifiec run and subruns elsewhere in
-    #     the workflow (e.g. condor_start_lar.sh).  Don't do anything in this
-    #     method.
+    # 2.  If input is from a sam dataset, create a restricted dataset that
+    #     is limited to the specified run and subruns.
     #
     # 3.  If input is from a file list (and pubsinput is true), modify the 
-    #     input list assuming that the input area as the standard pubs 
+    #     input list assuming that the input area has the standard pubs 
     #     diretory structure.  There are several subcases depending on
     #     whether there is one or multiple subruns, and whether input
     #     to output ratio is one-to-one or many-to-run.
     #
-    #     a) One-to-one, single subrun, reset input list to point to 
-    #        files.list from pubs input directory.  Raise PubsInputError
-    #        if input files.list does not exist.
+    #     a) Single subrun.  Reset input list to point to files.list
+    #        from pubs input directory.  Raise PubsInputError if input
+    #        files.list does not exist.
     #
-    #     b) Many-to-one, single subrun (merging).  Generate a new input
-    #        list with a unique name from all files.list files from all 
-    #        pubs input subrun directories.  Raise PubsDeadEndError if this
-    #        subrun is being merged into a different output subrun.  Raise
-    #        PubsInputError if not all input files.list files are (as yet)
-    #        available.
-    #
-    #     c) One-to-one, multiple subruns.  Generate a new input list with
-    #        a unique name from all files.list files from all pubs input 
-    #        subrun directories.  Raise PubsInputError if not all input
-    #        files.list files are available.
-    #
-    #     d) Many-to-one, multiple subruns.  This use case is not (yet)
-    #        supported.
+    #     b) Multiple subruns.  Generate a new input list with a
+    #        unique name which will get input from the specified run
+    #        and subruns input lists.  Note that input files may or
+    #        may not be merged depeending on the scheduler fileMode
+    #        fcl parameter.  Default is to merge.  Specify 
+    #        "services.scheduler.fileMode: NOMERGE" to disable merging.
     #
     # 4.  If input is from a singe file (and pubsinput is true), raise
     #     an exception.  This use case doesn't make sense and isn't
@@ -399,6 +389,17 @@ class StageDef:
             self.inputdef = project_utilities.create_limited_dataset(self.inputdef,
                                                                      run,
                                                                      subruns)
+
+            # Set the number of submitted jobs assuming each worker will get 
+            # self.max_files_per_job files.
+
+            files_per_job = self.max_files_per_job
+            if files_per_job == 0:
+                files_per_job = 1
+            self.num_jobs = (len(subruns) + files_per_job - 1) / files_per_job
+
+            # Done.
+
             return
 
         # Raise an exception if there is no previous stage (with input file).
@@ -408,11 +409,11 @@ class StageDef:
 
         # If we get to here, we have input from a file list and a previous stage
         # exists.  This normally indicates a daisy chain.  This is where subcases
-        # 3 (a)-(d) are handled.
+        # 3 (a), (b) are handled.
 
-        # Case 3(a), one-to-one, single subrun.
+        # Case 3(a), single subrun.
 
-        if self.num_jobs == previous_stage.num_jobs and len(subruns) == 1:
+        if len(subruns) == 1:
 
             # Insert run and subrun into input file list path.
 
@@ -432,82 +433,24 @@ class StageDef:
             except:
                 lines = []
             if len(lines) == 0:
-                raise PubsInputError(run, subrun, version)
+                raise PubsInputError(run, subruns[0], version)
+
+            # Specify that there will be exactly one job submitted.
+
+            self.num_jobs = 1
 
             # Everything OK (case 3(a)).
 
             return
 
-        # Case 3(b), many-to-one, single subrun.
+        # Case 3(b), multiple subruns.
 
-        elif self.num_jobs < previous_stage.num_jobs and len(subruns) == 1:
-
-            # Extract the input subrun range.
-
-            section = int((subruns[0] - 1) * self.num_jobs / previous_stage.num_jobs)
-            first_input_subrun = int(math.ceil(float(previous_stage.num_jobs * section) \
-                                                   / float(self.num_jobs))) + 1
-            last_input_subrun = (previous_stage.num_jobs * section + previous_stage.num_jobs - 1) \
-                            / self.num_jobs + 1
-
-            # Only process the first input subrun.
-
-            if subruns[0] != first_input_subrun:
-                raise PubsDeadEndError(run, subrun, version)
-
-            # Generate a new input file list, called "merged_files.list" and place 
-            # it in the same directory as the first input subrun input list.
-
-            first = True
-            dir = os.path.dirname(self.inputlist)
-            base = os.path.basename(self.inputlist)
-            for input_subrun in range(first_input_subrun, last_input_subrun+1):
-                if version == None:
-                    pubs_path = '%d/%d' % (run, input_subrun)
-                else:
-                    pubs_path = '%d/%d/%d' % (version, run, input_subrun)
-                inputlist = os.path.join(dir, pubs_path, base)
-                if first:
-                    first = False
-                    merged_input_path = os.path.join(dir, pubs_path, 'merged_files.list')
-                    self.inputlist = merged_input_path
-                    print 'Generating merged input list %s' % merged_input_path
-                    merged_input = open(merged_input_path, 'w')
-                lines = []
-                try:
-                    lines = open(inputlist).readlines()
-                except:
-                    lines = []
-
-                # Return an error if input can't be opened, or is empty.
-
-                if len(lines) == 0:
-                    raise PubsInputError(run, subrun, version)
-
-                for line in lines:
-                    merged_input.write(line)
-
-            # Done looping over input lists.
-
-            merged_input.close()
-
-            # Set the number of jobs to one, so that batch job will process the entire
-            # (possibly merged) input file list.
-
-            self.num_jobs = 1
-
-            # Everything OK (case 3(b)).
-
-            return
-
-        # Case 3(c), one-to-one, multiple subruns.
-
-        if self.num_jobs == previous_stage.num_jobs and len(subruns) > 1:
+        if len(subruns) > 1:
 
             # Generate a new input file list with a unique name and place 
             # it in the same directory as the original input list.  Note that
             # the input list may not actually exist at this point.  If it
-            # doesn't exist, just use the same name.  If it already exists,
+            # doesn't exist, just use the original name.  If it already exists,
             # generate a different name.
 
             dir = os.path.dirname(self.inputlist)
@@ -520,8 +463,8 @@ class StageDef:
             new_inputlist_file = open(new_inputlist_path, 'w')
 
             # Loop over subruns.  Read contents of pubs input list for each subrun.
-            # Each subrun should have only one input file (because of one-to-one).
 
+            nlist = 0
             for subrun in subruns:
 
                 if version == None:
@@ -537,31 +480,36 @@ class StageDef:
                     lines = []
                 if len(lines) == 0:
                     raise PubsInputError, 'Trouble reading input file from %s\n' % subrun_inputlist
-                if len(lines) > 1:
-                    raise PubsInputError, 'Found multiple input files in %s\n' % subrun_inputlist
-                subrun_inputfile = lines[0].strip()
-                #print 'Adding input file %s\n' % subrun_inputfile
-                new_inputlist_file.write('%s\n' % subrun_inputfile)
+                for line in lines:
+                    subrun_inputfile = line.strip()
+                    new_inputlist_file.write('%s\n' % subrun_inputfile)
+                    nlist += 1
 
             # Done looping over subruns.
 
             new_inputlist_file.close()
 
-            # Everything OK (case 3(c)).
+            # Specify the number of jobs to submit.
+
+            if self.num_jobs < previous_stage.num_jobs:
+
+                # If this stage has fewer jobs than the previous stage,
+                # assume we want to merge files, so submit one job.
+
+                self.num_jobs = 1
+
+            else:
+
+                # If the number of output jobs is equal to (or greater than)
+                # the previous stage, we don't want to merge.  Set the number 
+                # of jobs to submit equal to the number of files in the new
+                # input list.
+
+                self.num_jobs = nlist
+
+            # Everything OK (case 3(b)).
 
             return
-
-        # Case 3(d), many-to-one, multiple subruns.
-
-        elif self.num_jobs < previous_stage.num_jobs and len(subruns) != 1:
-
-            raise RuntimeError, 'Many-to-one pubs input with multiple subruns is not supported.'
-
-        # One-to-many case is not allows.
-
-        else:
-
-            raise RuntimeError, 'One-to-many pubs input is not supported.'
 
         # Shouldn't ever fall out of loop.
 
