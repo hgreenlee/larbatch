@@ -174,6 +174,14 @@
 #             the list of files produced by the previous production stage
 #             (if any) will be used as input to the current production stage
 #             (must have been checked using option --check).
+# <stage><inputstream> - Specify input stream.  This only effect of this 
+#             parameter is to change the default input file list name from 
+#             "files.list" to "files_<inputstream>.list."  This parameter has
+#             no effect if any non-default input is specified.
+# <stage><previousstage> - Specify the previous stage name to be something other
+#             than the immediate predecessor stage specified in the xml file.
+#             This parameter only affects the default input file list.  This
+#             parameter has no effect if any non-default input is specified.
 # <stage><pubsinput> - 0 (false) or 1 (true).  If true, modify input file list
 #                      for specific (run, subrun, version) in pubs mode.  Default is true.
 # <stage><numjobs> - Number of worker jobs (default 1).
@@ -597,53 +605,65 @@ def get_pubs_stage(xmlfile, projectname, stagename, run, subruns, version=None):
     if stage == None:
         raise RuntimeError, 'No stage selected for projectname=%s, stagename=%s' % (
             projectname, stagename)
-    pstage = previous_stage(projects, stagename)
-    stage.pubsify_input(run, subruns, version, pstage)
+    stage.pubsify_input(run, subruns, version)
     stage.pubsify_output(run, subruns, version)
     return project, stage
 
 
 # Check a single root file.
-# Returns an int containing following information.
-# 1.  Number of event (>0) in TTree named "Events."
-# 2.  Zero if root file does not contain an Events TTree, but is otherwise valid (openable).
-# 3.  -1 for error (root file is not openable).
-# 4. In the case of TFile output (histogram or ntuples), creates a final json file holding
-#    all the TFile metadata related information. This is done as part of --checkana.
+# Returns a 2-tuple containing the number of events and stream name.
+# The number of events conveys the following information:
+# 1.  Number of events (>=0) in TTree named "Events."
+# 2.  -1 if root file does not contain an Events TTree, but is otherwise valid (openable).
+# 3.  -2 for error (root file does not exist or is not openable).
 
 def check_root_file(path, logdir):
 
     global proxy_ok
-    nevroot = -1
+    result = (-2, '')
     json_ok = False
     md = []
 
     # First check if root file exists (error if not).
 
     if not project_utilities.safeexist(path):
-        return -1
+        return result
 
     # See if we have precalculated metadata for this root file.
 
     json_path = os.path.join(logdir, os.path.basename(path) + '.json')
     if project_utilities.safeexist(json_path):
+
         # Get number of events from precalculated metadata.
+
         try:
 	    lines = project_utilities.saferead(json_path)
      	    s = ''
             for line in lines:
                s = s + line
+
             # Convert json string to python dictionary.
+
             md = json.loads(s)
-            # Extract number of events from metadata.
+
+            # If we get this far, say the file was at least openable.
+
+            result = (-1, '')
+
+            # Extract number of events and stream name from metadata.
+
 	    if len(md.keys()) > 0:
-      		nevroot = 0
+      		nevroot = -1
+                stream = ''
             	if md.has_key('events'):
-                     nevroot = int(md['events'])
+                    nevroot = int(md['events'])
+                if md.has_key('data_stream'):
+                    stream = md['data_stream']
+                result = (nevroot, stream)
             json_ok = True
         except:
-            nevroot = -1
-    return nevroot
+            result = (-2, '')
+    return result
 
 
 # Check root files (*.root) in the specified directory.
@@ -656,10 +676,11 @@ def check_root(outdir, logdir):
     #
     # Returns a 3-tuple containing the following information.
     # 1.  Total number of events in art root files.
-    # 2.  A list of 2-tuples with an entry for each art root file.
+    # 2.  A list of 3-tuples with an entry for each art root file.
     #     The 2-tuple contains the following information.
-    #     a) Number of events
-    #     b) Filename.
+    #     a) Filename (full path).
+    #     b) Number of events
+    #     c) Stream name.
     # 3.  A list of histogram root files.
 
     nev = -1
@@ -671,14 +692,14 @@ def check_root(outdir, logdir):
     for filename in filenames:
         if filename[-5:] == '.root':
             path = os.path.join(outdir, filename)
-            nevroot = check_root_file(path, logdir)
-            if nevroot > 0:
+            nevroot, stream = check_root_file(path, logdir)
+            if nevroot >= 0:
                 if nev < 0:
                     nev = 0
                 nev = nev + nevroot
-                roots.append((os.path.join(outdir, filename), nevroot))
+                roots.append((os.path.join(outdir, filename), nevroot, stream))
 
-            elif nevroot == 0:
+            elif nevroot == -1:
 
                 # Valid root (histo/ntuple) file, not an art root file.
 
@@ -1030,13 +1051,21 @@ def docheck(project, stage, ana):
     urislist = safeopen(urislistname)
 
     # Generate "files.list" and "events.list."
+    # Also fill stream-specific file list.
 
     nproc = 0
+    streams = {}    # {stream: file}
     for s in procmap.keys():
         nproc = nproc + 1
         for root in procmap[s]:
             filelist.write('%s\n' % root[0])
-            eventslist.write('%s %d\n' % root)
+            eventslist.write('%s %d\n' % root[:2])
+            stream = root[2]
+            if stream != '':
+                if not streams.has_key(stream):
+                    streamlistname = os.path.join(stage.logdir, 'files_%s.list' % stream)
+                    streams[stream] = safeopen(streamlistname)
+                streams[stream].write('%s\n' % root[0])
 
     # Generate "bad.list"
 
@@ -1089,6 +1118,8 @@ def docheck(project, stage, ana):
     missingfiles.close()
     filesanalist.close()
     urislist.close()
+    for stream in streams.keys():
+        streams[stream].close()
 
     # Make sam files.
 
@@ -2907,9 +2938,8 @@ def main(argv):
     # Get the current stage definition, and pubsify it if necessary.
 
     stage = project.get_stage(stagename)
-    pstage = previous_stage(projects, stagename)
     if pubs:
-        stage.pubsify_input(pubs_run, pubs_subruns, pubs_version, pstage)
+        stage.pubsify_input(pubs_run, pubs_subruns, pubs_version)
         stage.pubsify_output(pubs_run, pubs_subruns, pubs_version)
 
     # Do outdir action now.

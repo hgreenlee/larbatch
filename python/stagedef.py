@@ -22,7 +22,8 @@ class StageDef:
 
     # Constructor.
 
-    def __init__(self, stage_element, default_input_list, default_num_jobs, default_max_files_per_job, default_merge):
+    def __init__(self, stage_element, default_input_lists, default_previous_stage, 
+                 default_num_jobs, default_max_files_per_job, default_merge):
 
         # Assign default values.
         
@@ -36,6 +37,8 @@ class StageDef:
         self.inputlist = ''    # Input file list.
         self.inputmode = ''    # Input file type (none or textfile)
         self.inputdef = ''     # Input sam dataset definition.
+        self.inputstream = ''  # Input file stream.
+        self.previousstage = '' # Previous stage name.
         self.pubs_input_ok = 1 # Is pubs input allowed?
         self.pubs_input = 0    # Pubs input mode.
         self.input_run = 0     # Pubs input run.
@@ -129,6 +132,18 @@ class StageDef:
         if inputdef_elements:
             self.inputdef = inputdef_elements[0].firstChild.data
 
+        # Input stream (subelement).
+
+        inputstream_elements = stage_element.getElementsByTagName('inputstream')
+        if inputstream_elements:
+            self.inputstream = inputstream_elements[0].firstChild.data
+
+        # Previous stage name (subelement).
+
+        previousstage_elements = stage_element.getElementsByTagName('previousstage')
+        if previousstage_elements:
+            self.previousstage = previousstage_elements[0].firstChild.data
+
         # It is an error to specify both input file and input list.
 
         if self.inputfile != '' and self.inputlist != '':
@@ -145,10 +160,31 @@ class StageDef:
             raise XMLError, 'Input list (inputlist) or inputfile is needed for textfile model.'
 
         # If none of input definition, input file, nor input list were specified, set
-        # the input list to the dafault input list.
+        # the input list to the dafault input list.  If an input stream was specified,
+        # insert it in from of the file type.
 
         if self.inputfile == '' and self.inputlist == '':
-            self.inputlist = default_input_list
+
+            # Get the default input list according to the previous stage.
+
+            default_input_list = ''
+            previous_stage_name = default_previous_stage
+            if self.previousstage != '':
+                previous_stage_name = self.previousstage
+            if default_input_lists.has_key(previous_stage_name):
+                default_input_list = default_input_lists[previous_stage_name]
+
+            # Modify default input list according to input stream, if any.
+
+            if self.inputstream == '' or default_input_list == '':
+                self.inputlist = default_input_list
+            else:
+                n = default_input_list.rfind('.')
+                if n < 0:
+                    n = len(default_input_list)
+                self.inputlist = '%s_%s%s' % (default_input_list[:n],
+                                               self.inputstream,
+                                               default_input_list[n:])
 
         # Pubs input flag.
 
@@ -286,6 +322,8 @@ class StageDef:
         result += 'Input list = %s\n' % self.inputlist
         result += 'Input mode = %s\n' % self.inputmode
         result += 'Input sam dataset = %s\n' % self.inputdef
+        result += 'Input stream = %s\n' % self.inputstream
+        result += 'Previous stage name = %s\n' % self.previousstage
         result += 'Pubs input allowed = %d\n' % self.pubs_input_ok
         result += 'Pubs input mode = %d\n' % self.pubs_input
         result += 'Pubs input run number = %d\n' % self.input_run
@@ -333,19 +371,30 @@ class StageDef:
     # 3.  If input is from a file list (and pubsinput is true), modify the 
     #     input list assuming that the input area has the standard pubs 
     #     diretory structure.  There are several subcases depending on
-    #     whether there is one or multiple subruns, and whether input
-    #     to output ratio is one-to-one or many-to-run.
+    #     whether there is one or multiple subruns.
     #
-    #     a) Single subrun.  Reset input list to point to files.list
-    #        from pubs input directory.  Raise PubsInputError if input
+    #     a) Single subrun.  Reset input list to point to an input
+    #        list from pubs input directory (assuming input area has
+    #        standard pubs structure).  Raise PubsInputError if input
     #        files.list does not exist.
     #
     #     b) Multiple subruns.  Generate a new input list with a
-    #        unique name which will get input from the specified run
-    #        and subruns input lists.  Note that input files may or
-    #        may not be merged depeending on the scheduler fileMode
-    #        fcl parameter.  Default is to merge.  Specify 
-    #        "services.scheduler.fileMode: NOMERGE" to disable merging.
+    #        unique name which will get input from the union of the
+    #        specified run and subruns input lists (assuming pubs
+    #        directory structure).
+    #
+    #    In each case 2, 3(a), and 3(b), the original stage parameter
+    #    num_jobs is ignored.  Instead, num_jobs is recalculated as
+    #
+    #     num_jobs = (len(subruns) + max_files_per_job - 1) / max_files_per_job
+    #
+    #     This formula has the feature that if len(subruns) == 1, or
+    #     if max_files_per_job is equal to or greater than the number
+    #     of suburns (or effectively infinite), then the final
+    #     num_jobs paramater will always be one, meaning all input
+    #     files will read in a single job.  On the other hand if
+    #     max_files_per_job == 1, then num_jobs will be equal to the
+    #     number of subruns, so each batch job will process one subrun.
     #
     # 4.  If input is from a singe file (and pubsinput is true), raise
     #     an exception.  This use case doesn't make sense and isn't
@@ -354,7 +403,7 @@ class StageDef:
     # 5.  If no input is specified, don't do anything, since there is no
     #     input to limit.
 
-    def pubsify_input(self, run, subruns, version, previous_stage):
+    def pubsify_input(self, run, subruns, version):
 
         # Don't do anything if pubs input is disabled.
 
@@ -386,9 +435,12 @@ class StageDef:
         # input files to selected run and subruns.
 
         if self.inputdef != '':
-            self.inputdef = project_utilities.create_limited_dataset(self.inputdef,
-                                                                     run,
-                                                                     subruns)
+            newdef = project_utilities.create_limited_dataset(self.inputdef,
+                                                              run,
+                                                              subruns)
+            if not newdef:
+                raise PubsInputError(run, subruns[0], version)                
+            self.inputdef = newdef
 
             # Set the number of submitted jobs assuming each worker will get 
             # self.max_files_per_job files.
@@ -401,11 +453,6 @@ class StageDef:
             # Done.
 
             return
-
-        # Raise an exception if there is no previous stage (with input file).
-
-        if previous_stage == None:
-            raise RuntimeError('No previous pubs stage.')
 
         # If we get to here, we have input from a file list and a previous stage
         # exists.  This normally indicates a daisy chain.  This is where subcases
@@ -459,8 +506,11 @@ class StageDef:
             if os.path.exists(new_inputlist_path):
                 new_inputlist_path = '%s/%s_%s.list' % (dir, base, str(uuid.uuid4()))
             self.inputlist = new_inputlist_path
-            print 'Generating new input list %s\n' % new_inputlist_path
-            new_inputlist_file = open(new_inputlist_path, 'w')
+
+            # Defer opening the new input list file until after the original
+            # input file is successfully opened.
+
+            new_inputlist_file = None
 
             # Loop over subruns.  Read contents of pubs input list for each subrun.
 
@@ -479,9 +529,12 @@ class StageDef:
                 except:
                     lines = []
                 if len(lines) == 0:
-                    raise PubsInputError, 'Trouble reading input file from %s\n' % subrun_inputlist
+                    raise PubsInputError(run, subruns[0], version)
                 for line in lines:
                     subrun_inputfile = line.strip()
+                    if new_inputlist_file == None:
+                        print 'Generating new input list %s\n' % new_inputlist_path
+                        new_inputlist_file = open(new_inputlist_path, 'w')
                     new_inputlist_file.write('%s\n' % subrun_inputfile)
                     nlist += 1
 
@@ -489,23 +542,13 @@ class StageDef:
 
             new_inputlist_file.close()
 
-            # Specify the number of jobs to submit.
+            # Set the number of submitted jobs assuming each worker will get 
+            # self.max_files_per_job files.
 
-            if self.num_jobs < previous_stage.num_jobs:
-
-                # If this stage has fewer jobs than the previous stage,
-                # assume we want to merge files, so submit one job.
-
-                self.num_jobs = 1
-
-            else:
-
-                # If the number of output jobs is equal to (or greater than)
-                # the previous stage, we don't want to merge.  Set the number 
-                # of jobs to submit equal to the number of files in the new
-                # input list.
-
-                self.num_jobs = nlist
+            files_per_job = self.max_files_per_job
+            if files_per_job == 0:
+                files_per_job = 1
+            self.num_jobs = (len(subruns) + files_per_job - 1) / files_per_job
 
             # Everything OK (case 3(b)).
 

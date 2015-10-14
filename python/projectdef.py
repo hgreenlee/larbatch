@@ -239,14 +239,19 @@ class ProjectDef:
         # Project stages (repeatable subelement).
 
         stage_elements = project_element.getElementsByTagName('stage')
-        default_input_list = default_first_input_list
+        default_input_lists = {}
+        default_previous_stage = ''
+        default_input_lists[default_previous_stage] = default_first_input_list
         for stage_element in stage_elements:
             self.stages.append(StageDef(stage_element, 
-                                        default_input_list, 
+                                        default_input_lists,
+                                        default_previous_stage,
                                         self.num_jobs,
                                         self.max_files_per_job,
                                         self.merge))
-            default_input_list = os.path.join(self.stages[-1].logdir, 'files.list')
+            default_previous_stage = self.stages[-1].name
+            default_input_lists[default_previous_stage] = os.path.join(self.stages[-1].logdir,
+                                                                       'files.list')
 
         # Dictionary of metadata parameters
 
