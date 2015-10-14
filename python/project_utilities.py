@@ -761,7 +761,13 @@ def create_limited_dataset(defname, run, subruns):
 
     # Take a snapshot of the original dataset definition.
 
-    snapid = samweb().takeSnapshot(defname, group=get_experiment())
+    snapid = None
+    try:
+        snapid = samweb().takeSnapshot(defname, group=get_experiment())
+    except:
+        snapid = None
+    if snapid == None:
+        return ''
 
     # Construct dimension including run and subrun constraints.
 
