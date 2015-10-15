@@ -763,6 +763,13 @@ def create_limited_dataset(defname, run, subruns):
 
     snapid = None
     try:
+
+        # Make sure we have a kca certificate.
+
+        test_kca()
+
+        # Take the snapshot
+
         snapid = samweb().takeSnapshot(defname, group=get_experiment())
     except:
         snapid = None
