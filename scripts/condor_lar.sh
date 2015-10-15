@@ -783,23 +783,31 @@ fi
 
 # Make sure init script exists and is executable (if specified).
 
-if [ x$INITSCRIPT != x -a ! -x "$INITSCRIPT" ]; then
-  echo "Initialization script $INITSCRIPT does not exist."
-  exit 1
+if [ x$INITSCRIPT != x ]; then
+  if [ -f "$INITSCRIPT" ]; then
+    chmod +x $INITSCRIPT
+  else
+    echo "Initialization script $INITSCRIPT does not exist."
+    exit 1
+  fi
 fi
 
 # Make sure init source script exists (if specified).
 
 if [ x$INITSOURCE != x -a ! -f "$INITSOURCE" ]; then
-  echo "Initialization script $INITSOURCE does not exist."
+  echo "Initialization source script $INITSOURCE does not exist."
   exit 1
 fi
 
 # Make sure end-of-job script exists and is executable (if specified).
 
-if [ x$ENDSCRIPT != x -a ! -x "$ENDSCRIPT" ]; then
-  echo "Initialization script $ENDSCRIPT does not exist."
-  exit 1
+if [ x$ENDSCRIPT != x ]; then
+  if [ -f "$ENDSCRIPT" ]; then
+    chmod +x $ENDSCRIPT
+  else
+    echo "Initialization script $ENDSCRIPT does not exist."
+    exit 1
+  fi
 fi
 
 # MRB run time environment setup goes here.
@@ -1264,7 +1272,7 @@ if [ x$INITSCRIPT != x ]; then
   fi
 fi
 if [ x$INITSOURCE != x ]; then
-  echo "Sourceing initialization script ${INITSOURCE}."
+  echo "Sourcing initialization source script ${INITSOURCE}."
   . $INITSOURCE
   status=$?
   if [ $status -ne 0 ]; then
