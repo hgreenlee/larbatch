@@ -767,6 +767,7 @@ def create_limited_dataset(defname, run, subruns):
     except:
         snapid = None
     if snapid == None:
+        print 'Failed to make snapshot of dataset definition %s' % defname
         return ''
 
     # Construct dimension including run and subrun constraints.
