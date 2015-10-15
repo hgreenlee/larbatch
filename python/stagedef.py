@@ -9,7 +9,7 @@
 #
 ######################################################################
 
-import os, string, stat, math
+import os, string, stat, math, subprocess
 import project_utilities
 import uuid
 from project_modules.xmlerror import XMLError
@@ -241,17 +241,80 @@ class StageDef:
         if init_script_elements:
             self.init_script = init_script_elements[0].firstChild.data
 
+        # Make sure init script exists, and convert into a full path.
+
+        if self.init_script != '':
+            if os.path.exists(self.init_script):
+                self.init_script = os.path.realpath(self.init_script)
+            else:
+
+                # Look for script on execution path.
+
+                try:
+                    jobinfo = subprocess.Popen(['which', self.init_script],
+                                               stdout=subprocess.PIPE,
+                                               stderr=subprocess.PIPE)
+                    jobout, joberr = jobinfo.communicate()
+                    rc = jobinfo.poll()
+                    self.init_script = jobout.splitlines()[0].strip()
+                except:
+                    pass
+            if not os.path.exists(self.init_script):
+                raise IOError, 'Init script %s not found.' % self.init_script
+
         # Worker initialization source script (subelement).
 
         init_source_elements = stage_element.getElementsByTagName('initsource')
         if init_source_elements:
             self.init_source = init_source_elements[0].firstChild.data
 
+        # Make sure init source script exists, and convert into a full path.
+
+        if self.init_source != '':
+            if os.path.exists(self.init_source):
+                self.init_source = os.path.realpath(self.init_source)
+            else:
+
+                # Look for script on execution path.
+
+                try:
+                    jobinfo = subprocess.Popen(['which', self.init_source],
+                                               stdout=subprocess.PIPE,
+                                               stderr=subprocess.PIPE)
+                    jobout, joberr = jobinfo.communicate()
+                    rc = jobinfo.poll()
+                    self.init_source = jobout.splitlines()[0].strip()
+                except:
+                    pass
+            if not os.path.exists(self.init_source):
+                raise IOError, 'Init source script %s not found.' % self.init_source
+
         # Worker end-of-job script (subelement).
 
         end_script_elements = stage_element.getElementsByTagName('endscript')
         if end_script_elements:
             self.end_script = end_script_elements[0].firstChild.data
+
+        # Make sure end-of-job script exists, and convert into a full path.
+
+        if self.end_script != '':
+            if os.path.exists(self.end_script):
+                self.end_script = os.path.realpath(self.end_script)
+            else:
+
+                # Look for script on execution path.
+
+                try:
+                    jobinfo = subprocess.Popen(['which', self.end_script],
+                                               stdout=subprocess.PIPE,
+                                               stderr=subprocess.PIPE)
+                    jobout, joberr = jobinfo.communicate()
+                    rc = jobinfo.poll()
+                    self.end_script = jobout.splitlines()[0].strip()
+                except:
+                    pass
+            if not os.path.exists(self.end_script):
+                raise IOError, 'End-of-job script %s not found.' % self.end_script
 
         # Histogram merging program.
 
