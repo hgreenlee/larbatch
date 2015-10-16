@@ -738,6 +738,12 @@ def parseInt(s):
 # Function to construct a new dataset definition from an existing definition
 # such that the new dataset definition will be limited to a specified run and
 # set of subruns.
+#
+# The name of the new definition is returned as the return value of
+# the function.
+#
+# If the new query does not return any files, the new dataset is not created, 
+# and the function returns the empty string ('').
 
 def create_limited_dataset(defname, run, subruns):
 
@@ -755,11 +761,31 @@ def create_limited_dataset(defname, run, subruns):
 
     # Take a snapshot of the original dataset definition.
 
-    snapid = samweb().takeSnapshot(defname, group=get_experiment())
+    snapid = None
+    try:
+
+        # Make sure we have a kca certificate.
+
+        test_kca()
+
+        # Take the snapshot
+
+        snapid = samweb().takeSnapshot(defname, group=get_experiment())
+    except:
+        snapid = None
+    if snapid == None:
+        print 'Failed to make snapshot of dataset definition %s' % defname
+        return ''
 
     # Construct dimension including run and subrun constraints.
 
-    dim="snapshot_id %d and run_number %s" % (snapid, run_subrun_dim)
+    dim = "snapshot_id %d and run_number %s" % (snapid, run_subrun_dim)
+
+    # Test the new dimension.
+
+    nfiles = samweb().countFiles(dimensions=dim)
+    if nfiles == 0:
+        return ''
 
     # Construct a new unique definition name.
 

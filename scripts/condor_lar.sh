@@ -783,23 +783,31 @@ fi
 
 # Make sure init script exists and is executable (if specified).
 
-if [ x$INITSCRIPT != x -a ! -x "$INITSCRIPT" ]; then
-  echo "Initialization script $INITSCRIPT does not exist."
-  exit 1
+if [ x$INITSCRIPT != x ]; then
+  if [ -f "$INITSCRIPT" ]; then
+    chmod +x $INITSCRIPT
+  else
+    echo "Initialization script $INITSCRIPT does not exist."
+    exit 1
+  fi
 fi
 
 # Make sure init source script exists (if specified).
 
 if [ x$INITSOURCE != x -a ! -f "$INITSOURCE" ]; then
-  echo "Initialization script $INITSOURCE does not exist."
+  echo "Initialization source script $INITSOURCE does not exist."
   exit 1
 fi
 
 # Make sure end-of-job script exists and is executable (if specified).
 
-if [ x$ENDSCRIPT != x -a ! -x "$ENDSCRIPT" ]; then
-  echo "Initialization script $ENDSCRIPT does not exist."
-  exit 1
+if [ x$ENDSCRIPT != x ]; then
+  if [ -f "$ENDSCRIPT" ]; then
+    chmod +x $ENDSCRIPT
+  else
+    echo "Initialization script $ENDSCRIPT does not exist."
+    exit 1
+  fi
 fi
 
 # MRB run time environment setup goes here.
@@ -1072,6 +1080,13 @@ fi
 NFILE_LOCAL=0
 if [ $USE_SAM -eq 0 ]; then
   if [ -f input.list ]; then
+
+    # Sort input list by decreasing size so we don't get a file with
+    # zero events as the first file.
+
+    #ls -S1 `cat input.list` > input.list
+    xargs ls -s1 < input.list | sort -nr | awk '{print $2}' > newinput.list
+    mv -f newinput.list input.list
     echo "Local input file list:"
     cat input.list
     NFILE_LOCAL=`cat input.list | wc -l`
@@ -1264,7 +1279,7 @@ if [ x$INITSCRIPT != x ]; then
   fi
 fi
 if [ x$INITSOURCE != x ]; then
-  echo "Sourceing initialization script ${INITSOURCE}."
+  echo "Sourcing initialization source script ${INITSOURCE}."
   . $INITSOURCE
   status=$?
   if [ $status -ne 0 ]; then
