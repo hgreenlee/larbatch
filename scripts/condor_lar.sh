@@ -1080,6 +1080,13 @@ fi
 NFILE_LOCAL=0
 if [ $USE_SAM -eq 0 ]; then
   if [ -f input.list ]; then
+
+    # Sort input list by decreasing size so we don't get a file with
+    # zero events as the first file.
+
+    #ls -S1 `cat input.list` > input.list
+    xargs ls -s1 < input.list | sort -nr | awk '{print $2}' > newinput.list
+    mv -f newinput.list input.list
     echo "Local input file list:"
     cat input.list
     NFILE_LOCAL=`cat input.list | wc -l`
