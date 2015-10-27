@@ -27,13 +27,16 @@ class ProjectDef:
         self.name= ''                     # Project name.
         self.num_events = 0               # Total events (all jobs).
         self.num_jobs = 1                 # Number of jobs.
-        self.max_files_per_job = 0   # Max number of files per job.
+        self.max_files_per_job = 0        # Max number of files per job.
         self.os = ''                      # Batch OS.
         self.resource = 'DEDICATED,OPPORTUNISTIC' # Jobsub resources.
         self.lines = ''                   # Arbitrary condor commands.
         self.server = '-'                 # Jobsub server.
         self.site = ''                    # Site.
-        self.merge = 'hadd -T'               # histogram merging program.
+        self.cpu = 0                      # Number of cpus.
+        self.disk = ''                    # Disk space (string value+unit).
+        self.memory = 0                   # Amount of memory (integer MB).
+        self.merge = 'hadd -T'            # histogram merging program.
         self.release_tag = ''             # Larsoft release tag.
         self.release_qual = 'debug'       # Larsoft release qualifier.
         self.local_release_dir = ''       # Larsoft local release directory.
@@ -108,6 +111,25 @@ class ProjectDef:
         if site_elements:
             self.site = site_elements[0].firstChild.data
             self.site = ''.join(self.site.split())
+
+        # Cpu (subelement).
+
+        cpu_elements = project_element.getElementsByTagName('cpu')
+        if cpu_elements:
+            self.cpu = int(cpu_elements[0].firstChild.data)
+
+        # Disk (subelement).
+
+        disk_elements = project_element.getElementsByTagName('disk')
+        if disk_elements:
+            self.disk = disk_elements[0].firstChild.data
+            self.disk = ''.join(self.disk.split())
+
+        # Memory (subelement).
+
+        memory_elements = project_element.getElementsByTagName('memory')
+        if memory_elements:
+            self.memory = int(memory_elements[0].firstChild.data)
 
         # merge (subelement).
  	
@@ -248,7 +270,10 @@ class ProjectDef:
                                         default_previous_stage,
                                         self.num_jobs,
                                         self.max_files_per_job,
-                                        self.merge))
+                                        self.merge,
+                                        self.cpu,
+                                        self.disk,
+                                        self.memory))
             default_previous_stage = self.stages[-1].name
             default_input_lists[default_previous_stage] = os.path.join(self.stages[-1].logdir,
                                                                        'files.list')
@@ -277,6 +302,9 @@ class ProjectDef:
         result += 'Lines = %s\n' % self.lines
         result += 'Jobsub server = %s\n' % self.server
         result += 'Site = %s\n' % self.site
+        result += 'Cpu = %d\n' % self.cpu
+        result += 'Disk = %s\n' % self.disk
+        result += 'Memory = %d MB\n' % self.memory
         result += 'Histogram merging program = %s\n' % self.merge
         result += 'Larsoft release tag = %s\n' % self.release_tag
         result += 'Larsoft release qualifier = %s\n' % self.release_qual
