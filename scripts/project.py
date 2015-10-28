@@ -125,6 +125,11 @@
 # <lines>   - Arbitrary condor commands (expert option, jobsub_submit --lines=...).
 # <site>    - Specify site (default jobsub decides).
 #
+# <cpu>     - Number of cpus (jobsub_submit --cpu=...).
+# <disk>    - Amount of scratch disk space (jobsub_submit --disk=...).
+#             Specify value and unit (e.g. 50GB).
+# <memory>  - Specify amount of memory in MB (jobsub_submit --memory=...).
+#
 # <script>  - Name of batch worker script (default condor_lar.sh).
 #             The batch script must be on the execution path.
 #
@@ -207,6 +212,10 @@
 #                     Default: DEDICATED,OPPORTUNISTIC.
 # <stage><lines>   - Arbitrary condor commands (expert option, jobsub_submit --lines=...).
 # <stage><site>    - Specify site (default jobsub decides).
+# <stage><cpus>    - Number of cpus (jobsub_submit --cpus=...).
+# <stage><disk>    - Amount of scratch disk space (jobsub_submit --disk=...).
+#                    Specify value and unit (e.g. 50GB).
+# <stage><memory>  - Specify amount of memory in MB (jobsub_submit --memory=...).
 # <stage><output>  - Specify output file name.
 # <stage><TFileName>   - Ability to specify unique output TFile Name 
 #		         (Required when generating Metadata for TFiles)
@@ -240,6 +249,8 @@
 #           of the latest check for this stage.
 # files.list - A list of all good art output files (full paths), one file
 #              per line.
+# file_<data_stream>.list - A list of all goot art output files in the 
+#                           specified stream.
 # events.list - A list of all good art output files (full paths), one
 #               file per line, plus on the same line the number of events.
 # filesana.list - A list of all good non-art output root files (full
@@ -2091,6 +2102,12 @@ def dojobsub(project, stage, makeup):
         command.append('--site=%s' % stage.site)
     elif project.site != '':
         command.append('--site=%s' % project.site)
+    if stage.cpu != 0:
+        command.append('--cpu=%d' % stage.cpu)
+    if stage.disk != '':
+        command.append('--disk=%s' % stage.disk)
+    if stage.memory != 0:
+        command.append('--memory=%d' % stage.memory)
     if project.os != '':
         command.append('--OS=%s' % project.os)
     if not stage.pubs_output:

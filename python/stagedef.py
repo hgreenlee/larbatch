@@ -23,7 +23,8 @@ class StageDef:
     # Constructor.
 
     def __init__(self, stage_element, default_input_lists, default_previous_stage, 
-                 default_num_jobs, default_max_files_per_job, default_merge):
+                 default_num_jobs, default_max_files_per_job, default_merge,
+                 default_cpu, default_disk, default_memory):
 
         # Assign default values.
         
@@ -62,6 +63,9 @@ class StageDef:
         self.resource = ''     # Jobsub resources.
         self.lines = ''        # Arbitrary condor commands.
         self.site = ''         # Site.
+        self.cpu = default_cpu # Number of cpus.
+        self.disk = default_disk     # Disk space (string value+unit).
+        self.memory = default_memory # Amount of memory (integer MB).
         self.parameters = {}   # Dictionary of metadata parameters.
         self.output = ''       # Art output file name.
         self.TFileName = ''    # TFile output file name.
@@ -342,6 +346,25 @@ class StageDef:
             self.site = site_elements[0].firstChild.data
             self.site = ''.join(self.site.split())
 
+        # Cpu (subelement).
+
+        cpu_elements = stage_element.getElementsByTagName('cpu')
+        if cpu_elements:
+            self.cpu = int(cpu_elements[0].firstChild.data)
+
+        # Disk (subelement).
+
+        disk_elements = stage_element.getElementsByTagName('disk')
+        if disk_elements:
+            self.disk = disk_elements[0].firstChild.data
+            self.disk = ''.join(self.disk.split())
+
+        # Memory (subelement).
+
+        memory_elements = stage_element.getElementsByTagName('memory')
+        if memory_elements:
+            self.memory = int(memory_elements[0].firstChild.data)
+
         # Dictionary of metadata parameters
 
         param_elements = stage_element.getElementsByTagName('parameter')
@@ -414,6 +437,9 @@ class StageDef:
         result += 'Resource = %s\n' % self.resource
         result += 'Lines = %s\n' % self.lines
         result += 'Site = %s\n' % self.site
+        result += 'Cpu = %d\n' % self.cpu
+        result += 'Disk = %s\n' % self.disk
+        result += 'Memory = %d MB\n' % self.memory
         result += 'Metadata parameters:\n'
         for key in self.parameters:
             result += '%s: %s\n' % (key,self.parameters[key])
