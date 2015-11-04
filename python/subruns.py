@@ -3,8 +3,9 @@
 #
 # Name: subruns.py
 #
-# Purpose: Extract (run, subrun) pairs from an artroot file.  Output
-#          one (run, subrun) pair per line of output.
+# Purpose: Extract (run, subrun) pairs from an artroot file or certain
+#          root tuple files.  Output one (run, subrun) pair per line 
+#          of output.
 #
 # Created: 13-Oct-2015  H. Greenlee
 #
@@ -60,7 +61,7 @@ def get_subruns(inputfile):
         subrun_tree = file.Get('SubRuns')
         if subrun_tree and subrun_tree.InheritsFrom('TTree'):
             nsubruns = subrun_tree.GetEntriesFast()
-            tfr = ROOT.TTreeFormula('subruns',
+            tfr = ROOT.TTreeFormula('runs',
                                     'SubRunAuxiliary.id_.run_.run_',
                                     subrun_tree)
             tfs = ROOT.TTreeFormula('subruns',
@@ -72,6 +73,43 @@ def get_subruns(inputfile):
                 subrun = tfs.EvalInstance64()
                 run_subrun = (run, subrun)
                 result.append(run_subrun)
+
+        # If previous section didn't find anything, try extracting 
+        # from beam data trees.
+
+        if len(result) == 0:
+            tdir = file.Get('beamdata')
+            if tdir and tdir.InheritsFrom('TDirectory'):
+
+                # Look for bnb tree.
+
+                bnb_tree = tdir.Get('bnb')
+                if bnb_tree and bnb_tree.InheritsFrom('TTree'):
+                    nsubruns = bnb_tree.GetEntriesFast()
+                    tfr = ROOT.TTreeFormula('runs', 'run', bnb_tree)
+                    tfs = ROOT.TTreeFormula('subruns', 'subrun', bnb_tree)
+                    for entry in range(nsubruns):
+                        bnb_tree.GetEntry(entry)
+                        run = tfr.EvalInstance64()
+                        subrun = tfs.EvalInstance64()
+                        run_subrun = (run, subrun)
+                        if run_subrun not in result:
+                            result.append(run_subrun)
+
+                # Look for numi tree.
+
+                numi_tree = tdir.Get('numi')
+                if numi_tree and numi_tree.InheritsFrom('TTree'):
+                    nsubruns = numi_tree.GetEntriesFast()
+                    tfr = ROOT.TTreeFormula('runs', 'run', numi_tree)
+                    tfs = ROOT.TTreeFormula('subruns', 'subrun', numi_tree)
+                    for entry in range(nsubruns):
+                        numi_tree.GetEntry(entry)
+                        run = tfr.EvalInstance64()
+                        subrun = tfs.EvalInstance64()
+                        run_subrun = (run, subrun)
+                        if run_subrun not in result:
+                            result.append(run_subrun)
 
     else:
 
