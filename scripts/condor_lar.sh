@@ -1386,7 +1386,7 @@ for root in *.root; do
   fi
   subrun=`subruns.py $root | awk 'NR==1{print $2}'`
   if [ x$subrun != x ]; then
-    subruns=(${subruns[*]} $subrun)
+    subruns[$subrun]=$subrun
     outdirs[$subrun]=`echo $OUTDIR | sed "s/@s/$subrun/"`
     echo "Output directory for subrun $subrun is ${outdirs[$subrun]}"
     mkdir out$subrun
