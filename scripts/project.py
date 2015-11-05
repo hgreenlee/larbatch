@@ -1810,6 +1810,12 @@ def dojobsub(project, stage, makeup):
 
     procmap = ''
 
+    #we're going to let jobsub_submit copy the workdir contents for us
+    #each file that would go into the workdir is going to be added with
+    # '-f <input_file>' with the full path, it can be either BlueArc or /pnfs/uboone
+
+    jobsub_workdir_files_args = []
+
     # If there is an input list, copy it to the work directory.
 
     input_list_name = ''
@@ -1822,6 +1828,7 @@ def dojobsub(project, stage, makeup):
             for input_file in input_files:
                 work_list.write('%s\n' % input_file.strip())
             work_list.close()
+        jobsub_workdir_files_args.extend(['-f', work_list_name])
 
     # Now locate the fcl file on the fcl search path.
 
@@ -1832,12 +1839,16 @@ def dojobsub(project, stage, makeup):
     workfcl = os.path.join(stage.workdir, os.path.basename(stage.fclname))
     if os.path.abspath(fcl) != os.path.abspath(workfcl):
         shutil.copy(fcl, workfcl)
+    jobsub_workdir_files_args.extend(['-f', workfcl])
+
 
     # Construct a wrapper fcl file (called "wrapper.fcl") that will include
     # the original fcl, plus any overrides that are dynamically generated
     # in this script.
 
-    wrapper_fcl = open(os.path.join(stage.workdir, 'wrapper.fcl'), 'w')
+    wrapper_fcl_name = os.path.join(stage.workdir, 'wrapper.fcl')
+    jobsub_workdir_files_args.extend(['-f', wrapper_fcl_name])
+    wrapper_fcl = open(wrapper_fcl_name, 'w')
     wrapper_fcl.write('#include "%s"\n' % os.path.basename(stage.fclname))
     wrapper_fcl.write('\n')
 
@@ -1875,6 +1886,7 @@ def dojobsub(project, stage, makeup):
 
     setupscript = os.path.join(stage.workdir,'setup_experiment.sh')
     shutil.copy(project_utilities.get_setup_script_path(), setupscript)
+    jobsub_workdir_files_args.extend(['-f', setupscript])
 
     # Copy and rename batch script to the work directory.
 
@@ -1913,6 +1925,7 @@ def dojobsub(project, stage, makeup):
         work_init_script = os.path.join(stage.workdir, os.path.basename(stage.init_script))
         if stage.init_script != work_init_script:
             shutil.copy(stage.init_script, work_init_script)
+        jobsub_workdir_files_args.extend(['-f', work_init_script])
 
     # Copy worker initialization source script to work directory.
 
@@ -1923,6 +1936,7 @@ def dojobsub(project, stage, makeup):
         work_init_source = os.path.join(stage.workdir, os.path.basename(stage.init_source))
         if stage.init_source != work_init_source:
             shutil.copy(stage.init_source, work_init_source)
+        jobsub_workdir_files_args.extend(['-f', work_init_source])
 
     # Copy worker end-of-job script to work directory.
 
@@ -1932,6 +1946,7 @@ def dojobsub(project, stage, makeup):
         work_end_script = os.path.join(stage.workdir, os.path.basename(stage.end_script))
         if stage.end_script != work_end_script:
             shutil.copy(stage.end_script, work_end_script)
+        jobsub_workdir_files_args.extend(['-f', work_end_script])
 
     # If this is a makeup action, find list of missing files.
     # If sam information is present (cpids.list), create a makeup dataset.
@@ -1982,6 +1997,7 @@ def dojobsub(project, stage, makeup):
             for missing_file in missing_files:
                 work_list.write('%s\n' % missing_file)
             work_list.close()
+            jobsub_workdir_files_args.extend(['-f', work_list_name])
 
         # In case of making up generation jobs, produce a procmap file
         # for missing jobs that will ensure that made up generation
@@ -2085,9 +2101,8 @@ def dojobsub(project, stage, makeup):
     # Jobsub options.
         
     command.append('--group=%s' % project_utilities.get_experiment())
-    setupscript = os.path.join(stage.workdir,'setup_experiment.sh')
-    command.append('-f %s' % setupscript)
     command.append('--role=%s' % role)
+    command.extend(jobsub_workdir_files_args)
     if project.server != '-' and project.server != '':
         command.append('--jobsub-server=%s' % project.server)
     if stage.resource != '':
