@@ -300,6 +300,13 @@ def safeopen(destination):
     file = open(destination, 'w')
     return file
 
+# Function for copying files.  Can be safely used for copying files to dCache.
+
+def safecopy(source, destination):
+    if project_utilities.safeexist(destination):
+        os.remove(destination)
+    shutil.copy(source, destination)
+
 # Function to make sure global SAMWebClient object is initialized.
 # Also imports extractor_dict module.
 # This function should be called before using samweb.
@@ -1824,7 +1831,7 @@ def dojobsub(project, stage, makeup):
         work_list_name = os.path.join(stage.workdir, input_list_name)
         if stage.inputlist != work_list_name:
             input_files = project_utilities.saferead(stage.inputlist)
-            work_list = open(work_list_name, 'w')
+            work_list = safeopen(work_list_name)
             for input_file in input_files:
                 work_list.write('%s\n' % input_file.strip())
             work_list.close()
@@ -1838,7 +1845,7 @@ def dojobsub(project, stage, makeup):
 
     workfcl = os.path.join(stage.workdir, os.path.basename(stage.fclname))
     if os.path.abspath(fcl) != os.path.abspath(workfcl):
-        shutil.copy(fcl, workfcl)
+        safecopy(fcl, workfcl)
     jobsub_workdir_files_args.extend(['-f', workfcl])
 
 
@@ -1848,7 +1855,7 @@ def dojobsub(project, stage, makeup):
 
     wrapper_fcl_name = os.path.join(stage.workdir, 'wrapper.fcl')
     jobsub_workdir_files_args.extend(['-f', wrapper_fcl_name])
-    wrapper_fcl = open(wrapper_fcl_name, 'w')
+    wrapper_fcl = safeopen(wrapper_fcl_name)
     wrapper_fcl.write('#include "%s"\n' % os.path.basename(stage.fclname))
     wrapper_fcl.write('\n')
 
@@ -1885,7 +1892,7 @@ def dojobsub(project, stage, makeup):
     # Copy and rename experiment setup script to the work directory.
 
     setupscript = os.path.join(stage.workdir,'setup_experiment.sh')
-    shutil.copy(project_utilities.get_setup_script_path(), setupscript)
+    safecopy(project_utilities.get_setup_script_path(), setupscript)
     jobsub_workdir_files_args.extend(['-f', setupscript])
 
     # Copy and rename batch script to the work directory.
@@ -1894,7 +1901,7 @@ def dojobsub(project, stage, makeup):
     workname = workname + os.path.splitext(project.script)[1]
     workscript = os.path.join(stage.workdir, workname)
     if project.script != workscript:
-        shutil.copy(project.script, workscript)
+        safecopy(project.script, workscript)
 
     # Copy and rename sam start project script to work directory.
 
@@ -1904,7 +1911,7 @@ def dojobsub(project, stage, makeup):
         workstartname = 'start-%s' % workname
         workstartscript = os.path.join(stage.workdir, workstartname)
         if project.start_script != workstartscript:
-            shutil.copy(project.start_script, workstartscript)
+            safecopy(project.start_script, workstartscript)
 
     # Copy and rename sam stop project script to work directory.
 
@@ -1914,7 +1921,7 @@ def dojobsub(project, stage, makeup):
         workstopname = 'stop-%s' % workname
         workstopscript = os.path.join(stage.workdir, workstopname)
         if project.stop_script != workstopscript:
-            shutil.copy(project.stop_script, workstopscript)
+            safecopy(project.stop_script, workstopscript)
 
     # Copy worker initialization script to work directory.
 
@@ -1924,7 +1931,7 @@ def dojobsub(project, stage, makeup):
                 stage.init_script
         work_init_script = os.path.join(stage.workdir, os.path.basename(stage.init_script))
         if stage.init_script != work_init_script:
-            shutil.copy(stage.init_script, work_init_script)
+            safecopy(stage.init_script, work_init_script)
         jobsub_workdir_files_args.extend(['-f', work_init_script])
 
     # Copy worker initialization source script to work directory.
@@ -1935,7 +1942,7 @@ def dojobsub(project, stage, makeup):
                 stage.init_source
         work_init_source = os.path.join(stage.workdir, os.path.basename(stage.init_source))
         if stage.init_source != work_init_source:
-            shutil.copy(stage.init_source, work_init_source)
+            safecopy(stage.init_source, work_init_source)
         jobsub_workdir_files_args.extend(['-f', work_init_source])
 
     # Copy worker end-of-job script to work directory.
@@ -1945,7 +1952,7 @@ def dojobsub(project, stage, makeup):
             raise RuntimeError, 'Worker end-of-job script %s does not exist.\n' % stage.end_script
         work_end_script = os.path.join(stage.workdir, os.path.basename(stage.end_script))
         if stage.end_script != work_end_script:
-            shutil.copy(stage.end_script, work_end_script)
+            safecopy(stage.end_script, work_end_script)
         jobsub_workdir_files_args.extend(['-f', work_end_script])
 
     # If this is a makeup action, find list of missing files.
@@ -1993,7 +2000,7 @@ def dojobsub(project, stage, makeup):
             work_list_name = os.path.join(stage.workdir, input_list_name)
             if os.path.exists(work_list_name):
                 os.remove(work_list_name)
-            work_list = open(work_list_name, 'w')
+            work_list = safeopen(work_list_name)
             for missing_file in missing_files:
                 work_list.write('%s\n' % missing_file)
             work_list.close()
@@ -2027,7 +2034,7 @@ def dojobsub(project, stage, makeup):
                 if len(procs) > 0:
                     procmap = 'procmap.txt'
                     procmap_path = os.path.join(stage.workdir, procmap)
-                    procmap_file = open(procmap_path, 'w')
+                    procmap_file = safeopen(procmap_path)
                     for proc in procs:
                         procmap_file.write('%d\n' % proc)
                     procmap_file.close()
@@ -2303,7 +2310,7 @@ def dojobsub(project, stage, makeup):
         # Create dagNabbit.py configuration script in the work directory.
 
         dagfilepath = os.path.join(stage.workdir, 'submit.dag')
-        dag = open(dagfilepath, 'w')
+        dag = safeopen(dagfilepath)
 
         # Write start section.
 
@@ -2476,9 +2483,7 @@ def dosubmit(project, stage, makeup=False):
     if len(jobid) > 0:
         jobids.append(jobid)
 
-    if project_utilities.safeexist(jobids_filename):
-        os.remove(jobids_filename)
-    jobid_file = open(jobids_filename, 'w')
+    jobid_file = safeopen(jobids_filename)
     for jobid in jobids:
         jobid_file.write('%s\n' % jobid)
     jobid_file.close()
@@ -2503,9 +2508,7 @@ def domerge(stage, mergehist, mergentuple):
         raise RuntimeError, 'No filesana.list file found, run project.py --checkana'
 
     histurlsname_temp = 'histurls.list'
-    if os.path.exists(histurlsname_temp):
-        os.remove(histurlsname_temp)
-    histurls = open(histurlsname_temp, 'w') 
+    histurls = safeopen(histurlsname_temp) 
 	
     for hist in hlist:
         histurls.write('%s\n' % project_utilities.path_to_url(hist)) 	
