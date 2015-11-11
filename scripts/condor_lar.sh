@@ -716,13 +716,10 @@ echo "Scratch directory: $TMP"
 
 # Copy files from work directory to scratch directory.
 
-echo "Fetching files from work directory."
-ifdh cp -r $IFDH_OPT $WORKDIR work
-stat=$?
-if [ $stat -ne 0 ]; then
-  echo "ifdh cp failed with status ${stat}."
-  exit $stat
-fi 
+echo "No longer fetching files from work directory."
+echo "that's now done with using jobsub -f commands"
+mkdir work
+cp ${CONDOR_DIR_INPUT}/* ./work/
 cd work
 echo "Local working directoroy:"
 pwd
@@ -1386,7 +1383,7 @@ for root in *.root; do
   fi
   subrun=`subruns.py $root | awk 'NR==1{print $2}'`
   if [ x$subrun != x ]; then
-    subruns=(${subruns[*]} $subrun)
+    subruns[$subrun]=$subrun
     outdirs[$subrun]=`echo $OUTDIR | sed "s/@s/$subrun/"`
     echo "Output directory for subrun $subrun is ${outdirs[$subrun]}"
     mkdir out$subrun
