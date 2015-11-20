@@ -1131,13 +1131,21 @@ def docheck(project, stage, ana):
     # Close files.
 
     filelist.close()
+    project_utilities.addLayerTwo(filelistname)
     eventslist.close()
+    project_utilities.addLayerTwo(eventslistname)
     badfile.close()
+    project_utilities.addLayerTwo(badfilename)
     missingfiles.close()
+    project_utilities.addLayerTwo(missingfilesname)
     filesanalist.close()
+    project_utilities.addLayerTwo(filesanalistname)
     urislist.close()
+    project_utilities.addLayerTwo(urislistname)
     for stream in streams.keys():
         streams[stream].close()
+        streamlistname = os.path.join(stage.logdir, 'files_%s.list' % stream)
+        project_utilities.addLayerTwo(streamlistname)
 
     # Make sam files.
 
@@ -1150,6 +1158,7 @@ def docheck(project, stage, ana):
         for sam_project in sam_projects:
             sam_projects_file.write('%s\n' % sam_project)
         sam_projects_file.close()
+        project_utilities.addLayerTwo(sam_projects_filename)
 
         # List of successfull consumer process ids.
 
@@ -1158,6 +1167,7 @@ def docheck(project, stage, ana):
         for cpid in cpids:
             cpids_file.write('%s\n' % cpid)
         cpids_file.close()
+        project_utilities.addLayerTwo(cpids_filename)
 
         # Get number of consumed files.
 
@@ -1228,8 +1238,10 @@ def docheck(project, stage, ana):
 
     # Done
 
-    checkfile = safeopen(os.path.join(stage.logdir, 'checked'))
+    checkfilename = os.path.join(stage.logdir, 'checked')
+    checkfile = safeopen(checkfilename)
     checkfile.close()
+    project_utilities.addLayerTwo(checkfilename)
 
     if stage.inputdef == '' or stage.pubs_input:
         print '%d processes with errors.' % nerror
