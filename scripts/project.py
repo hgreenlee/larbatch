@@ -2038,6 +2038,7 @@ def dojobsub(project, stage, makeup):
                     for proc in procs:
                         procmap_file.write('%d\n' % proc)
                     procmap_file.close()
+                    jobsub_workdir_files_args.extend(['-f', procmap_path])
 
         # Prepare sam-related makeup information.
 
