@@ -39,6 +39,7 @@ class ProjectDef:
         self.merge = 'hadd -T'            # histogram merging program.
         self.release_tag = ''             # Larsoft release tag.
         self.release_qual = 'debug'       # Larsoft release qualifier.
+        self.version = ''                 # Project version.
         self.local_release_dir = ''       # Larsoft local release directory.
         self.local_release_tar = ''       # Larsoft local release tarball.
         self.file_type = ''               # Sam file type.
@@ -167,6 +168,14 @@ class ProjectDef:
                     self.local_release_dir = local
                 else:
                     self.local_release_tar = local
+
+        # Version (subelement).
+
+        version_elements = project_element.getElementsByTagName('version')
+        if version_elements:
+            self.version = version_elements[0].firstChild.data
+        else:
+            self.version = self.release_tag
 
         # Make sure local test release directory/tarball exists, if specified.
         # Existence of non-null local_release_dir has already been tested.
@@ -308,6 +317,7 @@ class ProjectDef:
         result += 'Histogram merging program = %s\n' % self.merge
         result += 'Larsoft release tag = %s\n' % self.release_tag
         result += 'Larsoft release qualifier = %s\n' % self.release_qual
+        result += 'Version = %s\n' % self.version
         result += 'Local test release directory = %s\n' % self.local_release_dir
         result += 'Local test release tarball = %s\n' % self.local_release_tar
         result += 'File type = %s\n' % self.file_type

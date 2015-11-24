@@ -137,6 +137,7 @@
 # <larsoft><tag> - Frozen release tag (default "development").
 # <larsoft><qual> - Build qualifier (default "debug", or "prof").
 # <larsoft><local> - Local test release directory or tarball (default none).
+# <version> - Specify project version (default same as <larsoft><tag>).
 #
 # <filetype> - Sam file type ("data" or "mc", default none).
 # <runtype>  - Sam run type (normally "physics", default none).
