@@ -44,6 +44,7 @@ class ProjectDef:
         self.local_release_tar = ''       # Larsoft local release tarball.
         self.file_type = ''               # Sam file type.
         self.run_type = ''                # Sam run type.
+        self.run_number = 0               # Sam run number.
         self.script = 'condor_lar.sh'     # Batch script.
         self.start_script = 'condor_start_project.sh'  # Sam start project script.
         self.stop_script = 'condor_stop_project.sh'    # Sam stop project script.
@@ -195,6 +196,12 @@ class ProjectDef:
         if run_type_elements:
             self.run_type = run_type_elements[0].firstChild.data
 
+        # Sam run number (subelement).
+
+        run_number_elements = project_element.getElementsByTagName('runnumber')
+        if run_number_elements:
+            self.run_number = int(run_number_elements[0].firstChild.data)
+
         # Batch script (subelement).
 
         script_elements = project_element.getElementsByTagName('script')
@@ -322,6 +329,7 @@ class ProjectDef:
         result += 'Local test release tarball = %s\n' % self.local_release_tar
         result += 'File type = %s\n' % self.file_type
         result += 'Run type = %s\n' % self.run_type
+        result += 'Run number = %d\n' % self.run_number
         result += 'Batch script = %s\n' % self.script
         result += 'Start sam project script = %s\n' % self.start_script
         result += 'Stop sam project script = %s\n' % self.stop_script

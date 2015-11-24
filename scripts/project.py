@@ -141,6 +141,7 @@
 #
 # <filetype> - Sam file type ("data" or "mc", default none).
 # <runtype>  - Sam run type (normally "physics", default none).
+# <runnumber> - Sam run number (default nont).
 # <parameter name="parametername"> - Specify experiment-specific metadata parameters
 #
 # <merge>    - special histogram merging program (default "hadd -T", 
