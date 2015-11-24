@@ -813,6 +813,50 @@ def samweb():
     return samweb_obj
 
 
+# Function to ensure that files in dCache have layer two.
+# This function is included here as a workaround for bugs in the dCache nfs interface.
+
+def addLayerTwo(path):
+
+    # Don't do anything if this file is not located in dCache (/pnfs/...)
+    # or has nonzero size.
+
+    if safeexist(path) and path[0:6] == '/pnfs/' and os.stat(path).st_size == 0:
+
+        # Now we got a zero size file in dCache, which kind of files may be
+        # missing layer two.
+        # Delete the file and recreate it using ifdh.
+
+        os.remove(path)
+        test_proxy()
+
+        # Make sure environment variables X509_USER_CERT and X509_USER_KEY
+        # are not defined (they confuse ifdh).
+
+        save_vars = {}
+        for var in ('X509_USER_CERT', 'X509_USER_KEY'):
+            if os.environ.has_key(var):
+                save_vars[var] = os.environ[var]
+                del os.environ[var]
+
+        # Do ifdh cp.
+
+        command = ['ifdh', 'cp', '/dev/null', path]
+        jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+        jobout, joberr = jobinfo.communicate()
+        rc = jobinfo.poll()
+        if rc != 0:
+            for var in save_vars.keys():
+                os.environ[var] = save_vars[var]
+            raise IFDHError(command, rc, jobout, joberr)
+
+        # Restore environment variables.
+
+        for var in save_vars.keys():
+            os.environ[var] = save_vars[var]
+
+
 # Import experiment-specific utilities.  In this imported module, one can 
 # override any function or symbol defined above, or add new ones.
 

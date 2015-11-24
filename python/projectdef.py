@@ -39,10 +39,12 @@ class ProjectDef:
         self.merge = 'hadd -T'            # histogram merging program.
         self.release_tag = ''             # Larsoft release tag.
         self.release_qual = 'debug'       # Larsoft release qualifier.
+        self.version = ''                 # Project version.
         self.local_release_dir = ''       # Larsoft local release directory.
         self.local_release_tar = ''       # Larsoft local release tarball.
         self.file_type = ''               # Sam file type.
         self.run_type = ''                # Sam run type.
+        self.run_number = 0               # Sam run number.
         self.script = 'condor_lar.sh'     # Batch script.
         self.start_script = 'condor_start_project.sh'  # Sam start project script.
         self.stop_script = 'condor_stop_project.sh'    # Sam stop project script.
@@ -168,6 +170,14 @@ class ProjectDef:
                 else:
                     self.local_release_tar = local
 
+        # Version (subelement).
+
+        version_elements = project_element.getElementsByTagName('version')
+        if version_elements:
+            self.version = version_elements[0].firstChild.data
+        else:
+            self.version = self.release_tag
+
         # Make sure local test release directory/tarball exists, if specified.
         # Existence of non-null local_release_dir has already been tested.
 
@@ -185,6 +195,12 @@ class ProjectDef:
         run_type_elements = project_element.getElementsByTagName('runtype')
         if run_type_elements:
             self.run_type = run_type_elements[0].firstChild.data
+
+        # Sam run number (subelement).
+
+        run_number_elements = project_element.getElementsByTagName('runnumber')
+        if run_number_elements:
+            self.run_number = int(run_number_elements[0].firstChild.data)
 
         # Batch script (subelement).
 
@@ -308,10 +324,12 @@ class ProjectDef:
         result += 'Histogram merging program = %s\n' % self.merge
         result += 'Larsoft release tag = %s\n' % self.release_tag
         result += 'Larsoft release qualifier = %s\n' % self.release_qual
+        result += 'Version = %s\n' % self.version
         result += 'Local test release directory = %s\n' % self.local_release_dir
         result += 'Local test release tarball = %s\n' % self.local_release_tar
         result += 'File type = %s\n' % self.file_type
         result += 'Run type = %s\n' % self.run_type
+        result += 'Run number = %d\n' % self.run_number
         result += 'Batch script = %s\n' % self.script
         result += 'Start sam project script = %s\n' % self.start_script
         result += 'Stop sam project script = %s\n' % self.stop_script
