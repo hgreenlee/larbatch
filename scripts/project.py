@@ -1146,8 +1146,8 @@ def docheck(project, stage, ana):
     project_utilities.addLayerTwo(urislistname)
     for stream in streams.keys():
         streams[stream].close()
-        streamlistname = os.path.join(stage.logdir, 'files_%s.list' % stream)
-        project_utilities.addLayerTwo(streamlistname)
+        #streamlistname = os.path.join(stage.logdir, 'files_%s.list' % stream)
+        #project_utilities.addLayerTwo(streamlistname)
 
     # Make sam files.
 
