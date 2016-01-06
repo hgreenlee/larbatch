@@ -823,6 +823,8 @@ def addLayerTwo(path):
 
     if safeexist(path) and path[0:6] == '/pnfs/' and os.stat(path).st_size == 0:
 
+        print 'Adding layer two for path %s.' % path
+
         # Now we got a zero size file in dCache, which kind of files may be
         # missing layer two.
         # Delete the file and recreate it using ifdh.
