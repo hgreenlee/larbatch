@@ -98,9 +98,12 @@ def fileEnstoreChecksum(path):
 
             crc = {"crc_value": str(crc0), "crc_type": "adler 32 crc type"}
             
-        except (IOError, OSError), ex:
-            raise Error(str(ex))
-
+        except:
+            # Try the old method
+            cmd = ['ifdh', 'cp', path, '/dev/fd/1']
+            p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+            f = p.stdout
+            crc = enstoreChecksum(f)
     return crc
 
 def get_external_metadata(inputfile):
