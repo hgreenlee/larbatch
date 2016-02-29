@@ -30,6 +30,8 @@
 # --sam_station <arg>     - Specify sam station (default --group option).
 # --sam_defname <arg>     - Sam dataset definition name.
 # --sam_project <arg>     - Sam project name.
+# --sam_start             - Specify that this worker should be responsible for
+#                           starting and stopping the sam project.
 # --njobs <arg>           - Parallel project with specified number of jobs (default one).
 # --single                - Specify that the output and log directories will be emptied
 #                           by the batch worker, and therefore the output and log
@@ -212,6 +214,7 @@ SAM_GROUP=""
 SAM_STATION=""
 SAM_DEFNAME=""
 SAM_PROJECT=""
+SAM_START=0
 USE_SAM=0
 GRID=0
 IFDH_OPT=""
@@ -358,6 +361,11 @@ while [ $# -gt 0 ]; do
         USE_SAM=1
         shift
       fi
+      ;;
+
+    # Sam start/stop project flag.
+    --sam_start )
+      SAM_START=1
       ;;
 
     # General arguments for lar command line.
@@ -1152,17 +1160,24 @@ if [ $USE_SAM -ne 0 ]; then
   fi
   echo "Sam project: $SAM_PROJECT"
 
-  # If a sam definition name was specified, attempt to start a project.
-  # Issue the start project command, even though the project might
-  # already be running.  In the case of multiple-worker projects, 
-  # the first worker to issue this command will start the project.
+  # Start project (if requested).
 
-  #if [ x$SAM_DEFNAME != x ]; then
-  #  echo "Sam dataset: $SAM_DEFNAME"
-  #  echo "Attempting to start project."
-  #  ifdh startProject $SAM_PROJECT $SAM_STATION $SAM_DEFNAME $SAM_USER $SAM_GROUP
-  #  echo "Start project status $?"
-  #fi
+  if [ $SAM_START -ne 0 ]; then
+    if [ x$SAM_DEFNAME != x ]; then
+
+      echo "Starting project $SAM_PROJECT using sam dataset definition $SAM_DEFNAME"
+      ifdh startProject $SAM_PROJECT $SAM_STATION $SAM_DEFNAME $SAM_USER $SAM_GROUP
+      if [ $? -eq 0 ]; then
+        echo "Start project succeeded."
+      else
+        echo "Start projet failed."
+        exit 1
+      fi
+    else
+      echo "Start project requested, but no definition was specified."
+      exit 1
+    fi
+  fi
 
   # Get the project url of a running project (maybe the one we just started,
   # or maybe started externally).  This command has to succeed, or we can't
@@ -1321,6 +1336,13 @@ if [ $USE_SAM -ne 0 ]; then
   # End consumer process.
 
   ifdh endProcess $PURL $CPID
+
+  # Stop project (if appropriate).
+
+  if [ $SAM_START -ne 0 ]; then
+    echo "Stopping project."
+    ifdh endProject $PURL
+  fi
 fi
 
 # Delete input files.

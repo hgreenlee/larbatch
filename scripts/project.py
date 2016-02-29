@@ -2240,9 +2240,14 @@ def dojobsub(project, stage, makeup):
         command.extend([' --end-script',
                         os.path.join('.', os.path.basename(stage.end_script))])
 
-    # If input is from sam, also construct a dag file.
+    # If input is from sam, also construct a dag file, or add --sam_start option.
 
-    if prjname != '':
+    if prjname != '' and command_njobs == 1:
+        command.extend([' --sam_start',
+                        ' --sam_station', project_utilities.get_experiment(),
+                        ' --sam_group', project_utilities.get_experiment()])
+
+    if prjname != '' and command_njobs > 1:
 
         # At this point, it is an error if the start and stop project
         # scripts were not found.
