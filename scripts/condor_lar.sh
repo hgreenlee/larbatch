@@ -1471,7 +1471,6 @@ ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR
 stat=$?
 if [ $stat -ne 0 ]; then
   echo "ifdh cp failed with status ${stat}."
-  statout=$stat
 fi
 
 for subrun in ${subruns[*]}
@@ -1490,7 +1489,6 @@ ifdh cp -D $IFDH_OPT out/* ${OUTDIR}/$OUTPUT_SUBDIR
 stat=$?
 if [ $stat -ne 0 ]; then
   echo "ifdh cp failed with status ${stat}."
-  statout=$stat
 fi
 
 for subrun in ${subruns[*]}
