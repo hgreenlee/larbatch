@@ -72,13 +72,13 @@ class ProjectDef:
         # Number of jobs (subelement).
 
         num_jobs_elements = project_element.getElementsByTagName('numjobs')
-        if num_jobs_elements:
+        if num_jobs_elements and num_jobs_elements[0].parentNode == project_element:
             self.num_jobs = int(num_jobs_elements[0].firstChild.data)
 
         # Max Number of files per jobs.
 
         max_files_per_job_elements = project_element.getElementsByTagName('maxfilesperjob')
-        if max_files_per_job_elements:
+        if max_files_per_job_elements and max_files_per_job_elements[0].parentNode == project_element:
             self.max_files_per_job = int(max_files_per_job_elements[0].firstChild.data)
 
         # OS (subelement).
@@ -117,26 +117,26 @@ class ProjectDef:
         # Cpu (subelement).
 
         cpu_elements = project_element.getElementsByTagName('cpu')
-        if cpu_elements:
+        if cpu_elements and cpu_elements[0].parentNode == project_element:
             self.cpu = int(cpu_elements[0].firstChild.data)
 
         # Disk (subelement).
 
         disk_elements = project_element.getElementsByTagName('disk')
-        if disk_elements:
+        if disk_elements and disk_elements[0].parentNode == project_element:
             self.disk = disk_elements[0].firstChild.data
             self.disk = ''.join(self.disk.split())
 
         # Memory (subelement).
 
         memory_elements = project_element.getElementsByTagName('memory')
-        if memory_elements:
+        if memory_elements and memory_elements[0].parentNode == project_element:
             self.memory = int(memory_elements[0].firstChild.data)
 
         # merge (subelement).
  	
         merge_elements = project_element.getElementsByTagName('merge')
-        if merge_elements:
+        if merge_elements and merge_elements[0].parentNode == project_element:
             if merge_elements[0].firstChild:
                 self.merge = merge_elements[0].firstChild.data
             else:
