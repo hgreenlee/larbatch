@@ -858,6 +858,15 @@ def addLayerTwo(path):
         for var in save_vars.keys():
             os.environ[var] = save_vars[var]
 
+# Check the health status of the batch system and any other resources that 
+# are required to submit batch jobs successfully.  The idea is that this 
+# function may be called before submitting batch jobs.  If this function 
+# returns false, batch jobs should not be submitted, and this failure should
+# not be counted as an error.  The default implementation here always returns
+# true, but may be overridden in experiment_utilities.
+
+def batch_status_check():
+    return True
 
 # Import experiment-specific utilities.  In this imported module, one can 
 # override any function or symbol defined above, or add new ones.
