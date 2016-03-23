@@ -1909,6 +1909,12 @@ def dojobsub(project, stage, makeup):
         if sam_metadata:
             wrapper_fcl.write(sam_metadata)
 
+    # In case of generator jobs, add override for pubs run number
+    # (subrun number is overridden inside condor_lar.sh).
+
+    if not stage.pubs_input and stage.pubs_output:
+        wrapper_fcl.write('source.firstRun: %d\n' % stage.output_run)
+
     wrapper_fcl.close()
 
     # Copy and rename experiment setup script to the work directory.
