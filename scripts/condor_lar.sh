@@ -1524,6 +1524,8 @@ do
   fi
 done
 
-if [ $statout -ne 0 ]; then
-  exit $statout
+if [ $statout -eq 0 ]; then
+  statout=`cat lar.stat`
 fi
+
+exit $statout
