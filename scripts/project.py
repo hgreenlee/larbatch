@@ -253,8 +253,6 @@
 #              per line.
 # file_<data_stream>.list - A list of all goot art output files in the 
 #                           specified stream.
-# events.list - A list of all good art output files (full paths), one
-#               file per line, plus on the same line the number of events.
 # filesana.list - A list of all good non-art output root files (full
 #                 paths), one file per line.
 # transferred_uris.list - A list of input files that were successfully
@@ -277,6 +275,7 @@
 ######################################################################
 
 import sys, os, stat, string, subprocess, shutil, urllib, json, getpass, uuid
+import threading, Queue
 from xml.dom.minidom import parse
 import project_utilities, root_metadata
 from project_modules.projectdef import ProjectDef
@@ -845,12 +844,11 @@ def docheck(project, stage, ana):
     # This function also creates the following files in the specified directory.
     #
     # 1.  files.list  - List of good root files.
-    # 2.  events.list - List of good root files and number of events in each file.
-    # 3.  bad.list    - List of worker subdirectories with problems.
-    # 4.  missing_files.list - List of unprocessed input files.
-    # 5.  sam_projects.list - List of successful sam projects.
-    # 6.  cpids.list        - list of successful consumer process ids.
-    # 7.  filesana.list  - List of non-art root files (histograms and/or ntuples).
+    # 2.  bad.list    - List of worker subdirectories with problems.
+    # 3.  missing_files.list - List of unprocessed input files.
+    # 4.  sam_projects.list - List of successful sam projects.
+    # 5.  cpids.list        - list of successful consumer process ids.
+    # 6.  filesana.list  - List of non-art root files (histograms and/or ntuples).
     #
     # For projects with no input (i.e. generator jobs), if there are fewer than
     # the requisite number of good generator jobs, a "missing_files.list" will be
@@ -995,7 +993,7 @@ def docheck(project, stage, ana):
                     if not cpid in cpids:
                         cpids.append(cpid)
 
-            # Check existence of transferred_uris.txt.
+            # Check existence of transferred_uris.list.
             # Update list of uris.
 
             if not bad and (stage.inputlist !='' or stage.inputfile != ''):
@@ -1007,7 +1005,8 @@ def docheck(project, stage, ana):
                     lines = project_utilities.saferead(filename)
                     for line in lines:
                         uri = line.strip()
-                        uris.append(uri)
+                        if uri != '':
+                            uris.append(uri)
 
             # Save process number, and check for duplicate process numbers
             # (only if no input).
@@ -1055,9 +1054,6 @@ def docheck(project, stage, ana):
     filelistname = os.path.join(stage.logdir, 'files.list')
     filelist = safeopen(filelistname)
 
-    eventslistname = os.path.join(stage.logdir, 'events.list')
-    eventslist = safeopen(eventslistname)
-
     badfilename = os.path.join(stage.logdir, 'bad.list')
     badfile = safeopen(badfilename)
 
@@ -1070,7 +1066,7 @@ def docheck(project, stage, ana):
     urislistname = os.path.join(stage.logdir, 'transferred_uris.list')
     urislist = safeopen(urislistname)
 
-    # Generate "files.list" and "events.list."
+    # Generate "files.list."
     # Also fill stream-specific file list.
 
     nproc = 0
@@ -1081,7 +1077,6 @@ def docheck(project, stage, ana):
         for root in procmap[s]:
             nfile = nfile + 1
             filelist.write('%s\n' % root[0])
-            eventslist.write('%s %d\n' % root[:2])
             stream = root[2]
             if stream != '':
                 if not streams.has_key(stream):
@@ -1137,21 +1132,18 @@ def docheck(project, stage, ana):
     filelist.close()
     if nfile == 0:
         project_utilities.addLayerTwo(filelistname)
-    eventslist.close()
-    if nfile == 0:
-        project_utilities.addLayerTwo(eventslistname)
-    badfile.close()
     if nerror == 0:
-        project_utilities.addLayerTwo(badfilename)
-    missingfiles.close()
+        badfile.write('\n')
+    badfile.close()
     if nmiss == 0:
-        project_utilities.addLayerTwo(missingfilesname)
+        missingfiles.write('\n')
+    missingfiles.close()
     filesanalist.close()
     if len(filesana) == 0:
         project_utilities.addLayerTwo(filesanalistname)
-    urislist.close()
     if len(uris) == 0:
-        project_utilities.addLayerTwo(urislistname)
+        urislist.write('\n')
+    urislist.close()
     for stream in streams.keys():
         streams[stream].close()
 
@@ -1250,6 +1242,7 @@ def docheck(project, stage, ana):
 
     checkfilename = os.path.join(stage.logdir, 'checked')
     checkfile = safeopen(checkfilename)
+    checkfile.write('\n')
     checkfile.close()
     project_utilities.addLayerTwo(checkfilename)
 
@@ -1411,7 +1404,7 @@ def docheck_declarations(logdir, outdir, declare, ana=False):
     if project_utilities.safeexist(fnlist):
         roots = project_utilities.saferead(fnlist)
     else:
-        raise RuntimeError, 'No %s file found, run project.py --check' % listname
+        raise RuntimeError, 'No %s file found %s, run project.py --check' % (listname, fnlist)
 
     for root in roots:
         path = string.strip(root)
@@ -2000,14 +1993,15 @@ def dojobsub(project, stage, makeup):
             lines = project_utilities.saferead(bad_filename)
             for line in lines:
                 bad_subdir = line.strip()
-                bad_path = os.path.join(stage.outdir, bad_subdir)
-                if os.path.exists(bad_path):
-                    print 'Deleting %s' % bad_path
-                    shutil.rmtree(bad_path)
-                bad_path = os.path.join(stage.logdir, bad_subdir)
-                if os.path.exists(bad_path):
-                    print 'Deleting %s' % bad_path
-                    shutil.rmtree(bad_path)
+                if bad_subdir != '':
+                    bad_path = os.path.join(stage.outdir, bad_subdir)
+                    if os.path.exists(bad_path):
+                        print 'Deleting %s' % bad_path
+                        shutil.rmtree(bad_path)
+                    bad_path = os.path.join(stage.logdir, bad_subdir)
+                    if os.path.exists(bad_path):
+                        print 'Deleting %s' % bad_path
+                        shutil.rmtree(bad_path)
 
         # Get a list of missing files, if any, for file list input.
         # Regenerate the input file list in the work directory, and 
@@ -2020,7 +2014,8 @@ def dojobsub(project, stage, makeup):
                 lines = project_utilities.saferead(missing_filename)
                 for line in lines:
                     words = string.split(line)
-                    missing_files.append(words[0])
+                    if len(words) > 0:
+                        missing_files.append(words[0])
             makeup_count = len(missing_files)
             print 'Makeup list contains %d files.' % makeup_count
 
@@ -2418,9 +2413,17 @@ def dojobsub(project, stage, makeup):
 
         # For submit action, invoke the job submission command.
 
+        q = Queue.Queue()
         jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        jobout, joberr = jobinfo.communicate()
-        rc = jobinfo.poll()
+        thread = threading.Thread(target=project_utilities.wait_for_subprocess, args=[jobinfo, q])
+        thread.start()
+        thread.join(timeout=60)
+        if thread.is_alive():
+            jobinfo.terminate()
+            thread.join()
+        rc = q.get()
+        jobout = q.get()
+        joberr = q.get()
         if rc != 0:
             os.chdir(curdir)
             raise JobsubError(command, rc, jobout, joberr)
@@ -2438,9 +2441,18 @@ def dojobsub(project, stage, makeup):
         # For makeup action, abort if makeup job count is zero for some reason.
 
         if makeup_count > 0:
+            q = Queue.Queue()
             jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            jobout, joberr = jobinfo.communicate()
-            rc = jobinfo.poll()
+            thread = threading.Thread(target=project_utilities.wait_for_subprocess,
+                                      args=[jobinfo, q])
+            thread.start()
+            thread.join(timeout=60)
+            if thread.is_alive():
+                jobinfo.terminate()
+                thread.join()
+            rc = q.get()
+            jobout = q.get()
+            joberr = q.get()
             if rc != 0:
                 os.chdir(curdir)
                 raise JobsubError(command, rc, jobout, joberr)
@@ -2539,7 +2551,7 @@ def domerge(stage, mergehist, mergentuple):
     if project_utilities.safeexist(hnlist):
         hlist = project_utilities.saferead(hnlist)
     else:
-        raise RuntimeError, 'No filesana.list file found, run project.py --checkana'
+        raise RuntimeError, 'No filesana.list file found %s, run project.py --checkana' % hnlist
 
     histurlsname_temp = 'histurls.list'
     histurls = safeopen(histurlsname_temp) 
@@ -2677,7 +2689,7 @@ def doaudit(stage):
                     for line in flist:
                         slist.append(string.split(line)[0])
                 else:
-                    raise RuntimeError, 'No files.list file found, run project.py --check'
+                    raise RuntimeError, 'No files.list file found %s, run project.py --check' % fnlist
 
             # Declare the content status of the file as bad in SAM.
                         

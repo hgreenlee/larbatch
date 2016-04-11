@@ -13,6 +13,8 @@
 import sys, os, stat, time, types
 import socket
 import subprocess
+import threading
+import Queue
 import getpass
 import uuid
 import samweb_cli
@@ -191,7 +193,27 @@ def get_user():
 
     # Something went wrong...
 
-    raise RuntimeError, 'Unable to determine authenticated user.'        
+    raise RuntimeError, 'Unable to determine authenticated user.'
+
+# Function to wait for a subprocess to finish and fetch return code,
+# standard output, and standard error.
+# Call this function like this:
+#
+# q = Queue.Queue()
+# jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+# wait_for_subprocess(jobinfo, q)
+# rc = q.get()      # Return code.
+# jobout = q.get()  # Standard output
+# joberr = q.get()  # Standard error
+
+
+def wait_for_subprocess(jobinfo, q):
+    jobout, joberr = jobinfo.communicate()
+    rc = jobinfo.poll()
+    q.put(rc)
+    q.put(jobout)
+    q.put(joberr)
+    return
 
 # Function to optionally convert a filesystem path into an xrootd url.
 # Only affects paths in /pnfs space.
@@ -385,15 +407,47 @@ def test_proxy():
 
 # dCache-safe method to return contents (list of lines) of file.
 
+#def saferead(path):
+#    lines = []
+#    if os.path.getsize(path) == 0:
+#        return lines
+#    print 'Called saferead for path %s.' % path
+#    #if path[0:6] == '/pnfs/':
+#    #    test_ticket()
+#    #    lines = subprocess.check_output(['ifdh', 'cp', path, '/dev/fd/1']).splitlines()
+#    #else:
+#    lines = open(path).readlines()
+#    return lines
+
+# dCache-safe method to return contents (list of lines) of file.
+
 def saferead(path):
     lines = []
     if os.path.getsize(path) == 0:
         return lines
-    #if path[0:6] == '/pnfs/':
-    #    test_ticket()
-    #    lines = subprocess.check_output(['ifdh', 'cp', path, '/dev/fd/1']).splitlines()
-    #else:
-    lines = open(path).readlines()
+    print 'Called saferead for path %s.' % path
+
+    # Read dCache files in subprocess with timeout.
+
+    if path[0:6] == '/pnfs/':
+        q = Queue.Queue()
+        cmd = ['cat', path]
+        jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        thread = threading.Thread(target=wait_for_subprocess, args=[jobinfo, q])
+        thread.start()
+        thread.join(timeout=60)
+        if thread.is_alive():
+            print 'Terminating subprocess.'
+            jobinfo.terminate()
+            thread.join()
+        rc = q.get()
+        jobout = q.get()
+        joberr = q.get()
+        if rc != 0:
+            raise RuntimeError, 'Error reading %s' % path
+        lines = jobout.splitlines()
+    else:
+        lines = open(path).readlines()
     return lines
 
 # Like os.path.isdir, but faster by avoiding unnecessary i/o.
@@ -816,20 +870,25 @@ def samweb():
 # Function to ensure that files in dCache have layer two.
 # This function is included here as a workaround for bugs in the dCache nfs interface.
 
-def addLayerTwo(path):
+def addLayerTwo(path, recreate=True):
 
     # Don't do anything if this file is not located in dCache (/pnfs/...)
     # or has nonzero size.
 
     if safeexist(path) and path[0:6] == '/pnfs/' and os.stat(path).st_size == 0:
 
-        print 'Adding layer two for path %s.' % path
+        if recreate:
+            print 'Adding layer two for path %s.' % path
+        else:
+            print 'Deleting empty file %s.' % path
 
         # Now we got a zero size file in dCache, which kind of files may be
         # missing layer two.
         # Delete the file and recreate it using ifdh.
 
         os.remove(path)
+        if not recreate:
+            return
         test_proxy()
 
         # Make sure environment variables X509_USER_CERT and X509_USER_KEY
@@ -846,8 +905,9 @@ def addLayerTwo(path):
         command = ['ifdh', 'cp', '/dev/null', path]
         jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
-        jobout, joberr = jobinfo.communicate()
-        rc = jobinfo.poll()
+        q = Queue.Queue()
+        wait_for_subprocess(jobinfo, q)
+        rc = q.get()
         if rc != 0:
             for var in save_vars.keys():
                 os.environ[var] = save_vars[var]

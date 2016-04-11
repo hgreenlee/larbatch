@@ -565,7 +565,7 @@ class StageDef:
 
             lines = []
             try:
-                lines = open(self.inputlist).readlines()
+                lines = project_utilities.saferead(self.inputlist)
             except:
                 lines = []
             if len(lines) == 0:
@@ -614,7 +614,7 @@ class StageDef:
                 subrun_inputlist = os.path.join(dir, pubs_path, base)
                 lines = []
                 try:
-                    lines = open(subrun_inputlist).readlines()
+                    lines = project_utilities.saferead(subrun_inputlist)
                 except:
                     lines = []
                 if len(lines) == 0:
