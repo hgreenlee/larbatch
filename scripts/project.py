@@ -946,6 +946,10 @@ def docheck(project, stage, ana):
                     if len(roots) == 0 or nev < 0:
                         print 'Problem with root file(s) in subdirectory %s.' % subdir
                         bad = 1
+                elif nev < -1:
+                    print 'Problem with analysis root file(s) in subdirectory %s.' % subdir
+                    bad = 1
+                    
 
             # Check for duplicate filenames (only if metadata is being generated).
 
