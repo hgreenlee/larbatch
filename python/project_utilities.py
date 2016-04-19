@@ -407,20 +407,6 @@ def test_proxy():
 
 # dCache-safe method to return contents (list of lines) of file.
 
-#def saferead(path):
-#    lines = []
-#    if os.path.getsize(path) == 0:
-#        return lines
-#    print 'Called saferead for path %s.' % path
-#    #if path[0:6] == '/pnfs/':
-#    #    test_ticket()
-#    #    lines = subprocess.check_output(['ifdh', 'cp', path, '/dev/fd/1']).splitlines()
-#    #else:
-#    lines = open(path).readlines()
-#    return lines
-
-# dCache-safe method to return contents (list of lines) of file.
-
 def saferead(path):
     lines = []
     if os.path.getsize(path) == 0:

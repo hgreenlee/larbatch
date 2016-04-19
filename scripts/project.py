@@ -253,6 +253,8 @@
 #              per line.
 # file_<data_stream>.list - A list of all goot art output files in the 
 #                           specified stream.
+# events.list - A list of all good art output files (full paths), one
+#               file per line, plus on the same line the number of events.
 # filesana.list - A list of all good non-art output root files (full
 #                 paths), one file per line.
 # transferred_uris.list - A list of input files that were successfully
@@ -844,11 +846,12 @@ def docheck(project, stage, ana):
     # This function also creates the following files in the specified directory.
     #
     # 1.  files.list  - List of good root files.
-    # 2.  bad.list    - List of worker subdirectories with problems.
-    # 3.  missing_files.list - List of unprocessed input files.
-    # 4.  sam_projects.list - List of successful sam projects.
-    # 5.  cpids.list        - list of successful consumer process ids.
-    # 6.  filesana.list  - List of non-art root files (histograms and/or ntuples).
+    # 2.  events.list - List of good root files and number of events in each file.
+    # 3.  bad.list    - List of worker subdirectories with problems.
+    # 4.  missing_files.list - List of unprocessed input files.
+    # 5.  sam_projects.list - List of successful sam projects.
+    # 6.  cpids.list        - list of successful consumer process ids.
+    # 7.  filesana.list  - List of non-art root files (histograms and/or ntuples).
     #
     # For projects with no input (i.e. generator jobs), if there are fewer than
     # the requisite number of good generator jobs, a "missing_files.list" will be
@@ -1058,6 +1061,9 @@ def docheck(project, stage, ana):
     filelistname = os.path.join(stage.logdir, 'files.list')
     filelist = safeopen(filelistname)
 
+    eventslistname = os.path.join(stage.logdir, 'events.list')
+    eventslist = safeopen(eventslistname)
+
     badfilename = os.path.join(stage.logdir, 'bad.list')
     badfile = safeopen(badfilename)
 
@@ -1070,7 +1076,7 @@ def docheck(project, stage, ana):
     urislistname = os.path.join(stage.logdir, 'transferred_uris.list')
     urislist = safeopen(urislistname)
 
-    # Generate "files.list."
+    # Generate "files.list" and "events.list."
     # Also fill stream-specific file list.
 
     nproc = 0
@@ -1081,6 +1087,7 @@ def docheck(project, stage, ana):
         for root in procmap[s]:
             nfile = nfile + 1
             filelist.write('%s\n' % root[0])
+            eventslist.write('%s %d\n' % root[:2])
             stream = root[2]
             if stream != '':
                 if not streams.has_key(stream):
@@ -1136,6 +1143,9 @@ def docheck(project, stage, ana):
     filelist.close()
     if nfile == 0:
         project_utilities.addLayerTwo(filelistname)
+    eventslist.close()
+    if nfile == 0:
+        project_utilities.addLayerTwo(eventslistname)
     if nerror == 0:
         badfile.write('\n')
     badfile.close()
@@ -2038,7 +2048,7 @@ def dojobsub(project, stage, makeup):
         # jobs get a unique subrun.
 
         if stage.inputdef == '' and stage.inputfile == '' and stage.inputlist == '':
-            procs = set(range(project.num_jobs))
+            procs = set(range(stage.num_jobs))
 
             # Loop over good output files to extract existing
             # process numbers and determine missing process numbers.
@@ -2361,14 +2371,16 @@ def dojobsub(project, stage, makeup):
         # Write main section.
 
         dag.write('<parallel>\n')
-        for process in range(command_njobs):
+        #for process in range(command_njobs):
+        for process in range(1):
             first = True
             skip = False
             for word in command:
                 if skip:
                     skip = False
                 else:
-                    if word == '-N':
+                    #if word == '-N':
+                    if False:
                         skip = True
                     else:
                         if not first:
@@ -2382,7 +2394,8 @@ def dojobsub(project, stage, makeup):
                         if word[:6] == 'jobsub':
                             dag.write(' -n')
                         first = False
-            dag.write(' --process %d\n' % process)
+            #dag.write(' --process %d\n' % process)
+            dag.write('\n')
         dag.write('</parallel>\n')
 
         # Write stop section.

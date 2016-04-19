@@ -939,10 +939,10 @@ echo "IFDHC_DIR=$IFDHC_DIR"
 # Get input files to process, either single file, file list, or sam.
 #
 # For non-sam input, copy all files local using ifdh cp, and make a 
-# local file list called input.list.  Save the remote file names (uri's)
+# local file list called condor_lar_input.list.  Save the remote file names (uri's)
 # in another file called transferred_uris.list
 
-rm -f input.list
+rm -f condor_lar_input.list
 rm -f transferred_uris.list
 NFILE_TOTAL=0
 
@@ -971,7 +971,7 @@ if [ $USE_SAM -eq 0 -a x$INFILE != x ]; then
   fi 
   if [ -f $LOCAL_INFILE -a $stat -eq 0 ]; then
     echo $INFILE > transferred_uris.list
-    echo $LOCAL_INFILE > input.list
+    echo $LOCAL_INFILE > condor_lar_input.list
   else
     echo "Error fetching input file ${INFILE}."
     exit 1
@@ -1049,11 +1049,11 @@ elif [ $USE_SAM -eq 0 -a x$INLIST != x ]; then
       # Retain the original file name as the local file name, if possible.
       # Otherwise, generate a new (hopefully) unique name.
 
-      if [ ! -f input.list ]; then
-        touch input.list
+      if [ ! -f condor_lar_input.list ]; then
+        touch condor_lar_input.list
       fi
       LOCAL_INFILE=`basename $infile`
-      if grep -q $LOCAL_INFILE input.list; then
+      if grep -q $LOCAL_INFILE condor_lar_input.list; then
         LOCAL_INFILE=input${nfile}.root
 	if [ "$INMODE" = 'textfile' ]; then
 	  LOCAL_INFILE=input${nfile}.txt
@@ -1068,7 +1068,7 @@ elif [ $USE_SAM -eq 0 -a x$INLIST != x ]; then
       fi 
       if [ -f $LOCAL_INFILE -a $stat -eq 0 ]; then
         echo $infile >> transferred_uris.list
-        echo $LOCAL_INFILE >> input.list
+        echo $LOCAL_INFILE >> condor_lar_input.list
       else
         echo "Error fetching input file ${infile}."
         exit 1
@@ -1084,17 +1084,17 @@ fi
 
 NFILE_LOCAL=0
 if [ $USE_SAM -eq 0 ]; then
-  if [ -f input.list ]; then
+  if [ -f condor_lar_input.list ]; then
 
     # Sort input list by decreasing size so we don't get a file with
     # zero events as the first file.
 
-    #ls -S1 `cat input.list` > input.list
-    xargs ls -s1 < input.list | sort -nr | awk '{print $2}' > newinput.list
-    mv -f newinput.list input.list
+    #ls -S1 `cat condor_lar_input.list` > condor_lar_input.list
+    xargs ls -s1 < condor_lar_input.list | sort -nr | awk '{print $2}' > newcondor_lar_input.list
+    mv -f newcondor_lar_input.list condor_lar_input.list
     echo "Local input file list:"
-    cat input.list
-    NFILE_LOCAL=`cat input.list | wc -l`
+    cat condor_lar_input.list
+    NFILE_LOCAL=`cat condor_lar_input.list | wc -l`
   else
     echo "No local input files."
   fi
@@ -1137,7 +1137,7 @@ EOF
       echo "Text file input mode specified with wrong number of input files."
       exit 1
     fi
-    echo "physics.producers.generator.InputFileName: \"`cat input.list`\"" >> subrun_wrapper.fcl
+    echo "physics.producers.generator.InputFileName: \"`cat condor_lar_input.list`\"" >> subrun_wrapper.fcl
   fi
   FCL=subrun_wrapper.fcl
   
@@ -1258,9 +1258,9 @@ fi
 # Construct options for lar command line.
 
 LAROPT="-c $FCL --rethrow-default"
-if [ -f input.list ]; then
+if [ -f condor_lar_input.list ]; then
   if [ "$INMODE" != 'textfile' ]; then
-    LAROPT="$LAROPT -S input.list"
+    LAROPT="$LAROPT -S condor_lar_input.list"
   fi
 fi
 if [ x$OUTFILE != x ]; then
@@ -1347,10 +1347,10 @@ fi
 
 # Delete input files.
 
-if [ $USE_SAM -eq 0 -a -f input.list ]; then
+if [ $USE_SAM -eq 0 -a -f condor_lar_input.list ]; then
   while read file; do
     rm -f $file
-  done < input.list
+  done < condor_lar_input.list
 fi
 
 # Run optional end-of-job script.
