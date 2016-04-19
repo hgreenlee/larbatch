@@ -2048,7 +2048,7 @@ def dojobsub(project, stage, makeup):
         # jobs get a unique subrun.
 
         if stage.inputdef == '' and stage.inputfile == '' and stage.inputlist == '':
-            procs = set(range(project.num_jobs))
+            procs = set(range(stage.num_jobs))
 
             # Loop over good output files to extract existing
             # process numbers and determine missing process numbers.
