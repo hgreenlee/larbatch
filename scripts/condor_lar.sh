@@ -1415,6 +1415,18 @@ for root in *.root; do
   fi
 done
 
+# Workaround TimeTracker crash bug for input files with zero events.
+
+if [ x`cat lar.stat` = x65 ]; then
+  for json in *.json;
+  do
+    if grep -q '"events": *"0"' $json; then
+      rm -f lar.stat
+      echo 0 > lar.stat
+    fi
+  done
+fi
+
 # Make local output directories for files that don't have a subrun.
 
 mkdir out
