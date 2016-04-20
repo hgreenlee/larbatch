@@ -79,14 +79,18 @@ class StageStatus:
             badfile = os.path.join(logdir, 'bad.list')
             if project_utilities.safeexist(badfile):
                 lines = project_utilities.saferead(badfile)
-                self.nerror = self.nerror + len(lines)
+                for line in lines:
+                    if line.strip():
+                        self.nerror += 1
 
             # Count missing files.
 
             missingfile = os.path.join(logdir, 'missing_files.list')
             if project_utilities.safeexist(missingfile):
                 lines = project_utilities.saferead(missingfile)
-                self.nmiss = self.nmiss + len(lines)
+                for line in lines:
+                    if line.strip():
+                        self.nmiss += 1
 
         else:
 
