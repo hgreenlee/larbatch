@@ -949,7 +949,7 @@ def docheck(project, stage, ana):
                     if len(roots) == 0 or nev < 0:
                         print 'Problem with root file(s) in subdirectory %s.' % subdir
                         bad = 1
-                elif nev < -1:
+                elif nev < -1 or len(subhists) == 0:
                     print 'Problem with analysis root file(s) in subdirectory %s.' % subdir
                     bad = 1
                     
@@ -1267,11 +1267,14 @@ def docheck(project, stage, ana):
         print '%d unconsumed files.' % nerror
 
     # Return error status if any error or not good root file produced.
+    # Also return error if no successful processes were detected
 
     result = 0
     if nerror != 0:
         result = 1
     if not ana and nroot_tot == 0:
+        result = 1
+    if len(procmap) == 0:
         result = 1
     return result
 
