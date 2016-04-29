@@ -717,31 +717,31 @@ class StageDef:
     # Raise an exception if output directory or log directory doesn't exist.
 
     def check_output_dirs(self):
-        if not os.path.exists(self.outdir):
+        if not project_utilities.safeexist(self.outdir):
             raise IOError, 'Output directory %s does not exist.' % self.outdir
-        if not os.path.exists(self.logdir):
+        if not project_utilities.safeexist(self.logdir):
             raise IOError, 'Log directory %s does not exist.' % self.logdir
         return
     
     # Raise an exception if output directory, log directory, or work directory doesn't exist.
 
     def checkdirs(self):
-        if not os.path.exists(self.outdir):
+        if not project_utilities.safeexist(self.outdir):
             raise IOError, 'Output directory %s does not exist.' % self.outdir
-        if not os.path.exists(self.logdir):
+        if not project_utilities.safeexist(self.logdir):
             raise IOError, 'Log directory %s does not exist.' % self.logdir
-        if not os.path.exists(self.workdir):
+        if not project_utilities.safeexist(self.workdir):
             raise IOError, 'Work directory %s does not exist.' % self.workdir
         return
     
     # Make output, log, and work directory, if they don't exist.
 
     def makedirs(self):
-        if not os.path.exists(self.outdir):
+        if not project_utilities.safeexist(self.outdir):
             os.makedirs(self.outdir)
-        if not os.path.exists(self.logdir):
+        if not project_utilities.safeexist(self.logdir):
             os.makedirs(self.logdir)
-        if not os.path.exists(self.workdir):
+        if not project_utilities.safeexist(self.workdir):
             os.makedirs(self.workdir)
 
         # If output is on dcache, make output directory group-writable.
