@@ -2374,16 +2374,16 @@ def dojobsub(project, stage, makeup):
         # Write main section.
 
         dag.write('<parallel>\n')
-        #for process in range(command_njobs):
-        for process in range(1):
+        for process in range(command_njobs):
+        #for process in range(1):
             first = True
             skip = False
             for word in command:
                 if skip:
                     skip = False
                 else:
-                    #if word == '-N':
-                    if False:
+                    if word == '-N':
+                    #if False:
                         skip = True
                     else:
                         if not first:
@@ -2397,7 +2397,7 @@ def dojobsub(project, stage, makeup):
                         if word[:6] == 'jobsub':
                             dag.write(' -n')
                         first = False
-            #dag.write(' --process %d\n' % process)
+            dag.write(' --process %d\n' % process)
             dag.write('\n')
         dag.write('</parallel>\n')
 
