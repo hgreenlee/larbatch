@@ -13,11 +13,13 @@
 import sys, os, stat, time, types
 import socket
 import subprocess
+import shutil
 import threading
 import Queue
 import getpass
 import uuid
 import samweb_cli
+from project_modules.ifdherror import IFDHError
 
 # Prevent root from printing garbage on initialization.
 if os.environ.has_key('TERM'):
@@ -435,6 +437,56 @@ def saferead(path):
     else:
         lines = open(path).readlines()
     return lines
+
+# dCache-safe method to copy file.
+
+def safecopy(source, destination):
+    print 'safecopy called from %s to %s' % (source, destination)
+    if safeexist(destination):
+        os.remove(destination)
+    if source[0:6] == '/pnfs/' or destination[0:6] == '/pnfs/':
+
+        # Copy file.
+
+        #test_proxy()
+
+        # Make sure environment variables X509_USER_CERT and X509_USER_KEY
+        # are not defined (they confuse ifdh).
+
+        save_vars = {}
+        #for var in ('X509_USER_CERT', 'X509_USER_KEY'):
+        #    if os.environ.has_key(var):
+        #        save_vars[var] = os.environ[var]
+        #        del os.environ[var]
+
+        # Do cp.
+
+        cmd = ['cp', source, destination]
+        jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        q = Queue.Queue()
+        thread = threading.Thread(target=wait_for_subprocess, args=[jobinfo, q])
+        thread.start()
+        thread.join(timeout=60)
+        if thread.is_alive():
+            print 'Terminating subprocess.'
+            jobinfo.terminate()
+            thread.join()
+        rc = q.get()
+        jobout = q.get()
+        joberr = q.get()
+        if rc != 0:
+            for var in save_vars.keys():
+                os.environ[var] = save_vars[var]
+            raise IFDHError(command, rc, jobout, joberr)
+
+        # Restore environment variables.
+
+        for var in save_vars.keys():
+            os.environ[var] = save_vars[var]
+
+    else:
+        shutil.copy(source, destination)
 
 # Like os.path.isdir, but faster by avoiding unnecessary i/o.
 
@@ -892,8 +944,16 @@ def addLayerTwo(path, recreate=True):
         jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
         q = Queue.Queue()
-        wait_for_subprocess(jobinfo, q)
+        thread = threading.Thread(target=wait_for_subprocess, args=[jobinfo, q])
+        thread.start()
+        thread.join(timeout=60)
+        if thread.is_alive():
+            print 'Terminating subprocess.'
+            jobinfo.terminate()
+            thread.join()
         rc = q.get()
+        jobout = q.get()
+        joberr = q.get()
         if rc != 0:
             for var in save_vars.keys():
                 os.environ[var] = save_vars[var]

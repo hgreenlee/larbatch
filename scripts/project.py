@@ -303,13 +303,6 @@ def safeopen(destination):
     file = open(destination, 'w')
     return file
 
-# Function for copying files.  Can be safely used for copying files to dCache.
-
-def safecopy(source, destination):
-    if project_utilities.safeexist(destination):
-        os.remove(destination)
-    shutil.copy(source, destination)
-
 # Function to make sure global SAMWebClient object is initialized.
 # Also imports extractor_dict module.
 # This function should be called before using samweb.
@@ -1841,6 +1834,8 @@ def docheck_tape(dim):
 
 def dojobsub(project, stage, makeup):
 
+    #print 'Called dojobsub.'
+
     # Default return.
 
     jobid = ''
@@ -1863,10 +1858,13 @@ def dojobsub(project, stage, makeup):
         work_list_name = os.path.join(stage.workdir, input_list_name)
         if stage.inputlist != work_list_name:
             input_files = project_utilities.saferead(stage.inputlist)
+            print 'Making input list.'
             work_list = safeopen(work_list_name)
             for input_file in input_files:
+                print 'Adding input file %s' % input_file
                 work_list.write('%s\n' % input_file.strip())
             work_list.close()
+            print 'Done making input list.'
         jobsub_workdir_files_args.extend(['-f', work_list_name])
 
     # Now locate the fcl file on the fcl search path.
@@ -1877,7 +1875,7 @@ def dojobsub(project, stage, makeup):
 
     workfcl = os.path.join(stage.workdir, os.path.basename(stage.fclname))
     if os.path.abspath(fcl) != os.path.abspath(workfcl):
-        safecopy(fcl, workfcl)
+        project_utilities.safecopy(fcl, workfcl)
     jobsub_workdir_files_args.extend(['-f', workfcl])
 
 
@@ -1885,6 +1883,7 @@ def dojobsub(project, stage, makeup):
     # the original fcl, plus any overrides that are dynamically generated
     # in this script.
 
+    #print 'Making wrapper.fcl'
     wrapper_fcl_name = os.path.join(stage.workdir, 'wrapper.fcl')
     jobsub_workdir_files_args.extend(['-f', wrapper_fcl_name])
     wrapper_fcl = safeopen(wrapper_fcl_name)
@@ -1926,11 +1925,12 @@ def dojobsub(project, stage, makeup):
         wrapper_fcl.write('source.firstRun: %d\n' % stage.output_run)
 
     wrapper_fcl.close()
+    #print 'Done making wrapper.fcl'
 
     # Copy and rename experiment setup script to the work directory.
 
     setupscript = os.path.join(stage.workdir,'setup_experiment.sh')
-    safecopy(project_utilities.get_setup_script_path(), setupscript)
+    project_utilities.safecopy(project_utilities.get_setup_script_path(), setupscript)
     jobsub_workdir_files_args.extend(['-f', setupscript])
 
     # Copy and rename batch script to the work directory.
@@ -1939,7 +1939,7 @@ def dojobsub(project, stage, makeup):
     workname = workname + os.path.splitext(project.script)[1]
     workscript = os.path.join(stage.workdir, workname)
     if project.script != workscript:
-        safecopy(project.script, workscript)
+        project_utilities.safecopy(project.script, workscript)
 
     # Copy and rename sam start project script to work directory.
 
@@ -1949,7 +1949,7 @@ def dojobsub(project, stage, makeup):
         workstartname = 'start-%s' % workname
         workstartscript = os.path.join(stage.workdir, workstartname)
         if project.start_script != workstartscript:
-            safecopy(project.start_script, workstartscript)
+            project_utilities.safecopy(project.start_script, workstartscript)
 
     # Copy and rename sam stop project script to work directory.
 
@@ -1959,7 +1959,7 @@ def dojobsub(project, stage, makeup):
         workstopname = 'stop-%s' % workname
         workstopscript = os.path.join(stage.workdir, workstopname)
         if project.stop_script != workstopscript:
-            safecopy(project.stop_script, workstopscript)
+            project_utilities.safecopy(project.stop_script, workstopscript)
 
     # Copy worker initialization script to work directory.
 
@@ -1969,7 +1969,7 @@ def dojobsub(project, stage, makeup):
                 stage.init_script
         work_init_script = os.path.join(stage.workdir, os.path.basename(stage.init_script))
         if stage.init_script != work_init_script:
-            safecopy(stage.init_script, work_init_script)
+            project_utilities.safecopy(stage.init_script, work_init_script)
         jobsub_workdir_files_args.extend(['-f', work_init_script])
 
     # Copy worker initialization source script to work directory.
@@ -1980,7 +1980,7 @@ def dojobsub(project, stage, makeup):
                 stage.init_source
         work_init_source = os.path.join(stage.workdir, os.path.basename(stage.init_source))
         if stage.init_source != work_init_source:
-            safecopy(stage.init_source, work_init_source)
+            project_utilities.safecopy(stage.init_source, work_init_source)
         jobsub_workdir_files_args.extend(['-f', work_init_source])
 
     # Copy worker end-of-job script to work directory.
@@ -1990,7 +1990,7 @@ def dojobsub(project, stage, makeup):
             raise RuntimeError, 'Worker end-of-job script %s does not exist.\n' % stage.end_script
         work_end_script = os.path.join(stage.workdir, os.path.basename(stage.end_script))
         if stage.end_script != work_end_script:
-            safecopy(stage.end_script, work_end_script)
+            project_utilities.safecopy(stage.end_script, work_end_script)
         jobsub_workdir_files_args.extend(['-f', work_end_script])
 
     # If this is a makeup action, find list of missing files.
@@ -2433,6 +2433,7 @@ def dojobsub(project, stage, makeup):
 
         # For submit action, invoke the job submission command.
 
+        print 'Invoke jobsub_submit'
         q = Queue.Queue()
         jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         thread = threading.Thread(target=project_utilities.wait_for_subprocess, args=[jobinfo, q])
@@ -2453,6 +2454,7 @@ def dojobsub(project, stage, makeup):
         if not jobid:
             os.chdir(curdir)
             raise JobsubError(command, rc, jobout, joberr)
+        print 'jobsub_submit finished.'
         if project_utilities.safeexist(checked_file):
             os.remove(checked_file)
 
