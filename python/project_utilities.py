@@ -413,7 +413,7 @@ def saferead(path):
     lines = []
     if os.path.getsize(path) == 0:
         return lines
-    print 'Called saferead for path %s.' % path
+    #print 'Called saferead for path %s.' % path
 
     # Read dCache files in subprocess with timeout.
 
@@ -441,7 +441,7 @@ def saferead(path):
 # dCache-safe method to copy file.
 
 def safecopy(source, destination):
-    print 'safecopy called from %s to %s' % (source, destination)
+    #print 'safecopy called from %s to %s' % (source, destination)
     if safeexist(destination):
         os.remove(destination)
     if source[0:6] == '/pnfs/' or destination[0:6] == '/pnfs/':
