@@ -2438,6 +2438,15 @@ def dojobsub(project, stage, makeup):
     os.chdir(stage.workdir)
 
     checked_file = os.path.join(stage.logdir, 'checked')
+
+    # Calculate submit timeout.
+
+    submit_timeout = 60
+    if prjname != '':
+        submit_timeout += 0.2 * command_njobs
+
+    # Submit jobs.
+
     if not makeup:
 
         # For submit action, invoke the job submission command.
@@ -2446,7 +2455,7 @@ def dojobsub(project, stage, makeup):
         jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         thread = threading.Thread(target=project_utilities.wait_for_subprocess, args=[jobinfo, q])
         thread.start()
-        thread.join(timeout=60)
+        thread.join(timeout=submit_timeout)
         if thread.is_alive():
             jobinfo.terminate()
             thread.join()
@@ -2475,7 +2484,7 @@ def dojobsub(project, stage, makeup):
             thread = threading.Thread(target=project_utilities.wait_for_subprocess,
                                       args=[jobinfo, q])
             thread.start()
-            thread.join(timeout=60)
+            thread.join(timeout=submit_timeout)
             if thread.is_alive():
                 jobinfo.terminate()
                 thread.join()
