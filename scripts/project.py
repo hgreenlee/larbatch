@@ -191,6 +191,7 @@
 #             parameter has no effect if any non-default input is specified.
 # <stage><pubsinput> - 0 (false) or 1 (true).  If true, modify input file list
 #                      for specific (run, subrun, version) in pubs mode.  Default is true.
+# <stage><maxfluxfilemb> - Specify GENIEHelper fcl parameter MaxFluxFileMB.
 # <stage><numjobs> - Number of worker jobs (default 1).
 # <stage><maxfilesperjob> - Maximum number of files to deliver to a single job
 #             Useful in case you want to limit output file size or keep
@@ -1924,6 +1925,14 @@ def dojobsub(project, stage, makeup):
 
     if not stage.pubs_input and stage.pubs_output:
         wrapper_fcl.write('source.firstRun: %d\n' % stage.output_run)
+
+    # Add overrides for genie flux parameters.
+    # This section will normally be generated for any kind of generator job,
+    # and should be harmless for non-genie generators.
+
+    if stage.maxfluxfilemb != 0:
+        wrapper_fcl.write('physics.producers.generator.FluxCopyMethod: "IFDH"\n')
+        wrapper_fcl.write('physics.producers.generator.MaxFluxFileMB: %d\n' % stage.maxfluxfilemb)
 
     wrapper_fcl.close()
 
