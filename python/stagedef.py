@@ -49,6 +49,7 @@ class StageDef:
         self.output_run = 0    # Pubs output run.
         self.output_subruns = [] # Pubs output subrun number.
         self.output_version = 0 # Pubs output version number.
+        self.maxfluxfilemb = 0 # MaxFluxFileMB (size of genie flux files to fetch).
         self.num_jobs = default_num_jobs # Number of jobs.
         self.max_files_per_job = default_max_files_per_job #max num of files per job
         self.target_size = 0   # Target size for output files.
@@ -195,6 +196,19 @@ class StageDef:
         pubs_input_ok_elements = stage_element.getElementsByTagName('pubsinput')
         if pubs_input_ok_elements:
             self.pubs_input_ok = int(pubs_input_ok_elements[0].firstChild.data)
+
+        # MaxFluxFileMB GENIEHelper fcl parameter (subelement).
+
+        maxfluxfilemb_elements = stage_element.getElementsByTagName('maxfluxfilemb')
+        if maxfluxfilemb_elements:
+            self.maxfluxfilemb = int(maxfluxfilemb_elements[0].firstChild.data)
+        else:
+
+            # If this is a generator job, give maxfluxfilemb parameter a default
+            # nonzero value.
+
+            if self.inputfile == '' and self.inputlist == '' and self.inputdef == '':
+                self.maxfluxfilemb = 500
 
         # Number of jobs (subelement).
 
@@ -424,6 +438,7 @@ class StageDef:
         result += 'Output file name = %s\n' % self.output
         result += 'TFileName = %s\n' % self.TFileName	
         result += 'Number of jobs = %d\n' % self.num_jobs
+        result += 'Max flux MB = %d\n' % self.maxfluxfilemb
         result += 'Max files per job = %d\n' % self.max_files_per_job
         result += 'Output file target size = %d\n' % self.target_size
         result += 'Dataset definition name = %s\n' % self.defname
