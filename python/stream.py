@@ -35,8 +35,23 @@ def get_stream(inputfile):
         raise RuntimeError, 'sam_metadata_dumper failed with status %d' % rc
 
     # Decode json string to dictionary.
+    # Work around art bug by deleting "runs" line.
 
-    js = json.loads(jobout)
+    json_str = ''
+    n = jobout.find('"runs"')
+    if n >= 0:
+        m = jobout.rfind('\n', 0, n)
+        if m > 0:
+            json_str = jobout[:m+1]
+        k = jobout.find('\n', n)
+        if k > n:
+            json_str += jobout[k+1:]
+    else:
+        json_str = jobout
+
+    # End of workaround.
+
+    js = json.loads(json_str)
     md = js[inputfile]
 
     # Extract stream from json dictionary.
