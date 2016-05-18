@@ -570,7 +570,7 @@ cat /proc/loadavg
 # Set defaults.
 
 if [ x$QUAL = x ]; then
-  QUAL="prof:e7"
+  QUAL="prof:e9"
 fi
 
 if [ x$SAM_GROUP = x ]; then
