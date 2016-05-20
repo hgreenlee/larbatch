@@ -168,7 +168,7 @@ class StageDef:
         # the input list to the dafault input list.  If an input stream was specified,
         # insert it in from of the file type.
 
-        if self.inputfile == '' and self.inputlist == '':
+        if self.inputfile == '' and self.inputlist == '' and self.inputdef == '':
 
             # Get the default input list according to the previous stage.
 
