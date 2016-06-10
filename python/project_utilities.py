@@ -203,14 +203,14 @@ def get_user():
 #
 # q = Queue.Queue()
 # jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-# wait_for_subprocess(jobinfo, q)
+# wait_for_subprocess(jobinfo, q, input)
 # rc = q.get()      # Return code.
 # jobout = q.get()  # Standard output
 # joberr = q.get()  # Standard error
 
 
-def wait_for_subprocess(jobinfo, q):
-    jobout, joberr = jobinfo.communicate()
+def wait_for_subprocess(jobinfo, q, input=None):
+    jobout, joberr = jobinfo.communicate(input)
     rc = jobinfo.poll()
     q.put(rc)
     q.put(jobout)
