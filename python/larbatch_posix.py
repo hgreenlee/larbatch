@@ -76,6 +76,7 @@
 #
 # Utility functions:
 #
+# use_grid - Force (or not) the use of grid tools when possible.
 # dcache_server - Return dCache server.
 # dcache_path - Convert dCache local path to path on server.
 # xrootd_server_port - Return xrootd server and port (as <server>:<port>).
@@ -83,6 +84,30 @@
 # gridftp_uri - Convert dCache path to gridftp uri.
 # nfs_server - Node name of a computer in which /pnfs filesystem is nfs-mounted.
 # parse_mode - Parse the ten-character file mode string ("ls -l").
+#
+# Notes on the use of grid tools.
+#
+# 1.  The functions in this module may process calls using either 
+#     standard python posix tools or grid tools.  The following rules
+#     are followed in deciding which set of tools to use.
+#
+#     a) Non-dCache paths (that is paths that do not start with "/pnfs/",
+#        including all relative paths) are always handled using standard
+#        posix tools.
+#
+#     b) Absolute paths that start with "/pnfs/" may be handled using
+#        grid tools.
+#
+#     c) If the /pnfs filesystem is not nfs-mounted, then paths that
+#        start with "/pnfs/" are always handled using grid tools.
+#
+#     d) If the /pnfs filesystem is nfs-mounted, the functions in this
+#        module will by default prefer to use posix tools as opposed to 
+#         grid tools.
+#
+#     e) Call function use_grid() to force the use of grid tools for dCache
+#        paths, even if the /pnfs filesystem is mounted.
+#
 #
 ######################################################################
 
@@ -92,8 +117,20 @@ import subprocess
 import threading
 import Queue
 import StringIO
-import project_utilities
+import larbatch_utilities
 from project_modules.ifdherror import IFDHError
+
+# Grid flag.  If true prefer grid tools to posix tools when both are possible.
+
+grid = not os.path.isdir('/pnfs')
+
+
+# Force grid function.
+
+def use_grid(force=True):
+    global grid
+    grid = force or not os.path.isdir('/pnfs')
+
 
 # File-like class for dCache files.
 
@@ -225,7 +262,7 @@ def ifdh_cp(source, destination):
 
     # Get proxy.
 
-    project_utilities.test_proxy()
+    larbatch_utilities.test_proxy()
 
     # Make sure environment variables X509_USER_CERT and X509_USER_KEY
     # are not defined (they confuse ifdh, or rather the underlying tools).
@@ -242,7 +279,7 @@ def ifdh_cp(source, destination):
     jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     q = Queue.Queue()
-    thread = threading.Thread(target=project_utilities.wait_for_subprocess, args=[jobinfo, q])
+    thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
     thread.start()
     thread.join(timeout=60)
     if thread.is_alive():
@@ -270,7 +307,7 @@ def ifdh_ls(path, depth):
 
     # Get proxy.
 
-    project_utilities.test_proxy()
+    larbatch_utilities.test_proxy()
 
     # Make sure environment variables X509_USER_CERT and X509_USER_KEY
     # are not defined (they confuse ifdh, or rather the underlying tools).
@@ -287,7 +324,7 @@ def ifdh_ls(path, depth):
     jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     q = Queue.Queue()
-    thread = threading.Thread(target=project_utilities.wait_for_subprocess, args=[jobinfo, q])
+    thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
     thread.start()
     thread.join(timeout=60)
     if thread.is_alive():
@@ -319,7 +356,7 @@ def ifdh_ll(path, depth):
 
     # Get proxy.
 
-    project_utilities.test_proxy()
+    larbatch_utilities.test_proxy()
 
     # Make sure environment variables X509_USER_CERT and X509_USER_KEY
     # are not defined (they confuse ifdh, or rather the underlying tools).
@@ -336,7 +373,7 @@ def ifdh_ll(path, depth):
     jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     q = Queue.Queue()
-    thread = threading.Thread(target=project_utilities.wait_for_subprocess, args=[jobinfo, q])
+    thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
     thread.start()
     thread.join(timeout=60)
     if thread.is_alive():
@@ -367,7 +404,7 @@ def ifdh_rmdir(path):
 
     # Get proxy.
 
-    project_utilities.test_proxy()
+    larbatch_utilities.test_proxy()
 
     # Make sure environment variables X509_USER_CERT and X509_USER_KEY
     # are not defined (they confuse ifdh, or rather the underlying tools).
@@ -384,7 +421,7 @@ def ifdh_rmdir(path):
     jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     q = Queue.Queue()
-    thread = threading.Thread(target=project_utilities.wait_for_subprocess, args=[jobinfo, q])
+    thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
     thread.start()
     thread.join(timeout=60)
     if thread.is_alive():
@@ -415,7 +452,7 @@ def ifdh_chmod(path, mode):
 
     # Get proxy.
 
-    project_utilities.test_proxy()
+    larbatch_utilities.test_proxy()
 
     # Make sure environment variables X509_USER_CERT and X509_USER_KEY
     # are not defined (they confuse ifdh, or rather the underlying tools).
@@ -432,7 +469,7 @@ def ifdh_chmod(path, mode):
     jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     q = Queue.Queue()
-    thread = threading.Thread(target=project_utilities.wait_for_subprocess, args=[jobinfo, q])
+    thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
     thread.start()
     thread.join(timeout=60)
     if thread.is_alive():
@@ -463,7 +500,7 @@ def ifdh_mv(src, dest):
 
     # Get proxy.
 
-    project_utilities.test_proxy()
+    larbatch_utilities.test_proxy()
 
     # Make sure environment variables X509_USER_CERT and X509_USER_KEY
     # are not defined (they confuse ifdh, or rather the underlying tools).
@@ -480,7 +517,7 @@ def ifdh_mv(src, dest):
     jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     q = Queue.Queue()
-    thread = threading.Thread(target=project_utilities.wait_for_subprocess, args=[jobinfo, q])
+    thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
     thread.start()
     thread.join(timeout=60)
     if thread.is_alive():
@@ -511,7 +548,7 @@ def ifdh_rm(path):
 
     # Get proxy.
 
-    project_utilities.test_proxy()
+    larbatch_utilities.test_proxy()
 
     # Make sure environment variables X509_USER_CERT and X509_USER_KEY
     # are not defined (they confuse ifdh, or rather the underlying tools).
@@ -528,7 +565,7 @@ def ifdh_rm(path):
     jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     q = Queue.Queue()
-    thread = threading.Thread(target=project_utilities.wait_for_subprocess, args=[jobinfo, q])
+    thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
     thread.start()
     thread.join(timeout=60)
     if thread.is_alive():
@@ -840,7 +877,7 @@ def rename(src, dest):
         jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         q = Queue.Queue()
-        thread = threading.Thread(target=project_utilities.wait_for_subprocess, args=[jobinfo, q])
+        thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
         thread.start()
         thread.join(timeout=60)
         if thread.is_alive():
@@ -916,14 +953,14 @@ def symlink(src, dest):
 
     # Make sure we have a kerberos ticket.
 
-    project_utilities.test_ticket()
+    larbatch_utilities.test_ticket()
 
     if src.startswith('/pnfs/'):
         cmd = ['ssh', nfs_server(), 'ln', '-s', src, dest]
         jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         q = Queue.Queue()
-        thread = threading.Thread(target=project_utilities.wait_for_subprocess, args=[jobinfo, q])
+        thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
         thread.start()
         thread.join(timeout=60)
         if thread.is_alive():
@@ -949,14 +986,14 @@ def readlink(path):
 
     # Make sure we have a kerberos ticket.
 
-    project_utilities.test_ticket()
+    larbatch_utilities.test_ticket()
 
     if path.startswith('/pnfs/'):
         cmd = ['ssh', nfs_server(), 'readlink', path]
         jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         q = Queue.Queue()
-        thread = threading.Thread(target=project_utilities.wait_for_subprocess, args=[jobinfo, q])
+        thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
         thread.start()
         thread.join(timeout=60)
         if thread.is_alive():
