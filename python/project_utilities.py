@@ -478,7 +478,7 @@ def safecopy(source, destination):
         if rc != 0:
             for var in save_vars.keys():
                 os.environ[var] = save_vars[var]
-            raise IFDHError(command, rc, jobout, joberr)
+            raise IFDHError(cmd, rc, jobout, joberr)
 
         # Restore environment variables.
 
