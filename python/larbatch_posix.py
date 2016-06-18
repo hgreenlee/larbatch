@@ -36,18 +36,6 @@
 #
 # Functions:
 #
-# The following functions are provided as interfaces to ifdh.  These
-# functions are equipped with timeouts and other protections.
-#
-# ifdh_cp - Interface for "ifdh cp."
-# ifdh_ls - Interface for "ifdh ls."
-# ifdh_ll - Interface for "ifdh ll."
-# ifdh_mkdir - Interface for "ifdh mkdir."
-# ifdh_rmdir - Interface for "ifdh rmdir."
-# ifdh_mv - Interface for "ifdh mv."
-# ifdh_rm - Interface for "ifdh rm."
-# ifdh_chmod - Interface for "ifdh chmod."
-#
 # The following posix-like global functions are provided by this
 # module.  These mostly correspond to functions having the same name
 # in the os module.  Typically, these functions handle paths
@@ -77,13 +65,6 @@
 # Utility functions:
 #
 # use_grid - Force (or not) the use of grid tools when possible.
-# dcache_server - Return dCache server.
-# dcache_path - Convert dCache local path to path on server.
-# xrootd_server_port - Return xrootd server and port (as <server>:<port>).
-# xrootd_uri - Convert dCache path to xrootd uri.
-# gridftp_uri - Convert dCache path to gridftp uri.
-# nfs_server - Node name of a computer in which /pnfs filesystem is nfs-mounted.
-# parse_mode - Parse the ten-character file mode string ("ls -l").
 #
 # Notes on the use of grid tools.
 #
@@ -120,16 +101,21 @@ import StringIO
 import larbatch_utilities
 from project_modules.ifdherror import IFDHError
 
-# Grid flag.  If true prefer grid tools to posix tools when both are possible.
+# Global flags.
 
-grid = not os.path.isdir('/pnfs')
+pnfs_is_mounted = os.path.isdir('/pnfs')
+
+# Use this flag to indicate a preference for grid tools for paths in /pnfs.
+
+#prefer_grid = not pnfs_is_mounted
+prefer_grid = True
 
 
 # Force grid function.
 
 def use_grid(force=True):
-    global grid
-    grid = force or not os.path.isdir('/pnfs')
+
+    prefer_grid = force or not pnfs_is_mounted
 
 
 # File-like class for dCache files.
@@ -158,7 +144,7 @@ class dcache_file:
         # Fetch copy of file from dCache, if necessary.
 
         if path != self.local_path and (mode.find('r') >= 0 or mode.find('a') >= 0):
-            ifdh_cp(path, self.local_path)
+            larbatch_utilities.ifdh_cp(path, self.local_path)
 
         # Open local copy of file.
 
@@ -186,7 +172,7 @@ class dcache_file:
                 # If file was opend for writing, transfer local copy to dCache.
 
                 if self.mode.find('w') >= 0 or self.mode.find('a') >= 0 or self.mode.find('+') >= 0:
-                    ifdh_cp(self.local_path, self.path)
+                    larbatch_utilities.ifdh_cp(self.local_path, self.path)
 
                 # Delete the local copy regardless of whether the file was open for
                 # reading or writing.
@@ -256,340 +242,6 @@ class dcache_file:
 # Global functions.
 
 
-# Copy file using ifdh, with timeout.
-
-def ifdh_cp(source, destination):
-
-    # Get proxy.
-
-    larbatch_utilities.test_proxy()
-
-    # Make sure environment variables X509_USER_CERT and X509_USER_KEY
-    # are not defined (they confuse ifdh, or rather the underlying tools).
-
-    save_vars = {}
-    for var in ('X509_USER_CERT', 'X509_USER_KEY'):
-        if os.environ.has_key(var):
-            save_vars[var] = os.environ[var]
-            del os.environ[var]
-
-    # Do copy.
-
-    cmd = ['ifdh', 'cp', source, destination]
-    jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-    q = Queue.Queue()
-    thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
-    thread.start()
-    thread.join(timeout=60)
-    if thread.is_alive():
-        print 'Terminating subprocess.'
-        jobinfo.terminate()
-        thread.join()
-    rc = q.get()
-    jobout = q.get()
-    joberr = q.get()
-    if rc != 0:
-        for var in save_vars.keys():
-            os.environ[var] = save_vars[var]
-        raise IFDHError(cmd, rc, jobout, joberr)
-
-    # Restore environment variables.
-
-    for var in save_vars.keys():
-        os.environ[var] = save_vars[var]
-
-
-# Ifdh ls, with timeout.
-# Return value is list of lines returned by "ifdh ls" command.
-
-def ifdh_ls(path, depth):
-
-    # Get proxy.
-
-    larbatch_utilities.test_proxy()
-
-    # Make sure environment variables X509_USER_CERT and X509_USER_KEY
-    # are not defined (they confuse ifdh, or rather the underlying tools).
-
-    save_vars = {}
-    for var in ('X509_USER_CERT', 'X509_USER_KEY'):
-        if os.environ.has_key(var):
-            save_vars[var] = os.environ[var]
-            del os.environ[var]
-
-    # Do listing.
-
-    cmd = ['ifdh', 'ls', path, '%d' % depth]
-    jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-    q = Queue.Queue()
-    thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
-    thread.start()
-    thread.join(timeout=60)
-    if thread.is_alive():
-        print 'Terminating subprocess.'
-        jobinfo.terminate()
-        thread.join()
-    rc = q.get()
-    jobout = q.get()
-    joberr = q.get()
-    if rc != 0:
-        for var in save_vars.keys():
-            os.environ[var] = save_vars[var]
-        raise IFDHError(cmd, rc, jobout, joberr)
-
-    # Restore environment variables.
-
-    for var in save_vars.keys():
-        os.environ[var] = save_vars[var]
-
-    # Done.
-
-    return jobout.splitlines()
-
-
-# Ifdh ll, with timeout.
-# Return value is list of lines returned by "ifdh ls" command.
-
-def ifdh_ll(path, depth):
-
-    # Get proxy.
-
-    larbatch_utilities.test_proxy()
-
-    # Make sure environment variables X509_USER_CERT and X509_USER_KEY
-    # are not defined (they confuse ifdh, or rather the underlying tools).
-
-    save_vars = {}
-    for var in ('X509_USER_CERT', 'X509_USER_KEY'):
-        if os.environ.has_key(var):
-            save_vars[var] = os.environ[var]
-            del os.environ[var]
-
-    # Do listing.
-
-    cmd = ['ifdh', 'll', path, '%d' % depth]
-    jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-    q = Queue.Queue()
-    thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
-    thread.start()
-    thread.join(timeout=60)
-    if thread.is_alive():
-        print 'Terminating subprocess.'
-        jobinfo.terminate()
-        thread.join()
-    rc = q.get()
-    jobout = q.get()
-    joberr = q.get()
-    if rc != 0:
-        for var in save_vars.keys():
-            os.environ[var] = save_vars[var]
-        raise IFDHError(cmd, rc, jobout, joberr)
-
-    # Restore environment variables.
-
-    for var in save_vars.keys():
-        os.environ[var] = save_vars[var]
-
-    # Done.
-
-    return jobout.splitlines()
-
-
-# Ifdh rmdir, with timeout.
-
-def ifdh_rmdir(path):
-
-    # Get proxy.
-
-    larbatch_utilities.test_proxy()
-
-    # Make sure environment variables X509_USER_CERT and X509_USER_KEY
-    # are not defined (they confuse ifdh, or rather the underlying tools).
-
-    save_vars = {}
-    for var in ('X509_USER_CERT', 'X509_USER_KEY'):
-        if os.environ.has_key(var):
-            save_vars[var] = os.environ[var]
-            del os.environ[var]
-
-    # Do rmdir.
-
-    cmd = ['ifdh', 'rmdir', path]
-    jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-    q = Queue.Queue()
-    thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
-    thread.start()
-    thread.join(timeout=60)
-    if thread.is_alive():
-        print 'Terminating subprocess.'
-        jobinfo.terminate()
-        thread.join()
-    rc = q.get()
-    jobout = q.get()
-    joberr = q.get()
-    if rc != 0:
-        for var in save_vars.keys():
-            os.environ[var] = save_vars[var]
-        raise IFDHError(cmd, rc, jobout, joberr)
-
-    # Restore environment variables.
-
-    for var in save_vars.keys():
-        os.environ[var] = save_vars[var]
-
-    # Done.
-
-    return
-
-
-# Ifdh chmod, with timeout.
-
-def ifdh_chmod(path, mode):
-
-    # Get proxy.
-
-    larbatch_utilities.test_proxy()
-
-    # Make sure environment variables X509_USER_CERT and X509_USER_KEY
-    # are not defined (they confuse ifdh, or rather the underlying tools).
-
-    save_vars = {}
-    for var in ('X509_USER_CERT', 'X509_USER_KEY'):
-        if os.environ.has_key(var):
-            save_vars[var] = os.environ[var]
-            del os.environ[var]
-
-    # Do chmod.
-
-    cmd = ['ifdh', 'chmod', '%o' % mode, path]
-    jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-    q = Queue.Queue()
-    thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
-    thread.start()
-    thread.join(timeout=60)
-    if thread.is_alive():
-        print 'Terminating subprocess.'
-        jobinfo.terminate()
-        thread.join()
-    rc = q.get()
-    jobout = q.get()
-    joberr = q.get()
-    if rc != 0:
-        for var in save_vars.keys():
-            os.environ[var] = save_vars[var]
-        raise IFDHError(cmd, rc, jobout, joberr)
-
-    # Restore environment variables.
-
-    for var in save_vars.keys():
-        os.environ[var] = save_vars[var]
-
-    # Done.
-
-    return
-
-
-# Ifdh mv, with timeout.
-
-def ifdh_mv(src, dest):
-
-    # Get proxy.
-
-    larbatch_utilities.test_proxy()
-
-    # Make sure environment variables X509_USER_CERT and X509_USER_KEY
-    # are not defined (they confuse ifdh, or rather the underlying tools).
-
-    save_vars = {}
-    for var in ('X509_USER_CERT', 'X509_USER_KEY'):
-        if os.environ.has_key(var):
-            save_vars[var] = os.environ[var]
-            del os.environ[var]
-
-    # Do rename.
-
-    cmd = ['ifdh', 'mv', src, dest]
-    jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-    q = Queue.Queue()
-    thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
-    thread.start()
-    thread.join(timeout=60)
-    if thread.is_alive():
-        print 'Terminating subprocess.'
-        jobinfo.terminate()
-        thread.join()
-    rc = q.get()
-    jobout = q.get()
-    joberr = q.get()
-    if rc != 0:
-        for var in save_vars.keys():
-            os.environ[var] = save_vars[var]
-        raise IFDHError(cmd, rc, jobout, joberr)
-
-    # Restore environment variables.
-
-    for var in save_vars.keys():
-        os.environ[var] = save_vars[var]
-
-    # Done.
-
-    return
-
-
-# Ifdh rm, with timeout.
-
-def ifdh_rm(path):
-
-    # Get proxy.
-
-    larbatch_utilities.test_proxy()
-
-    # Make sure environment variables X509_USER_CERT and X509_USER_KEY
-    # are not defined (they confuse ifdh, or rather the underlying tools).
-
-    save_vars = {}
-    for var in ('X509_USER_CERT', 'X509_USER_KEY'):
-        if os.environ.has_key(var):
-            save_vars[var] = os.environ[var]
-            del os.environ[var]
-
-    # Do delete.
-
-    cmd = ['ifdh', 'rm', path]
-    jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-    q = Queue.Queue()
-    thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
-    thread.start()
-    thread.join(timeout=60)
-    if thread.is_alive():
-        print 'Terminating subprocess.'
-        jobinfo.terminate()
-        thread.join()
-    rc = q.get()
-    jobout = q.get()
-    joberr = q.get()
-    if rc != 0:
-        for var in save_vars.keys():
-            os.environ[var] = save_vars[var]
-        raise IFDHError(cmd, rc, jobout, joberr)
-
-    # Restore environment variables.
-
-    for var in save_vars.keys():
-        os.environ[var] = save_vars[var]
-
-    # Done.
-
-    return
-
-
 # Open file
 
 def open(path, mode='r', buf=-1):
@@ -604,7 +256,7 @@ def open(path, mode='r', buf=-1):
 def listdir(path):
 
     result = []
-    if path.startswith('/pnfs/'):
+    if path.startswith('/pnfs/') and prefer_grid:
 
         # Get normalized tail.
 
@@ -612,7 +264,7 @@ def listdir(path):
 
         # Call "ifdh ls".
 
-        contents = ifdh_ls(path, 1)
+        contents = larbatch_utilities.ifdh_ls(path, 1)
 
         # Loop over contents returned by ifdh.
         # Normalize the paths returned by "ifdh ls", which in this context mainly
@@ -637,12 +289,12 @@ def listdir(path):
 def exists(path):
 
     result = False
-    if path.startswith('/pnfs/'):
+    if path.startswith('/pnfs/') and prefer_grid:
 
         # Do "ifdh ls."
 
         try:
-            ifdh_ls(path, 0)
+            larbatch_utilities.ifdh_ls(path, 0)
             result = True
         except:
             result = False
@@ -660,7 +312,7 @@ def exists(path):
 def isdir(path):
 
     result = False
-    if path.startswith('/pnfs/'):
+    if path.startswith('/pnfs/') and prefer_grid:
 
         # Make sure path exists before trying to determine if it is a directory.
 
@@ -672,7 +324,7 @@ def isdir(path):
             npath = os.path.normpath(path)      # Strip trailing '/'
             name = os.path.basename(npath)
             dir = os.path.dirname(npath)
-            lines = ifdh_ll(dir, 1)
+            lines = larbatch_utilities.ifdh_ll(dir, 1)
             for line in lines:
                 words = line.split()
                 if len(words) > 5 and words[-1] == name:
@@ -704,7 +356,7 @@ def isdir(path):
 def stat(path):
 
     result = os.stat_result((0,0,0,0,0,0,0,0,0,0))
-    if path.startswith('/pnfs/'):
+    if path.startswith('/pnfs/') and prefer_grid:
 
         # The only reliable way to get information about a directory is 
         # to get a listing of the parent directory.
@@ -712,7 +364,7 @@ def stat(path):
         npath = os.path.normpath(path)      # Strip trailing '/'
         name = os.path.basename(npath)
         dir = os.path.dirname(npath)
-        lines = ifdh_ll(dir, 1)
+        lines = larbatch_utilities.ifdh_ll(dir, 1)
         for line in lines:
             words = line.split()
             if len(words) >5 and words[-1] == name:
@@ -721,7 +373,7 @@ def stat(path):
 
                 # Interpret mode string.
 
-                mode = parse_mode(words[0])
+                mode = larbatch_utilities.parse_mode(words[0])
 
                 # Get remaining fields.
                     
@@ -753,7 +405,7 @@ def stat(path):
 def access(path, mode):
 
     result = False
-    if path.startswith('/pnfs/'):
+    if path.startswith('/pnfs/') and prefer_grid:
         sr = stat(path)
         if sr.st_mode != 0:
 
@@ -799,11 +451,11 @@ def access(path, mode):
 
 def walk(top, topdown=True, onerror=None, followlinks=False):
     result = []
-    if top.startswith('/pnfs/'):
+    if top.startswith('/pnfs/') and prefer_grid:
 
         # Retrieve the contents of this directory.
 
-        lines = ifdh_ll(top, 1)
+        lines = larbatch_utilities.ifdh_ll(top, 1)
         dirs = []
         files = []
         for line in lines:
@@ -838,8 +490,8 @@ def walk(top, topdown=True, onerror=None, followlinks=False):
 # for non-dCache files.
 
 def mkdir(path, mode=0777):
-    if path.startswith('/pnfs/'):
-        ifdh_mkdir(path)
+    if path.startswith('/pnfs/') and prefer_grid:
+        larbatch_utilities.ifdh_mkdir(path)
     else:
         os.mkdir(path, mode)
 
@@ -850,7 +502,7 @@ def mkdir(path, mode=0777):
 # "ifdh mkdir_p" is buggy, so we do the recursion locally.
 
 def makedirs(path, mode=0777):
-    if path.startswith('/pnfs/'):
+    if path.startswith('/pnfs/') and prefer_grid:
 
         # Make sure parent directory exists.
 
@@ -861,7 +513,7 @@ def makedirs(path, mode=0777):
 
         # Now make directory itself.
 
-        ifdh_mkdir(path)
+        larbatch_utilities.ifdh_mkdir(path)
     else:
         os.mkdir(path, mode)
 
@@ -870,9 +522,9 @@ def makedirs(path, mode=0777):
 # "ifdh mv" seems to be buggy, so use uberftp.
 
 def rename(src, dest):
-    if src.startswith('/pnfs/'):
-        src_uri = gridftp_uri(src)
-        dest_path = dcache_path(dest)
+    if src.startswith('/pnfs/') and prefer_grid:
+        src_uri = larbatch_utilities.gridftp_uri(src)
+        dest_path = larbatch_utilities.dcache_path(dest)
         cmd = ['uberftp', '-rename', src_uri, dest_path]
         jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
@@ -896,27 +548,27 @@ def rename(src, dest):
 # Delete file.
 
 def remove(path):
-    if path.startswith('/pnfs/'):
-        ifdh_rm(path)
+    if path.startswith('/pnfs/') and prefer_grid:
+        larbatch_utilities.ifdh_rm(path)
     else:
         os.remove(path)
 
 # Delete empty directory.
 
 def rmdir(path):
-    if path.startswith('/pnfs/'):
-        ifdh_rmdir(path)
+    if path.startswith('/pnfs/') and prefer_grid:
+        larbatch_utilities.ifdh_rmdir(path)
     else:
         os.rmdir(path)
 
 # Delete directory tree.
 
 def rmtree(path):
-    if path.startswith('/pnfs/'):
+    if path.startswith('/pnfs/') and prefer_grid:
 
         # Delete contents recursively.
 
-        lines = ifdh_ll(path, 1)
+        lines = larbatch_utilities.ifdh_ll(path, 1)
         for line in lines:
             words = line.split()
             if len(words) > 5:
@@ -940,8 +592,8 @@ def rmtree(path):
 # Change mode.
 
 def chmod(path, mode):
-    if path.startswith('/pnfs/'):
-        ifdh_chmod(path, mode)
+    if path.startswith('/pnfs/') and prefer_grid:
+        larbatch_utilities.ifdh_chmod(path, mode)
     else:
         os.chmod(path, mode)
 
@@ -955,8 +607,8 @@ def symlink(src, dest):
 
     larbatch_utilities.test_ticket()
 
-    if src.startswith('/pnfs/'):
-        cmd = ['ssh', nfs_server(), 'ln', '-s', src, dest]
+    if src.startswith('/pnfs/') and not pnfs_is_mounted:
+        cmd = ['ssh', larbatch_utilities.nfs_server(), 'ln', '-s', src, dest]
         jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         q = Queue.Queue()
@@ -988,8 +640,8 @@ def readlink(path):
 
     larbatch_utilities.test_ticket()
 
-    if path.startswith('/pnfs/'):
-        cmd = ['ssh', nfs_server(), 'readlink', path]
+    if path.startswith('/pnfs/') and not_pnfs_is_mounted:
+        cmd = ['ssh', larbatch_utilities.nfs_server(), 'readlink', path]
         jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         q = Queue.Queue()
@@ -1013,124 +665,3 @@ def readlink(path):
     # Done.
 
     return result
-
-
-# Return dCache server.
-
-def dcache_server():
-    return "fndca1.fnal.gov"
-
-
-# Convert a local pnfs path to the path on the dCache server.
-# Return the input path unchanged if it isn't on dCache.
-
-def dcache_path(path):
-    if path.startswith('/pnfs/') and not path.startswith('/pnfs/fnal.gov/usr/'):
-        return '/pnfs/fnal.gov/usr/' + path[6:]
-
-
-# Return xrootd server and port.
-
-def xrootd_server_port():
-    return dcache_server() + ':1094'
-
-
-# Convert a pnfs path to xrootd uri.
-# Return the input path unchanged if it isn't on dCache.
-
-def xrootd_uri(path):
-    if path.startswith('/pnfs/'):
-        return 'root://' + xrootd_server_port() + dcache_path(path)
-    else:
-        return path
-
-
-# Convert a pnfs path to gridftp uri.
-# Return the input path unchanged if it isn't on dCache.
-
-def gridftp_uri(path):
-    if path.startswith('/pnfs/'):
-        return 'gsiftp://' + dcache_server() + dcache_path(path)
-    else:
-        return path
-
-
-# Return the name of a computer with login access that has the /pnfs 
-# filesystem nfs-mounted.  This function makes use of the $EXPERIMENT
-# environment variable (as does ifdh), which must be set.
-
-def nfs_server():
-    return '%sgpvm01.fnal.gov' % os.environ['EXPERIMENT']
-
-
-# Parse the ten-character file mode string as returned by "ls -l" 
-# and return mode bit masek.
-
-def parse_mode(mode_str):
-
-    mode = 0
-
-    # File type.
-
-    if mode_str[0] == 'b':
-        mode += statmod.S_IFBLK
-    elif mode_str[0] == 'c':
-        mode += statmod.S_IFCHR
-    elif mode_str[0] == 'd':
-        mode += statmod.S_IFDIR
-    elif mode_str[0] == 'l':
-        mode += statmod.S_IFLNK
-    elif mode_str[0] == 'p':
-        mode += statmod.S_IFIFO
-    elif mode_str[0] == 's':
-        mode += statmod.S_IFSOCK
-    elif mode_str[0] == '-':
-        mode += statmod.S_IFREG
-
-    # File permissions.
-
-    # User triad (includes setuid).
-
-    if mode_str[1] == 'r':
-        mode += statmod.S_IRUSR
-    if mode_str[2] == 'w':
-        mode += statmod.S_IWUSR
-    if mode_str[3] == 'x':
-        mode += statmod.S_IXUSR
-    elif mode_str[3] == 's':
-        mode += statmod.S_ISUID
-        mode += statmod.S_IXUSR
-    elif mode_str[3] == 'S':
-        mode += statmod.S_ISUID
-
-    # Group triad (includes setgid).
-
-    if mode_str[4] == 'r':
-        mode += statmod.S_IRGRP
-    if mode_str[5] == 'w':
-        mode += statmod.S_IWGRP
-    if mode_str[6] == 'x':
-        mode += statmod.S_IXGRP
-    elif mode_str[6] == 's':
-        mode += statmod.S_ISGID
-        mode += statmod.S_IXGRP
-    elif mode_str[6] == 'S':
-        mode += statmod.S_ISGID
-
-    # World triad (includes sticky bit).
-                    
-    if mode_str[7] == 'r':
-        mode += statmod.S_IROTH
-    if mode_str[8] == 'w':
-        mode += statmod.S_IWOTH
-    if mode_str[9] == 'x':
-        mode += statmod.S_IXOTH
-    elif mode_str[9] == 't':
-        mode += statmod.S_ISVTX
-        mode += statmod.S_IXOTH
-    elif mode_str[9] == 'T':
-        mode += statmod.S_ISVTX
-
-    # Done
-
-    return mode
