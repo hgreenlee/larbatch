@@ -16,7 +16,6 @@ import subprocess
 import shutil
 import threading
 import Queue
-import getpass
 import uuid
 import samweb_cli
 from project_modules.ifdherror import IFDHError
@@ -36,41 +35,9 @@ sys.argv = myargv
 # Global variables.
 
 proxy_ok = False
-kca_ok = False
-ticket_ok = False
 kca_user = ''
 samweb_obj = None       # Initialized SAMWebClient object
 
-
-# Function to return the current experiment.
-# The following places for obtaining this information are
-# tried (in order):
-#
-# 1.  Environment variable $EXPERIMENT.
-# 2.  Environment variable $SAM_EXPERIMENT.
-# 3.  Hostname (up to "gpvm").
-#
-# Raise an exception if none of the above methods works.
-#
-
-def get_experiment():
-
-    exp = ''
-    for ev in ('EXPERIMENT', 'SAM_EXPERIMENT'):
-        if os.environ.has_key(ev):
-            exp = os.environ[ev]
-            break
-
-    if not exp:
-        hostname = socket.gethostname()
-        n = hostname.find('gpvm')
-        if n > 0:
-            exp = hostname[:n]
-
-    if not exp:
-        raise RuntimeError, 'Unable to determine experiment.'
-
-    return exp
 
 # Function to return the fictitious disk server node
 # name used by sam for bluearc disks.
@@ -97,30 +64,6 @@ def get_dropbox(filename):
 
 def get_sam_metadata(project, stage):
     result = ''
-    return result
-
-# Get role (normally 'Analysis' or 'Production').
-
-def get_role():
-
-    # If environment variable ROLE is defined, use that.  Otherwise, make
-    # an educated guess based on user name.
-
-    result = 'Analysis'   # Default role.
-
-    # Check environment variable $ROLE.
-
-    if os.environ.has_key('ROLE'):
-        result = os.environ['ROLE']
-
-    # Otherwise, check user.
-
-    else:
-        prouser = get_experiment() + 'pro'
-        user = getpass.getuser()
-        if user == prouser:
-            result = 'Production'
-
     return result
 
 # Get authenticated user (from kerberos ticket, not $USER).
@@ -791,8 +734,3 @@ def addLayerTwo(path, recreate=True):
 
 def batch_status_check():
     return True
-
-# Import experiment-specific utilities.  In this imported module, one can 
-# override any function or symbol defined above, or add new ones.
-
-from experiment_utilities import *

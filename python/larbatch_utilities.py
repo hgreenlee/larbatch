@@ -27,6 +27,8 @@
 # get_proxy - Get a grid proxy.
 # test_kca - Get a kca certificate if necessary.
 # text_proxy - Get a grid proxy if necessary.
+# get_experiment - Get standard experiment name.
+# get_role - Get VO role.
 #
 # Other functions.
 #
@@ -41,13 +43,27 @@
 #
 ######################################################################
 
+import os
+import stat
+import subprocess
+import getpass
+import threading
+import Queue
+from project_modules.ifdherror import IFDHError
+
+# Global variables.
+
+ticket_ok = False
+kca_ok = False
+proxy_ok = False
+
 # Copy file using ifdh, with timeout.
 
 def ifdh_cp(source, destination):
 
     # Get proxy.
 
-    larbatch_utilities.test_proxy()
+    test_proxy()
 
     # Make sure environment variables X509_USER_CERT and X509_USER_KEY
     # are not defined (they confuse ifdh, or rather the underlying tools).
@@ -64,7 +80,7 @@ def ifdh_cp(source, destination):
     jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     q = Queue.Queue()
-    thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
+    thread = threading.Thread(target=wait_for_subprocess, args=[jobinfo, q])
     thread.start()
     thread.join(timeout=60)
     if thread.is_alive():
@@ -92,7 +108,7 @@ def ifdh_ls(path, depth):
 
     # Get proxy.
 
-    larbatch_utilities.test_proxy()
+    test_proxy()
 
     # Make sure environment variables X509_USER_CERT and X509_USER_KEY
     # are not defined (they confuse ifdh, or rather the underlying tools).
@@ -109,7 +125,7 @@ def ifdh_ls(path, depth):
     jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     q = Queue.Queue()
-    thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
+    thread = threading.Thread(target=wait_for_subprocess, args=[jobinfo, q])
     thread.start()
     thread.join(timeout=60)
     if thread.is_alive():
@@ -141,7 +157,7 @@ def ifdh_ll(path, depth):
 
     # Get proxy.
 
-    larbatch_utilities.test_proxy()
+    test_proxy()
 
     # Make sure environment variables X509_USER_CERT and X509_USER_KEY
     # are not defined (they confuse ifdh, or rather the underlying tools).
@@ -158,7 +174,7 @@ def ifdh_ll(path, depth):
     jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     q = Queue.Queue()
-    thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
+    thread = threading.Thread(target=wait_for_subprocess, args=[jobinfo, q])
     thread.start()
     thread.join(timeout=60)
     if thread.is_alive():
@@ -185,11 +201,59 @@ def ifdh_ll(path, depth):
 
 # Ifdh rmdir, with timeout.
 
+# Ifdh rmdir, with timeout.
+
+def ifdh_mkdir(path):
+
+    # Get proxy.
+
+    test_proxy()
+
+    # Make sure environment variables X509_USER_CERT and X509_USER_KEY
+    # are not defined (they confuse ifdh, or rather the underlying tools).
+
+    save_vars = {}
+    for var in ('X509_USER_CERT', 'X509_USER_KEY'):
+        if os.environ.has_key(var):
+            save_vars[var] = os.environ[var]
+            del os.environ[var]
+
+    # Do mkdir.
+
+    cmd = ['ifdh', 'mkdir', path]
+    jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    q = Queue.Queue()
+    thread = threading.Thread(target=wait_for_subprocess, args=[jobinfo, q])
+    thread.start()
+    thread.join(timeout=60)
+    if thread.is_alive():
+        print 'Terminating subprocess.'
+        jobinfo.terminate()
+        thread.join()
+    rc = q.get()
+    jobout = q.get()
+    joberr = q.get()
+    if rc != 0:
+        for var in save_vars.keys():
+            os.environ[var] = save_vars[var]
+        raise IFDHError(cmd, rc, jobout, joberr)
+
+    # Restore environment variables.
+
+    for var in save_vars.keys():
+        os.environ[var] = save_vars[var]
+
+    # Done.
+
+    return
+
+
 def ifdh_rmdir(path):
 
     # Get proxy.
 
-    larbatch_utilities.test_proxy()
+    test_proxy()
 
     # Make sure environment variables X509_USER_CERT and X509_USER_KEY
     # are not defined (they confuse ifdh, or rather the underlying tools).
@@ -206,7 +270,7 @@ def ifdh_rmdir(path):
     jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     q = Queue.Queue()
-    thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
+    thread = threading.Thread(target=wait_for_subprocess, args=[jobinfo, q])
     thread.start()
     thread.join(timeout=60)
     if thread.is_alive():
@@ -237,7 +301,7 @@ def ifdh_chmod(path, mode):
 
     # Get proxy.
 
-    larbatch_utilities.test_proxy()
+    test_proxy()
 
     # Make sure environment variables X509_USER_CERT and X509_USER_KEY
     # are not defined (they confuse ifdh, or rather the underlying tools).
@@ -254,7 +318,7 @@ def ifdh_chmod(path, mode):
     jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     q = Queue.Queue()
-    thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
+    thread = threading.Thread(target=wait_for_subprocess, args=[jobinfo, q])
     thread.start()
     thread.join(timeout=60)
     if thread.is_alive():
@@ -285,7 +349,7 @@ def ifdh_mv(src, dest):
 
     # Get proxy.
 
-    larbatch_utilities.test_proxy()
+    test_proxy()
 
     # Make sure environment variables X509_USER_CERT and X509_USER_KEY
     # are not defined (they confuse ifdh, or rather the underlying tools).
@@ -302,7 +366,7 @@ def ifdh_mv(src, dest):
     jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     q = Queue.Queue()
-    thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
+    thread = threading.Thread(target=wait_for_subprocess, args=[jobinfo, q])
     thread.start()
     thread.join(timeout=60)
     if thread.is_alive():
@@ -333,7 +397,7 @@ def ifdh_rm(path):
 
     # Get proxy.
 
-    larbatch_utilities.test_proxy()
+    test_proxy()
 
     # Make sure environment variables X509_USER_CERT and X509_USER_KEY
     # are not defined (they confuse ifdh, or rather the underlying tools).
@@ -350,7 +414,7 @@ def ifdh_rm(path):
     jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     q = Queue.Queue()
-    thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
+    thread = threading.Thread(target=wait_for_subprocess, args=[jobinfo, q])
     thread.start()
     thread.join(timeout=60)
     if thread.is_alive():
@@ -617,64 +681,125 @@ def parse_mode(mode_str):
     # File type.
 
     if mode_str[0] == 'b':
-        mode += statmod.S_IFBLK
+        mode += stat.S_IFBLK
     elif mode_str[0] == 'c':
-        mode += statmod.S_IFCHR
+        mode += stat.S_IFCHR
     elif mode_str[0] == 'd':
-        mode += statmod.S_IFDIR
+        mode += stat.S_IFDIR
     elif mode_str[0] == 'l':
-        mode += statmod.S_IFLNK
+        mode += stat.S_IFLNK
     elif mode_str[0] == 'p':
-        mode += statmod.S_IFIFO
+        mode += stat.S_IFIFO
     elif mode_str[0] == 's':
-        mode += statmod.S_IFSOCK
+        mode += stat.S_IFSOCK
     elif mode_str[0] == '-':
-        mode += statmod.S_IFREG
+        mode += stat.S_IFREG
 
     # File permissions.
 
     # User triad (includes setuid).
 
     if mode_str[1] == 'r':
-        mode += statmod.S_IRUSR
+        mode += stat.S_IRUSR
     if mode_str[2] == 'w':
-        mode += statmod.S_IWUSR
+        mode += stat.S_IWUSR
     if mode_str[3] == 'x':
-        mode += statmod.S_IXUSR
+        mode += stat.S_IXUSR
     elif mode_str[3] == 's':
-        mode += statmod.S_ISUID
-        mode += statmod.S_IXUSR
+        mode += stat.S_ISUID
+        mode += stat.S_IXUSR
     elif mode_str[3] == 'S':
-        mode += statmod.S_ISUID
+        mode += stat.S_ISUID
 
     # Group triad (includes setgid).
 
     if mode_str[4] == 'r':
-        mode += statmod.S_IRGRP
+        mode += stat.S_IRGRP
     if mode_str[5] == 'w':
-        mode += statmod.S_IWGRP
+        mode += stat.S_IWGRP
     if mode_str[6] == 'x':
-        mode += statmod.S_IXGRP
+        mode += stat.S_IXGRP
     elif mode_str[6] == 's':
-        mode += statmod.S_ISGID
-        mode += statmod.S_IXGRP
+        mode += stat.S_ISGID
+        mode += stat.S_IXGRP
     elif mode_str[6] == 'S':
-        mode += statmod.S_ISGID
+        mode += stat.S_ISGID
 
     # World triad (includes sticky bit).
                     
     if mode_str[7] == 'r':
-        mode += statmod.S_IROTH
+        mode += stat.S_IROTH
     if mode_str[8] == 'w':
-        mode += statmod.S_IWOTH
+        mode += stat.S_IWOTH
     if mode_str[9] == 'x':
-        mode += statmod.S_IXOTH
+        mode += stat.S_IXOTH
     elif mode_str[9] == 't':
-        mode += statmod.S_ISVTX
-        mode += statmod.S_IXOTH
+        mode += stat.S_ISVTX
+        mode += stat.S_IXOTH
     elif mode_str[9] == 'T':
-        mode += statmod.S_ISVTX
+        mode += stat.S_ISVTX
 
     # Done
 
     return mode
+
+# Function to return the current experiment.
+# The following places for obtaining this information are
+# tried (in order):
+#
+# 1.  Environment variable $EXPERIMENT.
+# 2.  Environment variable $SAM_EXPERIMENT.
+# 3.  Hostname (up to "gpvm").
+#
+# Raise an exception if none of the above methods works.
+#
+
+def get_experiment():
+
+    exp = ''
+    for ev in ('EXPERIMENT', 'SAM_EXPERIMENT'):
+        if os.environ.has_key(ev):
+            exp = os.environ[ev]
+            break
+
+    if not exp:
+        hostname = socket.gethostname()
+        n = hostname.find('gpvm')
+        if n > 0:
+            exp = hostname[:n]
+
+    if not exp:
+        raise RuntimeError, 'Unable to determine experiment.'
+
+    return exp
+
+
+# Get role (normally 'Analysis' or 'Production').
+
+def get_role():
+
+    # If environment variable ROLE is defined, use that.  Otherwise, make
+    # an educated guess based on user name.
+
+    result = 'Analysis'   # Default role.
+
+    # Check environment variable $ROLE.
+
+    if os.environ.has_key('ROLE'):
+        result = os.environ['ROLE']
+
+    # Otherwise, check user.
+
+    else:
+        prouser = get_experiment() + 'pro'
+        user = getpass.getuser()
+        if user == prouser:
+            result = 'Production'
+
+    return result
+
+
+# Import experiment-specific utilities.  In this imported module, one can 
+# override any function or symbol defined above, or add new ones.
+
+from experiment_utilities import *
