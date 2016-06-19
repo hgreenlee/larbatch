@@ -12,6 +12,7 @@
 import sys, os, string, subprocess
 from project_modules.xmlerror import XMLError
 from project_modules.stagedef import StageDef
+import larbatch_posix
 
 # Project definition class contains data parsed from project defition xml file.
 
@@ -165,7 +166,7 @@ class ProjectDef:
             local_elements = larsoft_elements[0].getElementsByTagName('local')
             if local_elements:
                 local = local_elements[0].firstChild.data
-                if os.path.isdir(local):
+                if larbatch_posix.isdir(local):
                     self.local_release_dir = local
                 else:
                     self.local_release_tar = local
@@ -181,7 +182,7 @@ class ProjectDef:
         # Make sure local test release directory/tarball exists, if specified.
         # Existence of non-null local_release_dir has already been tested.
 
-        if self.local_release_tar != '' and not os.path.exists(self.local_release_tar):
+        if self.local_release_tar != '' and not larbatch_posix.exists(self.local_release_tar):
             raise IOError, "Local release directory/tarball %s does not exist." % self.local_release_tar
             
         # Sam file type (subelement).
@@ -220,7 +221,7 @@ class ProjectDef:
             script_path = jobout.splitlines()[0].strip()
         except:
             pass
-        if script_path == '' or not os.access(script_path, os.X_OK):
+        if script_path == '' or not larbatch_posix.access(script_path, os.X_OK):
             raise IOError, 'Script %s not found.' % self.script
         self.script = script_path
 
@@ -265,13 +266,13 @@ class ProjectDef:
 
         if os.environ.has_key('FHICL_FILE_PATH'):
             for fcldir in string.split(os.environ['FHICL_FILE_PATH'], ':'):
-                if os.path.exists(fcldir):
+                if larbatch_posix.exists(fcldir):
                     self.fclpath.append(fcldir)
 
         # Make sure all directories of fcl search path exist.
 
         for fcldir in self.fclpath:
-            if not os.path.exists(fcldir):
+            if not larbatch_posix.exists(fcldir):
                 raise IOError, "Fcl search directory %s does not exist." % fcldir
 
         # Project stages (repeatable subelement).
@@ -369,8 +370,8 @@ class ProjectDef:
         fcl = ''
         for fcldir in self.fclpath:
             fcl = os.path.join(fcldir, fclname)
-            if os.path.exists(fcl):
+            if larbatch_posix.exists(fcl):
                 break
-        if fcl == '' or not os.path.exists(fcl):
+        if fcl == '' or not larbatch_posix.exists(fcl):
             raise IOError, 'Could not find fcl file %s.' % fclname
         return fcl

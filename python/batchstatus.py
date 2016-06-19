@@ -13,6 +13,7 @@
 
 import sys
 import project_utilities
+import larbatch_utilities
 import subprocess
 from project_modules.jobsuberror import JobsubError
 
@@ -90,9 +91,9 @@ class BatchStatus:
         global jobs
 
         command = ['jobsub_q']
-        command.append('--group=%s' % project_utilities.get_experiment())
-        command.append('--user=%s' % project_utilities.get_user())
-        command.append('--role=%s' % project_utilities.get_role())
+        command.append('--group=%s' % larbatch_utilities.get_experiment())
+        command.append('--user=%s' % larbatch_utilities.get_user())
+        command.append('--role=%s' % larbatch_utilities.get_role())
         jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         jobout, joberr = jobinfo.communicate()
         rc = jobinfo.poll()

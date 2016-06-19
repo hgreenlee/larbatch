@@ -3,6 +3,7 @@
 # Import stuff.
 
 import sys, os, string, subprocess, json, project_utilities, stream
+import larbatch_posix
 
 # Import ROOT (hide command line arguments).
 
@@ -61,7 +62,7 @@ def fileEnstoreChecksum(path):
 
     if srm_url == path:
         try:
-            f = open(path,'rb')
+            f = larbatch_posix.open(path,'rb')
             crc = enstoreChecksum(f)
         except (IOError, OSError), ex:
             raise Error(str(ex))

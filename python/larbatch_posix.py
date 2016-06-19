@@ -355,7 +355,7 @@ def isdir(path):
 
 def stat(path):
 
-    result = os.stat_result((0,0,0,0,0,0,0,0,0,0))
+    result = None
     if path.startswith('/pnfs/') and prefer_grid:
 
         # The only reliable way to get information about a directory is 
@@ -392,6 +392,9 @@ def stat(path):
 
     else:
         result = os.stat(path)
+
+    if result == None:
+        raise OSError, 'No such file or directory.'
 
     # Done.
 

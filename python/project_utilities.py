@@ -19,6 +19,7 @@ import Queue
 import uuid
 import samweb_cli
 from project_modules.ifdherror import IFDHError
+import larbatch_posix
 import larbatch_utilities
 
 # Prevent root from printing garbage on initialization.
@@ -38,108 +39,6 @@ proxy_ok = False
 kca_user = ''
 samweb_obj = None       # Initialized SAMWebClient object
 
-
-# Function to return the fictitious disk server node
-# name used by sam for bluearc disks.
-
-def get_bluearc_server():
-    return get_experiment() + 'data:'
-
-# Function to return the fictitious disk server node
-# name used by sam for dCache disks.
-
-def get_dcache_server():
-    return 'fnal-dcache:'
-
-# Function to determine dropbox directory based on sam metadata.
-# Raise an exception if the specified file doesn't have metadata.
-# This function should be overridden in <experiment>_utilities module.
-
-def get_dropbox(filename):
-    raise RuntimeError, 'Function get_dropbox not implemented.'
-
-# Function to return string containing sam metadata in the form 
-# of an fcl configuraiton.  It is intended that this function
-# may be overridden in experiment_utilities.py.
-
-def get_sam_metadata(project, stage):
-    result = ''
-    return result
-
-# Get authenticated user (from kerberos ticket, not $USER).
-
-def get_user():
-
-    # See if we have a cached value for user.
-
-    global kca_user
-    if kca_user != '':
-        return kca_user
-
-    # Return production user name if Role is Production
-
-    if get_role() == 'Production':
-        return get_prouser()
-
-    else:
-
-        # First make sure we have a kca certificate (raise exception if not).
-
-        test_kca()
-
-        # Return user name from certificate if Role is Analysis
-
-        subject = ''
-        if os.environ.has_key('X509_USER_PROXY'):
-            subject = subprocess.check_output(['voms-proxy-info',
-                                               '-file', os.environ['X509_USER_PROXY'],
-                                               '-subject'], stderr=-1)
-        elif os.environ.has_key('X509_USER_CERT') and os.environ.has_key('X509_USER_KEY'):
-            subject = subprocess.check_output(['voms-proxy-info',
-                                               '-file', os.environ['X509_USER_CERT'],
-                                               '-subject'], stderr=-1)
-        else:
-            subject = subprocess.check_output(['voms-proxy-info', '-subject'], stderr=-1)
-
-        # Get the last non-numeric CN
-
-        cn = ''
-        while cn == '':
-            n = subject.rfind('/CN=')
-            if n >= 0:
-                cn = subject[n+4:]
-                if cn.strip().isdigit():
-                    cn = ''
-                    subject = subject[:n]
-            else:
-                break
-
-        # Truncate everything after the first '/'.
-
-        n = cn.find('/')
-        if n >= 0:
-            cn = cn[:n]
-
-        # Truncate everything after the first newline.
-
-        n = cn.find('\n')
-        if n >= 0:
-            cn = cn[:n]
-
-        # Truncate everything before the first ":" (UID:).
-
-        n = cn.find(':')
-        if n >= 0:
-            cn = cn[n+1:]
-
-        # Done (maybe).
-
-        if cn != '':
-            return cn
-
-    # Something went wrong...
-
-    raise RuntimeError, 'Unable to determine authenticated user.'
 
 # Function to optionally convert a filesystem path into an xrootd url.
 # Only affects paths in /pnfs space.
@@ -163,7 +62,7 @@ def path_to_srm_url(path):
 
 def safeexist(path):
     try:
-        os.stat(path)
+        larbatch_posix.stat(path)
         return True
     except:
         return False
@@ -182,7 +81,7 @@ def saferead(path):
         q = Queue.Queue()
         cmd = ['cat', path]
         jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        thread = threading.Thread(target=wait_for_subprocess, args=[jobinfo, q])
+        thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
         thread.start()
         thread.join(timeout=60)
         if thread.is_alive():
@@ -196,7 +95,7 @@ def saferead(path):
             raise RuntimeError, 'Error reading %s' % path
         lines = jobout.splitlines()
     else:
-        lines = open(path).readlines()
+        lines = larbatch_posix.open(path).readlines()
     return lines
 
 # dCache-safe method to copy file.
@@ -204,7 +103,7 @@ def saferead(path):
 def safecopy(source, destination):
     #print 'safecopy called from %s to %s' % (source, destination)
     if safeexist(destination):
-        os.remove(destination)
+        larbatch_posix.remove(destination)
     if source[0:6] == '/pnfs/' or destination[0:6] == '/pnfs/':
 
         # Copy file.
@@ -226,7 +125,7 @@ def safecopy(source, destination):
         jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         q = Queue.Queue()
-        thread = threading.Thread(target=wait_for_subprocess, args=[jobinfo, q])
+        thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
         thread.start()
         thread.join(timeout=60)
         if thread.is_alive():
@@ -261,7 +160,7 @@ def fast_isdir(path):
             path[-4:] != '.err' and \
             path[-3:] != '.sh' and \
             path[-5:] != '.stat' and \
-            os.path.isdir(path):
+            larbatch_posix.isdir(path):
         result = True
     return result
 
@@ -271,13 +170,13 @@ def wait_for_stat(path):
 
     ntry = 60
     while ntry > 0:
-        if os.access(path, os.R_OK):
+        if larbatch_posix.access(path, os.R_OK):
             return 0
         print 'Waiting ...'
 
         # Reading the parent directory seems to make files be visible faster.
 
-        os.listdir(os.path.dirname(path))
+        larbatch_posix.listdir(os.path.dirname(path))
         time.sleep(1)
         ntry = ntry - 1
 
@@ -331,7 +230,7 @@ def path_to_local(path):
     #        # Make sure local path doesn't already exist (ifdh cp may fail).
 
     #        if os.path.exists(local):
-    #            os.remove(local)
+    #            larbatch_posix.remove(local)
 
     #        # Use ifdh to make local copy of file.
 
@@ -422,7 +321,7 @@ class SafeTFile:
             # Now that the local copy is open, we can safely delete it already.
 
             if local != path:
-                os.remove(local)
+                larbatch_posix.remove(local)
 
         else:
 
@@ -460,29 +359,6 @@ class SafeTFile:
     def Get(self, objname):
         return self.root_tfile.Get(objname)
 
-# Function to return a comma-separated list of run-time top level ups products.
-
-def get_ups_products():
-    return get_experiment() + 'code'
-
-# Function to return path of experiment bash setup script that is valid
-# on the node where this script is being executed.
-# This function should be overridden in <experiment>_utilities.py.
-
-def get_setup_script_path():
-    raise RuntimeError, 'Function get_setup_script_path not implemented.'
-
-# Function to return dimension string for project, stage.
-# This function should be overridden in experiment_utilities.py
-
-def dimensions(project, stage, ana=False):
-    raise RuntimeError, 'Function dimensions not implemented.'
-
-# Function to return the production user name
-
-def get_prouser():
-    return get_experiment() + 'pro'
-
 # Function to return the path of a scratch directory which can be used
 # for creating large temporary files.  The scratch directory should not 
 # be in dCache.  The default implementation here uses the following algorithm.
@@ -509,16 +385,18 @@ def get_scratch_dir():
         scratch = os.environ['SCRATCH']
 
     else:
-        scratch = '/scratch/%s/%s' % (get_experiment(), get_user())
-        if not os.path.isdir(scratch) or not os.access(scratch, os.W_OK):
-            scratch = '/%s/data/users/%s' % (get_experiment(), get_user())
+        scratch = '/scratch/%s/%s' % (larbatch_utilities.get_experiment(),
+                                      larbatch_utilities.get_user())
+        if not larbatch_posix.isdir(scratch) or not larbatch_posix.access(scratch, os.W_OK):
+            scratch = '/%s/data/users/%s' % (larbatch_utilities.get_experiment(),
+                                             larbatch_utilities.get_user())
 
     # Checkout.
 
     if scratch == '':
         raise RuntimeError, 'No scratch directory specified.'
 
-    if not os.path.isdir(scratch) or not os.access(scratch, os.W_OK):
+    if not larbatch_posix.isdir(scratch) or not larbatch_posix.access(scratch, os.W_OK):
         raise RuntimeError, 'Scratch directory %s does not exist or is not writeable.' % scratch
 
     return scratch
@@ -623,7 +501,7 @@ def create_limited_dataset(defname, run, subruns):
 
         # Take the snapshot
 
-        snapid = samweb().takeSnapshot(defname, group=get_experiment())
+        snapid = samweb().takeSnapshot(defname, group=larbatch_utilities.get_experiment())
     except:
         snapid = None
     if snapid == None:
@@ -646,7 +524,9 @@ def create_limited_dataset(defname, run, subruns):
 
     # Create definition.
 
-    samweb().createDefinition(newdefname, dim, user=get_user(), group=get_experiment())
+    samweb().createDefinition(newdefname, dim,
+                              user=larbatch_utilities.get_user(), 
+                              group=larbatch_utilities.get_experiment())
 
     # Done (return definition name).
 
@@ -659,7 +539,7 @@ def samweb():
     global samweb_obj
 
     if samweb_obj == None:
-        samweb_obj = samweb_cli.SAMWebClient(experiment=get_experiment())
+        samweb_obj = samweb_cli.SAMWebClient(experiment=larbatch_utilities.get_experiment())
 
     os.environ['SSL_CERT_DIR'] = '/etc/grid-security/certificates'
 
@@ -674,7 +554,7 @@ def addLayerTwo(path, recreate=True):
     # Don't do anything if this file is not located in dCache (/pnfs/...)
     # or has nonzero size.
 
-    if safeexist(path) and path[0:6] == '/pnfs/' and os.stat(path).st_size == 0:
+    if safeexist(path) and path[0:6] == '/pnfs/' and larbatch_posix.stat(path).st_size == 0:
 
         if recreate:
             print 'Adding layer two for path %s.' % path
@@ -685,7 +565,7 @@ def addLayerTwo(path, recreate=True):
         # missing layer two.
         # Delete the file and recreate it using ifdh.
 
-        os.remove(path)
+        larbatch_posix.remove(path)
         if not recreate:
             return
         larbatch_utiltiies.test_proxy()
@@ -705,7 +585,7 @@ def addLayerTwo(path, recreate=True):
         jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
         q = Queue.Queue()
-        thread = threading.Thread(target=wait_for_subprocess, args=[jobinfo, q])
+        thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
         thread.start()
         thread.join(timeout=60)
         if thread.is_alive():

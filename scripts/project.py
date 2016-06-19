@@ -278,6 +278,8 @@
 ######################################################################
 
 import sys, os, stat, string, subprocess, shutil, urllib, json, getpass, uuid
+import larbatch_posix
+import larbatch_utilities
 import threading, Queue
 from xml.dom.minidom import parse
 import project_utilities, root_metadata
@@ -300,8 +302,8 @@ def safeopen(destination):
     #    file = SafeFile(destination)
     #else:
     if project_utilities.safeexist(destination):
-        os.remove(destination)
-    file = open(destination, 'w')
+        larbatch_posix.remove(destination)
+    file = larbatch_posix.open(destination, 'w')
     return file
 
 # Function to make sure global SAMWebClient object is initialized.
@@ -343,31 +345,31 @@ def doclean(project, stagename):
 
             # Clean this stage outdir.
 
-            if os.path.exists(stage.outdir):
-                dir_uid = os.stat(stage.outdir).st_uid
+            if larbatch_posix.exists(stage.outdir):
+                dir_uid = larbatch_posix.stat(stage.outdir).st_uid
                 if dir_uid == uid or dir_uid == euid:
                     print 'Clean directory %s.' % stage.outdir
-                    shutil.rmtree(stage.outdir)
+                    larbatch_posix.rmtree(stage.outdir)
                 else:
                     raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.outdir
 
             # Clean this stage logdir.
 
-            if os.path.exists(stage.logdir):
-                dir_uid = os.stat(stage.logdir).st_uid
+            if larbatch_posix.exists(stage.logdir):
+                dir_uid = larbatch_posix.stat(stage.logdir).st_uid
                 if dir_uid == uid or dir_uid == euid:
                     print 'Clean directory %s.' % stage.logdir
-                    shutil.rmtree(stage.logdir)
+                    larbatch_posix.rmtree(stage.logdir)
                 else:
                     raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.logdir
 
             # Clean this stage workdir.
 
-            if os.path.exists(stage.workdir):
-                dir_uid = os.stat(stage.workdir).st_uid
+            if larbatch_posix.exists(stage.workdir):
+                dir_uid = larbatch_posix.stat(stage.workdir).st_uid
                 if dir_uid == uid or dir_uid == euid:
                     print 'Clean directory %s.' % stage.workdir
-                    shutil.rmtree(stage.workdir)
+                    larbatch_posix.rmtree(stage.workdir)
                 else:
                     raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.workdir
 
@@ -405,31 +407,31 @@ def docleanx(projects, projectname, stagename):
 
                 # Clean this stage outdir.
 
-                if os.path.exists(stage.outdir):
-                    dir_uid = os.stat(stage.outdir).st_uid
+                if larbatch_posix.exists(stage.outdir):
+                    dir_uid = larbatch_posix.stat(stage.outdir).st_uid
                     if dir_uid == uid or dir_uid == euid:
                         print 'Clean directory %s.' % stage.outdir
-                        shutil.rmtree(stage.outdir)
+                        larbatch_posix.rmtree(stage.outdir)
                     else:
                         raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.outdir
 
                 # Clean this stage logdir.
 
-                if os.path.exists(stage.logdir):
-                    dir_uid = os.stat(stage.logdir).st_uid
+                if larbatch_posix.exists(stage.logdir):
+                    dir_uid = larbatch_posix.stat(stage.logdir).st_uid
                     if dir_uid == uid or dir_uid == euid:
                         print 'Clean directory %s.' % stage.logdir
-                        shutil.rmtree(stage.logdir)
+                        larbatch_posix.rmtree(stage.logdir)
                     else:
                         raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.logdir
 
                 # Clean this stage workdir.
 
-                if os.path.exists(stage.workdir):
-                    dir_uid = os.stat(stage.workdir).st_uid
+                if larbatch_posix.exists(stage.workdir):
+                    dir_uid = larbatch_posix.stat(stage.workdir).st_uid
                     if dir_uid == uid or dir_uid == euid:
                         print 'Clean directory %s.' % stage.workdir
-                        shutil.rmtree(stage.workdir)
+                        larbatch_posix.rmtree(stage.workdir)
                     else:
                         raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.workdir
 
@@ -443,7 +445,7 @@ def dostatus(projects):
 
     # BatchStatus constructor requires authentication.
 
-    project_utilities.test_kca()
+    larbatch_utilities.test_kca()
 
     # For backward compatibility, allow this function to be called with 
     # either a single project or a list of projects.
@@ -703,7 +705,7 @@ def check_root(outdir, logdir):
     hists = []
 
     print 'Checking root files in directory %s.' % outdir
-    filenames = os.listdir(outdir)
+    filenames = larbatch_posix.listdir(outdir)
     for filename in filenames:
         if filename[-5:] == '.root':
             path = os.path.join(outdir, filename)
@@ -767,7 +769,7 @@ def doshorten(stage):
 
     # Loop over .root files in outdir.
 
-    for out_subpath, subdirs, files in os.walk(stage.outdir):
+    for out_subpath, subdirs, files in larbatch_posix.walk(stage.outdir):
 
         # Only examine files in leaf directories.
 
@@ -787,7 +789,7 @@ def doshorten(stage):
                     shortfile = file[:150] + str(uuid.uuid4()) + '.root'
                     shortfile_path = os.path.join(out_subpath, shortfile)
                     print '%s\n->%s\n' % (file_path, shortfile_path)
-                    os.rename(file_path, shortfile_path)
+                    larbatch_posix.rename(file_path, shortfile_path)
 
                     # Also rename corresponding json file, if it exists.
 
@@ -796,7 +798,7 @@ def doshorten(stage):
                         shortjson = shortfile + '.json'
                         shortjson_path = os.path.join(log_subpath, shortjson)
                         print '%s\n->%s\n' % (json_path, shortjson_path)
-                        os.rename(json_path, shortjson_path)
+                        larbatch_posix.rename(json_path, shortjson_path)
 
     return
 
@@ -855,10 +857,10 @@ def docheck(project, stage, ana):
 
     # Check that output and log directories exist.
 
-    if not os.path.exists(stage.outdir):
+    if not larbatch_posix.exists(stage.outdir):
         print 'Output directory %s does not exist.' % stage.outdir
         return 1
-    if not os.path.exists(stage.logdir):
+    if not larbatch_posix.exists(stage.logdir):
         print 'Log directory %s does not exist.' % stage.logdir
         return 1
 
@@ -882,7 +884,7 @@ def docheck(project, stage, ana):
     uris = []         # List of input files processed successfully.
     bad_workers = []  # List of bad worker subdirectories.
 
-    for log_subpath, subdirs, files in os.walk(stage.logdir):
+    for log_subpath, subdirs, files in larbatch_posix.walk(stage.logdir):
 
         # Only examine files in leaf directories.
 
@@ -1214,7 +1216,7 @@ def docheck(project, stage, ana):
         for sam_project in sam_projects:
             print '\nChecking sam project %s' % sam_project
             import_samweb()
-            url = samweb.findProject(sam_project, project_utilities.get_experiment())
+            url = samweb.findProject(sam_project, larbatch_utilities.get_experiment())
             if url != '':
                 result = samweb.projectSummary(url)
                 nd = 0
@@ -1293,7 +1295,7 @@ def dofetchlog(stage):
     # stage.logdir.
 
     logids = []
-    for dirpath, dirnames, filenames in os.walk(stage.logdir):
+    for dirpath, dirnames, filenames in larbatch_posix.walk(stage.logdir):
         for filename in filenames:
             if filename == 'env.txt':
 
@@ -1356,8 +1358,8 @@ def dofetchlog(stage):
 
         logdir = os.path.join(stage.logdir, 'log')
         if project_utilities.safeexist(logdir):
-            shutil.rmtree(logdir)
-        os.mkdir(logdir)
+            larbatch_posix.rmtree(logdir)
+        larbatch_posix.mkdir(logdir)
 
         # Loop over log ids.
                     
@@ -1527,7 +1529,7 @@ def docheck_definition(defname, dim, define):
     else:
         if define:
             print 'Creating definition %s.' % defname
-            project_utilities.test_kca()
+            larbatch_utilities.test_kca()
             samweb.createDefinition(defname=defname, dims=dim)
         else:
             result = 1
@@ -1575,7 +1577,7 @@ def doundefine(defname):
 
     if def_exists:
         print 'Deleting definition: %s' % defname
-        project_utilities.test_kca()
+        larbatch_utilities.test_kca()
         samweb.deleteDefinition(defname=defname)
     else:
         print 'No such definition: %s' % defname
@@ -1616,7 +1618,7 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
         # Look subdirectories of outdir.
 
         disk_locs = []
-        for out_subpath, subdirs, files in os.walk(outdir):
+        for out_subpath, subdirs, files in larbatch_posix.walk(outdir):
 
             # Only examine files in leaf directories.
 
@@ -1688,22 +1690,22 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
                     should_upload = False
                     break
             if should_upload:
-                dropbox = project_utilities.get_dropbox(filename)
+                dropbox = larbatch_utilities.get_dropbox(filename)
                 if not project_utilities.safeexist(dropbox):
                     print 'Making dropbox directory %s.' % dropbox
-                    os.makedirs(dropbox)
+                    larbatch_posix.makedirs(dropbox)
                 locs_to_upload[disk_locs[0]] = dropbox
         
         # Report results and do the actual adding/removing/uploading.
 
         for loc in locs_to_add:
-            node = project_utilities.get_bluearc_server()
+            node = larbatch_utilities.get_bluearc_server()
             if loc[0:6] == '/pnfs/':
-                node = project_utilities.get_dcache_server()
+                node = larbatch_utilities.get_dcache_server()
             loc = node + loc.split(':')[-1]
             if add:
                 print 'Adding location: %s.' % loc
-                project_utilities.test_kca()
+                larbatch_utilities.test_kca()
                 samweb.addFileLocation(filenameorid=filename, location=loc)
             elif not upload:
                 print 'Can add location: %s.' % loc
@@ -1711,7 +1713,7 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
         for loc in locs_to_remove:
             if clean or remove:
                 print 'Removing location: %s.' % loc
-                project_utilities.test_kca()
+                larbatch_utilities.test_kca()
                 samweb.removeFileLocation(filenameorid=filename, location=loc)
             elif not upload:
                 print 'Should remove location: %s.' % loc
@@ -1721,7 +1723,7 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
 
             # Make sure dropbox directory exists.
             
-            if not os.path.isdir(dropbox):
+            if not larbatch_posit.isdir(dropbox):
                 print 'Dropbox directory %s does not exist.' % dropbox
             else:
 
@@ -1744,12 +1746,12 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
                         relpath = os.path.relpath(os.path.realpath(loc_filename), dropbox)
                         print 'relpath=',relpath
                         print 'dropbox_filename=',dropbox_filename
-                        os.symlink(relpath, dropbox_filename)
+                        larbatch_posix.symlink(relpath, dropbox_filename)
 
                     else:
 
                         print 'Copying %s to dropbox directory %s.' % (filename, dropbox)
-                        project_utilities.test_proxy()
+                        larbatch_utilities.test_proxy()
 
                         # Make sure environment variables X509_USER_CERT and X509_USER_KEY
                         # are not defined (they confuse ifdh).
@@ -1915,7 +1917,7 @@ def dojobsub(project, stage, makeup):
 
         # Add experiment-specific sam metadata.
 
-        sam_metadata = project_utilities.get_sam_metadata(project, stage)
+        sam_metadata = larbatch_utilities.get_sam_metadata(project, stage)
         if sam_metadata:
             wrapper_fcl.write(sam_metadata)
 
@@ -1939,7 +1941,7 @@ def dojobsub(project, stage, makeup):
     # Copy and rename experiment setup script to the work directory.
 
     setupscript = os.path.join(stage.workdir,'setup_experiment.sh')
-    project_utilities.safecopy(project_utilities.get_setup_script_path(), setupscript)
+    project_utilities.safecopy(larbatch_utilities.get_setup_script_path(), setupscript)
     jobsub_workdir_files_args.extend(['-f', setupscript])
 
     # Copy and rename batch script to the work directory.
@@ -1973,7 +1975,7 @@ def dojobsub(project, stage, makeup):
     # Copy worker initialization script to work directory.
 
     if stage.init_script != '':
-        if not os.path.exists(stage.init_script):
+        if not larbatch_posix.exists(stage.init_script):
             raise RuntimeError, 'Worker initialization script %s does not exist.\n' % \
                 stage.init_script
         work_init_script = os.path.join(stage.workdir, os.path.basename(stage.init_script))
@@ -1984,7 +1986,7 @@ def dojobsub(project, stage, makeup):
     # Copy worker initialization source script to work directory.
 
     if stage.init_source != '':
-        if not os.path.exists(stage.init_source):
+        if not larbatch_posix.exists(stage.init_source):
             raise RuntimeError, 'Worker initialization source script %s does not exist.\n' % \
                 stage.init_source
         work_init_source = os.path.join(stage.workdir, os.path.basename(stage.init_source))
@@ -1995,7 +1997,7 @@ def dojobsub(project, stage, makeup):
     # Copy worker end-of-job script to work directory.
 
     if stage.end_script != '':
-        if not os.path.exists(stage.end_script):
+        if not larbatch_posix.exists(stage.end_script):
             raise RuntimeError, 'Worker end-of-job script %s does not exist.\n' % stage.end_script
         work_end_script = os.path.join(stage.workdir, os.path.basename(stage.end_script))
         if stage.end_script != work_end_script:
@@ -2021,13 +2023,13 @@ def dojobsub(project, stage, makeup):
                 bad_subdir = line.strip()
                 if bad_subdir != '':
                     bad_path = os.path.join(stage.outdir, bad_subdir)
-                    if os.path.exists(bad_path):
+                    if larbatch_posix.exists(bad_path):
                         print 'Deleting %s' % bad_path
-                        shutil.rmtree(bad_path)
+                        larbatch_posix.rmtree(bad_path)
                     bad_path = os.path.join(stage.logdir, bad_subdir)
-                    if os.path.exists(bad_path):
+                    if larbatch_posix.exists(bad_path):
                         print 'Deleting %s' % bad_path
-                        shutil.rmtree(bad_path)
+                        larbatch_posix.rmtree(bad_path)
 
         # Get a list of missing files, if any, for file list input.
         # Regenerate the input file list in the work directory, and 
@@ -2047,8 +2049,8 @@ def dojobsub(project, stage, makeup):
 
         if input_list_name != '':
             work_list_name = os.path.join(stage.workdir, input_list_name)
-            if os.path.exists(work_list_name):
-                os.remove(work_list_name)
+            if larbatch_posix.exists(work_list_name):
+                larbatch_posix.remove(work_list_name)
             work_list = safeopen(work_list_name)
             for missing_file in missing_files:
                 work_list.write('%s\n' % missing_file)
@@ -2106,7 +2108,7 @@ def dojobsub(project, stage, makeup):
 
         makeup_defname = ''
         if len(cpids) > 0:
-            project_utilities.test_kca()
+            larbatch_utilities.test_kca()
             makeup_defname = samweb.makeProjectName(stage.inputdef) + '_makeup'
 
             # Construct comma-separated list of consumer process ids.
@@ -2124,7 +2126,7 @@ def dojobsub(project, stage, makeup):
             # Create makeup dataset definition.
 
             print 'Creating makeup sam dataset definition %s' % makeup_defname
-            project_utilities.test_kca()
+            larbatch_utilities.test_kca()
             samweb.createDefinition(defname=makeup_defname, dims=dim)
             makeup_count = samweb.countFiles(defname=makeup_defname)
             print 'Makeup dataset contains %d files.' % makeup_count
@@ -2143,12 +2145,12 @@ def dojobsub(project, stage, makeup):
     prjname = ''
     if inputdef != '':
         import_samweb()
-        project_utilities.test_kca()
+        larbatch_utilities.test_kca()
         prjname = samweb.makeProjectName(inputdef)
 
     # Get role
 
-    role = project_utilities.get_role()
+    role = larbatch_utilities.get_role()
 
     # Construct jobsub command line for workers.
 
@@ -2157,7 +2159,7 @@ def dojobsub(project, stage, makeup):
 
     # Jobsub options.
         
-    command.append('--group=%s' % project_utilities.get_experiment())
+    command.append('--group=%s' % larbatch_utilities.get_experiment())
     command.append('--role=%s' % role)
     command.extend(jobsub_workdir_files_args)
     if project.server != '-' and project.server != '':
@@ -2214,10 +2216,10 @@ def dojobsub(project, stage, makeup):
 
     # Larsoft options.
 
-    command.extend([' --group', project_utilities.get_experiment()])
+    command.extend([' --group', larbatch_utilities.get_experiment()])
     command.extend([' -g'])
     command.extend([' -c', 'wrapper.fcl'])
-    command.extend([' --ups', project_utilities.get_ups_products()])
+    command.extend([' --ups', larbatch_utilities.get_ups_products()])
     if project.release_tag != '':
         command.extend([' -r', project.release_tag])
     command.extend([' -b', project.release_qual])
@@ -2271,8 +2273,8 @@ def dojobsub(project, stage, makeup):
 
     if prjname != '' and command_njobs == 1:
         command.extend([' --sam_start',
-                        ' --sam_station', project_utilities.get_experiment(),
-                        ' --sam_group', project_utilities.get_experiment()])
+                        ' --sam_station', larbatch_utilities.get_experiment(),
+                        ' --sam_group', larbatch_utilities.get_experiment()])
 
     if prjname != '' and command_njobs > 1:
 
@@ -2288,7 +2290,7 @@ def dojobsub(project, stage, makeup):
 
         # General options.
             
-        start_command.append('--group=%s' % project_utilities.get_experiment())
+        start_command.append('--group=%s' % larbatch_utilities.get_experiment())
         start_command.append('-f %s' % setupscript)
         #start_command.append('--role=%s' % role)
         if stage.resource != '':
@@ -2313,8 +2315,8 @@ def dojobsub(project, stage, makeup):
 
         # Sam options.
 
-        start_command.extend([' --sam_station', project_utilities.get_experiment(),
-                              ' --sam_group', project_utilities.get_experiment(),
+        start_command.extend([' --sam_station', larbatch_utilities.get_experiment(),
+                              ' --sam_group', larbatch_utilities.get_experiment(),
                               ' --sam_defname', inputdef,
                               ' --sam_project', prjname,
                               ' -g'])
@@ -2329,7 +2331,7 @@ def dojobsub(project, stage, makeup):
 
         # General options.
             
-        stop_command.append('--group=%s' % project_utilities.get_experiment())
+        stop_command.append('--group=%s' % larbatch_utilities.get_experiment())
         stop_command.append('-f %s' % setupscript)
         #stop_command.append('--role=%s' % role)
         if stage.resource != '':
@@ -2354,7 +2356,7 @@ def dojobsub(project, stage, makeup):
 
         # Sam options.
 
-        stop_command.extend([' --sam_station', project_utilities.get_experiment(),
+        stop_command.extend([' --sam_station', larbatch_utilities.get_experiment(),
                              ' --sam_project', prjname,
                              ' -g'])
 
@@ -2427,7 +2429,7 @@ def dojobsub(project, stage, makeup):
         # Update the main submission command to use jobsub_submit_dag instead of jobsub_submit.
 
         command = ['jobsub_submit_dag']
-        command.append('--group=%s' % project_utilities.get_experiment())
+        command.append('--group=%s' % larbatch_utilities.get_experiment())
         if project.server != '-' and project.server != '':
             command.append('--jobsub-server=%s' % project.server)
         command.append('--role=%s' % role)
@@ -2454,7 +2456,7 @@ def dojobsub(project, stage, makeup):
         print 'Invoke jobsub_submit'
         q = Queue.Queue()
         jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        thread = threading.Thread(target=project_utilities.wait_for_subprocess, args=[jobinfo, q])
+        thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
         thread.start()
         thread.join(timeout=submit_timeout)
         if thread.is_alive():
@@ -2474,7 +2476,7 @@ def dojobsub(project, stage, makeup):
             raise JobsubError(command, rc, jobout, joberr)
         print 'jobsub_submit finished.'
         if project_utilities.safeexist(checked_file):
-            os.remove(checked_file)
+            larbatch_posix.remove(checked_file)
 
     else:
 
@@ -2483,7 +2485,7 @@ def dojobsub(project, stage, makeup):
         if makeup_count > 0:
             q = Queue.Queue()
             jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            thread = threading.Thread(target=project_utilities.wait_for_subprocess,
+            thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess,
                                       args=[jobinfo, q])
             thread.start()
             thread.join(timeout=submit_timeout)
@@ -2503,7 +2505,7 @@ def dojobsub(project, stage, makeup):
                 os.chdir(curdir)
                 raise JobsubError(command, rc, jobout, joberr)
             if project_utilities.safeexist(checked_file):
-                os.remove(checked_file)
+                larbatch_posix.remove(checked_file)
         else:
             print 'Makeup action aborted because makeup job count is zero.'
     os.chdir(curdir)
@@ -2519,7 +2521,7 @@ def dosubmit(project, stage, makeup=False):
 
     # Make sure we have a kerberos ticket.
 
-    project_utilities.test_kca()
+    larbatch_utilities.test_kca()
 
     # In pubs mode, delete any existing work, log, or output
     # directories, since there is no separate makeup action for pubs
@@ -2527,11 +2529,11 @@ def dosubmit(project, stage, makeup=False):
 
     if stage.pubs_output and not stage.dynamic:
         if project_utilities.safeexist(stage.workdir):
-            shutil.rmtree(stage.workdir)
+            larbatch_posix.rmtree(stage.workdir)
         if project_utilities.safeexist(stage.outdir):
-            shutil.rmtree(stage.outdir)
+            larbatch_posix.rmtree(stage.outdir)
         if project_utilities.safeexist(stage.logdir):
-            shutil.rmtree(stage.logdir)
+            larbatch_posix.rmtree(stage.logdir)
 
     # Make or check directories.
 
@@ -2547,9 +2549,9 @@ def dosubmit(project, stage, makeup=False):
     # Make sure output and log directories are empty (submit only).
 
     if not makeup and not stage.dynamic:
-        if len(os.listdir(stage.outdir)) != 0:
+        if len(larbatch_posix.listdir(stage.outdir)) != 0:
             raise RuntimeError, 'Output directory %s is not empty.' % stage.outdir
-        if len(os.listdir(stage.logdir)) != 0:
+        if len(larbatch_posix.listdir(stage.logdir)) != 0:
             raise RuntimeError, 'Log directory %s is not empty.' % stage.logdir
 
     # Copy files to workdir and issue jobsub command to submit jobs.
@@ -2561,7 +2563,7 @@ def dosubmit(project, stage, makeup=False):
     jobids_filename = os.path.join(stage.logdir, 'jobids.list')
     jobids = []
     if project_utilities.safeexist(jobids_filename):
-        lines = open(jobids_filename).readlines()
+        lines = larbatch_posix.open(jobids_filename).readlines()
         for line in lines:
             id = line.strip()
             if len(id) > 0:
@@ -2606,8 +2608,8 @@ def domerge(stage, mergehist, mergentuple):
             tempdir = '%s/mergentuple_%d_%d' % (project_utilities.get_scratch_dir(),
                                                 os.getuid(),
                                                 os.getpid())
-            if not os.path.isdir(tempdir):
-                os.makedirs(tempdir)
+            if not larbatch_posit.isdir(tempdir):
+                larbatch_posix.makedirs(tempdir)
             name_temp = '%s/anahist.root' % tempdir
         else:
             name_temp = name
@@ -2621,8 +2623,8 @@ def domerge(stage, mergehist, mergentuple):
            
         print "Merging %d root files using %s." % (len(hlist), mergecom)
 			          			         
-        if os.path.exists(name_temp):
-            os.remove(name_temp)
+        if larbatch_posix.exists(name_temp):
+            larbatch_posix.remove(name_temp)
         comlist = mergecom.split()
         comlist.extend(["-v", "0", "-f", "-k", name_temp, '@' + histurlsname_temp])
         rc = subprocess.call(comlist, stdout=sys.stdout, stderr=sys.stderr)
@@ -2630,9 +2632,9 @@ def domerge(stage, mergehist, mergentuple):
             print "%s exit status %d" % (mergecom, rc)
         if name != name_temp:
             if project_utilities.safeexist(name):
-                os.remove(name)
-            if os.path.exists(name_temp):
-                project_utilities.test_proxy()
+                larbatch_posix.remove(name)
+            if larbatch_posix.exists(name_temp):
+                larbatch_utilities.test_proxy()
 
                 # Make sure environment variables X509_USER_CERT and X509_USER_KEY
                 # are not defined (they confuse ifdh).
@@ -2659,9 +2661,9 @@ def domerge(stage, mergehist, mergentuple):
                 for var in save_vars.keys():
                     os.environ[var] = save_vars[var]
 
-                os.remove(name_temp)
-                os.rmdir(tempdir)
-        os.remove(histurlsname_temp)	     
+                larbatch_posix.remove(name_temp)
+                larbatch_posix.rmdir(tempdir)
+        larbatch_posix.remove(histurlsname_temp)	     
 
 
 # Sam audit.
@@ -2734,7 +2736,7 @@ def doaudit(stage):
             # Declare the content status of the file as bad in SAM.
                         
             sdict = {'content_status':'bad'}
-            project_utilities.test_kca()
+            larbatch_utilities.test_kca()
             samweb.modifyFileMetadata(rmfile, sdict)
             print '\nDeclaring the status of the following file as bad:', rmfile
 
@@ -2758,7 +2760,7 @@ def doaudit(stage):
         print "Creating missingfiles.list in the output directory....done!"
     if me != 0:
         thefile.close()	
-        #os.remove("jsonfile.json")
+        #larbatch_posix.remove("jsonfile.json")
         print "For extra parent files, files.list redefined and content status declared as bad in SAM...done!"	     
     
 
@@ -3133,7 +3135,7 @@ def main(argv):
         if stage.defname == '':
             print 'No sam dataset definition name specified for this stage.'
             return 1
-        dim = project_utilities.dimensions(project, stage, ana=False)
+        dim = larbatch_utilities.dimensions(project, stage, ana=False)
         docheck_definition(stage.defname, dim, define)
 
     if check_definition_ana or define_ana:
@@ -3143,7 +3145,7 @@ def main(argv):
         if stage.ana_defname == '':
             print 'No sam analysis dataset definition name specified for this stage.'
             return 1
-        dim = project_utilities.dimensions(project, stage, ana=True)
+        dim = larbatch_utilities.dimensions(project, stage, ana=True)
         docheck_definition(stage.ana_defname, dim, define_ana)
 
     if test_definition:
@@ -3189,21 +3191,21 @@ def main(argv):
 
         # Print summary of declared files.
 
-        dim = project_utilities.dimensions(project, stage, ana=False)
+        dim = larbatch_utilities.dimensions(project, stage, ana=False)
         rc = dotest_declarations(dim)
 
     if test_declarations_ana:
 
         # Print summary of declared files.
 
-        dim = project_utilities.dimensions(project, stage, ana=True)
+        dim = larbatch_utilities.dimensions(project, stage, ana=True)
         rc = dotest_declarations(dim)
 
     if check_locations or add_locations or clean_locations or remove_locations or upload:
 
         # Check sam disk locations.
 
-        dim = project_utilities.dimensions(project, stage)
+        dim = larbatch_utilities.dimensions(project, stage)
         docheck_locations(dim, stage.outdir,
                           add_locations, clean_locations, remove_locations,
                           upload)
@@ -3213,7 +3215,7 @@ def main(argv):
 
         # Check sam disk locations.
 
-        dim = project_utilities.dimensions(project, stage, ana=True)
+        dim = larbatch_utilities.dimensions(project, stage, ana=True)
         docheck_locations(dim, stage.outdir,
                           add_locations_ana, clean_locations_ana, remove_locations_ana,
                           upload_ana)
@@ -3222,14 +3224,14 @@ def main(argv):
 
         # Check sam tape locations.
 
-        dim = project_utilities.dimensions(project, stage)
+        dim = larbatch_utilities.dimensions(project, stage)
         docheck_tape(dim)
 
     if check_tape_ana:
 
         # Check analysis file sam tape locations.
 
-        dim = project_utilities.dimensions(project, stage, ana=True)
+        dim = larbatch_utilities.dimensions(project, stage, ana=True)
         docheck_tape(dim)
 
     # Done.

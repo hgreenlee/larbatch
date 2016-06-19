@@ -28,10 +28,22 @@
 # test_kca - Get a kca certificate if necessary.
 # text_proxy - Get a grid proxy if necessary.
 # get_experiment - Get standard experiment name.
+# get_user - Get authenticated user.
+# get_prouser - Get production user.
 # get_role - Get VO role.
+#
+# SAM functions.
+#
+# dimensions - Return sam query dimensions for stage.
+# get_sam_metadata - Return sam metadata fcl parameters for stage.
+# get_bluearc_server - Sam fictitious server for bluearc.
+# get_dcache_server - Sam fictitious server for dCache.
+# get_dropbox - Return dropbox based on sam metadata.
 #
 # Other functions.
 #
+# get_ups_products - Top level ups products.
+# get_setup_script_path - Full path of experiment setup script.
 # wait_for_subprocess - For use with subprocesses with timeouts.
 # dcache_server - Return dCache server.
 # dcache_path - Convert dCache local path to path on server.
@@ -56,6 +68,7 @@ from project_modules.ifdherror import IFDHError
 ticket_ok = False
 kca_ok = False
 proxy_ok = False
+kca_user = ''
 
 # Copy file using ifdh, with timeout.
 
@@ -797,6 +810,140 @@ def get_role():
             result = 'Production'
 
     return result
+
+
+# Function to return a comma-separated list of run-time top level ups products.
+
+def get_ups_products():
+    return get_experiment() + 'code'
+
+
+# Function to return path of experiment bash setup script that is valid
+# on the node where this script is being executed.
+# This function should be overridden in <experiment>_utilities.py.
+
+def get_setup_script_path():
+    raise RuntimeError, 'Function get_setup_script_path not implemented.'
+
+
+# Function to return dimension string for project, stage.
+# This function should be overridden in experiment_utilities.py
+
+def dimensions(project, stage, ana=False):
+    raise RuntimeError, 'Function dimensions not implemented.'
+
+
+# Function to return the production user name
+
+def get_prouser():
+    return get_experiment() + 'pro'
+
+
+# Function to return the fictitious disk server node
+# name used by sam for bluearc disks.
+
+def get_bluearc_server():
+    return get_experiment() + 'data:'
+
+
+# Function to return the fictitious disk server node
+# name used by sam for dCache disks.
+
+def get_dcache_server():
+    return 'fnal-dcache:'
+
+
+# Function to determine dropbox directory based on sam metadata.
+# Raise an exception if the specified file doesn't have metadata.
+# This function should be overridden in <experiment>_utilities module.
+
+def get_dropbox(filename):
+    raise RuntimeError, 'Function get_dropbox not implemented.'
+
+
+# Function to return string containing sam metadata in the form 
+# of an fcl configuraiton.  It is intended that this function
+# may be overridden in experiment_utilities.py.
+
+def get_sam_metadata(project, stage):
+    result = ''
+    return result
+
+
+# Get authenticated user (from kerberos ticket, not $USER).
+
+def get_user():
+
+    # See if we have a cached value for user.
+
+    global kca_user
+    if kca_user != '':
+        return kca_user
+
+    # Return production user name if Role is Production
+
+    if get_role() == 'Production':
+        return get_prouser()
+
+    else:
+
+        # First make sure we have a kca certificate (raise exception if not).
+
+        test_kca()
+
+        # Return user name from certificate if Role is Analysis
+
+        subject = ''
+        if os.environ.has_key('X509_USER_PROXY'):
+            subject = subprocess.check_output(['voms-proxy-info',
+                                               '-file', os.environ['X509_USER_PROXY'],
+                                               '-subject'], stderr=-1)
+        elif os.environ.has_key('X509_USER_CERT') and os.environ.has_key('X509_USER_KEY'):
+            subject = subprocess.check_output(['voms-proxy-info',
+                                               '-file', os.environ['X509_USER_CERT'],
+                                               '-subject'], stderr=-1)
+        else:
+            subject = subprocess.check_output(['voms-proxy-info', '-subject'], stderr=-1)
+
+        # Get the last non-numeric CN
+
+        cn = ''
+        while cn == '':
+            n = subject.rfind('/CN=')
+            if n >= 0:
+                cn = subject[n+4:]
+                if cn.strip().isdigit():
+                    cn = ''
+                    subject = subject[:n]
+            else:
+                break
+
+        # Truncate everything after the first '/'.
+
+        n = cn.find('/')
+        if n >= 0:
+            cn = cn[:n]
+
+        # Truncate everything after the first newline.
+
+        n = cn.find('\n')
+        if n >= 0:
+            cn = cn[:n]
+
+        # Truncate everything before the first ":" (UID:).
+
+        n = cn.find(':')
+        if n >= 0:
+            cn = cn[n+1:]
+
+        # Done (maybe).
+
+        if cn != '':
+            return cn
+
+    # Something went wrong...
+
+    raise RuntimeError, 'Unable to determine authenticated user.'
 
 
 # Import experiment-specific utilities.  In this imported module, one can 
