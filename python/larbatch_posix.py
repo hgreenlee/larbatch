@@ -46,6 +46,7 @@
 # open - Similar as built-in python function open.  Returns a
 #        file-like object of type dcache_file (in cast of dCache
 #        paths) or built-in type File (in case of regular files).
+# copy - Similar as shutil.copy.
 # listdir - Similar as os.listdir.  List directory contents.
 # exists - Similar as os.path.exists.  Return True if path exists.
 # isdir - Simmilar as os.path.isdir.  Return True if path is a directory.
@@ -98,6 +99,7 @@ import subprocess
 import threading
 import Queue
 import StringIO
+import uuid
 import larbatch_utilities
 from project_modules.ifdherror import IFDHError
 
@@ -137,7 +139,7 @@ class dcache_file:
         self.path = path
         self.mode = mode
         if path.startswith('/pnfs/'):
-            self.local_path = os.path.basename(path)
+            self.local_path = str(uuid.uuid4()) + os.path.basename(path)
         else:
             self.local_path = path
 
@@ -249,6 +251,19 @@ def open(path, mode='r', buf=-1):
         return dcache_file(path, mode, buf)
     else:
         return __builtins__['open'](path, mode, buf)
+
+
+# Copy file.
+
+def copy(src, dest):
+    if (src.startswith('/pnfs/') or dest.startswith('/pnfs/')) and prefer_grid:
+        larbatch_utilities.ifdh_cp(src, dest)
+    else:
+        shutil.copy(src, dest)
+
+    # Done
+
+    return
 
 
 # List directory contents.
@@ -518,7 +533,7 @@ def makedirs(path, mode=0777):
 
         larbatch_utilities.ifdh_mkdir(path)
     else:
-        os.mkdir(path, mode)
+        os.makedirs(path, mode)
 
 
 # Rename file.

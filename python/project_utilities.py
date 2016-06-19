@@ -70,32 +70,7 @@ def safeexist(path):
 # dCache-safe method to return contents (list of lines) of file.
 
 def saferead(path):
-    lines = []
-    if os.path.getsize(path) == 0:
-        return lines
-    #print 'Called saferead for path %s.' % path
-
-    # Read dCache files in subprocess with timeout.
-
-    if path[0:6] == '/pnfs/':
-        q = Queue.Queue()
-        cmd = ['cat', path]
-        jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
-        thread.start()
-        thread.join(timeout=60)
-        if thread.is_alive():
-            print 'Terminating subprocess.'
-            jobinfo.terminate()
-            thread.join()
-        rc = q.get()
-        jobout = q.get()
-        joberr = q.get()
-        if rc != 0:
-            raise RuntimeError, 'Error reading %s' % path
-        lines = jobout.splitlines()
-    else:
-        lines = larbatch_posix.open(path).readlines()
+    lines = larbatch_posix.open(path).readlines()
     return lines
 
 # dCache-safe method to copy file.
@@ -104,49 +79,7 @@ def safecopy(source, destination):
     #print 'safecopy called from %s to %s' % (source, destination)
     if safeexist(destination):
         larbatch_posix.remove(destination)
-    if source[0:6] == '/pnfs/' or destination[0:6] == '/pnfs/':
-
-        # Copy file.
-
-        #larbatch_utilities.test_proxy()
-
-        # Make sure environment variables X509_USER_CERT and X509_USER_KEY
-        # are not defined (they confuse ifdh).
-
-        save_vars = {}
-        #for var in ('X509_USER_CERT', 'X509_USER_KEY'):
-        #    if os.environ.has_key(var):
-        #        save_vars[var] = os.environ[var]
-        #        del os.environ[var]
-
-        # Do cp.
-
-        cmd = ['cp', source, destination]
-        jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-        q = Queue.Queue()
-        thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
-        thread.start()
-        thread.join(timeout=60)
-        if thread.is_alive():
-            print 'Terminating subprocess.'
-            jobinfo.terminate()
-            thread.join()
-        rc = q.get()
-        jobout = q.get()
-        joberr = q.get()
-        if rc != 0:
-            for var in save_vars.keys():
-                os.environ[var] = save_vars[var]
-            raise IFDHError(cmd, rc, jobout, joberr)
-
-        # Restore environment variables.
-
-        for var in save_vars.keys():
-            os.environ[var] = save_vars[var]
-
-    else:
-        shutil.copy(source, destination)
+    larbatch_posix.copy(source, destination)
 
 # Like os.path.isdir, but faster by avoiding unnecessary i/o.
 

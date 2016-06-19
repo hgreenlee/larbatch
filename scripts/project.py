@@ -1948,7 +1948,8 @@ def dojobsub(project, stage, makeup):
 
     workname = '%s-%s-%s' % (stage.name, project.name, project.release_tag)
     workname = workname + os.path.splitext(project.script)[1]
-    workscript = os.path.join(stage.workdir, workname)
+    #workscript = os.path.join(stage.workdir, workname)
+    workscript = os.path.join('/tmp', workname)
     if project.script != workscript:
         project_utilities.safecopy(project.script, workscript)
 
@@ -1958,7 +1959,8 @@ def dojobsub(project, stage, makeup):
     workstartname = ''
     if project.start_script != '':
         workstartname = 'start-%s' % workname
-        workstartscript = os.path.join(stage.workdir, workstartname)
+        #workstartscript = os.path.join(stage.workdir, workstartname)
+        workstartscript = os.path.join('/tmp', workstartname)
         if project.start_script != workstartscript:
             project_utilities.safecopy(project.start_script, workstartscript)
 
@@ -1968,7 +1970,8 @@ def dojobsub(project, stage, makeup):
     workstopname = ''
     if project.stop_script != '':
         workstopname = 'stop-%s' % workname
-        workstopscript = os.path.join(stage.workdir, workstopname)
+        #workstopscript = os.path.join(stage.workdir, workstopname)
+        workstopscript = os.path.join('/tmp', workstopname)
         if project.stop_script != workstopscript:
             project_utilities.safecopy(project.stop_script, workstopscript)
 
@@ -2203,7 +2206,7 @@ def dojobsub(project, stage, makeup):
 
     # Batch script.
 
-    workurl = "file://%s/%s" % (stage.workdir, workname)
+    workurl = "file://%s" % workscript
     command.append(workurl)
 
     # check if there is a request for max num of files per job
@@ -2310,7 +2313,7 @@ def dojobsub(project, stage, makeup):
 
         # Start project script.
 
-        workstarturl = "file://%s/%s" % (stage.workdir, workstartname)
+        workstarturl = "file://%s" % workstartscript
         start_command.append(workstarturl)
 
         # Sam options.
@@ -2351,7 +2354,7 @@ def dojobsub(project, stage, makeup):
 
         # Stop project script.
 
-        workstopurl = "file://%s/%s" % (stage.workdir, workstopname)
+        workstopurl = "file://%s" % workstopscript
         stop_command.append(workstopurl)
 
         # Sam options.
@@ -2366,7 +2369,8 @@ def dojobsub(project, stage, makeup):
 
         # Create dagNabbit.py configuration script in the work directory.
 
-        dagfilepath = os.path.join(stage.workdir, 'submit.dag')
+        #dagfilepath = os.path.join(stage.workdir, 'submit.dag')
+        dagfilepath = os.path.join('/tmp', 'submit.dag')
         dag = safeopen(dagfilepath)
 
         # Write start section.
@@ -2436,9 +2440,6 @@ def dojobsub(project, stage, makeup):
         dagfileurl = 'file://'+ dagfilepath
         command.append(dagfileurl)
 
-    curdir = os.getcwd()
-    os.chdir(stage.workdir)
-
     checked_file = os.path.join(stage.logdir, 'checked')
 
     # Calculate submit timeout.
@@ -2466,13 +2467,11 @@ def dojobsub(project, stage, makeup):
         jobout = q.get()
         joberr = q.get()
         if rc != 0:
-            os.chdir(curdir)
             raise JobsubError(command, rc, jobout, joberr)
         for line in jobout.split('\n'):
             if "JobsubJobId" in line:
                 jobid = line.strip().split()[-1]
         if not jobid:
-            os.chdir(curdir)
             raise JobsubError(command, rc, jobout, joberr)
         print 'jobsub_submit finished.'
         if project_utilities.safeexist(checked_file):
@@ -2496,19 +2495,16 @@ def dojobsub(project, stage, makeup):
             jobout = q.get()
             joberr = q.get()
             if rc != 0:
-                os.chdir(curdir)
                 raise JobsubError(command, rc, jobout, joberr)
             for line in jobout.split('\n'):
                 if "JobsubJobId" in line:
                     jobid = line.strip().split()[-1]
             if not jobid:
-                os.chdir(curdir)
                 raise JobsubError(command, rc, jobout, joberr)
             if project_utilities.safeexist(checked_file):
                 larbatch_posix.remove(checked_file)
         else:
             print 'Makeup action aborted because makeup job count is zero.'
-    os.chdir(curdir)
 
     # Done.
 
