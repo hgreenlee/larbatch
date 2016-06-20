@@ -501,7 +501,7 @@ def addLayerTwo(path, recreate=True):
         larbatch_posix.remove(path)
         if not recreate:
             return
-        larbatch_utiltiies.test_proxy()
+        larbatch_utilities.test_proxy()
 
         # Make sure environment variables X509_USER_CERT and X509_USER_KEY
         # are not defined (they confuse ifdh).
