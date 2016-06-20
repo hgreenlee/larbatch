@@ -20,6 +20,11 @@
 # ifdh_rm - Interface for "ifdh rm."
 # ifdh_chmod - Interface for "ifdh chmod."
 #
+# The following functions are provided as interfaces to posix tools
+# with additional protections or timeouts.
+#
+# posix_cp - Copy file with timeout.
+#
 # Authentication functions.
 #
 # test_ticket - Raise an exception of user does not have a valid kerberos ticket.
@@ -446,6 +451,34 @@ def ifdh_rm(path):
 
     for var in save_vars.keys():
         os.environ[var] = save_vars[var]
+
+    # Done.
+
+    return
+
+
+# Posix copy with timeout.
+
+def posix_cp(source, destination):
+
+    # Do cp.
+
+    cmd = ['cp', source, destination]
+    jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    q = Queue.Queue()
+    thread = threading.Thread(target=wait_for_subprocess, args=[jobinfo, q])
+    thread.start()
+    thread.join(timeout=60)
+    if thread.is_alive():
+        print 'Terminating subprocess.'
+        jobinfo.terminate()
+        thread.join()
+    rc = q.get()
+    jobout = q.get()
+    joberr = q.get()
+    if rc != 0:
+        raise IFDHError(cmd, rc, jobout, joberr)
 
     # Done.
 
