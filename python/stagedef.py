@@ -581,7 +581,7 @@ class StageDef:
 
             lines = []
             try:
-                lines = project_utilities.saferead(self.inputlist)
+                lines = larbatch_posix.readlines(self.inputlist)
             except:
                 lines = []
             if len(lines) == 0:
@@ -630,7 +630,7 @@ class StageDef:
                 subrun_inputlist = os.path.join(dir, pubs_path, base)
                 lines = []
                 try:
-                    lines = project_utilities.saferead(subrun_inputlist)
+                    lines = larbatch_posix.readlines(subrun_inputlist)
                 except:
                     lines = []
                 if len(lines) == 0:
@@ -703,9 +703,9 @@ class StageDef:
     # (We don't currently check sam input datasets).
 
     def checkinput(self):
-        if self.inputfile != '' and not project_utilities.safeexist(self.inputfile):
+        if self.inputfile != '' and not larbatch_posix.exists(self.inputfile):
             raise IOError, 'Input file %s does not exist.' % self.inputfile
-        if self.inputlist != '' and not project_utilities.safeexist(self.inputlist):
+        if self.inputlist != '' and not larbatch_posix.exists(self.inputlist):
             raise IOError, 'Input list %s does not exist.' % self.inputlist
 
         # If target size is nonzero, and input is from a file list, calculate
@@ -713,7 +713,7 @@ class StageDef:
         # of jobs.
 
         if self.target_size != 0 and self.inputlist != '':
-            input_filenames = project_utilities.saferead(self.inputlist)
+            input_filenames = larbatch_posix.readlines(self.inputlist)
             size_tot = 0
             for line in input_filenames:
                 filename = string.split(line)[0]
@@ -733,31 +733,31 @@ class StageDef:
     # Raise an exception if output directory or log directory doesn't exist.
 
     def check_output_dirs(self):
-        if not project_utilities.safeexist(self.outdir):
+        if not larbatch_posix.exists(self.outdir):
             raise IOError, 'Output directory %s does not exist.' % self.outdir
-        if not project_utilities.safeexist(self.logdir):
+        if not larbatch_posix.exists(self.logdir):
             raise IOError, 'Log directory %s does not exist.' % self.logdir
         return
     
     # Raise an exception if output directory, log directory, or work directory doesn't exist.
 
     def checkdirs(self):
-        if not project_utilities.safeexist(self.outdir):
+        if not larbatch_posix.exists(self.outdir):
             raise IOError, 'Output directory %s does not exist.' % self.outdir
-        if not project_utilities.safeexist(self.logdir):
+        if not larbatch_posix.exists(self.logdir):
             raise IOError, 'Log directory %s does not exist.' % self.logdir
-        if not project_utilities.safeexist(self.workdir):
+        if not larbatch_posix.exists(self.workdir):
             raise IOError, 'Work directory %s does not exist.' % self.workdir
         return
     
     # Make output, log, and work directory, if they don't exist.
 
     def makedirs(self):
-        if not project_utilities.safeexist(self.outdir):
+        if not larbatch_posix.exists(self.outdir):
             larbatch_posix.makedirs(self.outdir)
-        if not project_utilities.safeexist(self.logdir):
+        if not larbatch_posix.exists(self.logdir):
             larbatch_posix.makedirs(self.logdir)
-        if not project_utilities.safeexist(self.workdir):
+        if not larbatch_posix.exists(self.workdir):
             larbatch_posix.makedirs(self.workdir)
 
         # If output is on dcache, make output directory group-writable.

@@ -46,6 +46,7 @@
 # open - Similar as built-in python function open.  Returns a
 #        file-like object of type dcache_file (in case of dCache
 #        paths) or built-in type File (in case of regular files).
+# readlines - Open in read mode using this module open and call readlines().
 # copy - Similar as shutil.copy.  Copy file.
 # listdir - Similar as os.listdir.  List directory contents.
 # exists - Similar as os.path.exists.  Return True if path exists.
@@ -282,9 +283,17 @@ def open(path, mode='r', buf=-1):
         return __builtins__['open'](path, mode, buf)
 
 
+# Read lines from a file.
+
+def readlines(path):
+    return open(path).readlines()
+
+
 # Copy file.
 
 def copy(src, dest):
+    if exists(destination):
+        remove(destination)
     if (src.startswith('/pnfs/') or dest.startswith('/pnfs/')):
         if prefer_grid or not pnfs_is_mounted:
             if debug:

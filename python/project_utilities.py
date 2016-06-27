@@ -58,29 +58,6 @@ def path_to_srm_url(path):
         srm_url = 'srm://fndca1.fnal.gov:8443/srm/managerv2?SFN=/pnfs/fnal.gov/usr/' + path[6:]
     return srm_url
 
-# dCache-safe method to test whether path exists without opening file.
-
-def safeexist(path):
-    try:
-        larbatch_posix.stat(path)
-        return True
-    except:
-        return False
-
-# dCache-safe method to return contents (list of lines) of file.
-
-def saferead(path):
-    lines = larbatch_posix.open(path).readlines()
-    return lines
-
-# dCache-safe method to copy file.
-
-def safecopy(source, destination):
-    #print 'safecopy called from %s to %s' % (source, destination)
-    if safeexist(destination):
-        larbatch_posix.remove(destination)
-    larbatch_posix.copy(source, destination)
-
 # Like os.path.isdir, but faster by avoiding unnecessary i/o.
 
 def fast_isdir(path):
@@ -487,7 +464,7 @@ def addLayerTwo(path, recreate=True):
     # Don't do anything if this file is not located in dCache (/pnfs/...)
     # or has nonzero size.
 
-    if safeexist(path) and path[0:6] == '/pnfs/' and larbatch_posix.stat(path).st_size == 0:
+    if larbatch_posix.exists(path) and path[0:6] == '/pnfs/' and larbatch_posix.stat(path).st_size == 0:
 
         if recreate:
             print 'Adding layer two for path %s.' % path
