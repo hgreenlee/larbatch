@@ -2610,7 +2610,7 @@ def domerge(stage, mergehist, mergentuple):
         if larbatch_posix.exists(name_temp):
             larbatch_posix.remove(name_temp)
         comlist = mergecom.split()
-        comlist.extend(["-v", "0", "-f", "-k", name_temp, '@' + histurlsname_temp])
+        comlist.extend(["-f", "-k", name_temp, '@' + histurlsname_temp])
         rc = subprocess.call(comlist, stdout=sys.stdout, stderr=sys.stderr)
         if rc != 0:
             print "%s exit status %d" % (mergecom, rc)
