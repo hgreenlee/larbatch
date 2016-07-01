@@ -2556,7 +2556,7 @@ def domerge(stage, mergehist, mergentuple):
     histurls = larbatch_posix.open(histurlsname_temp, 'w') 
 	
     for hist in hlist:
-        histurls.write('%s\n' % project_utilities.path_to_url(hist)) 	
+        histurls.write('%s\n' % hist) 	
     histurls.close()
        	
     if len(hlist) > 0:

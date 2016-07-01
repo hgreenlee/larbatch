@@ -56,6 +56,7 @@
 # xrootd_server_port - Return xrootd server and port (as <server>:<port>).
 # xrootd_uri - Convert dCache path to xrootd uri.
 # gridftp_uri - Convert dCache path to gridftp uri.
+# srm_uri - Convert dCache path to srm uri.
 # nfs_server - Node name of a computer in which /pnfs filesystem is nfs-mounted.
 # parse_mode - Parse the ten-character file mode string ("ls -l").
 #
@@ -706,6 +707,16 @@ def xrootd_uri(path):
 def gridftp_uri(path):
     if path.startswith('/pnfs/'):
         return 'gsiftp://' + dcache_server() + dcache_path(path)
+    else:
+        return path
+
+
+# Convert a pnfs path to srm uri.
+# Return the input path unchanged if it isn't on dCache.
+
+def srm_uri(path):
+    if path.startswith('/pnfs/'):
+        return 'srm://fndca1.fnal.gov:8443/srm/managerv2?SFN=/pnfs/fnal.gov/usr/' + path[6:]
     else:
         return path
 

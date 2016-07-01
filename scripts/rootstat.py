@@ -295,7 +295,7 @@ def main(argv):
             return 1
 
         print '\nOpening %s' % input_file
-        root = project_utilities.SafeTFile(input_file)
+        root = ROOT.TFile.Open(input_file)
         if not root.IsOpen() or root.IsZombie():
             print 'Failed to open %s' % input_file
             return 1
