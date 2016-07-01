@@ -654,11 +654,11 @@ def rename(src, dest):
 def remove(path):
     if path.startswith('/pnfs/') and (prefer_grid or not pnfs_is_mounted):
         if debug:
-            print '*** Larbatch_posix: Delete %s using ifdh.' % path
+            print '*** Larbatch_posix: Delete file %s using ifdh.' % path
         larbatch_utilities.ifdh_rm(path)
     else:
         if debug:
-            print '*** Larbatch_posix: Delete %s using posix.' % path
+            print '*** Larbatch_posix: Delete file %s using posix.' % path
         os.remove(path)
 
 
