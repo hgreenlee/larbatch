@@ -1447,7 +1447,7 @@ def docheck_declarations(logdir, outdir, declare, ana=False):
                 else:
                     md = extractor_dict.getmetadata(larbatch_posix.root_stream(path), mdjson)
                 if len(md) > 0:
-                    project_utilities.test_kca()
+                    larbatch_utilities.test_kca()
 
                     # Make lack of parent files a nonfatal error.
                     # This should probably be removed at some point.
