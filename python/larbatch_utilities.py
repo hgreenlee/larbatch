@@ -9,7 +9,8 @@
 # Created: 13-Jun-2016  Herbert Greenlee
 #
 # The following functions are provided as interfaces to ifdh.  These
-# functions are equipped with timeouts and other protections.
+# functions are equipped with authentication checking, timeouts and
+# other protections.
 #
 # ifdh_cp - Interface for "ifdh cp."
 # ifdh_ls - Interface for "ifdh ls."

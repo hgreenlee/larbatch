@@ -1445,7 +1445,7 @@ def docheck_declarations(logdir, outdir, declare, ana=False):
                 if ana:
                     md = mdjson
                 else:
-                    md = extractor_dict.getmetadata(path, mdjson)
+                    md = extractor_dict.getmetadata(larbatch_posix.root_stream(path), mdjson)
                 if len(md) > 0:
                     project_utilities.test_kca()
 

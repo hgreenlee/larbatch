@@ -46,7 +46,7 @@
 # open - Similar as built-in python function open.  Returns a
 #        file-like object of type dcache_file (in case of dCache
 #        paths) or built-in type File (in case of regular files).
-# readlines - Open in read mode using this module open and call readlines().
+# readlines - Open in read mode using this module and call readlines().
 # copy - Similar as shutil.copy.  Copy file.
 # listdir - Similar as os.listdir.  List directory contents.
 # exists - Similar as os.path.exists.  Return True if path exists.
@@ -63,6 +63,7 @@
 # chmod - Similar as os.chmod.  Change file permissions.
 # symlink - Similar as os.symlink.  Make a symbolic link.
 # readlink - Similar as os.readlink.  Read a symbolic link.
+# root_stream - Convert path to streamable path or uri.
 #
 # Utility functions:
 #
@@ -794,3 +795,22 @@ def readlink(path):
     # Done.
 
     return result
+
+
+# Convert a root file path to a streamable path or uri that can be opened 
+# using TFile::Open.
+# Non-dCache paths (paths not starting with '/pnfs/') are not changed.
+# dCache paths (patsh starting with '/pnfs/') may be converted to an xrootd uri.
+
+def root_stream(path):
+
+    stream = path
+    if path.startswith('/pnfs/') and (prefer_grid or not pnfs_is_mounted):
+        if debug:
+            print '*** Larbatch_posix: Stream path %s using xrootd.' % path
+        larbatch_utilities.test_proxy()
+        stream = larbatch_utilities.xrootd_uri(path)
+    else:
+        if debug:
+            print '*** Larbatch_posix: Stream path %s as normal file.' % path
+    return stream
