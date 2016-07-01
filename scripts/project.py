@@ -1711,7 +1711,7 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
 
             # Make sure dropbox directory exists.
             
-            if not larbatch_posit.isdir(dropbox):
+            if not larbatch_posix.isdir(dropbox):
                 print 'Dropbox directory %s does not exist.' % dropbox
             else:
 
@@ -2592,7 +2592,7 @@ def domerge(stage, mergehist, mergentuple):
             tempdir = '%s/mergentuple_%d_%d' % (project_utilities.get_scratch_dir(),
                                                 os.getuid(),
                                                 os.getpid())
-            if not larbatch_posit.isdir(tempdir):
+            if not larbatch_posix.isdir(tempdir):
                 larbatch_posix.makedirs(tempdir)
             name_temp = '%s/anahist.root' % tempdir
         else:

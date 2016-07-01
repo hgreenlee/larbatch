@@ -488,7 +488,7 @@ def access(path, mode):
     result = False
     if path.startswith('/pnfs/') and (prefer_grid or not pnfs_is_mounted):
         if debug:
-            print '*** Larbatch_posix: Check acess for %s using ifdh.' % path
+            print '*** Larbatch_posix: Check access for %s using ifdh.' % path
         sr = stat(path)
         if sr.st_mode != 0:
 
@@ -510,7 +510,7 @@ def access(path, mode):
 
     else:
         if debug:
-            print '*** Larbatch_posix: Check acess for %s using posix.' % path
+            print '*** Larbatch_posix: Check access for %s using posix.' % path
         result = os.access(path, mode)
 
     # Done.
