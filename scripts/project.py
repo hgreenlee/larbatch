@@ -1737,35 +1737,8 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
                         larbatch_posix.symlink(relpath, dropbox_filename)
 
                     else:
-
                         print 'Copying %s to dropbox directory %s.' % (filename, dropbox)
-                        larbatch_utilities.test_proxy()
-
-                        # Make sure environment variables X509_USER_CERT and X509_USER_KEY
-                        # are not defined (they confuse ifdh).
-
-                        save_vars = {}
-                        for var in ('X509_USER_CERT', 'X509_USER_KEY'):
-                            if os.environ.has_key(var):
-                                save_vars[var] = os.environ[var]
-                                del os.environ[var]
-
-                        # Do ifdh cp.
-
-                        command = ['ifdh', 'cp', '--force=gridftp', loc_filename, dropbox_filename]
-                        jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE,
-                                                   stderr=subprocess.PIPE)
-                        jobout, joberr = jobinfo.communicate()
-                        rc = jobinfo.poll()
-                        if rc != 0:
-                            for var in save_vars.keys():
-                                os.environ[var] = save_vars[var]
-                            raise IFDHError(command, rc, jobout, joberr)
-
-                        # Restore environment variables.
-
-                        for var in save_vars.keys():
-                            os.environ[var] = save_vars[var]
+                        larbatch_posix.copy(loc_filename, dropbox_filename)
 
     return 0
 
@@ -2618,33 +2591,10 @@ def domerge(stage, mergehist, mergentuple):
             if larbatch_posix.exists(name):
                 larbatch_posix.remove(name)
             if larbatch_posix.exists(name_temp):
-                larbatch_utilities.test_proxy()
 
-                # Make sure environment variables X509_USER_CERT and X509_USER_KEY
-                # are not defined (they confuse ifdh).
+                # Copy merged file.
 
-                save_vars = {}
-                for var in ('X509_USER_CERT', 'X509_USER_KEY'):
-                    if os.environ.has_key(var):
-                        save_vars[var] = os.environ[var]
-                        del os.environ[var]
-
-                # Do ifdh cp.
-
-                command = ['ifdh', 'cp', name_temp, name]
-                jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                jobout, joberr = jobinfo.communicate()
-                rc = jobinfo.poll()
-                if rc != 0:
-                    for var in save_vars.keys():
-                        os.environ[var] = save_vars[var]
-                    raise IFDHError(command, rc, jobout, joberr)
-
-                # Restore environment variables.
-
-                for var in save_vars.keys():
-                    os.environ[var] = save_vars[var]
-
+                larbatch_posix.copy(name_temp, name)
                 larbatch_posix.remove(name_temp)
                 larbatch_posix.rmdir(tempdir)
         larbatch_posix.remove(histurlsname_temp)	     

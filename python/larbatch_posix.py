@@ -292,8 +292,8 @@ def readlines(path):
 # Copy file.
 
 def copy(src, dest):
-    if exists(destination):
-        remove(destination)
+    if exists(dest):
+        remove(dest)
     if (src.startswith('/pnfs/') or dest.startswith('/pnfs/')):
         if prefer_grid or not pnfs_is_mounted:
             if debug:
