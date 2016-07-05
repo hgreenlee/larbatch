@@ -342,3 +342,12 @@ def batch_status_check():
 
 def path_to_srm_url(path):
     return larbatch_utilities.srm_uri(path)
+
+def safeexist(path):
+    return larbatch_posix.exists(path)
+
+def saferead(path):
+    return larbatch_posix.readlines(path)
+
+def safecopy(src, dest):
+    return larbatch_posix.copy(src, dest)
