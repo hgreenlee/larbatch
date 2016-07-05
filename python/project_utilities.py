@@ -21,6 +21,16 @@ import samweb_cli
 from project_modules.ifdherror import IFDHError
 import larbatch_posix
 import larbatch_utilities
+from larbatch_utilities import get_experiment, get_user, get_role, get_prouser
+from larbatch_utilities import test_ticket, test_kca, test_proxy
+from larbatch_utilities import dimensions
+from larbatch_utilities import wait_for_subprocess
+from larbatch_utilities import get_bluearc_server
+from larbatch_utilities import get_dcache_server
+from larbatch_utilities import get_dropbox
+from larbatch_utilities import get_sam_metadata
+from larbatch_utilities import get_ups_products
+from larbatch_utilities import get_setup_script_path
 
 # Prevent root from printing garbage on initialization.
 if os.environ.has_key('TERM'):
@@ -35,8 +45,6 @@ sys.argv = myargv
 
 # Global variables.
 
-proxy_ok = False
-kca_user = ''
 samweb_obj = None       # Initialized SAMWebClient object
 
 
@@ -102,11 +110,9 @@ def get_scratch_dir():
         scratch = os.environ['SCRATCH']
 
     else:
-        scratch = '/scratch/%s/%s' % (larbatch_utilities.get_experiment(),
-                                      larbatch_utilities.get_user())
+        scratch = '/scratch/%s/%s' % (get_experiment(), get_user())
         if not larbatch_posix.isdir(scratch) or not larbatch_posix.access(scratch, os.W_OK):
-            scratch = '/%s/data/users/%s' % (larbatch_utilities.get_experiment(),
-                                             larbatch_utilities.get_user())
+            scratch = '/%s/data/users/%s' % (get_experiment(), get_user())
 
     # Checkout.
 
@@ -214,11 +220,11 @@ def create_limited_dataset(defname, run, subruns):
 
         # Make sure we have a kca certificate.
 
-        larbatch_utilities.test_kca()
+        test_kca()
 
         # Take the snapshot
 
-        snapid = samweb().takeSnapshot(defname, group=larbatch_utilities.get_experiment())
+        snapid = samweb().takeSnapshot(defname, group=get_experiment())
     except:
         snapid = None
     if snapid == None:
@@ -241,9 +247,7 @@ def create_limited_dataset(defname, run, subruns):
 
     # Create definition.
 
-    samweb().createDefinition(newdefname, dim,
-                              user=larbatch_utilities.get_user(), 
-                              group=larbatch_utilities.get_experiment())
+    samweb().createDefinition(newdefname, dim, user=get_user(), group=get_experiment())
 
     # Done (return definition name).
 
@@ -256,7 +260,7 @@ def samweb():
     global samweb_obj
 
     if samweb_obj == None:
-        samweb_obj = samweb_cli.SAMWebClient(experiment=larbatch_utilities.get_experiment())
+        samweb_obj = samweb_cli.SAMWebClient(experiment=get_experiment())
 
     os.environ['SSL_CERT_DIR'] = '/etc/grid-security/certificates'
 
@@ -285,7 +289,7 @@ def addLayerTwo(path, recreate=True):
         larbatch_posix.remove(path)
         if not recreate:
             return
-        larbatch_utilities.test_proxy()
+        test_proxy()
 
         # Make sure environment variables X509_USER_CERT and X509_USER_KEY
         # are not defined (they confuse ifdh).
@@ -302,7 +306,7 @@ def addLayerTwo(path, recreate=True):
         jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
         q = Queue.Queue()
-        thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
+        thread = threading.Thread(target=wait_for_subprocess, args=[jobinfo, q])
         thread.start()
         thread.join(timeout=60)
         if thread.is_alive():
@@ -331,3 +335,10 @@ def addLayerTwo(path, recreate=True):
 
 def batch_status_check():
     return True
+
+# The following functions are included for backward compatibility.
+# The actual implementations have been moved to larbatch_posix or 
+# larbatch_utilities, with a different name.
+
+def path_to_srm_url(path):
+    return larbatch_utilities.srm_uri(path)

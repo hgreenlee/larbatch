@@ -279,7 +279,6 @@
 
 import sys, os, stat, string, subprocess, shutil, urllib, json, getpass, uuid
 import larbatch_posix
-import larbatch_utilities
 import threading, Queue
 from xml.dom.minidom import parse
 import project_utilities, root_metadata
@@ -433,7 +432,7 @@ def dostatus(projects):
 
     # BatchStatus constructor requires authentication.
 
-    larbatch_utilities.test_kca()
+    project_utilities.test_kca()
 
     # For backward compatibility, allow this function to be called with 
     # either a single project or a list of projects.
@@ -1204,7 +1203,7 @@ def docheck(project, stage, ana):
         for sam_project in sam_projects:
             print '\nChecking sam project %s' % sam_project
             import_samweb()
-            url = samweb.findProject(sam_project, larbatch_utilities.get_experiment())
+            url = samweb.findProject(sam_project, project_utilities.get_experiment())
             if url != '':
                 result = samweb.projectSummary(url)
                 nd = 0
@@ -1447,7 +1446,7 @@ def docheck_declarations(logdir, outdir, declare, ana=False):
                 else:
                     md = extractor_dict.getmetadata(larbatch_posix.root_stream(path), mdjson)
                 if len(md) > 0:
-                    larbatch_utilities.test_kca()
+                    project_utilities.test_kca()
 
                     # Make lack of parent files a nonfatal error.
                     # This should probably be removed at some point.
@@ -1517,7 +1516,7 @@ def docheck_definition(defname, dim, define):
     else:
         if define:
             print 'Creating definition %s.' % defname
-            larbatch_utilities.test_kca()
+            project_utilities.test_kca()
             samweb.createDefinition(defname=defname, dims=dim)
         else:
             result = 1
@@ -1565,7 +1564,7 @@ def doundefine(defname):
 
     if def_exists:
         print 'Deleting definition: %s' % defname
-        larbatch_utilities.test_kca()
+        project_utilities.test_kca()
         samweb.deleteDefinition(defname=defname)
     else:
         print 'No such definition: %s' % defname
@@ -1678,7 +1677,7 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
                     should_upload = False
                     break
             if should_upload:
-                dropbox = larbatch_utilities.get_dropbox(filename)
+                dropbox = project_utilities.get_dropbox(filename)
                 if not larbatch_posix.exists(dropbox):
                     print 'Making dropbox directory %s.' % dropbox
                     larbatch_posix.makedirs(dropbox)
@@ -1687,13 +1686,13 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
         # Report results and do the actual adding/removing/uploading.
 
         for loc in locs_to_add:
-            node = larbatch_utilities.get_bluearc_server()
+            node = project_utilities.get_bluearc_server()
             if loc[0:6] == '/pnfs/':
-                node = larbatch_utilities.get_dcache_server()
+                node = project_utilities.get_dcache_server()
             loc = node + loc.split(':')[-1]
             if add:
                 print 'Adding location: %s.' % loc
-                larbatch_utilities.test_kca()
+                project_utilities.test_kca()
                 samweb.addFileLocation(filenameorid=filename, location=loc)
             elif not upload:
                 print 'Can add location: %s.' % loc
@@ -1701,7 +1700,7 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
         for loc in locs_to_remove:
             if clean or remove:
                 print 'Removing location: %s.' % loc
-                larbatch_utilities.test_kca()
+                project_utilities.test_kca()
                 samweb.removeFileLocation(filenameorid=filename, location=loc)
             elif not upload:
                 print 'Should remove location: %s.' % loc
@@ -1878,7 +1877,7 @@ def dojobsub(project, stage, makeup):
 
         # Add experiment-specific sam metadata.
 
-        sam_metadata = larbatch_utilities.get_sam_metadata(project, stage)
+        sam_metadata = project_utilities.get_sam_metadata(project, stage)
         if sam_metadata:
             wrapper_fcl.write(sam_metadata)
 
@@ -1902,7 +1901,7 @@ def dojobsub(project, stage, makeup):
     # Copy and rename experiment setup script to the work directory.
 
     setupscript = os.path.join(stage.workdir,'setup_experiment.sh')
-    larbatch_posix.copy(larbatch_utilities.get_setup_script_path(), setupscript)
+    larbatch_posix.copy(project_utilities.get_setup_script_path(), setupscript)
     jobsub_workdir_files_args.extend(['-f', setupscript])
 
     # Copy and rename batch script to the work directory.
@@ -2072,7 +2071,7 @@ def dojobsub(project, stage, makeup):
 
         makeup_defname = ''
         if len(cpids) > 0:
-            larbatch_utilities.test_kca()
+            project_utilities.test_kca()
             makeup_defname = samweb.makeProjectName(stage.inputdef) + '_makeup'
 
             # Construct comma-separated list of consumer process ids.
@@ -2090,7 +2089,7 @@ def dojobsub(project, stage, makeup):
             # Create makeup dataset definition.
 
             print 'Creating makeup sam dataset definition %s' % makeup_defname
-            larbatch_utilities.test_kca()
+            project_utilities.test_kca()
             samweb.createDefinition(defname=makeup_defname, dims=dim)
             makeup_count = samweb.countFiles(defname=makeup_defname)
             print 'Makeup dataset contains %d files.' % makeup_count
@@ -2109,12 +2108,12 @@ def dojobsub(project, stage, makeup):
     prjname = ''
     if inputdef != '':
         import_samweb()
-        larbatch_utilities.test_kca()
+        project_utilities.test_kca()
         prjname = samweb.makeProjectName(inputdef)
 
     # Get role
 
-    role = larbatch_utilities.get_role()
+    role = project_utilities.get_role()
 
     # Construct jobsub command line for workers.
 
@@ -2123,7 +2122,7 @@ def dojobsub(project, stage, makeup):
 
     # Jobsub options.
         
-    command.append('--group=%s' % larbatch_utilities.get_experiment())
+    command.append('--group=%s' % project_utilities.get_experiment())
     command.append('--role=%s' % role)
     command.extend(jobsub_workdir_files_args)
     if project.server != '-' and project.server != '':
@@ -2180,10 +2179,10 @@ def dojobsub(project, stage, makeup):
 
     # Larsoft options.
 
-    command.extend([' --group', larbatch_utilities.get_experiment()])
+    command.extend([' --group', project_utilities.get_experiment()])
     command.extend([' -g'])
     command.extend([' -c', 'wrapper.fcl'])
-    command.extend([' --ups', larbatch_utilities.get_ups_products()])
+    command.extend([' --ups', project_utilities.get_ups_products()])
     if project.release_tag != '':
         command.extend([' -r', project.release_tag])
     command.extend([' -b', project.release_qual])
@@ -2237,8 +2236,8 @@ def dojobsub(project, stage, makeup):
 
     if prjname != '' and command_njobs == 1:
         command.extend([' --sam_start',
-                        ' --sam_station', larbatch_utilities.get_experiment(),
-                        ' --sam_group', larbatch_utilities.get_experiment()])
+                        ' --sam_station', project_utilities.get_experiment(),
+                        ' --sam_group', project_utilities.get_experiment()])
 
     if prjname != '' and command_njobs > 1:
 
@@ -2254,7 +2253,7 @@ def dojobsub(project, stage, makeup):
 
         # General options.
             
-        start_command.append('--group=%s' % larbatch_utilities.get_experiment())
+        start_command.append('--group=%s' % project_utilities.get_experiment())
         start_command.append('-f %s' % setupscript)
         #start_command.append('--role=%s' % role)
         if stage.resource != '':
@@ -2279,8 +2278,8 @@ def dojobsub(project, stage, makeup):
 
         # Sam options.
 
-        start_command.extend([' --sam_station', larbatch_utilities.get_experiment(),
-                              ' --sam_group', larbatch_utilities.get_experiment(),
+        start_command.extend([' --sam_station', project_utilities.get_experiment(),
+                              ' --sam_group', project_utilities.get_experiment(),
                               ' --sam_defname', inputdef,
                               ' --sam_project', prjname,
                               ' -g'])
@@ -2295,7 +2294,7 @@ def dojobsub(project, stage, makeup):
 
         # General options.
             
-        stop_command.append('--group=%s' % larbatch_utilities.get_experiment())
+        stop_command.append('--group=%s' % project_utilities.get_experiment())
         stop_command.append('-f %s' % setupscript)
         #stop_command.append('--role=%s' % role)
         if stage.resource != '':
@@ -2320,7 +2319,7 @@ def dojobsub(project, stage, makeup):
 
         # Sam options.
 
-        stop_command.extend([' --sam_station', larbatch_utilities.get_experiment(),
+        stop_command.extend([' --sam_station', project_utilities.get_experiment(),
                              ' --sam_project', prjname,
                              ' -g'])
 
@@ -2394,7 +2393,7 @@ def dojobsub(project, stage, makeup):
         # Update the main submission command to use jobsub_submit_dag instead of jobsub_submit.
 
         command = ['jobsub_submit_dag']
-        command.append('--group=%s' % larbatch_utilities.get_experiment())
+        command.append('--group=%s' % project_utilities.get_experiment())
         if project.server != '-' and project.server != '':
             command.append('--jobsub-server=%s' % project.server)
         command.append('--role=%s' % role)
@@ -2418,7 +2417,7 @@ def dojobsub(project, stage, makeup):
         print 'Invoke jobsub_submit'
         q = Queue.Queue()
         jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
+        thread = threading.Thread(target=project_utilities.wait_for_subprocess, args=[jobinfo, q])
         thread.start()
         thread.join(timeout=submit_timeout)
         if thread.is_alive():
@@ -2445,7 +2444,7 @@ def dojobsub(project, stage, makeup):
         if makeup_count > 0:
             q = Queue.Queue()
             jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess,
+            thread = threading.Thread(target=project_utilities.wait_for_subprocess,
                                       args=[jobinfo, q])
             thread.start()
             thread.join(timeout=submit_timeout)
@@ -2478,7 +2477,7 @@ def dosubmit(project, stage, makeup=False):
 
     # Make sure we have a kerberos ticket.
 
-    larbatch_utilities.test_kca()
+    project_utilities.test_kca()
 
     # In pubs mode, delete any existing work, log, or output
     # directories, since there is no separate makeup action for pubs
@@ -2670,7 +2669,7 @@ def doaudit(stage):
             # Declare the content status of the file as bad in SAM.
                         
             sdict = {'content_status':'bad'}
-            larbatch_utilities.test_kca()
+            project_utilities.test_kca()
             samweb.modifyFileMetadata(rmfile, sdict)
             print '\nDeclaring the status of the following file as bad:', rmfile
 
@@ -3069,7 +3068,7 @@ def main(argv):
         if stage.defname == '':
             print 'No sam dataset definition name specified for this stage.'
             return 1
-        dim = larbatch_utilities.dimensions(project, stage, ana=False)
+        dim = project_utilities.dimensions(project, stage, ana=False)
         docheck_definition(stage.defname, dim, define)
 
     if check_definition_ana or define_ana:
@@ -3079,7 +3078,7 @@ def main(argv):
         if stage.ana_defname == '':
             print 'No sam analysis dataset definition name specified for this stage.'
             return 1
-        dim = larbatch_utilities.dimensions(project, stage, ana=True)
+        dim = project_utilities.dimensions(project, stage, ana=True)
         docheck_definition(stage.ana_defname, dim, define_ana)
 
     if test_definition:
@@ -3125,21 +3124,21 @@ def main(argv):
 
         # Print summary of declared files.
 
-        dim = larbatch_utilities.dimensions(project, stage, ana=False)
+        dim = project_utilities.dimensions(project, stage, ana=False)
         rc = dotest_declarations(dim)
 
     if test_declarations_ana:
 
         # Print summary of declared files.
 
-        dim = larbatch_utilities.dimensions(project, stage, ana=True)
+        dim = project_utilities.dimensions(project, stage, ana=True)
         rc = dotest_declarations(dim)
 
     if check_locations or add_locations or clean_locations or remove_locations or upload:
 
         # Check sam disk locations.
 
-        dim = larbatch_utilities.dimensions(project, stage)
+        dim = project_utilities.dimensions(project, stage)
         docheck_locations(dim, stage.outdir,
                           add_locations, clean_locations, remove_locations,
                           upload)
@@ -3149,7 +3148,7 @@ def main(argv):
 
         # Check sam disk locations.
 
-        dim = larbatch_utilities.dimensions(project, stage, ana=True)
+        dim = project_utilities.dimensions(project, stage, ana=True)
         docheck_locations(dim, stage.outdir,
                           add_locations_ana, clean_locations_ana, remove_locations_ana,
                           upload_ana)
@@ -3158,14 +3157,14 @@ def main(argv):
 
         # Check sam tape locations.
 
-        dim = larbatch_utilities.dimensions(project, stage)
+        dim = project_utilities.dimensions(project, stage)
         docheck_tape(dim)
 
     if check_tape_ana:
 
         # Check analysis file sam tape locations.
 
-        dim = larbatch_utilities.dimensions(project, stage, ana=True)
+        dim = project_utilities.dimensions(project, stage, ana=True)
         docheck_tape(dim)
 
     # Done.

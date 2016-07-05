@@ -59,7 +59,7 @@ def fileEnstoreChecksum(path):
     """Calculate enstore compatible CRC value"""
 
     crc = {}
-    srm_url = larbatch_utilities.srm_uri(path)
+    srm_url = project_utilities.path_to_srm_url(path)
 
     if srm_url == path:
         try:
@@ -82,7 +82,7 @@ def fileEnstoreChecksum(path):
 
             # New (clever, efficient, obscure...) way of accessing dCache 
             # stored checksum using srm.
-            larbatch_utilities.test_proxy()
+            project_utilities.test_proxy()
             cmd = ['srmls', '-2', '-l', srm_url]
             srmout = subprocess.check_output(cmd)
             first = True
@@ -124,7 +124,7 @@ def get_external_metadata(inputfile):
 
     # Root checks.
 
-    file = ROOT.TFile.Open(inputfile)
+    file = ROOT.TFile.Open(larbatch_posix.root_stream(inputfile))
     if file and file.IsOpen() and not file.IsZombie():
 
         # Root file opened successfully.

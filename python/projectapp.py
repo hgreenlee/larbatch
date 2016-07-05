@@ -19,7 +19,6 @@ from project_modules.jobsuberror import JobsubError
 
 import project
 import project_utilities
-import larbatch_utilities
 from project_modules.batchstatus import BatchStatus
 
 # Import Tkinter GUI stuff
@@ -684,7 +683,7 @@ class ProjectApp(tk.Frame):
             print 'Kill cluster id %s' % cluster_id
             command = ['jobsub_rm']
             command.append('--jobid=%s' % cluster_id)
-            command.append('--role=%s' % larbatch_utilities.get_role())
+            command.append('--role=%s' % project_utilities.get_role())
             jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             jobout, joberr = jobinfo.communicate()
             rc = jobinfo.poll()

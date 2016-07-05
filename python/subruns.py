@@ -52,7 +52,7 @@ def get_subruns(inputfile):
             
     # Root checks.
 
-    file = ROOT.TFile.Open(inputfile)
+    file = ROOT.TFile.Open(larbatch_posix.root_stream(inputfile))
     if file and file.IsOpen() and not file.IsZombie():
 
         # Root file opened successfully.
