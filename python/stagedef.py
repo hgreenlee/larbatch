@@ -11,6 +11,7 @@
 
 import os, string, stat, math, subprocess
 import project_utilities
+import larbatch_posix
 import uuid
 from project_modules.xmlerror import XMLError
 from project_modules.pubsinputerror import PubsInputError
@@ -262,7 +263,7 @@ class StageDef:
         # Make sure init script exists, and convert into a full path.
 
         if self.init_script != '':
-            if os.path.exists(self.init_script):
+            if larbatch_posix.exists(self.init_script):
                 self.init_script = os.path.realpath(self.init_script)
             else:
 
@@ -277,7 +278,7 @@ class StageDef:
                     self.init_script = jobout.splitlines()[0].strip()
                 except:
                     pass
-            if not os.path.exists(self.init_script):
+            if not larbatch_posix.exists(self.init_script):
                 raise IOError, 'Init script %s not found.' % self.init_script
 
         # Worker initialization source script (subelement).
@@ -289,7 +290,7 @@ class StageDef:
         # Make sure init source script exists, and convert into a full path.
 
         if self.init_source != '':
-            if os.path.exists(self.init_source):
+            if larbatch_posix.exists(self.init_source):
                 self.init_source = os.path.realpath(self.init_source)
             else:
 
@@ -304,7 +305,7 @@ class StageDef:
                     self.init_source = jobout.splitlines()[0].strip()
                 except:
                     pass
-            if not os.path.exists(self.init_source):
+            if not larbatch_posix.exists(self.init_source):
                 raise IOError, 'Init source script %s not found.' % self.init_source
 
         # Worker end-of-job script (subelement).
@@ -316,7 +317,7 @@ class StageDef:
         # Make sure end-of-job script exists, and convert into a full path.
 
         if self.end_script != '':
-            if os.path.exists(self.end_script):
+            if larbatch_posix.exists(self.end_script):
                 self.end_script = os.path.realpath(self.end_script)
             else:
 
@@ -331,7 +332,7 @@ class StageDef:
                     self.end_script = jobout.splitlines()[0].strip()
                 except:
                     pass
-            if not os.path.exists(self.end_script):
+            if not larbatch_posix.exists(self.end_script):
                 raise IOError, 'End-of-job script %s not found.' % self.end_script
 
         # Histogram merging program.
@@ -580,7 +581,7 @@ class StageDef:
 
             lines = []
             try:
-                lines = project_utilities.saferead(self.inputlist)
+                lines = larbatch_posix.readlines(self.inputlist)
             except:
                 lines = []
             if len(lines) == 0:
@@ -607,7 +608,7 @@ class StageDef:
             dir = os.path.dirname(self.inputlist)
             base = os.path.basename(self.inputlist)
             new_inputlist_path = self.inputlist
-            if os.path.exists(new_inputlist_path):
+            if larbatch_posix.exists(new_inputlist_path):
                 new_inputlist_path = '%s/%s_%s.list' % (dir, base, str(uuid.uuid4()))
             self.inputlist = new_inputlist_path
 
@@ -629,7 +630,7 @@ class StageDef:
                 subrun_inputlist = os.path.join(dir, pubs_path, base)
                 lines = []
                 try:
-                    lines = project_utilities.saferead(subrun_inputlist)
+                    lines = larbatch_posix.readlines(subrun_inputlist)
                 except:
                     lines = []
                 if len(lines) == 0:
@@ -638,7 +639,7 @@ class StageDef:
                     subrun_inputfile = line.strip()
                     if new_inputlist_file == None:
                         print 'Generating new input list %s\n' % new_inputlist_path
-                        new_inputlist_file = open(new_inputlist_path, 'w')
+                        new_inputlist_file = larbatch_posix.open(new_inputlist_path, 'w')
                     new_inputlist_file.write('%s\n' % subrun_inputfile)
                     nlist += 1
 
@@ -702,9 +703,9 @@ class StageDef:
     # (We don't currently check sam input datasets).
 
     def checkinput(self):
-        if self.inputfile != '' and not project_utilities.safeexist(self.inputfile):
+        if self.inputfile != '' and not larbatch_posix.exists(self.inputfile):
             raise IOError, 'Input file %s does not exist.' % self.inputfile
-        if self.inputlist != '' and not project_utilities.safeexist(self.inputlist):
+        if self.inputlist != '' and not larbatch_posix.exists(self.inputlist):
             raise IOError, 'Input list %s does not exist.' % self.inputlist
 
         # If target size is nonzero, and input is from a file list, calculate
@@ -712,11 +713,11 @@ class StageDef:
         # of jobs.
 
         if self.target_size != 0 and self.inputlist != '':
-            input_filenames = project_utilities.saferead(self.inputlist)
+            input_filenames = larbatch_posix.readlines(self.inputlist)
             size_tot = 0
             for line in input_filenames:
                 filename = string.split(line)[0]
-                filesize = os.stat(filename).st_size
+                filesize = larbatch_posix.stat(filename).st_size
                 size_tot = size_tot + filesize
             new_num_jobs = size_tot / self.target_size
             if new_num_jobs < 1:
@@ -732,45 +733,45 @@ class StageDef:
     # Raise an exception if output directory or log directory doesn't exist.
 
     def check_output_dirs(self):
-        if not project_utilities.safeexist(self.outdir):
+        if not larbatch_posix.exists(self.outdir):
             raise IOError, 'Output directory %s does not exist.' % self.outdir
-        if not project_utilities.safeexist(self.logdir):
+        if not larbatch_posix.exists(self.logdir):
             raise IOError, 'Log directory %s does not exist.' % self.logdir
         return
     
     # Raise an exception if output directory, log directory, or work directory doesn't exist.
 
     def checkdirs(self):
-        if not project_utilities.safeexist(self.outdir):
+        if not larbatch_posix.exists(self.outdir):
             raise IOError, 'Output directory %s does not exist.' % self.outdir
-        if not project_utilities.safeexist(self.logdir):
+        if not larbatch_posix.exists(self.logdir):
             raise IOError, 'Log directory %s does not exist.' % self.logdir
-        if not project_utilities.safeexist(self.workdir):
+        if not larbatch_posix.exists(self.workdir):
             raise IOError, 'Work directory %s does not exist.' % self.workdir
         return
     
     # Make output, log, and work directory, if they don't exist.
 
     def makedirs(self):
-        if not project_utilities.safeexist(self.outdir):
-            os.makedirs(self.outdir)
-        if not project_utilities.safeexist(self.logdir):
-            os.makedirs(self.logdir)
-        if not project_utilities.safeexist(self.workdir):
-            os.makedirs(self.workdir)
+        if not larbatch_posix.exists(self.outdir):
+            larbatch_posix.makedirs(self.outdir)
+        if not larbatch_posix.exists(self.logdir):
+            larbatch_posix.makedirs(self.logdir)
+        if not larbatch_posix.exists(self.workdir):
+            larbatch_posix.makedirs(self.workdir)
 
         # If output is on dcache, make output directory group-writable.
 
         if self.outdir[0:6] == '/pnfs/':
-            mode = os.stat(self.outdir).st_mode
+            mode = stat.S_IMODE(larbatch_posix.stat(self.outdir).st_mode)
             if not mode & stat.S_IWGRP:
                 mode = mode | stat.S_IWGRP
-                os.chmod(self.outdir, mode)
+                larbatch_posix.chmod(self.outdir, mode)
         if self.logdir[0:6] == '/pnfs/':
-            mode = os.stat(self.logdir).st_mode
+            mode = stat.S_IMODE(larbatch_posix.stat(self.logdir).st_mode)
             if not mode & stat.S_IWGRP:
                 mode = mode | stat.S_IWGRP
-                os.chmod(self.logdir, mode)
+                larbatch_posix.chmod(self.logdir, mode)
 
         self.checkdirs()
         return

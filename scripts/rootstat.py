@@ -28,6 +28,7 @@
 
 import sys, os, string
 import project_utilities
+import larbatch_posix
 
 # Import ROOT module.
 # Globally turn off root warnings.
@@ -263,8 +264,8 @@ def main(argv):
             # Read in file list to input files.
             
             filelistname = args[0][1:]
-            if project_utilities.safeexist(filelistname):
-                for filename in project_utilities.saferead(filelistname):
+            if larbatch_posix.exists(filelistname):
+                for filename in larbatch_posix.readlines(filelistname):
                     input_files.append(string.strip(filename))
             else:
                 print 'File list %s does not exist.' % filelistname
@@ -289,12 +290,12 @@ def main(argv):
             break
         nfile = nfile + 1
 
-        if not project_utilities.safeexist(input_file):
+        if not larbatch_posix.exists(input_file):
             print 'Input file %s does not exist.' % input_file
             return 1
 
         print '\nOpening %s' % input_file
-        root = project_utilities.SafeTFile(input_file)
+        root = ROOT.TFile.Open(input_file)
         if not root.IsOpen() or root.IsZombie():
             print 'Failed to open %s' % input_file
             return 1

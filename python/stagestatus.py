@@ -13,6 +13,7 @@
 import os, string
 from project_modules.stagedef import StageDef
 import project_utilities
+import larbatch_posix
 
 # Project status class.
 
@@ -44,7 +45,7 @@ class StageStatus:
 
         # Test whether output directory exists.
 
-        if project_utilities.safeexist(logdir):
+        if larbatch_posix.exists(logdir):
 
             # Output directory exists.
 
@@ -58,8 +59,8 @@ class StageStatus:
             # Count good files and events.
 
             eventsfile = os.path.join(logdir, 'events.list')
-            if project_utilities.safeexist(eventsfile):
-                lines = project_utilities.saferead(eventsfile)
+            if larbatch_posix.exists(eventsfile):
+                lines = larbatch_posix.readlines(eventsfile)
                 for line in lines:
                     words = string.split(line)
                     if len(words) >= 2:
@@ -69,16 +70,16 @@ class StageStatus:
             # Count good files analysis root files.
 
             filesana = os.path.join(logdir, 'filesana.list')
-            if project_utilities.safeexist(filesana):
-                lines = project_utilities.saferead(filesana)
+            if larbatch_posix.exists(filesana):
+                lines = larbatch_posix.readlines(filesana)
                 for line in lines:
                     self.nana = self.nana + 1
 
             # Count errors.
 
             badfile = os.path.join(logdir, 'bad.list')
-            if project_utilities.safeexist(badfile):
-                lines = project_utilities.saferead(badfile)
+            if larbatch_posix.exists(badfile):
+                lines = larbatch_posix.readlines(badfile)
                 for line in lines:
                     if line.strip():
                         self.nerror += 1
@@ -86,8 +87,8 @@ class StageStatus:
             # Count missing files.
 
             missingfile = os.path.join(logdir, 'missing_files.list')
-            if project_utilities.safeexist(missingfile):
-                lines = project_utilities.saferead(missingfile)
+            if larbatch_posix.exists(missingfile):
+                lines = larbatch_posix.readlines(missingfile)
                 for line in lines:
                     if line.strip():
                         self.nmiss += 1

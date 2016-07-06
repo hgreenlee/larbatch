@@ -278,6 +278,7 @@
 ######################################################################
 
 import sys, os, stat, string, subprocess, shutil, urllib, json, getpass, uuid
+import larbatch_posix
 import threading, Queue
 from xml.dom.minidom import parse
 import project_utilities, root_metadata
@@ -291,18 +292,6 @@ import samweb_cli
 samweb = None           # Initialized SAMWebClient object
 extractor_dict = None   # Metadata extractor
 proxy_ok = False
-
-# Function for opening files for writing using either python's built-in
-# file object or SafeFile for dCache/pnfs files, as appropriate.
-
-def safeopen(destination):
-    #if destination[0:6] == '/pnfs/':
-    #    file = SafeFile(destination)
-    #else:
-    if project_utilities.safeexist(destination):
-        os.remove(destination)
-    file = open(destination, 'w')
-    return file
 
 # Function to make sure global SAMWebClient object is initialized.
 # Also imports extractor_dict module.
@@ -343,31 +332,31 @@ def doclean(project, stagename):
 
             # Clean this stage outdir.
 
-            if os.path.exists(stage.outdir):
-                dir_uid = os.stat(stage.outdir).st_uid
+            if larbatch_posix.exists(stage.outdir):
+                dir_uid = larbatch_posix.stat(stage.outdir).st_uid
                 if dir_uid == uid or dir_uid == euid:
                     print 'Clean directory %s.' % stage.outdir
-                    shutil.rmtree(stage.outdir)
+                    larbatch_posix.rmtree(stage.outdir)
                 else:
                     raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.outdir
 
             # Clean this stage logdir.
 
-            if os.path.exists(stage.logdir):
-                dir_uid = os.stat(stage.logdir).st_uid
+            if larbatch_posix.exists(stage.logdir):
+                dir_uid = larbatch_posix.stat(stage.logdir).st_uid
                 if dir_uid == uid or dir_uid == euid:
                     print 'Clean directory %s.' % stage.logdir
-                    shutil.rmtree(stage.logdir)
+                    larbatch_posix.rmtree(stage.logdir)
                 else:
                     raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.logdir
 
             # Clean this stage workdir.
 
-            if os.path.exists(stage.workdir):
-                dir_uid = os.stat(stage.workdir).st_uid
+            if larbatch_posix.exists(stage.workdir):
+                dir_uid = larbatch_posix.stat(stage.workdir).st_uid
                 if dir_uid == uid or dir_uid == euid:
                     print 'Clean directory %s.' % stage.workdir
-                    shutil.rmtree(stage.workdir)
+                    larbatch_posix.rmtree(stage.workdir)
                 else:
                     raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.workdir
 
@@ -405,31 +394,31 @@ def docleanx(projects, projectname, stagename):
 
                 # Clean this stage outdir.
 
-                if os.path.exists(stage.outdir):
-                    dir_uid = os.stat(stage.outdir).st_uid
+                if larbatch_posix.exists(stage.outdir):
+                    dir_uid = larbatch_posix.stat(stage.outdir).st_uid
                     if dir_uid == uid or dir_uid == euid:
                         print 'Clean directory %s.' % stage.outdir
-                        shutil.rmtree(stage.outdir)
+                        larbatch_posix.rmtree(stage.outdir)
                     else:
                         raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.outdir
 
                 # Clean this stage logdir.
 
-                if os.path.exists(stage.logdir):
-                    dir_uid = os.stat(stage.logdir).st_uid
+                if larbatch_posix.exists(stage.logdir):
+                    dir_uid = larbatch_posix.stat(stage.logdir).st_uid
                     if dir_uid == uid or dir_uid == euid:
                         print 'Clean directory %s.' % stage.logdir
-                        shutil.rmtree(stage.logdir)
+                        larbatch_posix.rmtree(stage.logdir)
                     else:
                         raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.logdir
 
                 # Clean this stage workdir.
 
-                if os.path.exists(stage.workdir):
-                    dir_uid = os.stat(stage.workdir).st_uid
+                if larbatch_posix.exists(stage.workdir):
+                    dir_uid = larbatch_posix.stat(stage.workdir).st_uid
                     if dir_uid == uid or dir_uid == euid:
                         print 'Clean directory %s.' % stage.workdir
-                        shutil.rmtree(stage.workdir)
+                        larbatch_posix.rmtree(stage.workdir)
                     else:
                         raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.workdir
 
@@ -641,18 +630,18 @@ def check_root_file(path, logdir):
 
     # First check if root file exists (error if not).
 
-    if not project_utilities.safeexist(path):
+    if not larbatch_posix.exists(path):
         return result
 
     # See if we have precalculated metadata for this root file.
 
     json_path = os.path.join(logdir, os.path.basename(path) + '.json')
-    if project_utilities.safeexist(json_path):
+    if larbatch_posix.exists(json_path):
 
         # Get number of events from precalculated metadata.
 
         try:
-	    lines = project_utilities.saferead(json_path)
+	    lines = larbatch_posix.readlines(json_path)
      	    s = ''
             for line in lines:
                s = s + line
@@ -703,7 +692,7 @@ def check_root(outdir, logdir):
     hists = []
 
     print 'Checking root files in directory %s.' % outdir
-    filenames = os.listdir(outdir)
+    filenames = larbatch_posix.listdir(outdir)
     for filename in filenames:
         if filename[-5:] == '.root':
             path = os.path.join(outdir, filename)
@@ -744,9 +733,9 @@ def get_input_files(stage):
     if stage.inputfile != '':
         result.append(stage.inputfile)
 
-    elif stage.inputlist != '' and project_utilities.safeexist(stage.inputlist):
+    elif stage.inputlist != '' and larbatch_posix.exists(stage.inputlist):
         try:
-            input_filenames = project_utilities.saferead(stage.inputlist)
+            input_filenames = larbatch_posix.readlines(stage.inputlist)
             for line in input_filenames:
                 words = string.split(line)
                 result.append(words[0])
@@ -767,7 +756,7 @@ def doshorten(stage):
 
     # Loop over .root files in outdir.
 
-    for out_subpath, subdirs, files in os.walk(stage.outdir):
+    for out_subpath, subdirs, files in larbatch_posix.walk(stage.outdir):
 
         # Only examine files in leaf directories.
 
@@ -787,16 +776,16 @@ def doshorten(stage):
                     shortfile = file[:150] + str(uuid.uuid4()) + '.root'
                     shortfile_path = os.path.join(out_subpath, shortfile)
                     print '%s\n->%s\n' % (file_path, shortfile_path)
-                    os.rename(file_path, shortfile_path)
+                    larbatch_posix.rename(file_path, shortfile_path)
 
                     # Also rename corresponding json file, if it exists.
 
                     json_path = os.path.join(log_subpath, file + '.json')
-                    if project_utilities.safeexist(json_path):
+                    if larbatch_posix.exists(json_path):
                         shortjson = shortfile + '.json'
                         shortjson_path = os.path.join(log_subpath, shortjson)
                         print '%s\n->%s\n' % (json_path, shortjson_path)
-                        os.rename(json_path, shortjson_path)
+                        larbatch_posix.rename(json_path, shortjson_path)
 
     return
 
@@ -855,10 +844,10 @@ def docheck(project, stage, ana):
 
     # Check that output and log directories exist.
 
-    if not os.path.exists(stage.outdir):
+    if not larbatch_posix.exists(stage.outdir):
         print 'Output directory %s does not exist.' % stage.outdir
         return 1
-    if not os.path.exists(stage.logdir):
+    if not larbatch_posix.exists(stage.logdir):
         print 'Log directory %s does not exist.' % stage.logdir
         return 1
 
@@ -882,7 +871,7 @@ def docheck(project, stage, ana):
     uris = []         # List of input files processed successfully.
     bad_workers = []  # List of bad worker subdirectories.
 
-    for log_subpath, subdirs, files in os.walk(stage.logdir):
+    for log_subpath, subdirs, files in larbatch_posix.walk(stage.logdir):
 
         # Only examine files in leaf directories.
 
@@ -899,8 +888,8 @@ def docheck(project, stage, ana):
 
         if dirok and log_subpath[-6:] == '_start':
             filename = os.path.join(log_subpath, 'sam_project.txt')
-            if project_utilities.safeexist(filename):
-                sam_project = project_utilities.saferead(filename)[0].strip()
+            if larbatch_posix.exists(filename):
+                sam_project = larbatch_posix.readlines(filename)[0].strip()
                 if sam_project != '' and not sam_project in sam_projects:
                     sam_projects.append(sam_project)
 
@@ -921,10 +910,10 @@ def docheck(project, stage, ana):
 
             if not bad:
                 stat_filename = os.path.join(log_subpath, 'lar.stat')
-                if project_utilities.safeexist(stat_filename):
+                if larbatch_posix.exists(stat_filename):
                     status = 0
                     try:
-                        status = int(project_utilities.saferead(stat_filename)[0].strip())
+                        status = int(larbatch_posix.readlines(stat_filename)[0].strip())
                         if status != 0:
                             print 'Job in subdirectory %s ended with non-zero exit status %d.' % (
                                 subdir, status)
@@ -979,18 +968,18 @@ def docheck(project, stage, ana):
 
             if not bad and stage.inputdef != '':
                 filename1 = os.path.join(log_subpath, 'sam_project.txt')
-                if not project_utilities.safeexist(filename1):
+                if not larbatch_posix.exists(filename1):
                     print 'Could not find file sam_project.txt'
                     bad = 1
                 filename2 = os.path.join(log_subpath, 'cpid.txt')
-                if not project_utilities.safeexist(filename2):
+                if not larbatch_posix.exists(filename2):
                     print 'Could not find file cpid.txt'
                     bad = 1
                 if not bad:
-                    sam_project = project_utilities.saferead(filename1)[0].strip()
+                    sam_project = larbatch_posix.readlines(filename1)[0].strip()
                     if not sam_project in sam_projects:
                         sam_projects.append(sam_project)
-                    cpid = project_utilities.saferead(filename2)[0].strip()
+                    cpid = larbatch_posix.readlines(filename2)[0].strip()
                     if not cpid in cpids:
                         cpids.append(cpid)
 
@@ -999,11 +988,11 @@ def docheck(project, stage, ana):
 
             if not bad and (stage.inputlist !='' or stage.inputfile != ''):
                 filename = os.path.join(log_subpath, 'transferred_uris.list')
-                if not project_utilities.safeexist(filename):
+                if not larbatch_posix.exists(filename):
                     print 'Could not find file transferred_uris.list'
                     bad = 1
                 if not bad:
-                    lines = project_utilities.saferead(filename)
+                    lines = larbatch_posix.readlines(filename)
                     for line in lines:
                         uri = line.strip()
                         if uri != '':
@@ -1293,7 +1282,7 @@ def dofetchlog(stage):
     # stage.logdir.
 
     logids = []
-    for dirpath, dirnames, filenames in os.walk(stage.logdir):
+    for dirpath, dirnames, filenames in larbatch_posix.walk(stage.logdir):
         for filename in filenames:
             if filename == 'env.txt':
 
@@ -1307,7 +1296,7 @@ def dofetchlog(stage):
 
                 logid = ''
                 envpath = os.path.join(dirpath, filename)
-                vars = project_utilities.saferead(envpath)
+                vars = larbatch_posix.readlines(envpath)
 
                 # JOBSUBPARENTJOBID
 
@@ -1355,9 +1344,9 @@ def dofetchlog(stage):
         # Make a directory to receive log files.
 
         logdir = os.path.join(stage.logdir, 'log')
-        if project_utilities.safeexist(logdir):
-            shutil.rmtree(logdir)
-        os.mkdir(logdir)
+        if larbatch_posix.exists(logdir):
+            larbatch_posix.rmtree(logdir)
+        larbatch_posix.mkdir(logdir)
 
         # Loop over log ids.
                     
@@ -1412,8 +1401,8 @@ def docheck_declarations(logdir, outdir, declare, ana=False):
     if ana:
         listname = 'filesana.list'
     fnlist = os.path.join(logdir, listname)
-    if project_utilities.safeexist(fnlist):
-        roots = project_utilities.saferead(fnlist)
+    if larbatch_posix.exists(fnlist):
+        roots = larbatch_posix.readlines(fnlist)
     else:
         raise RuntimeError, 'No %s file found %s, run project.py --check' % (listname, fnlist)
 
@@ -1441,8 +1430,8 @@ def docheck_declarations(logdir, outdir, declare, ana=False):
                 print 'Declaring: %s' % fn
                 jsonfile = os.path.join(logdir, os.path.join(dirname, fn)) + '.json'
                 mdjson = {}
-                if project_utilities.safeexist(jsonfile):
-                    mdlines = project_utilities.saferead(jsonfile)
+                if larbatch_posix.exists(jsonfile):
+                    mdlines = larbatch_posix.readlines(jsonfile)
                     mdtext = ''
                     for line in mdlines:
                         mdtext = mdtext + line
@@ -1455,7 +1444,7 @@ def docheck_declarations(logdir, outdir, declare, ana=False):
                 if ana:
                     md = mdjson
                 else:
-                    md = extractor_dict.getmetadata(path, mdjson)
+                    md = extractor_dict.getmetadata(larbatch_posix.root_stream(path), mdjson)
                 if len(md) > 0:
                     project_utilities.test_kca()
 
@@ -1616,7 +1605,7 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
         # Look subdirectories of outdir.
 
         disk_locs = []
-        for out_subpath, subdirs, files in os.walk(outdir):
+        for out_subpath, subdirs, files in larbatch_posix.walk(outdir):
 
             # Only examine files in leaf directories.
 
@@ -1671,7 +1660,7 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
                     # Split off the node, if any, from the location.
 
                     local_path = os.path.join(sam_loc['location'].split(':')[-1], filename)
-                    if not project_utilities.safeexist(local_path):
+                    if not larbatch_posix.exists(local_path):
                         locs_to_remove.append(sam_loc['location'])
 
         # Loop over sam locations and identify files that can be uploaded.
@@ -1689,9 +1678,9 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
                     break
             if should_upload:
                 dropbox = project_utilities.get_dropbox(filename)
-                if not project_utilities.safeexist(dropbox):
+                if not larbatch_posix.exists(dropbox):
                     print 'Making dropbox directory %s.' % dropbox
-                    os.makedirs(dropbox)
+                    larbatch_posix.makedirs(dropbox)
                 locs_to_upload[disk_locs[0]] = dropbox
         
         # Report results and do the actual adding/removing/uploading.
@@ -1721,14 +1710,14 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
 
             # Make sure dropbox directory exists.
             
-            if not os.path.isdir(dropbox):
+            if not larbatch_posix.isdir(dropbox):
                 print 'Dropbox directory %s does not exist.' % dropbox
             else:
 
                 # Test whether this file has already been copied to dropbox directory.
                 
                 dropbox_filename = os.path.join(dropbox, filename)
-                if project_utilities.safeexist(dropbox_filename):
+                if larbatch_posix.exists(dropbox_filename):
                     print 'File %s already exists in dropbox %s.' % (filename, dropbox)
                 else:
 
@@ -1744,38 +1733,11 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
                         relpath = os.path.relpath(os.path.realpath(loc_filename), dropbox)
                         print 'relpath=',relpath
                         print 'dropbox_filename=',dropbox_filename
-                        os.symlink(relpath, dropbox_filename)
+                        larbatch_posix.symlink(relpath, dropbox_filename)
 
                     else:
-
                         print 'Copying %s to dropbox directory %s.' % (filename, dropbox)
-                        project_utilities.test_proxy()
-
-                        # Make sure environment variables X509_USER_CERT and X509_USER_KEY
-                        # are not defined (they confuse ifdh).
-
-                        save_vars = {}
-                        for var in ('X509_USER_CERT', 'X509_USER_KEY'):
-                            if os.environ.has_key(var):
-                                save_vars[var] = os.environ[var]
-                                del os.environ[var]
-
-                        # Do ifdh cp.
-
-                        command = ['ifdh', 'cp', '--force=gridftp', loc_filename, dropbox_filename]
-                        jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE,
-                                                   stderr=subprocess.PIPE)
-                        jobout, joberr = jobinfo.communicate()
-                        rc = jobinfo.poll()
-                        if rc != 0:
-                            for var in save_vars.keys():
-                                os.environ[var] = save_vars[var]
-                            raise IFDHError(command, rc, jobout, joberr)
-
-                        # Restore environment variables.
-
-                        for var in save_vars.keys():
-                            os.environ[var] = save_vars[var]
+                        larbatch_posix.copy(loc_filename, dropbox_filename)
 
     return 0
 
@@ -1858,7 +1820,7 @@ def dojobsub(project, stage, makeup):
         input_list_name = os.path.basename(stage.inputlist)
         work_list_name = os.path.join(stage.workdir, input_list_name)
         if stage.inputlist != work_list_name:
-            input_files = project_utilities.saferead(stage.inputlist)
+            input_files = larbatch_posix.readlines(stage.inputlist)
             print 'Making input list.'
             work_list = safeopen(work_list_name)
             for input_file in input_files:
@@ -1876,7 +1838,7 @@ def dojobsub(project, stage, makeup):
 
     workfcl = os.path.join(stage.workdir, os.path.basename(stage.fclname))
     if os.path.abspath(fcl) != os.path.abspath(workfcl):
-        project_utilities.safecopy(fcl, workfcl)
+        larbatch_posix.copy(fcl, workfcl)
     jobsub_workdir_files_args.extend(['-f', workfcl])
 
 
@@ -1939,16 +1901,17 @@ def dojobsub(project, stage, makeup):
     # Copy and rename experiment setup script to the work directory.
 
     setupscript = os.path.join(stage.workdir,'setup_experiment.sh')
-    project_utilities.safecopy(project_utilities.get_setup_script_path(), setupscript)
+    larbatch_posix.copy(project_utilities.get_setup_script_path(), setupscript)
     jobsub_workdir_files_args.extend(['-f', setupscript])
 
     # Copy and rename batch script to the work directory.
 
     workname = '%s-%s-%s' % (stage.name, project.name, project.release_tag)
     workname = workname + os.path.splitext(project.script)[1]
-    workscript = os.path.join(stage.workdir, workname)
+    #workscript = os.path.join(stage.workdir, workname)
+    workscript = os.path.join('/tmp', workname)
     if project.script != workscript:
-        project_utilities.safecopy(project.script, workscript)
+        larbatch_posix.copy(project.script, workscript)
 
     # Copy and rename sam start project script to work directory.
 
@@ -1956,9 +1919,10 @@ def dojobsub(project, stage, makeup):
     workstartname = ''
     if project.start_script != '':
         workstartname = 'start-%s' % workname
-        workstartscript = os.path.join(stage.workdir, workstartname)
+        #workstartscript = os.path.join(stage.workdir, workstartname)
+        workstartscript = os.path.join('/tmp', workstartname)
         if project.start_script != workstartscript:
-            project_utilities.safecopy(project.start_script, workstartscript)
+            larbatch_posix.copy(project.start_script, workstartscript)
 
     # Copy and rename sam stop project script to work directory.
 
@@ -1966,40 +1930,41 @@ def dojobsub(project, stage, makeup):
     workstopname = ''
     if project.stop_script != '':
         workstopname = 'stop-%s' % workname
-        workstopscript = os.path.join(stage.workdir, workstopname)
+        #workstopscript = os.path.join(stage.workdir, workstopname)
+        workstopscript = os.path.join('/tmp', workstopname)
         if project.stop_script != workstopscript:
-            project_utilities.safecopy(project.stop_script, workstopscript)
+            larbatch_posix.copy(project.stop_script, workstopscript)
 
     # Copy worker initialization script to work directory.
 
     if stage.init_script != '':
-        if not os.path.exists(stage.init_script):
+        if not larbatch_posix.exists(stage.init_script):
             raise RuntimeError, 'Worker initialization script %s does not exist.\n' % \
                 stage.init_script
         work_init_script = os.path.join(stage.workdir, os.path.basename(stage.init_script))
         if stage.init_script != work_init_script:
-            project_utilities.safecopy(stage.init_script, work_init_script)
+            larbatch_posix.copy(stage.init_script, work_init_script)
         jobsub_workdir_files_args.extend(['-f', work_init_script])
 
     # Copy worker initialization source script to work directory.
 
     if stage.init_source != '':
-        if not os.path.exists(stage.init_source):
+        if not larbatch_posix.exists(stage.init_source):
             raise RuntimeError, 'Worker initialization source script %s does not exist.\n' % \
                 stage.init_source
         work_init_source = os.path.join(stage.workdir, os.path.basename(stage.init_source))
         if stage.init_source != work_init_source:
-            project_utilities.safecopy(stage.init_source, work_init_source)
+            larbatch_posix.copy(stage.init_source, work_init_source)
         jobsub_workdir_files_args.extend(['-f', work_init_source])
 
     # Copy worker end-of-job script to work directory.
 
     if stage.end_script != '':
-        if not os.path.exists(stage.end_script):
+        if not larbatch_posix.exists(stage.end_script):
             raise RuntimeError, 'Worker end-of-job script %s does not exist.\n' % stage.end_script
         work_end_script = os.path.join(stage.workdir, os.path.basename(stage.end_script))
         if stage.end_script != work_end_script:
-            project_utilities.safecopy(stage.end_script, work_end_script)
+            larbatch_posix.copy(stage.end_script, work_end_script)
         jobsub_workdir_files_args.extend(['-f', work_end_script])
 
     # If this is a makeup action, find list of missing files.
@@ -2008,26 +1973,26 @@ def dojobsub(project, stage, makeup):
     if makeup:
 
         checked_file = os.path.join(stage.logdir, 'checked')
-        if not project_utilities.safeexist(checked_file):
+        if not larbatch_posix.exists(checked_file):
             raise RuntimeError, 'Wait for any running jobs to finish and run project.py --check'
         makeup_count = 0
 
         # First delete bad worker subdirectories.
 
         bad_filename = os.path.join(stage.logdir, 'bad.list')
-        if project_utilities.safeexist(bad_filename):
-            lines = project_utilities.saferead(bad_filename)
+        if larbatch_posix.exists(bad_filename):
+            lines = larbatch_posix.readlines(bad_filename)
             for line in lines:
                 bad_subdir = line.strip()
                 if bad_subdir != '':
                     bad_path = os.path.join(stage.outdir, bad_subdir)
-                    if os.path.exists(bad_path):
+                    if larbatch_posix.exists(bad_path):
                         print 'Deleting %s' % bad_path
-                        shutil.rmtree(bad_path)
+                        larbatch_posix.rmtree(bad_path)
                     bad_path = os.path.join(stage.logdir, bad_subdir)
-                    if os.path.exists(bad_path):
+                    if larbatch_posix.exists(bad_path):
                         print 'Deleting %s' % bad_path
-                        shutil.rmtree(bad_path)
+                        larbatch_posix.rmtree(bad_path)
 
         # Get a list of missing files, if any, for file list input.
         # Regenerate the input file list in the work directory, and 
@@ -2036,8 +2001,8 @@ def dojobsub(project, stage, makeup):
         missing_files = []
         if stage.inputdef == '':
             missing_filename = os.path.join(stage.logdir, 'missing_files.list')
-            if project_utilities.safeexist(missing_filename):
-                lines = project_utilities.saferead(missing_filename)
+            if larbatch_posix.exists(missing_filename):
+                lines = larbatch_posix.readlines(missing_filename)
                 for line in lines:
                     words = string.split(line)
                     if len(words) > 0:
@@ -2047,8 +2012,8 @@ def dojobsub(project, stage, makeup):
 
         if input_list_name != '':
             work_list_name = os.path.join(stage.workdir, input_list_name)
-            if os.path.exists(work_list_name):
-                os.remove(work_list_name)
+            if larbatch_posix.exists(work_list_name):
+                larbatch_posix.remove(work_list_name)
             work_list = safeopen(work_list_name)
             for missing_file in missing_files:
                 work_list.write('%s\n' % missing_file)
@@ -2066,8 +2031,8 @@ def dojobsub(project, stage, makeup):
             # process numbers and determine missing process numbers.
 
             output_files = os.path.join(stage.logdir, 'files.list')
-            if project_utilities.safeexist(output_files):
-                lines = project_utilities.saferead(output_files)
+            if larbatch_posix.exists(output_files):
+                lines = larbatch_posix.readlines(output_files)
                 for line in lines:
                     dir = os.path.basename(os.path.dirname(line))
                     dir_parts = dir.split('_')
@@ -2097,8 +2062,8 @@ def dojobsub(project, stage, makeup):
 
         cpids = []
         cpids_filename = os.path.join(stage.logdir, 'cpids.list')
-        if project_utilities.safeexist(cpids_filename):
-            cpids_files = project_utilities.saferead(cpids_filename)
+        if larbatch_posix.exists(cpids_filename):
+            cpids_files = larbatch_posix.readlines(cpids_filename)
             for line in cpids_files:
                 cpids.append(line.strip())
 
@@ -2201,7 +2166,7 @@ def dojobsub(project, stage, makeup):
 
     # Batch script.
 
-    workurl = "file://%s/%s" % (stage.workdir, workname)
+    workurl = "file://%s" % workscript
     command.append(workurl)
 
     # check if there is a request for max num of files per job
@@ -2308,7 +2273,7 @@ def dojobsub(project, stage, makeup):
 
         # Start project script.
 
-        workstarturl = "file://%s/%s" % (stage.workdir, workstartname)
+        workstarturl = "file://%s" % workstartscript
         start_command.append(workstarturl)
 
         # Sam options.
@@ -2349,7 +2314,7 @@ def dojobsub(project, stage, makeup):
 
         # Stop project script.
 
-        workstopurl = "file://%s/%s" % (stage.workdir, workstopname)
+        workstopurl = "file://%s" % workstopscript
         stop_command.append(workstopurl)
 
         # Sam options.
@@ -2364,7 +2329,8 @@ def dojobsub(project, stage, makeup):
 
         # Create dagNabbit.py configuration script in the work directory.
 
-        dagfilepath = os.path.join(stage.workdir, 'submit.dag')
+        #dagfilepath = os.path.join(stage.workdir, 'submit.dag')
+        dagfilepath = os.path.join('/tmp', 'submit.dag')
         dag = safeopen(dagfilepath)
 
         # Write start section.
@@ -2434,9 +2400,6 @@ def dojobsub(project, stage, makeup):
         dagfileurl = 'file://'+ dagfilepath
         command.append(dagfileurl)
 
-    curdir = os.getcwd()
-    os.chdir(stage.workdir)
-
     checked_file = os.path.join(stage.logdir, 'checked')
 
     # Calculate submit timeout.
@@ -2464,17 +2427,15 @@ def dojobsub(project, stage, makeup):
         jobout = q.get()
         joberr = q.get()
         if rc != 0:
-            os.chdir(curdir)
             raise JobsubError(command, rc, jobout, joberr)
         for line in jobout.split('\n'):
             if "JobsubJobId" in line:
                 jobid = line.strip().split()[-1]
         if not jobid:
-            os.chdir(curdir)
             raise JobsubError(command, rc, jobout, joberr)
         print 'jobsub_submit finished.'
-        if project_utilities.safeexist(checked_file):
-            os.remove(checked_file)
+        if larbatch_posix.exists(checked_file):
+            larbatch_posix.remove(checked_file)
 
     else:
 
@@ -2494,19 +2455,16 @@ def dojobsub(project, stage, makeup):
             jobout = q.get()
             joberr = q.get()
             if rc != 0:
-                os.chdir(curdir)
                 raise JobsubError(command, rc, jobout, joberr)
             for line in jobout.split('\n'):
                 if "JobsubJobId" in line:
                     jobid = line.strip().split()[-1]
             if not jobid:
-                os.chdir(curdir)
                 raise JobsubError(command, rc, jobout, joberr)
-            if project_utilities.safeexist(checked_file):
-                os.remove(checked_file)
+            if larbatch_posix.exists(checked_file):
+                larbatch_posix.remove(checked_file)
         else:
             print 'Makeup action aborted because makeup job count is zero.'
-    os.chdir(curdir)
 
     # Done.
 
@@ -2526,12 +2484,12 @@ def dosubmit(project, stage, makeup=False):
     # mode.
 
     if stage.pubs_output and not stage.dynamic:
-        if project_utilities.safeexist(stage.workdir):
-            shutil.rmtree(stage.workdir)
-        if project_utilities.safeexist(stage.outdir):
-            shutil.rmtree(stage.outdir)
-        if project_utilities.safeexist(stage.logdir):
-            shutil.rmtree(stage.logdir)
+        if larbatch_posix.exists(stage.workdir):
+            larbatch_posix.rmtree(stage.workdir)
+        if larbatch_posix.exists(stage.outdir):
+            larbatch_posix.rmtree(stage.outdir)
+        if larbatch_posix.exists(stage.logdir):
+            larbatch_posix.rmtree(stage.logdir)
 
     # Make or check directories.
 
@@ -2547,9 +2505,9 @@ def dosubmit(project, stage, makeup=False):
     # Make sure output and log directories are empty (submit only).
 
     if not makeup and not stage.dynamic:
-        if len(os.listdir(stage.outdir)) != 0:
+        if len(larbatch_posix.listdir(stage.outdir)) != 0:
             raise RuntimeError, 'Output directory %s is not empty.' % stage.outdir
-        if len(os.listdir(stage.logdir)) != 0:
+        if len(larbatch_posix.listdir(stage.logdir)) != 0:
             raise RuntimeError, 'Log directory %s is not empty.' % stage.logdir
 
     # Copy files to workdir and issue jobsub command to submit jobs.
@@ -2560,8 +2518,8 @@ def dosubmit(project, stage, makeup=False):
 
     jobids_filename = os.path.join(stage.logdir, 'jobids.list')
     jobids = []
-    if project_utilities.safeexist(jobids_filename):
-        lines = open(jobids_filename).readlines()
+    if larbatch_posix.exists(jobids_filename):
+        lines = larbatch_posix.readlines(jobids_filename)
         for line in lines:
             id = line.strip()
             if len(id) > 0:
@@ -2588,8 +2546,8 @@ def domerge(stage, mergehist, mergentuple):
 
     hlist = []
     hnlist = os.path.join(stage.logdir, 'filesana.list')
-    if project_utilities.safeexist(hnlist):
-        hlist = project_utilities.saferead(hnlist)
+    if larbatch_posix.exists(hnlist):
+        hlist = larbatch_posix.readlines(hnlist)
     else:
         raise RuntimeError, 'No filesana.list file found %s, run project.py --checkana' % hnlist
 
@@ -2597,7 +2555,7 @@ def domerge(stage, mergehist, mergentuple):
     histurls = safeopen(histurlsname_temp) 
 	
     for hist in hlist:
-        histurls.write('%s\n' % project_utilities.path_to_url(hist)) 	
+        histurls.write('%s\n' % hist) 	
     histurls.close()
        	
     if len(hlist) > 0:
@@ -2606,8 +2564,8 @@ def domerge(stage, mergehist, mergentuple):
             tempdir = '%s/mergentuple_%d_%d' % (project_utilities.get_scratch_dir(),
                                                 os.getuid(),
                                                 os.getpid())
-            if not os.path.isdir(tempdir):
-                os.makedirs(tempdir)
+            if not larbatch_posix.isdir(tempdir):
+                larbatch_posix.makedirs(tempdir)
             name_temp = '%s/anahist.root' % tempdir
         else:
             name_temp = name
@@ -2621,47 +2579,24 @@ def domerge(stage, mergehist, mergentuple):
            
         print "Merging %d root files using %s." % (len(hlist), mergecom)
 			          			         
-        if os.path.exists(name_temp):
-            os.remove(name_temp)
+        if larbatch_posix.exists(name_temp):
+            larbatch_posix.remove(name_temp)
         comlist = mergecom.split()
-        comlist.extend(["-v", "0", "-f", "-k", name_temp, '@' + histurlsname_temp])
+        comlist.extend(["-f", "-k", name_temp, '@' + histurlsname_temp])
         rc = subprocess.call(comlist, stdout=sys.stdout, stderr=sys.stderr)
         if rc != 0:
             print "%s exit status %d" % (mergecom, rc)
         if name != name_temp:
-            if project_utilities.safeexist(name):
-                os.remove(name)
-            if os.path.exists(name_temp):
-                project_utilities.test_proxy()
+            if larbatch_posix.exists(name):
+                larbatch_posix.remove(name)
+            if larbatch_posix.exists(name_temp):
 
-                # Make sure environment variables X509_USER_CERT and X509_USER_KEY
-                # are not defined (they confuse ifdh).
+                # Copy merged file.
 
-                save_vars = {}
-                for var in ('X509_USER_CERT', 'X509_USER_KEY'):
-                    if os.environ.has_key(var):
-                        save_vars[var] = os.environ[var]
-                        del os.environ[var]
-
-                # Do ifdh cp.
-
-                command = ['ifdh', 'cp', name_temp, name]
-                jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                jobout, joberr = jobinfo.communicate()
-                rc = jobinfo.poll()
-                if rc != 0:
-                    for var in save_vars.keys():
-                        os.environ[var] = save_vars[var]
-                    raise IFDHError(command, rc, jobout, joberr)
-
-                # Restore environment variables.
-
-                for var in save_vars.keys():
-                    os.environ[var] = save_vars[var]
-
-                os.remove(name_temp)
-                os.rmdir(tempdir)
-        os.remove(histurlsname_temp)	     
+                larbatch_posix.copy(name_temp, name)
+                larbatch_posix.remove(name_temp)
+                larbatch_posix.rmdir(tempdir)
+        larbatch_posix.remove(histurlsname_temp)	     
 
 
 # Sam audit.
@@ -2696,8 +2631,8 @@ def doaudit(stage):
         inputlist=samweb.listFiles(defname=stage.inputdef)
     elif stage.inputlist != '':
         ilist = []
-        if project_utilities.safeexist(stage.inputlist):
-            ilist = project_utilities.saferead(stage.inputlist)
+        if larbatch_posix.exists(stage.inputlist):
+            ilist = larbatch_posix.readlines(stage.inputlist)
             inputlist = [] 
             for i in ilist:
                 inputlist.append(os.path.basename(string.strip(i)))	
@@ -2723,8 +2658,8 @@ def doaudit(stage):
             if me ==1:
                 flist = []
                 fnlist = os.path.join(stage.logdir, 'files.list')
-                if project_utilities.safeexist(fnlist):
-                    flist = project_utilities.saferead(fnlist)
+                if larbatch_posix.exists(fnlist):
+                    flist = larbatch_posix.readlines(fnlist)
                     slist = []  
                     for line in flist:
                         slist.append(string.split(line)[0])
@@ -2758,7 +2693,7 @@ def doaudit(stage):
         print "Creating missingfiles.list in the output directory....done!"
     if me != 0:
         thefile.close()	
-        #os.remove("jsonfile.json")
+        #larbatch_posix.remove("jsonfile.json")
         print "For extra parent files, files.list redefined and content status declared as bad in SAM...done!"	     
     
 
@@ -3235,6 +3170,14 @@ def main(argv):
     # Done.
 
     return rc
+
+# Open and truncate a file for writing using larbatch_posix.open.
+
+def safeopen(destination):
+    if larbatch_posix.exists(destination):
+        larbatch_posix.remove(destination)
+    file = larbatch_posix.open(destination, 'w')
+    return file
 
 # Invoke main program.
 
