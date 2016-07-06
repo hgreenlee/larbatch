@@ -3171,6 +3171,16 @@ def main(argv):
 
     return rc
 
+# This function is depracated and no longer used internally.
+# It is included for backward compatibility in case of scripts
+# that might import project.py as a module.
+
+def safeopen(destination):
+    if larbatch_posix.exists(destination):
+        larbatch_posix.remove(destination)
+    file = larbatch_posix.open(destination, 'w')
+    return file
+
 # Invoke main program.
 
 if __name__ == '__main__':

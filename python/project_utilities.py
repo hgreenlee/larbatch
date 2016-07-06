@@ -22,7 +22,7 @@ from project_modules.ifdherror import IFDHError
 import larbatch_posix
 import larbatch_utilities
 from larbatch_utilities import get_experiment, get_user, get_role, get_prouser
-from larbatch_utilities import test_ticket, test_kca, test_proxy
+from larbatch_utilities import test_ticket, test_kca, test_proxy, get_kca, get_proxy
 from larbatch_utilities import dimensions
 from larbatch_utilities import wait_for_subprocess
 from larbatch_utilities import get_bluearc_server
@@ -351,3 +351,20 @@ def saferead(path):
 
 def safecopy(src, dest):
     return larbatch_posix.copy(src, dest)
+
+# The following functions are depracated and function as no-ops.
+# They are included for backward compatibility.
+
+def path_to_url(path):
+    return path
+
+def path_to_local(path):
+    return path
+
+# Class SafeTFile is retired.  For compatibility, calls to the former 
+# constructor of class SafeTFile are now simply passed to the ROOT
+# TFile open method.  Note that class SafeTFile only ever supported
+# opening root files for reading.
+
+def SafeTFile(path):
+    return ROOT.TFile.Open(path)
