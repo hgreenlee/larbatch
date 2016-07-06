@@ -620,7 +620,11 @@ class StageDef:
             # Loop over subruns.  Read contents of pubs input list for each subrun.
 
             nlist = 0
+            nsubruns = 0
+            total_size = 0
             for subrun in subruns:
+
+                nsubruns += 1
 
                 if version == None:
                     pubs_path = '%d/%d' % (run, subrun)
@@ -642,6 +646,17 @@ class StageDef:
                         new_inputlist_file = larbatch_posix.open(new_inputlist_path, 'w')
                     new_inputlist_file.write('%s\n' % subrun_inputfile)
                     nlist += 1
+                    sr = os.stat(subrun_inputfile)
+                    total_size += sr.st_size
+
+                # If at this point the total size exceeds the target size,
+                # truncate the list of subruns and break out of the loop.
+                # Note that self.input_subruns is also truncated, 'cuz the same list.
+
+                if self.target_size != 0 and total_size >= self.target_size:
+                    del subruns[nsubruns:]
+                    print 'Truncating subrun list: %s' % str(subruns)
+                    break
 
             # Done looping over subruns.
 
