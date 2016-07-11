@@ -727,11 +727,10 @@ def symlink(src, dest):
 
     # Make sure we have a kerberos ticket.
 
-    larbatch_utilities.test_ticket()
-
     if src.startswith('/pnfs/') and not pnfs_is_mounted:
         if debug:
             print '*** Larbatch_posix: Make symbolic link from %s to %s using nfs server.' % (src, dest)
+        larbatch_utilities.test_ticket()
         cmd = ['ssh', larbatch_utilities.nfs_server(), 'ln', '-s', src, dest]
         jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
@@ -764,11 +763,10 @@ def readlink(path):
 
     # Make sure we have a kerberos ticket.
 
-    larbatch_utilities.test_ticket()
-
     if path.startswith('/pnfs/') and not_pnfs_is_mounted:
         if debug:
             print '*** Larbatch_posix: Read symbolic link %s using nfs server.' % path
+        larbatch_utilities.test_ticket()
         cmd = ['ssh', larbatch_utilities.nfs_server(), 'readlink', path]
         jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
