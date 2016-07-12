@@ -9,7 +9,7 @@ LIST(APPEND exes root_metadata.py merge_json.py emptydir.py mkdir.py subruns.py 
 
 # Python modules on PYTHONPATH.
 
-LIST(APPEND modules project_utilities.py )
+LIST(APPEND modules project_utilities.py larbatch_posix.py larbatch_utilities.py )
 
 # Hidden python modules in subdirectory project_modules on PYTHONPATH.
 

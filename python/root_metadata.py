@@ -2,7 +2,9 @@
 
 # Import stuff.
 
-import sys, os, string, subprocess, json, project_utilities, stream
+import sys, os, string, subprocess, json, stream
+import larbatch_posix
+import larbatch_utilities
 
 # Import ROOT (hide command line arguments).
 
@@ -61,7 +63,7 @@ def fileEnstoreChecksum(path):
 
     if srm_url == path:
         try:
-            f = open(path,'rb')
+            f = larbatch_posix.open(path,'rb')
             crc = enstoreChecksum(f)
         except (IOError, OSError), ex:
             raise Error(str(ex))
@@ -122,7 +124,7 @@ def get_external_metadata(inputfile):
 
     # Root checks.
 
-    file = project_utilities.SafeTFile(inputfile)
+    file = ROOT.TFile.Open(larbatch_posix.root_stream(inputfile))
     if file and file.IsOpen() and not file.IsZombie():
 
         # Root file opened successfully.
