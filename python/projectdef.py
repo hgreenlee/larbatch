@@ -47,6 +47,7 @@ class ProjectDef:
         self.run_type = ''                # Sam run type.
         self.run_number = 0               # Sam run number.
         self.script = 'condor_lar.sh'     # Batch script.
+	self.validate_on_worker = 0   # Run post-job validation on the worker node
         self.start_script = 'condor_start_project.sh'  # Sam start project script.
         self.stop_script = 'condor_stop_project.sh'    # Sam stop project script.
         self.fclpath = []                 # Fcl search path.
@@ -224,6 +225,10 @@ class ProjectDef:
         if script_path == '' or not larbatch_posix.access(script_path, os.X_OK):
             raise IOError, 'Script %s not found.' % self.script
         self.script = script_path
+	
+	worker_validation = project_element.getElementsByTagName('check')
+	if worker_validation:
+	    self.validate_on_worker = int(worker_validation[0].firstChild.data)
 
         # Also convert start and stop project scripts into full path.
         # It is not treated as an error here if these aren't found.

@@ -1261,6 +1261,160 @@ def docheck(project, stage, ana):
         result = 1
     return result
 
+def doquickcheck(project, stage, ana):
+
+  # Check that output and log directories exist. Dirs could be lost due to ifdhcp failures
+
+
+  if not os.path.exists(stage.outdir):
+        print 'Output directory %s does not exist.' % stage.outdir
+        return 1
+
+  if not os.path.exists(stage.logdir):
+        print 'Log directory %s does not exist.' % stage.logdir
+        return 1
+
+  #Copy the .list files form the logdir up one dir. This is where the old docheck would put them, and it double-checks that the files made it back from the worker node.
+
+
+  for log_subpath, subdirs, files in os.walk(stage.logdir):
+    
+    # Only examine files in leaf directories.
+    
+    if len(subdirs) != 0:
+        continue
+        
+    subdir = os.path.relpath(log_subpath, stage.logdir)
+
+    if subdir == '.':
+        continue
+    
+    
+    	
+
+    out_subpath = os.path.join(stage.outdir, subdir)
+    dirok = project_utilities.fast_isdir(log_subpath)
+    
+    #first check the missing_file.list
+    
+    validateOK = 0
+    missingfilesname = os.path.join(out_subpath, 'missing_files.list')
+    
+    try:
+       missingfiles = project_utilities.saferead(missingfilesname)
+    #if we can't find missing_files the check will not work
+    except:
+       print 'Cannont open file: %s' % missingfilesname
+       return 1   
+    
+    
+    for line in missingfiles:
+       if line == '0':
+          validateOK = 1       
+       else:
+          validateOK = 0           
+    
+    #If the validation failed, compile a missing_files list and terminate
+    if validateOK != 0:
+       urislistname = os.path.join(out_subpath, 'transferred_uris.list')
+       urifile = safeopen(urilistname)
+       uris = []
+       #update uris
+       lines = project_utilities.saferead(urilistname)
+       for line in lines:
+           uri = line.strip()
+           if uri != '':
+               uris.append(uri)
+       
+       new_missingfilesname = os.path.join(stage.logdir, 'missing_files.list')
+       new_missingfiles = safeopen(new_missingfilesname)
+       
+       if stage.inputdef == '' and not stage.pubs_output:
+          input_files = get_input_files(stage)
+          if len(input_files) > 0:
+            missing_files = list(set(input_files) - set(uris))
+            for missing_file in missing_files:
+                missingfiles.write('%s\n' % missing_file)
+                nmiss = nmiss + 1
+       else:
+          nmiss = stage.num_jobs - len(procmap)
+          for n in range(nmiss):
+              missingfiles.write('/dev/null\n')              
+       return 1
+              
+    #Copy files.
+    print 'Copying Files'
+    
+     
+
+    filelistsrc = os.path.join(out_subpath, 'files.list')
+    filelistdest = os.path.join(stage.logdir, 'files.list')
+
+    try:
+       project_utilities.safecopy(filelistsrc, filelistdest)
+
+    except:
+       print 'Cannont copy file: %s' % filelistsrc
+       return 1
+    
+    eventslistsrc = os.path.join(out_subpath, 'events.list')
+    eventslistdest = os.path.join(stage.logdir, 'events.list')
+    
+    try:
+       project_utilities.safecopy(eventslistsrc, eventslistdest)
+
+    except:
+       print 'Cannont copy file: %s' % eventslistsrc
+       return 1
+    
+    badfilesrc = os.path.join(out_subpath, 'bad.list')
+    badfiledest = os.path.join(stage.logdir, 'bad.list')
+    
+    try:
+       project_utilities.safecopy(badfilesrc, badfiledest)
+
+    except:
+       print 'Cannont copy file: %s' % badfilesrc
+       return 1
+    
+    missingfilesrc  = os.path.join(out_subpath, 'missing_files.list')
+    missingfiledest = os.path.join(stage.logdir, 'missing_files.list')
+    
+    try:
+       project_utilities.safecopy(missingfilesrc, missingfiledest)
+
+    except:
+       print 'Cannont copy file: %s' % missingfilesrc
+       return 1
+    
+    filesanalistsrc = os.path.join(out_subpath, 'filesana.list')
+    filesanalistdest = os.path.join(stage.logdir, 'filesana.list')
+    
+    try:
+       project_utilities.safecopy(filesanalistsrc, filesanalistdest)
+
+    except:
+       print 'Cannont copy file: %s' % filesanalistsrc
+       return 1
+    
+    urislistsrc = os.path.join(out_subpath, 'transferred_uris.list')
+    urislistdest = os.path.join(stage.logdir, 'transferred_uris.list')
+    
+    try:
+       project_utilities.safecopy(urislistsrc, urislistdest)
+
+    except:
+       print 'Cannont copy file: %s' % urislistsrc #not nessecarily an error
+       
+
+  checkfilename = os.path.join(stage.logdir, 'checked')
+  checkfile = safeopen(checkfilename)
+  checkfile.write('\n')
+  checkfile.close()
+  project_utilities.addLayerTwo(checkfilename)
+
+  return 0
+
 # Check project results in the specified directory.
 
 def dofetchlog(stage):
@@ -2232,6 +2386,13 @@ def dojobsub(project, stage, makeup):
         command.extend([' --end-script',
                         os.path.join('.', os.path.basename(stage.end_script))])
 
+
+    #print 'Will Validation will be done on the worker node %d' % project.validate_on_worker
+    if project.validate_on_worker == 1:
+      #print 'Validation will be done on the worker node %d' % project.validate_on_worker
+      command.extend([' --validate']) 
+      command.extend(['--declare'])			
+
     # If input is from sam, also construct a dag file, or add --sam_start option.
 
     if prjname != '' and command_njobs == 1:
@@ -3039,8 +3200,12 @@ def main(argv):
     if check or checkana:
 
         # Check results from specified project stage.
-        
-        docheck(project, stage, checkana)
+	
+	#do an abbreviated check if we did some validation on the worker node
+        if project.validate_on_worker == 1:
+           doquickcheck(project, stage, checkana)
+        else:
+           docheck(project, stage, checkana)
 
     if fetchlog:
 
