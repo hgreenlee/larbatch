@@ -141,7 +141,7 @@ def main():
     ana = 0
     nproc = 0
     
-    
+
     import_samweb() 
     
     
@@ -149,6 +149,7 @@ def main():
     checkdir=''
     logdir=''
     outdir=''
+
     declare_file = 0
     copy_to_dropbox = 0
     args = sys.argv[1:]
@@ -169,15 +170,17 @@ def main():
 	elif args[0] == '--copy' and len(args) > 1:
             copy_to_dropbox = int(args[1])
             del args[0:2]        
+            del args[0:2]    
         else:
             print 'Unknown option %s' % args[0]
             return 1
 
     
-    copy_to_dropbox = 1
+    #copy_to_dropbox = 1
     status = 0 #global status code to tell us everything is ok.
     
-    print "Do decleration in job: %d" % declare_file 
+    print "Do decleration in job: %d" % declare_file    
+    status = 0 #global status code to tell us everything is ok.
     
     # Check lar exit status (if any).
     stat_filename = os.path.join(logdir, 'lar.stat')
@@ -288,8 +291,7 @@ def main():
          	 md = json.loads(mdtext)
          	 mdjson = md
              except:
-         	 pass
-         
+         	 pass         
 	 
 	 if declare_file == 1:
 	   md = {}
@@ -298,6 +300,16 @@ def main():
            else:
              expSpecificMetaData = expMetaData(os.environ['SAM_EXPERIMENT'],larbatch_posix.root_stream(path))
              md = expSpecificMetaData.getmetadata()
+	     #change the parentage of the file based on it's parents and aunts from condor_lar
+	     jobs_parents = os.getenv('JOBS_PARENTS', '').split(" ")
+             jobs_aunts   = os.getenv('JOBS_AUNTS', '').split(" ")
+             if(jobs_parents[0] != '' ):
+                  md['parents'] = [{'file_name': parent} for parent in jobs_parents]
+             if(jobs_aunts[0] != '' ):
+                for aunt in jobs_aunts:
+                   mixparent_dict = {'file_name': aunt}
+                   md['parents'].append(mixparent_dict)
+	        	         	     
            if len(md) > 0:
              project_utilities.test_kca()
 
@@ -310,18 +322,18 @@ def main():
          	 if md.has_key('parents'):
          	     del md['parents']
          	     samweb.declareFile(md=md)
+
            else:
              print 'No sam metadata found for %s.' % fn
 	     
            if copy_to_dropbox == 1:
 	     print "Copying to Dropbox"
-	     dropbox_dir = "/pnfs/uboone/scratch/users/joelam/test/"
+	     dropbox_dir = project_utilities.get_dropbox(fn)
 	     rootPath = dropbox_dir + fn
 	     jsonPath = rootPath + ".json"
 	     ifdh_cp(path, rootPath)
 	     ifdh_cp(json_file, jsonPath)
 	     
-      
       return status
     
     #something went wrong, so make a list of bad directories and potentially missing files

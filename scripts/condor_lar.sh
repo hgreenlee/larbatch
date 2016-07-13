@@ -237,7 +237,10 @@ GRID=0
 IFDH_OPT=""
 DECLARE_IN_JOB=0
 VALIDATE_IN_JOB=0
+<<<<<<< HEAD
 COPY_TO_FTS=0
+=======
+>>>>>>> First import of on-grid validation scripts
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -547,17 +550,33 @@ while [ $# -gt 0 ]; do
     
     # Declare good output root files to SAM.
     --declare )
+<<<<<<< HEAD
       DECLARE_IN_JOB=1
+=======
+      if [ $# -gt 1 ]; then
+        DECLARE_IN_JOB=1
+        shift
+      fi
+>>>>>>> First import of on-grid validation scripts
       ;;
       
     # Run validation steps in project.py on root outputs directly in the job.
     --validate )
+<<<<<<< HEAD
       VALIDATE_IN_JOB=1
       ;;
    # Copy Output to FTS.
     --copy )
       COPY_TO_FTS=1
       ;;
+=======
+      if [ $# -gt 1 ]; then
+        VALIDATE_IN_JOB=1
+        shift
+      fi
+      ;;
+   
+>>>>>>> First import of on-grid validation scripts
 
     # Mix input sam dataset.
     --mix_defname )
@@ -609,7 +628,11 @@ done
 #echo "INITSCRIPT=$INITSCRIPT"
 #echo "INITSOURCE=$INITSOURCE"
 #echo "ENDSCRIPT=$ENDSCRIPT"
+<<<<<<< HEAD
 #echo "VALIDATE_IN_JOB=$VALIDATE_IN_JOB"
+=======
+echo "VALIDATE_IN_JOB=$VALIDATE_IN_JOB"
+>>>>>>> First import of on-grid validation scripts
 
 # Done with arguments.
 
@@ -1616,7 +1639,12 @@ fi
 
 if [ $VALIDATE_IN_JOB -eq 1 ]; then
 # do validation function in the job
+<<<<<<< HEAD
     validate_in_job.py --dir $PWD --logfiledir $PWD --outdir $OUTDIR/$OUTPUT_SUBDIR --declare $DECLARE_IN_JOB --copy $COPY_TO_FTS
+=======
+    echo "Run validate_in_job.py" 
+    validate_in_job.py --dir $PWD --logfiledir $PWD --outdir $OUTDIR/$OUTPUT_SUBDIR
+>>>>>>> First import of on-grid validation scripts
     valstat=$?
 fi
 
@@ -1723,7 +1751,7 @@ do
     echo "ifdh cp failed with status ${stat}."
     statout=$stat 
   fi
-done
+done   
 
 if [ $statout -eq 0 ]; then
   statout=`cat lar.stat`
