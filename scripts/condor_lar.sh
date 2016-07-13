@@ -235,6 +235,8 @@ MIX_DEFNAME=""
 MIX_PROJECT=""
 GRID=0
 IFDH_OPT=""
+DECLARE_IN_JOB=0
+VALIDATE_IN_JOB=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -541,6 +543,23 @@ while [ $# -gt 0 ]; do
         shift
       fi
       ;;
+    
+    # Declare good output root files to SAM.
+    --declare )
+      if [ $# -gt 1 ]; then
+        DECLARE_IN_JOB=1
+        shift
+      fi
+      ;;
+      
+    # Run validation steps in project.py on root outputs directly in the job.
+    --validate )
+      if [ $# -gt 1 ]; then
+        VALIDATE_IN_JOB=1
+        shift
+      fi
+      ;;
+   
 
     # Mix input sam dataset.
     --mix_defname )
@@ -592,6 +611,7 @@ done
 #echo "INITSCRIPT=$INITSCRIPT"
 #echo "INITSOURCE=$INITSOURCE"
 #echo "ENDSCRIPT=$ENDSCRIPT"
+echo "VALIDATE_IN_JOB=$VALIDATE_IN_JOB"
 
 # Done with arguments.
 
@@ -1489,6 +1509,15 @@ if [ $GRID -eq 0 -a $OUTUSER != $CURUSER ]; then
   chmod -R g+rw .
 fi
 
+
+
+if [ $VALIDATE_IN_JOB -eq 1 ]; then
+# do validation function in the job
+    echo "Run validate_in_job.py" 
+    validate_in_job.py --dir $PWD --logfiledir $PWD --outdir $OUTDIR/$OUTPUT_SUBDIR
+    valstat=$?
+fi
+
 # Stash all of the files we want to save in a local
 # directories with a unique name.  Then copy these directories
 # and their contents recursively.
@@ -1584,6 +1613,24 @@ do
   if [ $stat -ne 0 ]; then
     echo "ifdh cp failed with status ${stat}."
     statout=$stat
+  else
+     echo "Beginning worker node validation"
+       # declare files if declare option was selected. Only declare if the validation option was also selected
+	if [ $DECLARE_IN_JOB -eq 1 ] && [ $VALIDATE_IN_JOB -eq 1 ]; then
+	    if [ $valstat -ne 0 ] ; then
+		echo "The in-job validation did not exit cleanly or did not run at all, so we will not declare anything to SAM within this job."
+	    else
+		for declareroot in `ls $subrun/*.root` 
+		do
+		    #recall that validate.list comes from validate_in_job.py
+		    if [ "x`grep $(basename $declareroot) validate.list`" == "x" ]; then
+			echo "file not found in good post-validation list"
+		    else
+			samweb declare-file `basename $declareroot` log${subrun}/`basename $declareroot`.json
+		    fi
+		done
+	    fi
+	fi  
   fi
 done
 
