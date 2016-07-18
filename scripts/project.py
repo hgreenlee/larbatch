@@ -277,7 +277,7 @@
 #
 ######################################################################
 
-import sys, os, stat, string, subprocess, shutil, urllib, json, getpass, uuid
+import sys, os, stat, string, subprocess, shutil, urllib, json, getpass, uuid, tempfile
 import larbatch_posix
 import threading, Queue
 from xml.dom.minidom import parse
@@ -1807,6 +1807,10 @@ def dojobsub(project, stage, makeup):
 
     procmap = ''
 
+    # Temporary directory where we will copy the batch script(s) and dag.
+
+    tmpdir = tempfile.mkdtemp()
+
     #we're going to let jobsub_submit copy the workdir contents for us
     #each file that would go into the workdir is going to be added with
     # '-f <input_file>' with the full path, it can be either BlueArc or /pnfs/uboone
@@ -1909,7 +1913,7 @@ def dojobsub(project, stage, makeup):
     workname = '%s-%s-%s' % (stage.name, project.name, project.release_tag)
     workname = workname + os.path.splitext(project.script)[1]
     #workscript = os.path.join(stage.workdir, workname)
-    workscript = os.path.join('/tmp', workname)
+    workscript = os.path.join(tmpdir, workname)
     if project.script != workscript:
         larbatch_posix.copy(project.script, workscript)
 
@@ -1920,7 +1924,7 @@ def dojobsub(project, stage, makeup):
     if project.start_script != '':
         workstartname = 'start-%s' % workname
         #workstartscript = os.path.join(stage.workdir, workstartname)
-        workstartscript = os.path.join('/tmp', workstartname)
+        workstartscript = os.path.join(tmpdir, workstartname)
         if project.start_script != workstartscript:
             larbatch_posix.copy(project.start_script, workstartscript)
 
@@ -1931,7 +1935,7 @@ def dojobsub(project, stage, makeup):
     if project.stop_script != '':
         workstopname = 'stop-%s' % workname
         #workstopscript = os.path.join(stage.workdir, workstopname)
-        workstopscript = os.path.join('/tmp', workstopname)
+        workstopscript = os.path.join(tmpdir, workstopname)
         if project.stop_script != workstopscript:
             larbatch_posix.copy(project.stop_script, workstopscript)
 
@@ -2330,7 +2334,7 @@ def dojobsub(project, stage, makeup):
         # Create dagNabbit.py configuration script in the work directory.
 
         #dagfilepath = os.path.join(stage.workdir, 'submit.dag')
-        dagfilepath = os.path.join('/tmp', 'submit.dag')
+        dagfilepath = os.path.join(tmpdir, 'submit.dag')
         dag = safeopen(dagfilepath)
 
         # Write start section.
