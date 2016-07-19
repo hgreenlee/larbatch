@@ -2373,6 +2373,8 @@ def dojobsub(project, stage, makeup):
                             word = 'jobsub'
                         if word[:7] == '--role=':
                             word = ''
+                        if word.startswith('--jobsub-server='):
+                            word = ''
                         word = project_utilities.dollar_escape(word)
                         dag.write(word)
                         if word[:6] == 'jobsub':
