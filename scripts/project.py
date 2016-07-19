@@ -1263,7 +1263,7 @@ def docheck(project, stage, ana):
 
 # Check project results in the specified directory.
 
-def dofetchlog(stage):
+def dofetchlog(project, stage):
 
     # This funciton fetches jobsub log files using command
     # jobsub_fetchlog.  Fetched log files are stored in a subdirectory
@@ -1358,6 +1358,8 @@ def dofetchlog(stage):
 
             print 'Fetching log files for id %s' % logid
             command = ['jobsub_fetchlog']
+            if project.server != '-' and project.server != '':
+                command.append('--jobsub-server=%s' % project.server)
             command.append('--jobid=%s' % logid)
             command.append('--dest-dir=%s' % logdir)
             jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -3050,7 +3052,7 @@ def main(argv):
 
         # Fetch logfiles.
 
-        rc = dofetchlog(stage)
+        rc = dofetchlog(project, stage)
 		   
     if mergehist or mergentuple or merge:
         
