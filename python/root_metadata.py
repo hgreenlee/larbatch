@@ -5,6 +5,7 @@
 import sys, os, string, subprocess, json, stream
 import larbatch_posix
 import larbatch_utilities
+import project_utilities
 
 # Import ROOT (hide command line arguments).
 

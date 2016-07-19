@@ -519,7 +519,7 @@ class ProjectApp(tk.Frame):
         try:
             top['cursor'] = 'watch'
             top.update_idletasks()
-            project.dofetchlog(self.current_stage_def)
+            project.dofetchlog(self.current_project_def, self.current_stage_def)
             top['cursor'] = old_cursor
         except:
             top['cursor'] = old_cursor
@@ -682,6 +682,8 @@ class ProjectApp(tk.Frame):
         for cluster_id in cluster_ids:
             print 'Kill cluster id %s' % cluster_id
             command = ['jobsub_rm']
+            if self.current_project_def.server != '-' and self.current_project_def.server != '':
+                command.append('--jobsub-server=%s' % self.current_project_def.server)
             command.append('--jobid=%s' % cluster_id)
             command.append('--role=%s' % project_utilities.get_role())
             jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
