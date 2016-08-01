@@ -20,6 +20,10 @@ from project_modules.jobsuberror import JobsubError
 
 jobs = None
 
+# Cache jobsub server.
+
+server = None
+
 # Batch status class.
 
 class BatchStatus:
@@ -47,9 +51,11 @@ class BatchStatus:
 
     def update(self, projects):
 
-        global jobs
+        global jobs, server
 
         for project in projects:
+            if project.server != '-' and project.server != '':
+                server = project.server
             for stage in project.stages:
                 self.stage_stats[stage.name] = [0, 0, 0, 0]
 
@@ -87,9 +93,11 @@ class BatchStatus:
     @staticmethod
     def update_jobs():
 
-        global jobs
+        global jobs, server
 
         command = ['jobsub_q']
+        if server != None:
+            command.append('--jobsub-server=%s' % server)
         command.append('--group=%s' % project_utilities.get_experiment())
         command.append('--user=%s' % project_utilities.get_user())
         command.append('--role=%s' % project_utilities.get_role())
