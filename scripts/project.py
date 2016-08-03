@@ -2444,6 +2444,8 @@ def dojobsub(project, stage, makeup):
         print 'jobsub_submit finished.'
         if larbatch_posix.exists(checked_file):
             larbatch_posix.remove(checked_file)
+        if larbatch_posix.isdir(tmpdir):
+            larbatch_posix.rmtree(tmpdir)
 
     else:
 
