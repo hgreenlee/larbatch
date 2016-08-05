@@ -372,11 +372,17 @@ class ProjectDef:
     # Find fcl file on fcl search path.
 
     def get_fcl(self, fclname):
-        fcl = ''
-        for fcldir in self.fclpath:
-            fcl = os.path.join(fcldir, fclname)
-            if larbatch_posix.exists(fcl):
+        
+	fcl_list = []
+        for name in fclname:
+	 fcl = ''
+	 for fcldir in self.fclpath:
+            fcl = os.path.join(fcldir, name)
+            #print fcl
+	    if larbatch_posix.exists(fcl):
                 break
-        if fcl == '' or not larbatch_posix.exists(fcl):
-            raise IOError, 'Could not find fcl file %s.' % fclname
-        return fcl
+         
+	 if fcl == '' or not larbatch_posix.exists(fcl):
+             raise IOError, 'Could not find fcl file %s.' % name
+	 fcl_list.append(fcl)      
+        return fcl_list
