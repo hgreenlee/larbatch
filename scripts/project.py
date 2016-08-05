@@ -1312,19 +1312,21 @@ def doquickcheck(project, stage, ana):
        return 1   
     
     
-    for line in missingfiles:
-       if line == '0':
-          validateOK = 1       
-       else:
-          validateOK = 0           
+    line = missingfiles[0]
+    line = line.strip('\n')
+    print line
+    if( int(line) == 0 ):
+       validateOK = 1       
+    else:
+       validateOK = 0           
     
     #If the validation failed, compile a missing_files list and terminate
-    if validateOK != 0:
+    if validateOK != 1:
        urislistname = os.path.join(out_subpath, 'transferred_uris.list')
-       urifile = safeopen(urilistname)
+       urifile = safeopen(urislistname)
        uris = []
        #update uris
-       lines = project_utilities.saferead(urilistname)
+       lines = project_utilities.saferead(urislistname)
        for line in lines:
            uri = line.strip()
            if uri != '':
@@ -1997,33 +1999,38 @@ def dojobsub(project, stage, makeup):
 
     # Now locate the fcl file on the fcl search path.
 
-    fcl = project.get_fcl(stage.fclname)
+    fcls = project.get_fcl(stage.fclname)
 
     # Copy the fcl file to the work directory.
 
-    workfcl = os.path.join(stage.workdir, os.path.basename(stage.fclname))
-    if os.path.abspath(fcl) != os.path.abspath(workfcl):
+    for fcl in fcls:
+      workfcl = os.path.join(stage.workdir, os.path.basename(fcl))
+      if os.path.abspath(fcl) != os.path.abspath(workfcl):
         larbatch_posix.copy(fcl, workfcl)
-    jobsub_workdir_files_args.extend(['-f', workfcl])
+      jobsub_workdir_files_args.extend(['-f', workfcl])
 
 
     # Construct a wrapper fcl file (called "wrapper.fcl") that will include
-    # the original fcl, plus any overrides that are dynamically generated
+    # the original fcls, plus any overrides that are dynamically generated
     # in this script.
 
     #print 'Making wrapper.fcl'
     wrapper_fcl_name = os.path.join(stage.workdir, 'wrapper.fcl')
     jobsub_workdir_files_args.extend(['-f', wrapper_fcl_name])
     wrapper_fcl = safeopen(wrapper_fcl_name)
-    wrapper_fcl.write('#include "%s"\n' % os.path.basename(stage.fclname))
-    wrapper_fcl.write('\n')
+    stageNum = 0
+    
+    for fcl in fcls:
+      wrapper_fcl.write('#---STAGE %d\n' % stageNum)
+      wrapper_fcl.write('#include "%s"\n' % os.path.basename(fcl))
+      wrapper_fcl.write('\n')
 
-    # Generate overrides for sam metadata fcl parameters.
-    # Only do this if our xml file appears to contain sam metadata.
+      # Generate overrides for sam metadata fcl parameters.
+      # Only do this if our xml file appears to contain sam metadata.
 
-    xml_has_metadata = project.file_type != '' or \
+      xml_has_metadata = project.file_type != '' or \
                        project.run_type != ''
-    if xml_has_metadata:
+      if xml_has_metadata:
 
         # Add overrides for FileCatalogMetadata.
 
@@ -2046,19 +2053,21 @@ def dojobsub(project, stage, makeup):
         if sam_metadata:
             wrapper_fcl.write(sam_metadata)
 
-    # In case of generator jobs, add override for pubs run number
-    # (subrun number is overridden inside condor_lar.sh).
+      # In case of generator jobs, add override for pubs run number
+      # (subrun number is overridden inside condor_lar.sh).
 
-    if not stage.pubs_input and stage.pubs_output:
+      if not stage.pubs_input and stage.pubs_output:
         wrapper_fcl.write('source.firstRun: %d\n' % stage.output_run)
 
-    # Add overrides for genie flux parameters.
-    # This section will normally be generated for any kind of generator job,
-    # and should be harmless for non-genie generators.
-
-    if stage.maxfluxfilemb != 0:
-        wrapper_fcl.write('physics.producers.generator.FluxCopyMethod: "IFDH"\n')
-        wrapper_fcl.write('physics.producers.generator.MaxFluxFileMB: %d\n' % stage.maxfluxfilemb)
+      # Add overrides for genie flux parameters.
+      # This section will normally be generated for any kind of generator job,
+      # and should be harmless for non-genie generators.
+    
+      if stage.maxfluxfilemb != 0 and stageNum == 0:
+         wrapper_fcl.write('physics.producers.generator.FluxCopyMethod: "IFDH"\n')
+         wrapper_fcl.write('physics.producers.generator.MaxFluxFileMB: %d\n' % stage.maxfluxfilemb)
+      wrapper_fcl.write('#---END_STAGE\n')
+      stageNum = 1 + stageNum	 
 
     wrapper_fcl.close()
     #print 'Done making wrapper.fcl'
