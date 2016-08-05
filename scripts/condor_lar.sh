@@ -578,7 +578,7 @@ done
 #echo "INITSCRIPT=$INITSCRIPT"
 #echo "INITSOURCE=$INITSOURCE"
 #echo "ENDSCRIPT=$ENDSCRIPT"
-echo "VALIDATE_IN_JOB=$VALIDATE_IN_JOB"
+#echo "VALIDATE_IN_JOB=$VALIDATE_IN_JOB"
 
 # Done with arguments.
 
@@ -612,6 +612,10 @@ if [ $GRID -eq 0 -a ! -d $WORKDIR ]; then
   exit 1
 fi
 echo "Work directory: $WORKDIR"
+
+
+
+echo "Condor dir input: $CONDOR_DIR_INPUT"
 
 # Initialize experiment ups products and mrb.
 
@@ -1121,58 +1125,99 @@ if [ $USE_SAM -eq 0 ]; then
   echo "Local input list has $NFILE_LOCAL files."
 fi
 
-# In case no input files were specified, and we are not getting input
-# from sam (i.e. mc generation), recalculate the first event number,
-# the subrun number, and the number of events to generate in this worker.
-# This also applies to the textfile inputmode.
+#Break the master wrapper fcl into each stage
+nfcls=0
 
-if [ $USE_SAM -eq 0 -a $NFILE_TOTAL -eq 0 -o "$INMODE" = 'textfile' ]; then
+while read -r line
+do
 
-  # Don't allow --nskip.
+ if [ "$(echo $line | awk '{print $1}')" = "#---STAGE" ]; then
+    stage="$(echo $line | awk '{print $2}')"
+    stage_fcl="Stage$stage.fcl"
+    nfcls=$(( $nfcls + 1 )) 
+    continue
+  fi
+
+  if [ "$line" = "#---END_STAGE" ]; then
+     #cat EOF >> $fcl
+    continue
+  fi
+  echo $line >> $stage_fcl
+done < $FCL
+
+#We now have nStage fcl files, each which need to be run serially 
+
+stage=0
+
+echo "Start loop over stages"
+while [ $stage -lt $nfcls ]; do
+ FCL="Stage$stage.fcl"
+ 
+ echo "Stage: $stage"
+ 
+ # In case no input files were specified, and we are not getting input
+ # from sam (i.e. mc generation), recalculate the first event number,
+ # the subrun number, and the number of events to generate in this worker.
+ # This also applies to the textfile inputmode.
+ # Note this only applies to the first stage by definition
+
+ #if [ [ $USE_SAM -eq 0 -a $NFILE_TOTAL -eq 0 -a $stage -eq 0 ];  -o [ "$INMODE" = 'textfile' ]; ]; then
+ if [ $USE_SAM -eq 0 -a $NFILE_TOTAL -eq 0 -a $stage -eq 0 ]; then
+ #if [ 1 -eq 0 ]; then
+
+   # Don't allow --nskip.
 
   if [ $NSKIP -gt 0 ]; then
     echo "Illegal option --nskip specified with no input."
     exit 1
   fi
 
-  # Do calculation.
+   # Do calculation.
 
   NSKIP=$(( $PROCESS * $NEVT / $NJOBS ))
   NEV=$(( ( $PROCESS + 1 ) * $NEVT / $NJOBS - $NSKIP ))
   FIRST_EVENT=$(( $NSKIP + 1 ))
+  FIRST_EVENT=0
   NSKIP=0
   NEVT=$NEV
 
-  # Set subrun=$PROCESS+1 in a wrapper fcl file.
+   # Set subrun=$PROCESS+1 in a wrapper fcl file.
 
   SUBRUN=$(( $PROCESS + 1))
-  cat <<EOF > subrun_wrapper.fcl
-#include "$FCL"
+cat <<EOF > subrun_wrapper.fcl
+#include "$FCL"  
 
 source.firstSubRun: $SUBRUN
 
 EOF
   if [ "$INMODE" = 'textfile' ]; then
+    
     if [ $NFILE_LOCAL -ne 1 ]; then
       echo "Text file input mode specified with wrong number of input files."
       exit 1
     fi
     echo "physics.producers.generator.InputFileName: \"`cat condor_lar_input.list`\"" >> subrun_wrapper.fcl
   fi
+  
   FCL=subrun_wrapper.fcl
   
   echo "First MC event: $FIRST_EVENT"
   echo "MC subrun: $SUBRUN"
   echo "Number of MC events: $NEVT"
-fi
+ 
+ fi
+ 
+ echo "Passed file input"
+ 
+ # For sam input, start project (if necessary), and consumer process.
 
-# For sam input, start project (if necessary), and consumer process.
+ PURL=''
+ CPID=''
+ #if  [ 1 -eq 0 ]; then
+ if [ $USE_SAM -ne 0 -a $stage -eq 0 ]; then
+   echo "In SAM if" 
 
-PURL=''
-CPID=''
-if [ $USE_SAM -ne 0 ]; then
-
-  # Make sure a project name has been specified.
+   # Make sure a project name has been specified.
 
   if [ x$SAM_PROJECT = x ]; then
     echo "No sam project was specified."
@@ -1180,10 +1225,10 @@ if [ $USE_SAM -ne 0 ]; then
   fi
   echo "Sam project: $SAM_PROJECT"
 
-  # Start project (if requested).
+   # Start project (if requested).
 
-  if [ $SAM_START -ne 0 ]; then
-    if [ x$SAM_DEFNAME != x ]; then
+   if [ $SAM_START -ne 0 ]; then
+     if [ x$SAM_DEFNAME != x ]; then
 
       echo "Starting project $SAM_PROJECT using sam dataset definition $SAM_DEFNAME"
       ifdh startProject $SAM_PROJECT $SAM_STATION $SAM_DEFNAME $SAM_USER $SAM_GROUP
@@ -1193,10 +1238,11 @@ if [ $USE_SAM -ne 0 ]; then
         echo "Start projet failed."
         exit 1
       fi
-    else
+      
+     else
       echo "Start project requested, but no definition was specified."
       exit 1
-    fi
+     fi
   fi
 
   # Get the project url of a running project (maybe the one we just started,
@@ -1241,13 +1287,13 @@ if [ $USE_SAM -ne 0 ]; then
     echo "Consumer process id $CPID"
   fi
 
-  # Stash away the project name and consumer process id in case we need them
-  # later for bookkeeping.
+   # Stash away the project name and consumer process id in case we need them
+   # later for bookkeeping.
 
   echo $SAM_PROJECT > sam_project.txt
   echo $CPID > cpid.txt
 
-  # Generate an fcl wrapper for all sam-related fcl parameters.
+   # Generate an fcl wrapper for all sam-related fcl parameters.
 
   cat <<EOF > sam_wrapper.fcl
 #include "$FCL"
@@ -1273,68 +1319,102 @@ source.fileNames: [ "$CPID" ]
 
 EOF
   FCL=sam_wrapper.fcl
-fi
+ 
+ fi
+ 
+ # Construct options for lar command line.
 
-# Construct options for lar command line.
-
-LAROPT="-c $FCL --rethrow-default"
-if [ -f condor_lar_input.list ]; then
+ LAROPT="-c $FCL --rethrow-default"
+ echo "Laropt: $LAROPT"
+ if [ -f condor_lar_input.list ]; then
   if [ "$INMODE" != 'textfile' ]; then
     LAROPT="$LAROPT -S condor_lar_input.list"
   fi
-fi
-if [ x$OUTFILE != x ]; then
-  LAROPT="$LAROPT -o $OUTFILE"
-fi
-if [ x$TFILE != x ]; then
+ fi
+ 
+ if [ x$OUTFILE != x ]; then
+  LAROPT="$LAROPT -o `basename $OUTFILE .root`$stage.root"
+  outstem=`basename $OUTFILE .root` 
+ fi
+
+ if [ x$TFILE != x ]; then
   LAROPT="$LAROPT -T $TFILE"
-fi
-if [ $NEVT -ne 0 ]; then
+ fi
+
+ if [ $NEVT -ne 0 ]; then
   LAROPT="$LAROPT -n $NEVT"  
-fi
-if [ $NSKIP -ne 0 ]; then
+ fi
+
+ if [ $NSKIP -ne 0 ]; then
   LAROPT="$LAROPT --nskip $NSKIP"
-fi
-if [ $FIRST_EVENT -ne 0 ]; then
+ fi
+
+ if [ $FIRST_EVENT -ne 0 ]; then
   LAROPT="$LAROPT -e $FIRST_EVENT"
-fi
-if [ -n "$ARGS" ]; then
+ fi
+
+ if [ -n "$ARGS" ]; then
   LAROPT="$LAROPT $ARGS"  
-fi
+ fi
+ 
+ if [ $stage -ne 0 ]; then
+  LAROPT="$LAROPT -s $next_stage_input"
+ fi 
 
 # Run/source optional initialization scripts.
 
-if [ x$INITSCRIPT != x ]; then
+ if [ x$INITSCRIPT != x ]; then
   echo "Running initialization script ${INITSCRIPT}."
   if ! ./${INITSCRIPT}; then
     exit $?
   fi
-fi
-if [ x$INITSOURCE != x ]; then
+ fi
+
+ if [ x$INITSOURCE != x ]; then
   echo "Sourcing initialization source script ${INITSOURCE}."
   . $INITSOURCE
   status=$?
   if [ $status -ne 0 ]; then
     exit $status
   fi
-fi
+ fi
 
-# Save a copy of the environment, which can be helpful for debugging.
+ # Save a copy of the environment, which can be helpful for debugging.
 
-env > env.txt
+ env > env.txt
 
-# Save a canonicalized version of the fcl configuration.
+ # Save a canonicalized version of the fcl configuration.
 
-ART_DEBUG_CONFIG=cfg.fcl lar -c $FCL
+ ART_DEBUG_CONFIG=cfgStage$stage.fcl lar -c $FCL
 
-# Run lar.
+ # Run lar.
+ pwd
+ echo "lar $LAROPT"
+ echo "lar $LAROPT" > commandStage$stage.txt
+ lar $LAROPT > larStage$stage.out 2> larStage$stage.err
+ #lar $LAROPT
+ stat=$?
+ echo $stat > larStage$stage.stat
+ echo "lar completed with exit status ${stat}."
+ #If lar returns a status other than 0, do not move on to other stages
+ if [ $stat -ne 0 ]; then
+   break
+ fi
+ 
+ echo "Outfile is $OUTFILE"
+   
 
-echo "lar $LAROPT"
-echo "lar $LAROPT" > command.txt
-lar $LAROPT > lar.out 2> lar.err
-stat=$?
-echo $stat > lar.stat
-echo "lar completed with exit status ${stat}."
+ next_stage_input="`basename $OUTFILE .root`$stage.root"
+ stage=$[$stage +1]
+ FIRST_EVENT=0 #I don't think this does anything
+ 
+ #rename the mem and time profile DBs by stage
+ mv time.db time$stage.db
+ mv mem.db mem$stage.db
+
+done
+
+
 
 # Setup up current version of ifdhc (may be different than version setup by larsoft).
 
@@ -1398,7 +1478,9 @@ fi
 
 for root in *.root; do
   if [ -f ${root}.json -o $ran != 0 ]; then
-    base=`basename $root .root`_`uuidgen`
+    echo "Move file 1 $root"
+    base=`basename $root .root`_`date +%y%m%dT%H%M%S`_`uuidgen`
+    echo "Move file 2 $base"
     mv $root ${base}.root
     mv ${root}.json ${base}.root.json
   fi
@@ -1433,19 +1515,55 @@ for root in *.root; do
     echo "Log directory for subrun $subrun is ${logdirs[$subrun]}"
     mkdir log$subrun
   fi
+  
+  
+  
 done
 
-# Workaround TimeTracker crash bug for input files with zero events.
-
-if [ x`cat lar.stat` = x65 ]; then
-  for json in *.json;
-  do
-    if grep -q '"events": *"0"' $json; then
-      rm -f lar.stat
-      echo 0 > lar.stat
-    fi
-  done
-fi
+#create a master lar.stat file which contains the overall exit code of all stages
+stageStat=0
+overallStat=0
+while [ $stageStat -lt $nfcls ]; do
+  stat=`cat larStage$stageStat.stat`
+  if [ $stat -eq 65 ]; then
+   # Workaround TimeTracker crash bug for input files with zero events. 
+    for json in *.json; do
+        #make sure we grabed the correct stage / json 
+      if [ `echo $json | awk -F '_' '{print $1}'` != "$outstem$stageStat" ]; then
+        continue
+      fi     
+        if grep -q '"events": *"0"' $json; then
+         stat=0
+        fi
+      done
+     fi    
+  overallStat=$[$stat+$overallStat]
+  
+  #do some cleanup of intermediate files
+  rm Stage$stageStat.fcl
+  #remove all but the final stage root and json files
+ if [ $stageStat -lt $[$nfcls -1] ]; then
+     #echo $stageStat
+     rm $outstem$stageStat*.root
+     rm $outstem$stageStat*.root.json
+ 
+ #if we are at the final stage, rename the files accoring to the input filename
+ #this ammouts to removing the stage identifier
+ else
+   for root in *.root; do
+    echo $root
+    echo $root | sed -r "s/$stageStat//" 
+     mv $root `echo $root | sed -r "s/$stageStat//"`
+   done
+   
+   #and the metadata too!
+   for json in *.json; do
+     mv $json `echo $json | sed -r "s/$stageStat//"`
+   done
+ fi       
+ stageStat=$[$stageStat +1] 
+done
+echo $overallStat > lar.stat
 
 # Make local output directories for files that don't have a subrun.
 
@@ -1495,35 +1613,42 @@ done
 
 # Clean remote output and log directories.
 
-export IFDH_FORCE=$FORCE
+if [  1 -eq 0 ]; then
+  export IFDH_FORCE=$FORCE #this isn't set when running interactive, causing problems...
+fi
+
 for dir in ${LOGDIR} ${OUTDIR}
 do
-  echo "Make sure directory ${dir}/$OUTPUT_SUBDIR exists."
+  #echo $dir
+  echo "Make sure directory0 ${dir}/$OUTPUT_SUBDIR exists."
+  
+  #mkdir ${dir}/$OUTPUT_SUBDIR 
   mkdir.py -v ${dir}/$OUTPUT_SUBDIR
-  echo "Make sure directory ${dir}/$OUTPUT_SUBDIR is empty."
+  echo "Make sure directory0 ${dir}/$OUTPUT_SUBDIR is empty."
   emptydir.py -v ${dir}/$OUTPUT_SUBDIR
   mkdir.py -v ${dir}/$OUTPUT_SUBDIR
-  echo "Directory ${dir}/$OUTPUT_SUBDIR clean ok."
+  echo "Directory0 ${dir}/$OUTPUT_SUBDIR clean ok."
 done
+
 if [ $SINGLE != 0 ]; then
   for dir in ${logdirs[*]} ${outdirs[*]}
   do
-    echo "Make sure directory $dir exists."
+    echo "Make sure directory1 $dir exists."
     mkdir.py -v $dir
-    echo "Make sure directory $dir is empty."
+    echo "Make sure directory1 $dir is empty."
     emptydir.py -v $dir
     mkdir.py -v $dir/$OUTPUT_SUBDIR
-    echo "Directory $dir/$OUTPUT_SUBDIR clean ok."
+    echo "Directory1 $dir/$OUTPUT_SUBDIR clean ok."
   done
 else
   for dir in ${logdirs[*]} ${outdirs[*]}
   do
-    echo "Make sure directory ${dir}/$OUTPUT_SUBDIR exists."
+    echo "Make sure directory2 ${dir}/$OUTPUT_SUBDIR exists."
     mkdir.py -v ${dir}/$OUTPUT_SUBDIR
-    echo "Make sure directory ${dir}/$OUTPUT_SUBDIR is empty."
+    echo "Make sure directory2 ${dir}/$OUTPUT_SUBDIR is empty."
     emptydir.py -v ${dir}/$OUTPUT_SUBDIR
     mkdir.py -v ${dir}/$OUTPUT_SUBDIR
-    echo "Directory ${dir}/$OUTPUT_SUBDIR clean ok."
+    echo "Directory2 ${dir}/$OUTPUT_SUBDIR clean ok."
   done
 fi
 
@@ -1563,7 +1688,6 @@ do
     echo "ifdh cp failed with status ${stat}."
     statout=$stat
   else
-     echo "Beginning worker node validation"
        # declare files if declare option was selected. Only declare if the validation option was also selected
 	if [ $DECLARE_IN_JOB -eq 1 ] && [ $VALIDATE_IN_JOB -eq 1 ]; then
 	    if [ $valstat -ne 0 ] ; then
