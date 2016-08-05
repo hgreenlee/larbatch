@@ -30,8 +30,9 @@ class StageDef:
         # Assign default values.
         
         self.name = ''         # Stage name.
-        self.fclname = ''      # Fcl name (just name, not path).
-        self.outdir = ''       # Output directory.
+        #self.fclname = ''      # Fcl name (just name, not path).
+        self.fclname = []
+	self.outdir = ''       # Output directory.
         self.logdir = ''       # Log directory.
         self.workdir = ''      # Work directory.
         self.dynamic = 0       # Dynamic output/log directory.
@@ -84,13 +85,15 @@ class StageDef:
         if self.name == '':
             raise XMLError, "Stage name not specified."
 
-        # Fcl file name (subelement).
+        # Fcl file name (repeatable subelement).
 
         fclname_elements = stage_element.getElementsByTagName('fcl')
-        if fclname_elements:
-            self.fclname = fclname_elements[0].firstChild.data
-        if self.fclname == '':
-            raise XMLError, 'Fcl name not specified for stage %s.' % self.name
+        
+	for fcl in fclname_elements:
+            print fcl.firstChild.data
+	    self.fclname.append(fcl.firstChild.data)
+        if len(self.fclname) == 0:
+            raise XMLError, 'No Fcl names specified for stage %s.' % self.name
 
         # Output directory (subelement).
 
@@ -428,8 +431,10 @@ class StageDef:
 
     def __str__(self):
         result = 'Stage name = %s\n' % self.name
-        result += 'Fcl filename = %s\n' % self.fclname
-        result += 'Output directory = %s\n' % self.outdir
+        #result += 'Fcl filename = %s\n' % self.fclname
+        for fcl in self.fclname:
+	  result += 'Fcl filename = %s\n' % fcl 
+	result += 'Output directory = %s\n' % self.outdir
         result += 'Log directory = %s\n' % self.logdir
         result += 'Work directory = %s\n' % self.workdir
         result += 'Dynamic directories = %d\n' % self.dynamic
