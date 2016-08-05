@@ -865,17 +865,15 @@ def docheck(project, stage, ana):
       print '%s exists, but is empty' % missingfilesname
       validateOK = 0      
     
-    
     line = missingfiles[0]
     line = line.strip('\n')
     #print line
     if( int(line) == 0 ):
        validateOK = 1       
     else:
-       validateOK = 0
-                  
+       validateOK = 0                              
     
-    #If the validation failed, compile a missing_files list and continue
+    #If the validation failed, compile a missing_files list and terminate
     if validateOK != 1:
        nErrors += 1
        urislistname = os.path.join(out_subpath, 'transferred_uris.list')
