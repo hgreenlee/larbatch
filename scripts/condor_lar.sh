@@ -237,10 +237,8 @@ GRID=0
 IFDH_OPT=""
 DECLARE_IN_JOB=0
 VALIDATE_IN_JOB=0
-<<<<<<< HEAD
 COPY_TO_FTS=0
-=======
->>>>>>> First import of on-grid validation scripts
+
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -550,33 +548,22 @@ while [ $# -gt 0 ]; do
     
     # Declare good output root files to SAM.
     --declare )
-<<<<<<< HEAD
       DECLARE_IN_JOB=1
-=======
       if [ $# -gt 1 ]; then
         DECLARE_IN_JOB=1
         shift
       fi
->>>>>>> First import of on-grid validation scripts
       ;;
       
     # Run validation steps in project.py on root outputs directly in the job.
     --validate )
-<<<<<<< HEAD
       VALIDATE_IN_JOB=1
       ;;
+   
    # Copy Output to FTS.
     --copy )
       COPY_TO_FTS=1
       ;;
-=======
-      if [ $# -gt 1 ]; then
-        VALIDATE_IN_JOB=1
-        shift
-      fi
-      ;;
-   
->>>>>>> First import of on-grid validation scripts
 
     # Mix input sam dataset.
     --mix_defname )
@@ -628,11 +615,9 @@ done
 #echo "INITSCRIPT=$INITSCRIPT"
 #echo "INITSOURCE=$INITSOURCE"
 #echo "ENDSCRIPT=$ENDSCRIPT"
-<<<<<<< HEAD
 #echo "VALIDATE_IN_JOB=$VALIDATE_IN_JOB"
-=======
-echo "VALIDATE_IN_JOB=$VALIDATE_IN_JOB"
->>>>>>> First import of on-grid validation scripts
+
+
 
 # Done with arguments.
 
@@ -1200,13 +1185,16 @@ do
   echo $line >> $stage_fcl
 done < $FCL
 
-#We now have nStage fcl files, each which need to be run serially 
 
+#We now have nStage fcl files, each which need to be run serially 
 stage=0
 
 echo "Start loop over stages"
 while [ $stage -lt $nfcls ]; do
  FCL="Stage$stage.fcl"
+ 
+
+ echo "Stage: $stage"
  
  # In case no input files were specified, and we are not getting input
  # from sam (i.e. mc generation), recalculate the first event number,
@@ -1214,9 +1202,8 @@ while [ $stage -lt $nfcls ]; do
  # This also applies to the textfile inputmode.
  # Note this only applies to the first stage by definition
 
- #if [ [ $USE_SAM -eq 0 -a $NFILE_TOTAL -eq 0 -a $stage -eq 0 ];  -o [ "$INMODE" = 'textfile' ]; ]; then
  if [ $stage -eq 0 -a $USE_SAM -eq 0 -a $NFILE_TOTAL -eq 0  ]; then #need to ask what is going on here
- #if [ 1 -eq 0 ]; then
+
 
    # Don't allow --nskip.
 
@@ -1259,7 +1246,6 @@ EOF
   echo "Number of MC events: $NEVT"
  
  fi
- 
  
  # For sam input, start project (if necessary), and consumer process.
 
@@ -1304,7 +1290,12 @@ EOF
       fi
     fi
 
-  fi
+    if [ x$SAM_DEFNAME = x -a x$MIX_DEFNAME = x ]; then
+
+      echo "Start project requested, but no definition was specified."
+      exit 1
+    fi
+
 
   # Get the project url of a running project (maybe the one we just started,
   # or maybe started externally).  This command has to succeed, or we can't
@@ -1386,11 +1377,6 @@ EOF
   FCL=sam_wrapper.fcl
  
  fi
- 
- #Figure out output file names.
- #If outfile is not defined and we are inputing a single file or file list, follow our 
- #convention that the output file should be %inputfilename_%systemtime_stage.root
-
  
  # Construct options for lar command line.
 
@@ -1482,6 +1468,13 @@ EOF
    
 
  next_stage_input=`ls -t1 *.root | head -n2 | grep -v 'hist*'`
+ #attemp to find if there was an overlaid (mixed) file. 
+ #do this for every stage, in this case we will catch all the aunt files in the case multiple overlays are run
+ mixed_file=`sam_metadata_dumper $next_stage_input | grep mixparent | awk -F ":" '{gsub("\"" ,""); gsub(",",""); gsub(" ",""); print $2}'`
+ if [ x$mixed_file != x ]; then
+    aunt_files=("${aunt_files[@]}" $mixed_file)
+ fi
+
  stage=$[$stage +1]
  FIRST_EVENT=0 #I don't think this does anything
  
@@ -1602,6 +1595,7 @@ stageStat=0
 overallStat=0
 while [ $stageStat -lt $nfcls ]; do
   stat=`cat larStage$stageStat.stat`
+<<<<<<< HEAD
   if [ "$stat" -eq "65" ]; then
    # Workaround TimeTracker crash bug for input files with zero events. 
     for json in *.json; do  
@@ -1633,12 +1627,7 @@ fi
 
 if [ $VALIDATE_IN_JOB -eq 1 ]; then
 # do validation function in the job
-<<<<<<< HEAD
     validate_in_job.py --dir $PWD --logfiledir $PWD --outdir $OUTDIR/$OUTPUT_SUBDIR --declare $DECLARE_IN_JOB --copy $COPY_TO_FTS
-=======
-    echo "Run validate_in_job.py" 
-    validate_in_job.py --dir $PWD --logfiledir $PWD --outdir $OUTDIR/$OUTPUT_SUBDIR
->>>>>>> First import of on-grid validation scripts
     valstat=$?
 fi
 
