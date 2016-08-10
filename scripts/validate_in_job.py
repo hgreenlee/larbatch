@@ -149,7 +149,6 @@ def main():
     checkdir=''
     logdir=''
     outdir=''
-
     declare_file = 0
     copy_to_dropbox = 0
     args = sys.argv[1:]
@@ -170,7 +169,6 @@ def main():
 	elif args[0] == '--copy' and len(args) > 1:
             copy_to_dropbox = int(args[1])
             del args[0:2]        
-            del args[0:2]    
         else:
             print 'Unknown option %s' % args[0]
             return 1
@@ -181,6 +179,8 @@ def main():
     
     print "Do decleration in job: %d" % declare_file    
     status = 0 #global status code to tell us everything is ok.
+    
+    print "Do decleration in job: %d" % declare_file 
     
     # Check lar exit status (if any).
     stat_filename = os.path.join(logdir, 'lar.stat')
@@ -291,8 +291,8 @@ def main():
          	 md = json.loads(mdtext)
          	 mdjson = md
              except:
-         	 pass         
-	 
+         	 pass
+         	 
 	 if declare_file == 1:
 	   md = {}
 	   if ana:
@@ -322,9 +322,9 @@ def main():
          	 if md.has_key('parents'):
          	     del md['parents']
          	     samweb.declareFile(md=md)
-
            else:
              print 'No sam metadata found for %s.' % fn
+	     status = 1
 	     
            if copy_to_dropbox == 1:
 	     print "Copying to Dropbox"

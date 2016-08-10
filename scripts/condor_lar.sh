@@ -1734,8 +1734,8 @@ do
   stat=$?
   if [ $stat -ne 0 ]; then
     echo "ifdh cp failed with status ${stat}."
-    statout=$stat 
   fi
+    statout=$stat 
 done   
 
 if [ $statout -eq 0 ]; then
