@@ -88,7 +88,6 @@ class StageDef:
         fclname_elements = stage_element.getElementsByTagName('fcl')
         
 	for fcl in fclname_elements:
-            print fcl.firstChild.data
 	    self.fclname.append(fcl.firstChild.data)
         if len(self.fclname) == 0:
             raise XMLError, 'No Fcl names specified for stage %s.' % self.name

@@ -303,10 +303,12 @@ def import_samweb():
 
     global samweb
     global extractor_dict
+    global expMetaData
+
 
     if samweb == None:
         samweb = project_utilities.samweb()
-        import extractor_dict
+        from extractor_dict import expMetaData
 
 # Clean function.
 
@@ -1600,7 +1602,8 @@ def docheck_declarations(logdir, outdir, declare, ana=False):
                 if ana:
                     md = mdjson
                 else:
-                    md = extractor_dict.getmetadata(larbatch_posix.root_stream(path), mdjson)
+                    expSpecificMetaData = expMetaData(os.environ['SAM_EXPERIMENT'],larbatch_posix.root_stream(path))
+                    md = expSpecificMetaData.getmetadata()
                 if len(md) > 0:
                     project_utilities.test_kca()
 
