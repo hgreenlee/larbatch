@@ -1632,7 +1632,7 @@ fi
 if [ $VALIDATE_IN_JOB -eq 1 ]; then
 # do validation function in the job
     echo "Run validate_in_job.py" 
-    validate_in_job.py --dir $PWD --logfiledir $PWD --outdir $OUTDIR/$OUTPUT_SUBDIR
+    validate_in_job.py --dir $PWD --logfiledir $PWD --outdir $OUTDIR/$OUTPUT_SUBDIR --declare $DECLARE_IN_JOB
     valstat=$?
 fi
 
@@ -1740,7 +1740,7 @@ do
     statout=$stat
   else
        # declare files if declare option was selected. Only declare if the validation option was also selected
-	if [ $DECLARE_IN_JOB -eq 1 ] && [ $VALIDATE_IN_JOB -eq 1 ]; then
+	if [ $DECLARE_IN_JOB -eq 1 ] && [ $VALIDATE_IN_JOB -eq 1 ] && [ 1 -eq 0 ]; then
 	    if [ $valstat -ne 0 ] ; then
 		echo "The in-job validation did not exit cleanly or did not run at all, so we will not declare anything to SAM within this job."
 	    else

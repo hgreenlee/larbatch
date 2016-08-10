@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import sys, os, stat, string, subprocess, shutil, urllib, json, getpass, uuid
+import larbatch_posix
 import threading, Queue
 from xml.dom.minidom import parse
 import project_utilities, root_metadata
@@ -126,10 +127,11 @@ def import_samweb():
 
     global samweb
     global extractor_dict
+    global expMetaData
 
     if samweb == None:
         samweb = project_utilities.samweb()
-        import extractor_dict
+        from extractor_dict import expMetaData
 
 # Main program.
 
@@ -145,6 +147,7 @@ def main():
     checkdir=''
     logdir=''
     outdir=''
+    declare_file = 0
     args = sys.argv[1:]
     while len(args) > 0:
 
@@ -156,7 +159,10 @@ def main():
             del args[0:2]
 	elif args[0] == '--outdir' and len(args) > 1:
             outdir = args[1]
-            del args[0:2]    
+            del args[0:2]
+	elif args[0] == '--declare' and len(args) > 1:
+            declare_file = int(args[1])
+            del args[0:2]        
         else:
             print 'Unknown option %s' % args[0]
             return 1
@@ -164,6 +170,8 @@ def main():
     
     
     status = 0 #global status code to tell us everything is ok.
+    
+    print "Do decleration in job: %d" % declare_file 
     
     # Check lar exit status (if any).
     stat_filename = os.path.join(logdir, 'lar.stat')
@@ -275,13 +283,16 @@ def main():
          	 mdjson = md
              except:
          	 pass
-         md = {}
-	
-	 if ana:
+         
+	 
+	 if declare_file == 1:
+	   md = {}
+	   if ana:
              md = mdjson
-         else:
-             md = extractor_dict.getmetadata(path, mdjson)
-         if len(md) > 0:
+           else:
+             expSpecificMetaData = expMetaData(os.environ['SAM_EXPERIMENT'],larbatch_posix.root_stream(path))
+             md = expSpecificMetaData.getmetadata()
+           if len(md) > 0:
              project_utilities.test_kca()
 
              # Make lack of parent files a nonfatal error.
@@ -293,7 +304,7 @@ def main():
          	 if md.has_key('parents'):
          	     del md['parents']
          	     samweb.declareFile(md=md)
-         else:
+           else:
              print 'No sam metadata found for %s.' % fn
 	     
       
