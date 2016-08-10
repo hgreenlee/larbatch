@@ -1,13 +1,9 @@
 #!/usr/bin/env python
-
 import sys, getopt
 import os
-import subprocess
 from subprocess import Popen, PIPE
 import threading
 import Queue
-import time
-import ast
 import project_utilities, root_metadata
 import json
 import abc

@@ -1595,7 +1595,6 @@ stageStat=0
 overallStat=0
 while [ $stageStat -lt $nfcls ]; do
   stat=`cat larStage$stageStat.stat`
-<<<<<<< HEAD
   if [ "$stat" -eq "65" ]; then
    # Workaround TimeTracker crash bug for input files with zero events. 
     for json in *.json; do  
@@ -1732,8 +1731,8 @@ do
   stat=$?
   if [ $stat -ne 0 ]; then
     echo "ifdh cp failed with status ${stat}."
-    statout=$stat 
   fi
+    statout=$stat 
 done   
 
 if [ $statout -eq 0 ]; then
