@@ -546,18 +546,12 @@ while [ $# -gt 0 ]; do
     
     # Declare good output root files to SAM.
     --declare )
-      if [ $# -gt 1 ]; then
-        DECLARE_IN_JOB=1
-        shift
-      fi
+      DECLARE_IN_JOB=1
       ;;
       
     # Run validation steps in project.py on root outputs directly in the job.
     --validate )
-      if [ $# -gt 1 ]; then
-        VALIDATE_IN_JOB=1
-        shift
-      fi
+      VALIDATE_IN_JOB=1
       ;;
    
 
@@ -1187,8 +1181,6 @@ echo "Start loop over stages"
 while [ $stage -lt $nfcls ]; do
  FCL="Stage$stage.fcl"
  
- echo "Stage: $stage"
- 
  # In case no input files were specified, and we are not getting input
  # from sam (i.e. mc generation), recalculate the first event number,
  # the subrun number, and the number of events to generate in this worker.
@@ -1196,7 +1188,7 @@ while [ $stage -lt $nfcls ]; do
  # Note this only applies to the first stage by definition
 
  #if [ [ $USE_SAM -eq 0 -a $NFILE_TOTAL -eq 0 -a $stage -eq 0 ];  -o [ "$INMODE" = 'textfile' ]; ]; then
- if [ $USE_SAM -eq 0 -a $NFILE_TOTAL -eq 0 -a $stage -eq 0 ]; then
+ if [ $stage -eq 0 -a $USE_SAM -eq 0 -a $NFILE_TOTAL -eq 0  ]; then #need to ask what is going on here
  #if [ 1 -eq 0 ]; then
 
    # Don't allow --nskip.
@@ -1241,7 +1233,6 @@ EOF
  
  fi
  
- echo "Passed file input"
  
  # For sam input, start project (if necessary), and consumer process.
 
@@ -1374,13 +1365,19 @@ EOF
  
  fi
  
+ #Figure out output file names.
+ #If outfile is not defined and we are inputing a single file or file list, follow our 
+ #convention that the output file should be %inputfilename_%systemtime_stage.root
+
+ 
  # Construct options for lar command line.
 
  LAROPT="-c $FCL --rethrow-default"
  echo "Laropt: $LAROPT"
- if [ -f condor_lar_input.list ]; then
+ if [ -f condor_lar_input.list -a $stage -eq 0 ]; then
   if [ "$INMODE" != 'textfile' ]; then
-    LAROPT="$LAROPT -S condor_lar_input.list"
+    LAROPT="$LAROPT -S condor_lar_input.list" #artroot files to read in
+    #AOUTFILE=`cat condor_lar_input.list`
   fi
  fi
  
@@ -1453,10 +1450,16 @@ EOF
    break
  fi
  
- echo "Outfile is $OUTFILE"
+ if [ $stage -ne 0 ]; then
+   rm -rf $next_stage_input
+ fi
+ 
+ #echo `ls -t1 *.root | head -n2 | grep -v 'hist*'`
+ 
+ #echo "Outfile is $OUTFILE"
    
 
- next_stage_input="`basename $OUTFILE .root`$stage.root"
+ next_stage_input=`ls -t1 *.root | head -n2 | grep -v 'hist*'`
  stage=$[$stage +1]
  FIRST_EVENT=0 #I don't think this does anything
  
@@ -1531,7 +1534,7 @@ fi
 for root in *.root; do
   if [ -f ${root}.json -o $ran != 0 ]; then
     echo "Move file 1 $root"
-    base=`basename $root .root`_`date +%y%m%dT%H%M%S`_`uuidgen`
+    base=`basename $root .root`_`uuidgen`
     echo "Move file 2 $base"
     mv $root ${base}.root
     mv ${root}.json ${base}.root.json
@@ -1577,43 +1580,19 @@ stageStat=0
 overallStat=0
 while [ $stageStat -lt $nfcls ]; do
   stat=`cat larStage$stageStat.stat`
-  if [ $stat -eq 65 ]; then
+  if [ "$stat" -eq "65" ]; then
    # Workaround TimeTracker crash bug for input files with zero events. 
-    for json in *.json; do
-        #make sure we grabed the correct stage / json 
-      if [ `echo $json | awk -F '_' '{print $1}'` != "$outstem$stageStat" ]; then
-        continue
-      fi     
+    for json in *.json; do  
         if grep -q '"events": *"0"' $json; then
          stat=0
         fi
-      done
-     fi    
+    done
+  fi    
   overallStat=$[$stat+$overallStat]
   
-  #do some cleanup of intermediate files
-  rm Stage$stageStat.fcl
-  #remove all but the final stage root and json files
- if [ $stageStat -lt $[$nfcls -1] ]; then
-     #echo $stageStat
-     rm $outstem$stageStat*.root
-     rm $outstem$stageStat*.root.json
- 
- #if we are at the final stage, rename the files accoring to the input filename
- #this ammouts to removing the stage identifier
- else
-   for root in *.root; do
-    echo $root
-    echo $root | sed -r "s/$stageStat//" 
-     mv $root `echo $root | sed -r "s/$stageStat//"`
-   done
-   
-   #and the metadata too!
-   for json in *.json; do
-     mv $json `echo $json | sed -r "s/$stageStat//"`
-   done
- fi       
- stageStat=$[$stageStat +1] 
+   #do some cleanup of intermediate files
+  rm Stage$stageStat.fcl  
+  stageStat=$[$stageStat +1] 
 done
 echo $overallStat > lar.stat
 
@@ -1632,7 +1611,6 @@ fi
 
 if [ $VALIDATE_IN_JOB -eq 1 ]; then
 # do validation function in the job
-    echo "Run validate_in_job.py" 
     validate_in_job.py --dir $PWD --logfiledir $PWD --outdir $OUTDIR/$OUTPUT_SUBDIR --declare $DECLARE_IN_JOB
     valstat=$?
 fi
@@ -1738,24 +1716,7 @@ do
   stat=$?
   if [ $stat -ne 0 ]; then
     echo "ifdh cp failed with status ${stat}."
-    statout=$stat
-  else
-       # declare files if declare option was selected. Only declare if the validation option was also selected
-	if [ $DECLARE_IN_JOB -eq 1 ] && [ $VALIDATE_IN_JOB -eq 1 ] && [ 1 -eq 0 ]; then
-	    if [ $valstat -ne 0 ] ; then
-		echo "The in-job validation did not exit cleanly or did not run at all, so we will not declare anything to SAM within this job."
-	    else
-		for declareroot in `ls $subrun/*.root` 
-		do
-		    #recall that validate.list comes from validate_in_job.py
-		    if [ "x`grep $(basename $declareroot) validate.list`" == "x" ]; then
-			echo "file not found in good post-validation list"
-		    else
-			samweb declare-file `basename $declareroot` log${subrun}/`basename $declareroot`.json
-		    fi
-		done
-	    fi
-	fi  
+    statout=$stat 
   fi
 done
 
