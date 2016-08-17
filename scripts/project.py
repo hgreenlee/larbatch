@@ -1307,7 +1307,11 @@ def doquickcheck(project, stage, ana):
     #if we can't find missing_files the check will not work
     except:
        print 'Cannont open file: %s' % missingfilesname
-       return 1   
+       return 1
+    
+    if len(missingfiles) == 0:
+      print '%s exists, but is empty' % missingfilesname
+      return 1      
     
     
     line = missingfiles[0]
