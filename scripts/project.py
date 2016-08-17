@@ -860,10 +860,10 @@ def docheck(project, stage, ana):
     except:
        print 'Cannont open file: %s' % missingfilesname
        validateOK = 0
-    
+
     if len(missingfiles) == 0:
-      print '%s exists, but is empty' % missingfilesname
-      validateOK = 0      
+       print '%s exists, but is empty' % missingfilesname
+       validateOK = 0      
     
     line = missingfiles[0]
     line = line.strip('\n')
