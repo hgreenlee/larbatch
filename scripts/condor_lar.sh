@@ -549,10 +549,6 @@ while [ $# -gt 0 ]; do
     # Declare good output root files to SAM.
     --declare )
       DECLARE_IN_JOB=1
-      if [ $# -gt 1 ]; then
-        DECLARE_IN_JOB=1
-        shift
-      fi
       ;;
       
     # Run validation steps in project.py on root outputs directly in the job.
@@ -1193,9 +1189,6 @@ echo "Start loop over stages"
 while [ $stage -lt $nfcls ]; do
  FCL="Stage$stage.fcl"
  
-
- echo "Stage: $stage"
- 
  # In case no input files were specified, and we are not getting input
  # from sam (i.e. mc generation), recalculate the first event number,
  # the subrun number, and the number of events to generate in this worker.
@@ -1203,7 +1196,6 @@ while [ $stage -lt $nfcls ]; do
  # Note this only applies to the first stage by definition
 
  if [ $stage -eq 0 -a $USE_SAM -eq 0 -a $NFILE_TOTAL -eq 0  ]; then #need to ask what is going on here
-
 
    # Don't allow --nskip.
 
@@ -1246,8 +1238,6 @@ EOF
   echo "Number of MC events: $NEVT"
  
  fi
- 
- # For sam input, start project (if necessary), and consumer process.
 
  PURL=''
  CPID=''
@@ -1378,6 +1368,11 @@ EOF
  
  fi
  
+ #Figure out output file names.
+ #If outfile is not defined and we are inputing a single file or file list, follow our 
+ #convention that the output file should be %inputfilename_%systemtime_stage.root
+
+ 
  # Construct options for lar command line.
 
  LAROPT="-c $FCL --rethrow-default"
@@ -1468,8 +1463,6 @@ EOF
    
 
  next_stage_input=`ls -t1 *.root | head -n2 | grep -v 'hist*'`
- #attemp to find if there was an overlaid (mixed) file. 
- #do this for every stage, in this case we will catch all the aunt files in the case multiple overlays are run
  mixed_file=`sam_metadata_dumper $next_stage_input | grep mixparent | awk -F ":" '{gsub("\"" ,""); gsub(",",""); gsub(" ",""); print $2}'`
  if [ x$mixed_file != x ]; then
     aunt_files=("${aunt_files[@]}" $mixed_file)
