@@ -808,10 +808,8 @@ def docheck(project, stage, ana):
         print 'Log directory %s does not exist.' % stage.logdir
         return 1
 
-  #Copy the .list files form the logdir up one dir. This is where the old docheck would put them, and it double-checks that the files made it back from the worker node.
-  
-  #Copy the .list files form the logdir up one dir. This is where the old docheck would put them, and it double-checks that the files made it back from the worker node.
-  
+  #Aggegrate the .list files form the logdir up one dir. This is where the old docheck would put them, and it double-checks that the files made it back from the worker node.
+
   goodFiles        = []       # list of art root files
   eventLists       = []       # list of art root files and number of events
   badLists         = []       # list of bad root files
@@ -907,7 +905,7 @@ def docheck(project, stage, ana):
     #print 'Appending Files'
     
     # Check existence of sam_project.txt and cpid.txt.
-            # Update sam_projects and cpids.
+    # Update sam_projects and cpids.
 
     if stage.inputdef != '':
         
@@ -945,8 +943,7 @@ def docheck(project, stage, ana):
        nErrors += 1
     else:
         eventLists.extend(tmpArray)
-    
-    
+	        
     badfilesrc = os.path.join(out_subpath, 'bad.list')
     
     
@@ -1023,7 +1020,6 @@ def docheck(project, stage, ana):
   eventlistdest = os.path.join(stage.logdir, 'events.list')
   eventsOutList = safeopen(eventlistdest)
   for event in eventLists:
-    #print event
     eventsOutList.write("%s" % event)
   eventsOutList.close()
   project_utilities.addLayerTwo(eventlistdest)
@@ -1046,8 +1042,7 @@ def docheck(project, stage, ana):
     missingOutList.close()  
     project_utilities.addLayerTwo(missingOutList)
   
-  #create the files.list for the next step
-  
+  #create the files.list for the next step  
   if ana:
     analistdest = os.path.join(stage.logdir, 'filesana.list')
     anaOutList = safeopen(analistdest)
@@ -1089,10 +1084,7 @@ def docheck(project, stage, ana):
        streamOutList.write("%s" % line)
      streamOutList.close()
      project_utilities.addLayerTwo(streamdest)  
-  
-  
-  
-    
+        
 
   return nErrors
 
