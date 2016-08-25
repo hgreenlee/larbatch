@@ -1279,8 +1279,8 @@ def doquickcheck(project, stage, ana):
         return 1
 
   #Copy the .list files form the logdir up one dir. This is where the old docheck would put them, and it double-checks that the files made it back from the worker node.
-
-
+  
+  goodFiles = []      # list of art root files
   for log_subpath, subdirs, files in os.walk(stage.logdir):
     
     # Only examine files in leaf directories.
@@ -1318,7 +1318,7 @@ def doquickcheck(project, stage, ana):
     
     line = missingfiles[0]
     line = line.strip('\n')
-    print line
+    #print line
     if( int(line) == 0 ):
        validateOK = 1       
     else:
@@ -1358,15 +1358,19 @@ def doquickcheck(project, stage, ana):
      
 
     filelistsrc = os.path.join(out_subpath, 'files.list')
-    filelistdest = os.path.join(stage.logdir, 'files.list')
-
     try:
-       project_utilities.safecopy(filelistsrc, filelistdest)
-
+       fileList = project_utilities.saferead(filelistsrc)
+    #if we can't find missing_files the check will not work
     except:
-       print 'Cannont copy file: %s' % filelistsrc
+       print 'Cannont open file: %s' % filelistsrc
        return 1
     
+    if len(fileList) == 0:
+      print '%s exists, but is empty' % filelistsrc
+      return 1        
+    #add the file to the fileList
+    goodFiles.append(fileList[0])
+
     eventslistsrc = os.path.join(out_subpath, 'events.list')
     eventslistdest = os.path.join(stage.logdir, 'events.list')
     
@@ -1422,6 +1426,15 @@ def doquickcheck(project, stage, ana):
   checkfile.write('\n')
   checkfile.close()
   project_utilities.addLayerTwo(checkfilename)
+  
+  #create the input file.list for the next stage
+  filelistdest = os.path.join(stage.logdir, 'files.list')
+  inputList = safeopen(filelistdest)
+  inputList.write("\n".join(goodFiles))
+  inputList.close()
+  project_utilities.addLayerTwo(filelistdest)
+
+    
 
   return 0
 
