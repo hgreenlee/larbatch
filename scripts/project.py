@@ -1430,7 +1430,8 @@ def doquickcheck(project, stage, ana):
   #create the input file.list for the next stage
   filelistdest = os.path.join(stage.logdir, 'files.list')
   inputList = safeopen(filelistdest)
-  inputList.write("\n".join(goodFiles))
+  for goodFile in goodFiles:
+    inputList.write("%s" % goodFile)
   inputList.close()
   project_utilities.addLayerTwo(filelistdest)
 
@@ -1587,10 +1588,9 @@ def docheck_declarations(logdir, outdir, declare, ana=False):
 
     for root in roots:
         path = string.strip(root)
-        fn = os.path.basename(path)
-        dirpath = os.path.dirname(path)
-        dirname = os.path.relpath(dirpath, outdir)
-
+	fn = os.path.basename(path)
+	dirpath = os.path.dirname(path)
+	dirname = os.path.relpath(dirpath, outdir)
         # Check metadata
 
         has_metadata = False
