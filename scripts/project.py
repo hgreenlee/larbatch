@@ -2473,6 +2473,8 @@ def dojobsub(project, stage, makeup):
                 raise JobsubError(command, rc, jobout, joberr)
             if larbatch_posix.exists(checked_file):
                 larbatch_posix.remove(checked_file)
+            if larbatch_posix.isdir(tmpdir):
+                larbatch_posix.rmtree(tmpdir)
         else:
             print 'Makeup action aborted because makeup job count is zero.'
 
