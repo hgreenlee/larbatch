@@ -193,6 +193,7 @@
 #                      for specific (run, subrun, version) in pubs mode.  Default is true.
 # <stage><maxfluxfilemb> - Specify GENIEHelper fcl parameter MaxFluxFileMB.
 # <stage><numjobs> - Number of worker jobs (default 1).
+# <stage><numevents> - Number of events (override project level number of events).
 # <stage><maxfilesperjob> - Maximum number of files to deliver to a single job
 #             Useful in case you want to limit output file size or keep
 #             1 -> 1 correlation between input and output
@@ -2219,7 +2220,7 @@ def dojobsub(project, stage, makeup):
                         ' --sam_project', prjname])
     if stage.inputmode != '':
         command.extend([' --inputmode', stage.inputmode])
-    command.extend([' -n', '%d' % project.num_events])
+    command.extend([' -n', '%d' % stage.num_events])
     if stage.inputdef == '':
         command.extend([' --njobs', '%d' % stage.num_jobs ])
     if procmap != '':
