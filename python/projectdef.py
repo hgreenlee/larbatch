@@ -286,6 +286,7 @@ class ProjectDef:
                                         default_input_lists,
                                         default_previous_stage,
                                         self.num_jobs,
+                                        self.num_events,
                                         self.max_files_per_job,
                                         self.merge,
                                         self.cpu,

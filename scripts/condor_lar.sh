@@ -1232,11 +1232,7 @@ if [ $USE_SAM -ne 0 ]; then
   cat <<EOF > sam_wrapper.fcl
 #include "$FCL"
 
-services.user.IFDH:
-{
-}
-
-services.user.CatalogInterface:
+services.CatalogInterface:
 {
   service_provider: "IFCatalogInterface"
   webURI: "$PURL"
@@ -1244,7 +1240,7 @@ services.user.CatalogInterface:
 
 services.FileCatalogMetadata.processID: "$CPID"
 
-services.user.FileTransfer:
+services.FileTransfer:
 {
   service_provider: "IFFileTransfer"
 }
@@ -1252,6 +1248,14 @@ services.user.FileTransfer:
 source.fileNames: [ "$CPID" ]
 
 EOF
+  if ! lar --debug-config=/dev/stdout -c $FCL | grep -q IFDH:; then
+    cat <<EOF >> sam_wrapper.fcl
+services.IFDH:
+{
+}
+
+EOF
+  fi
   FCL=sam_wrapper.fcl
 fi
 

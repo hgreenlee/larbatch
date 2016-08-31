@@ -24,7 +24,7 @@ class StageDef:
     # Constructor.
 
     def __init__(self, stage_element, default_input_lists, default_previous_stage, 
-                 default_num_jobs, default_max_files_per_job, default_merge,
+                 default_num_jobs, default_num_events, default_max_files_per_job, default_merge,
                  default_cpu, default_disk, default_memory):
 
         # Assign default values.
@@ -52,6 +52,7 @@ class StageDef:
         self.output_version = 0 # Pubs output version number.
         self.maxfluxfilemb = 0 # MaxFluxFileMB (size of genie flux files to fetch).
         self.num_jobs = default_num_jobs # Number of jobs.
+        self.num_events = default_num_events # Number of events.
         self.max_files_per_job = default_max_files_per_job #max num of files per job
         self.target_size = 0   # Target size for output files.
         self.defname = ''      # Sam dataset definition name.
@@ -216,6 +217,12 @@ class StageDef:
         num_jobs_elements = stage_element.getElementsByTagName('numjobs')
         if num_jobs_elements:
             self.num_jobs = int(num_jobs_elements[0].firstChild.data)
+
+        # Number of events (subelement).
+
+        num_events_elements = stage_element.getElementsByTagName('numevents')
+        if num_events_elements:
+            self.num_events = int(num_events_elements[0].firstChild.data)
 
         # Max Number of files per jobs.
 
@@ -439,6 +446,7 @@ class StageDef:
         result += 'Output file name = %s\n' % self.output
         result += 'TFileName = %s\n' % self.TFileName	
         result += 'Number of jobs = %d\n' % self.num_jobs
+        result += 'Number of events = %d\n' % self.num_events
         result += 'Max flux MB = %d\n' % self.maxfluxfilemb
         result += 'Max files per job = %d\n' % self.max_files_per_job
         result += 'Output file target size = %d\n' % self.target_size
