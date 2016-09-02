@@ -189,6 +189,7 @@
 #             than the immediate predecessor stage specified in the xml file.
 #             This parameter only affects the default input file list.  This
 #             parameter has no effect if any non-default input is specified.
+# <stage><mixinputdef> - Specify mix input from a sam dataset.
 # <stage><pubsinput> - 0 (false) or 1 (true).  If true, modify input file list
 #                      for specific (run, subrun, version) in pubs mode.  Default is true.
 # <stage><maxfluxfilemb> - Specify GENIEHelper fcl parameter MaxFluxFileMB.
@@ -2118,6 +2119,14 @@ def dojobsub(project, stage, makeup):
         project_utilities.test_kca()
         prjname = samweb.makeProjectName(inputdef)
 
+    # Get mix input sam dataset definition name.
+
+    mixprjname = ''
+    if stage.mixinputdef != '':
+        import_samweb()
+        project_utilities.test_kca()
+        mixprjname = 'mix_%s' % samweb.makeProjectName(stage.mixinputdef)
+
     # Get role
 
     role = project_utilities.get_role()
@@ -2218,6 +2227,9 @@ def dojobsub(project, stage, makeup):
     elif inputdef != '':
         command.extend([' --sam_defname', inputdef,
                         ' --sam_project', prjname])
+    elif stage.mixinputdef != '':
+        command.extend([' --mix_defname', stage.mixinputdef,
+                        ' --mix_project', mixprjname])
     if stage.inputmode != '':
         command.extend([' --inputmode', stage.inputmode])
     command.extend([' -n', '%d' % stage.num_events])
@@ -2241,12 +2253,25 @@ def dojobsub(project, stage, makeup):
 
     # If input is from sam, also construct a dag file, or add --sam_start option.
 
-    if prjname != '' and command_njobs == 1:
+    if (prjname != '' or mixprjname != '') and command_njobs == 1:
         command.extend([' --sam_start',
                         ' --sam_station', project_utilities.get_experiment(),
                         ' --sam_group', project_utilities.get_experiment()])
 
-    if prjname != '' and command_njobs > 1:
+
+    # At this point, the main batch worker command is complete.
+    # Decide whether to submit this command stand alone or as part of a dag.
+
+    start_commands = []
+    stop_commands = []
+    dag_prjs = []
+    if command_njobs > 1:
+        if inputdef != '':
+            dag_prjs.append([inputdef, prjname])
+        if stage.mixinputdef != '':
+            dag_prjs.append([stage.mixinputdef, mixprjname])
+
+    for dag_prj in dag_prjs:
 
         # At this point, it is an error if the start and stop project
         # scripts were not found.
@@ -2287,13 +2312,17 @@ def dojobsub(project, stage, makeup):
 
         start_command.extend([' --sam_station', project_utilities.get_experiment(),
                               ' --sam_group', project_utilities.get_experiment(),
-                              ' --sam_defname', inputdef,
-                              ' --sam_project', prjname,
+                              ' --sam_defname', dag_prj[0],
+                              ' --sam_project', dag_prj[1],
                               ' -g'])
 
         # Output directory.
 
         start_command.extend([' --logdir', stage.logdir])
+
+        # Done with start command.
+
+        start_commands.append(start_command)
 
         # Stop project jobsub command.
                 
@@ -2327,12 +2356,18 @@ def dojobsub(project, stage, makeup):
         # Sam options.
 
         stop_command.extend([' --sam_station', project_utilities.get_experiment(),
-                             ' --sam_project', prjname,
+                             ' --sam_project', dag_prj[1],
                              ' -g'])
 
         # Output directory.
 
         stop_command.extend([' --logdir', stage.logdir])
+
+        # Done with start command.
+
+        stop_commands.append(stop_command)
+
+    if len(start_commands) > 0:
 
         # Create dagNabbit.py configuration script in the work directory.
 
@@ -2343,19 +2378,22 @@ def dojobsub(project, stage, makeup):
         # Write start section.
 
         dag.write('<serial>\n')
-        first = True
-        for word in start_command:
-            if not first:
-                dag.write(' ')
-            dag.write(word)
-            if word[:6] == 'jobsub':
-                dag.write(' -n')
-            first = False
-        dag.write('\n</serial>\n')
+        dag.write('\n<parallel>\n\n')
+        for start_command in start_commands:
+            first = True
+            for word in start_command:
+                if not first:
+                    dag.write(' ')
+                dag.write(word)
+                if word[:6] == 'jobsub':
+                    dag.write(' -n')
+                first = False
+            dag.write('\n\n')
+        dag.write('</parallel>\n')
 
         # Write main section.
 
-        dag.write('<parallel>\n')
+        dag.write('\n<parallel>\n\n')
         for process in range(command_njobs):
         #for process in range(1):
             first = True
@@ -2383,19 +2421,22 @@ def dojobsub(project, stage, makeup):
                         first = False
             dag.write(' --process %d\n' % process)
             dag.write('\n')
-        dag.write('</parallel>\n')
+        dag.write('\n</parallel>\n')
 
         # Write stop section.
 
-        dag.write('<serial>\n')
-        first = True
-        for word in stop_command:
-            if not first:
-                dag.write(' ')
-            dag.write(word)
-            if word[:6] == 'jobsub':
-                dag.write(' -n')
-            first = False
+        dag.write('\n<parallel>\n\n')
+        for stop_command in stop_commands:
+            first = True
+            for word in stop_command:
+                if not first:
+                    dag.write(' ')
+                dag.write(word)
+                if word[:6] == 'jobsub':
+                    dag.write(' -n')
+                first = False
+            dag.write('\n\n')
+        dag.write('</parallel>\n')
         dag.write('\n</serial>\n')
         dag.close()
 
