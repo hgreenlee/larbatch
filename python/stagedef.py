@@ -41,6 +41,7 @@ class StageDef:
         self.inputdef = ''     # Input sam dataset definition.
         self.inputstream = ''  # Input file stream.
         self.previousstage = '' # Previous stage name.
+        self.mixinputdef = ''  # Mix input sam dataset definition.
         self.pubs_input_ok = 1 # Is pubs input allowed?
         self.pubs_input = 0    # Pubs input mode.
         self.input_run = 0     # Pubs input run.
@@ -150,6 +151,12 @@ class StageDef:
         previousstage_elements = stage_element.getElementsByTagName('previousstage')
         if previousstage_elements:
             self.previousstage = previousstage_elements[0].firstChild.data
+
+        # Mix input sam dataset (subelement).
+
+        mixinputdef_elements = stage_element.getElementsByTagName('mixinputdef')
+        if mixinputdef_elements:
+            self.mixinputdef = mixinputdef_elements[0].firstChild.data
 
         # It is an error to specify both input file and input list.
 
@@ -432,6 +439,7 @@ class StageDef:
         result += 'Input sam dataset = %s\n' % self.inputdef
         result += 'Input stream = %s\n' % self.inputstream
         result += 'Previous stage name = %s\n' % self.previousstage
+        result += 'Mix input sam dataset = %s\n' % self.mixinputdef
         result += 'Pubs input allowed = %d\n' % self.pubs_input_ok
         result += 'Pubs input mode = %d\n' % self.pubs_input
         result += 'Pubs input run number = %d\n' % self.input_run

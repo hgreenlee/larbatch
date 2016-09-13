@@ -38,6 +38,11 @@
 #                           directories will only ever contain output from a single
 #                           worker.
 #
+# Mix input options (second input stream).
+#
+# --mix_defname <arg>     - Specify mix input sam dataset definition.
+# --mix_project <arg>     - Specify mix input sam project.
+#
 # Larsoft options.
 #
 # --ups <arg>             - Comma-separated list of top level run-time ups products.
@@ -168,6 +173,16 @@
 #     be specified as directories (--localdir), but may be specified as
 #     tarballs (--localtar).
 #
+# 10. Mix options (--mix_defname, --mix_project) are only partially handled
+#     in this script.  These options are parsed and their values are stored
+#     in shell variables.  It is assumed that the sam project specified
+#     by --mix_project has been started externally, unless --sam_start is
+#     also specified, in which case this script will start the project.  
+#     This script does not include any provision for joining the project.
+#     Further processing of these options (joining sam project, generating
+#     command line options or fcl wrappers) should be handled by user
+#     provided initialization scripts (--init-script, --init-source).
+#
 #
 # Created: H. Greenlee, 29-Aug-2012
 #
@@ -216,6 +231,8 @@ SAM_DEFNAME=""
 SAM_PROJECT=""
 SAM_START=0
 USE_SAM=0
+MIX_DEFNAME=""
+MIX_PROJECT=""
 GRID=0
 IFDH_OPT=""
 
@@ -521,6 +538,22 @@ while [ $# -gt 0 ]; do
     --end-script )
       if [ $# -gt 1 ]; then
         ENDSCRIPT=$2
+        shift
+      fi
+      ;;
+
+    # Mix input sam dataset.
+    --mix_defname )
+      if [ $# -gt 1 ]; then
+        MIX_DEFNAME=$2
+        shift
+      fi
+      ;;
+
+    # Mix input sam project.
+    --mix_project )
+      if [ $# -gt 1 ]; then
+        MIX_PROJECT=$2
         shift
       fi
       ;;
@@ -1173,7 +1206,21 @@ if [ $USE_SAM -ne 0 ]; then
         echo "Start projet failed."
         exit 1
       fi
-    else
+    fi
+
+    if [ x$MIX_DEFNAME != x ]; then
+
+      echo "Starting project $MIX_PROJECT using sam dataset definition $MIX_DEFNAME"
+      ifdh startProject $MIX_PROJECT $SAM_STATION $MIX_DEFNAME $SAM_USER $SAM_GROUP
+      if [ $? -eq 0 ]; then
+        echo "Start project succeeded."
+      else
+        echo "Start projet failed."
+        exit 1
+      fi
+    fi
+
+    if [ x$SAM_DEFNAME = x -a x$MIX_DEFNAME = x ]; then
       echo "Start project requested, but no definition was specified."
       exit 1
     fi
