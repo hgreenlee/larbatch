@@ -9,6 +9,7 @@ from project_modules.projectstatus import ProjectStatus
 from project_modules.batchstatus import BatchStatus
 from project_modules.jobsuberror import JobsubError
 from project_modules.ifdherror import IFDHError
+from larbatch_utilities import ifdh_cp
 import samweb_cli
 
 samweb = None           # Initialized SAMWebClient object
@@ -140,6 +141,7 @@ def main():
     ana = 0
     nproc = 0
     
+    
     import_samweb() 
     
     
@@ -148,6 +150,7 @@ def main():
     logdir=''
     outdir=''
     declare_file = 0
+    copy_to_dropbox = 0
     args = sys.argv[1:]
     while len(args) > 0:
 
@@ -162,13 +165,16 @@ def main():
             del args[0:2]
 	elif args[0] == '--declare' and len(args) > 1:
             declare_file = int(args[1])
+            del args[0:2]    
+	elif args[0] == '--copy' and len(args) > 1:
+            copy_to_dropbox = int(args[1])
             del args[0:2]        
         else:
             print 'Unknown option %s' % args[0]
             return 1
 
     
-    
+    copy_to_dropbox = 1
     status = 0 #global status code to tell us everything is ok.
     
     print "Do decleration in job: %d" % declare_file 
@@ -307,7 +313,14 @@ def main():
            else:
              print 'No sam metadata found for %s.' % fn
 	     
-      
+           if copy_to_dropbox == 1:
+	     print "Copying to Dropbox"
+	     dropbox_dir = "/pnfs/uboone/scratch/users/joelam/test/"
+	     rootPath = dropbox_dir + fn
+	     jsonPath = rootPath + ".json"
+	     ifdh_cp(path, rootPath)
+	     ifdh_cp(json_file, jsonPath)
+	     
       
       return status
     

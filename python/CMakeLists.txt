@@ -5,7 +5,7 @@
 
 # Executable python files (will also be on PYTYHONPATH).
 
-LIST(APPEND exes root_metadata.py merge_json.py emptydir.py mkdir.py subruns.py stream.py )
+LIST(APPEND exes root_metadata.py merge_json.py emptydir.py mkdir.py subruns.py stream.py extractor_dict.py)
 
 # Python modules on PYTHONPATH.
 
