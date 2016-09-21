@@ -239,7 +239,6 @@ DECLARE_IN_JOB=0
 VALIDATE_IN_JOB=0
 COPY_TO_FTS=0
 
-
 while [ $# -gt 0 ]; do
   case "$1" in
 
@@ -555,7 +554,7 @@ while [ $# -gt 0 ]; do
     --validate )
       VALIDATE_IN_JOB=1
       ;;
-   
+
    # Copy Output to FTS.
     --copy )
       COPY_TO_FTS=1

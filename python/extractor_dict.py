@@ -77,6 +77,7 @@ class MetaData(object):
         """Take Jobout and Joberr (in jobtuple) and return mdart object from that"""
         mdtext = ''.join(line.replace(", ,", ",") for line in jobtuple[0].split('\n') if line[-3:-1] != ' ,')
 	mdtop = json.JSONDecoder().decode(mdtext)
+
         if len(mdtop.keys()) == 0:
             print 'No top-level key in extracted metadata.'
             sys.exit(1)
@@ -118,8 +119,6 @@ class expMetaData(MetaData):
         # Some fields can be copied directly from art metadata to sam metadata.
         # Other fields require conversion.
 	md = {}
-	
-	
 
         # Loop over art metadata.
 	mixparents = []
