@@ -881,7 +881,8 @@ def docheck(project, stage, ana):
             continue
 
         subdir = os.path.relpath(log_subpath, stage.logdir)
-        if subdir == '.':
+        print subdir
+	if subdir == '.':
             continue
         out_subpath = os.path.join(stage.outdir, subdir)
         dirok = project_utilities.fast_isdir(log_subpath)
@@ -1285,14 +1286,9 @@ def doquickcheck(project, stage, ana):
     
     if len(subdirs) != 0:
         continue
+    
         
-    subdir = os.path.relpath(log_subpath, stage.logdir)
-
-    if subdir == '.':
-        continue
-    
-    
-    	
+    subdir = os.path.relpath(log_subpath, stage.logdir)   	
 
     out_subpath = os.path.join(stage.outdir, subdir)
     dirok = project_utilities.fast_isdir(log_subpath)
@@ -1301,6 +1297,8 @@ def doquickcheck(project, stage, ana):
     
     validateOK = 0
     missingfilesname = os.path.join(out_subpath, 'missing_files.list')
+    
+    print missingfilesname
     
     try:
        missingfiles = project_utilities.saferead(missingfilesname)
