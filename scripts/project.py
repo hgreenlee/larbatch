@@ -797,7 +797,479 @@ def doshorten(stage):
 
 def docheck(project, stage, ana):
 
-    # Check that output and log directories exist. Dirs could be lost due to ifdhcp failures
+    # This method performs various checks on worker subdirectories, named
+    # as <cluster>_<process>, where <cluster> and <process> are integers.
+    # In contrast, sam start and stop project jobs are named as
+    # <cluster>_start and <cluster>_stop.
+    #
+    # Return 0 if all checks are OK, meaning:
+    # a) No errors detected for any process.
+    # b) At least one good root file (if not ana).
+    # Otherwise return nonzero.
+    #
+    # The following checks are performed.
+    #
+    # 1.  Make sure subdirectory names are as expected.
+    #
+    # 2.  Look for at least one art root file in each worker subdirectory
+    #     containing a valid Events TTree.  Complain about any
+    #     that do not contain such a root file.
+    #
+    # 3.  Check that the number of events in the Events tree are as expected.
+    #
+    # 4.  Complain about any duplicated art root file names (if sam metadata is defined).
+    #
+    # 5.  Check job exit status (saved in lar.stat).
+    #
+    # 6.  For sam input, make sure that files sam_project.txt and cpid.txt are present.
+    #
+    # 7.  Check that any non-art root files are openable.
+    #
+    # 8.  Make sure file names do not exceed 200 characters (if sam metadata is defined).
+    #
+    # In analysis mode (if argumment ana != 0), skip checks 2-4, but still do
+    # checks 1 and 5-7.
+    #
+    # This function also creates the following files in the specified directory.
+    #
+    # 1.  files.list  - List of good root files.
+    # 2.  events.list - List of good root files and number of events in each file.
+    # 3.  bad.list    - List of worker subdirectories with problems.
+    # 4.  missing_files.list - List of unprocessed input files.
+    # 5.  sam_projects.list - List of successful sam projects.
+    # 6.  cpids.list        - list of successful consumer process ids.
+    # 7.  filesana.list  - List of non-art root files (histograms and/or ntuples).
+    #
+    # For projects with no input (i.e. generator jobs), if there are fewer than
+    # the requisite number of good generator jobs, a "missing_files.list" will be
+    # generated with lines containing /dev/null.
+
+    stage.checkinput()
+
+    # Check that output and log directories exist.
+
+    if not larbatch_posix.exists(stage.outdir):
+        print 'Output directory %s does not exist.' % stage.outdir
+        return 1
+    if not larbatch_posix.exists(stage.logdir):
+        print 'Log directory %s does not exist.' % stage.logdir
+        return 1
+
+    import_samweb()
+    has_metadata = project.file_type != '' or project.run_type != ''
+    has_input = stage.inputfile != '' or stage.inputlist != '' or stage.inputdef != ''
+    print 'Checking directory %s' % stage.logdir
+
+    # Count total number of events and root files.
+
+    nev_tot = 0
+    nroot_tot = 0
+
+    # Loop over subdirectories (ignore files and directories named *_start and *_stop).
+
+    procmap = {}      # procmap[subdir] = <list of art root files and event counts>
+    processes = []    # Integer process numbers derived from subdirectory names.
+    filesana = []     # List of non-art root files.
+    sam_projects = [] # List of sam projects.
+    cpids = []        # List of successful sam consumer process ids.
+    uris = []         # List of input files processed successfully.
+    bad_workers = []  # List of bad worker subdirectories.
+
+    for log_subpath, subdirs, files in larbatch_posix.walk(stage.logdir):
+
+        # Only examine files in leaf directories.
+
+        if len(subdirs) != 0:
+            continue
+
+        subdir = os.path.relpath(log_subpath, stage.logdir)
+        print subdir
+	if subdir == '.':
+            continue
+        out_subpath = os.path.join(stage.outdir, subdir)
+        dirok = project_utilities.fast_isdir(log_subpath)
+
+        # Update list of sam projects from start job.
+
+        if dirok and log_subpath[-6:] == '_start':
+            filename = os.path.join(log_subpath, 'sam_project.txt')
+            if larbatch_posix.exists(filename):
+                sam_project = larbatch_posix.readlines(filename)[0].strip()
+                if sam_project != '' and not sam_project in sam_projects:
+                    sam_projects.append(sam_project)
+
+        # Regular worker jobs checked here.
+
+        if dirok and not subdir[-6:] == '_start' and not subdir[-5:] == '_stop' \
+                and not subdir == 'log':
+
+            bad = 0
+
+            # Make sure that corresponding output directory exists.
+
+            if not project_utilities.fast_isdir(out_subpath):
+                print 'No output directory corresponding to subdirectory %s.' % subdir
+                bad = 1
+
+            # Check lar exit status (if any).
+
+            if not bad:
+                stat_filename = os.path.join(log_subpath, 'lar.stat')
+                if larbatch_posix.exists(stat_filename):
+                    status = 0
+                    try:
+                        status = int(larbatch_posix.readlines(stat_filename)[0].strip())
+                        if status != 0:
+                            print 'Job in subdirectory %s ended with non-zero exit status %d.' % (
+                                subdir, status)
+                            bad = 1
+                    except:
+                        print 'Bad file lar.stat in subdirectory %s.' % subdir
+                        bad = 1
+
+            # Now check root files in this subdirectory.
+
+            if not bad:
+                nev = 0
+                roots = []
+                nev, roots, subhists = check_root(out_subpath, log_subpath)
+                if not ana:
+                    if len(roots) == 0 or nev < 0:
+                        print 'Problem with root file(s) in subdirectory %s.' % subdir
+                        bad = 1
+                elif nev < -1 or len(subhists) == 0:
+                    print 'Problem with analysis root file(s) in subdirectory %s.' % subdir
+                    bad = 1
+                    
+
+            # Check for duplicate filenames (only if metadata is being generated).
+
+            if not bad and has_metadata:
+                for root in roots:
+                    rootname = os.path.basename(root[0])
+                    for s in procmap.keys():
+                        oldroots = procmap[s]
+                        for oldroot in oldroots:
+                            oldrootname = os.path.basename(oldroot[0])
+                            if rootname == oldrootname:
+                                print 'Duplicate filename %s in subdirectory %s' % (rootname,
+                                                                                    subdir)
+                                olddir = os.path.basename(os.path.dirname(oldroot[0]))
+                                print 'Previous subdirectory %s' % olddir
+                                bad = 1
+
+            # Make sure root file names do not exceed 200 characters.
+
+            if not bad and has_metadata:
+                for root in roots:
+                    rootname = os.path.basename(root[0])
+                    if len(rootname) >= 200:
+                        print 'Filename %s in subdirectory %s is longer than 200 characters.' % (
+                            rootname, subdir)
+                        bad = 1
+
+            # Check existence of sam_project.txt and cpid.txt.
+            # Update sam_projects and cpids.
+
+            if not bad and stage.inputdef != '':
+                filename1 = os.path.join(log_subpath, 'sam_project.txt')
+                if not larbatch_posix.exists(filename1):
+                    print 'Could not find file sam_project.txt'
+                    bad = 1
+                filename2 = os.path.join(log_subpath, 'cpid.txt')
+                if not larbatch_posix.exists(filename2):
+                    print 'Could not find file cpid.txt'
+                    bad = 1
+                if not bad:
+                    sam_project = larbatch_posix.readlines(filename1)[0].strip()
+                    if not sam_project in sam_projects:
+                        sam_projects.append(sam_project)
+                    cpid = larbatch_posix.readlines(filename2)[0].strip()
+                    if not cpid in cpids:
+                        cpids.append(cpid)
+
+            # Check existence of transferred_uris.list.
+            # Update list of uris.
+
+            if not bad and (stage.inputlist !='' or stage.inputfile != ''):
+                filename = os.path.join(log_subpath, 'transferred_uris.list')
+                if not larbatch_posix.exists(filename):
+                    print 'Could not find file transferred_uris.list'
+                    bad = 1
+                if not bad:
+                    lines = larbatch_posix.readlines(filename)
+                    for line in lines:
+                        uri = line.strip()
+                        if uri != '':
+                            uris.append(uri)
+
+            # Save process number, and check for duplicate process numbers
+            # (only if no input).
+
+            if not has_input:
+                subdir_split = subdir.split('_')
+                if len(subdir_split) > 1:
+                    process = int(subdir_split[1])
+                    if process in processes:
+                        print 'Duplicate process number'
+                        bad = 1
+                    else:
+                        processes.append(process)
+
+            # Save information about good root files.
+
+            if not bad:
+                procmap[subdir] = roots
+
+                # Save good histogram files.
+
+                filesana.extend(subhists)
+
+                # Count good events and root files.
+
+                nev_tot = nev_tot + nev
+                nroot_tot = nroot_tot + len(roots)
+
+            # Update list of bad workers.
+
+            if bad:
+                bad_workers.append(subdir)
+
+            # Print/save result of checks for one subdirectory.
+
+            if bad:
+                print 'Bad subdirectory %s.' % subdir
+
+    # Done looping over subdirectoryes.
+    # Dictionary procmap now contains a list of good processes
+    # and root files.
+
+    # Open files.
+
+    filelistname = os.path.join(stage.logdir, 'files.list')
+    filelist = safeopen(filelistname)
+
+    eventslistname = os.path.join(stage.logdir, 'events.list')
+    eventslist = safeopen(eventslistname)
+
+    badfilename = os.path.join(stage.logdir, 'bad.list')
+    badfile = safeopen(badfilename)
+
+    missingfilesname = os.path.join(stage.logdir, 'missing_files.list')
+    missingfiles = safeopen(missingfilesname)
+
+    filesanalistname = os.path.join(stage.logdir, 'filesana.list')
+    filesanalist = safeopen(filesanalistname)
+
+    urislistname = os.path.join(stage.logdir, 'transferred_uris.list')
+    urislist = safeopen(urislistname)
+
+    # Generate "files.list" and "events.list."
+    # Also fill stream-specific file list.
+
+    nproc = 0
+    streams = {}    # {stream: file}
+    nfile = 0
+    for s in procmap.keys():
+        nproc = nproc + 1
+        for root in procmap[s]:
+            nfile = nfile + 1
+            filelist.write('%s\n' % root[0])
+            eventslist.write('%s %d\n' % root[:2])
+            stream = root[2]
+            if stream != '':
+                if not streams.has_key(stream):
+                    streamlistname = os.path.join(stage.logdir, 'files_%s.list' % stream)
+                    streams[stream] = safeopen(streamlistname)
+                streams[stream].write('%s\n' % root[0])
+
+    # Generate "bad.list"
+
+    nerror = 0
+    for bad_worker in bad_workers:
+        badfile.write('%s\n' % bad_worker)
+        nerror = nerror + 1
+
+    # Generate "missing_files.list."
+
+    nmiss = 0
+    if stage.inputdef == '' and not stage.pubs_output:
+        input_files = get_input_files(stage)
+        if len(input_files) > 0:
+            missing_files = list(set(input_files) - set(uris))
+            for missing_file in missing_files:
+                missingfiles.write('%s\n' % missing_file)
+                nmiss = nmiss + 1
+        else:
+            nmiss = stage.num_jobs - len(procmap)
+            for n in range(nmiss):
+                missingfiles.write('/dev/null\n')
+                
+
+    # Generate "filesana.list."
+
+    for hist in filesana:
+        filesanalist.write('%s\n' % hist)
+
+    # Generate "transferred_uris.list."
+
+    for uri in uris:
+        urislist.write('%s\n' % uri)
+
+    # Print summary.
+
+    if ana:
+        print "%d processes completed successfully." % nproc
+        print "%d total good histogram files." % len(filesana)
+    else:
+        print "%d total good events." % nev_tot
+        print "%d total good root files." % nroot_tot
+        print "%d total good histogram files." % len(filesana)
+
+    # Close files.
+
+    filelist.close()
+    if nfile == 0:
+        project_utilities.addLayerTwo(filelistname)
+    eventslist.close()
+    if nfile == 0:
+        project_utilities.addLayerTwo(eventslistname)
+    if nerror == 0:
+        badfile.write('\n')
+    badfile.close()
+    if nmiss == 0:
+        missingfiles.write('\n')
+    missingfiles.close()
+    filesanalist.close()
+    if len(filesana) == 0:
+        project_utilities.addLayerTwo(filesanalistname)
+    if len(uris) == 0:
+        urislist.write('\n')
+    urislist.close()
+    for stream in streams.keys():
+        streams[stream].close()
+
+    # Make sam files.
+
+    if stage.inputdef != '' and not stage.pubs_input:
+
+        # List of successful sam projects.
+        
+        sam_projects_filename = os.path.join(stage.logdir, 'sam_projects.list')
+        sam_projects_file = safeopen(sam_projects_filename)
+        for sam_project in sam_projects:
+            sam_projects_file.write('%s\n' % sam_project)
+        sam_projects_file.close()
+        if len(sam_projects) == 0:
+            project_utilities.addLayerTwo(sam_projects_filename)
+
+        # List of successfull consumer process ids.
+
+        cpids_filename = os.path.join(stage.logdir, 'cpids.list')
+        cpids_file = safeopen(cpids_filename)
+        for cpid in cpids:
+            cpids_file.write('%s\n' % cpid)
+        cpids_file.close()
+        if len(cpids) == 0:
+            project_utilities.addLayerTwo(cpids_filename)
+
+        # Get number of consumed files.
+
+        cpids_list = ''
+        sep = ''
+        for cpid in cpids:
+            cpids_list = cpids_list + '%s%s' % (sep, cpid)
+            sep = ','
+        if cpids_list != '':
+            dim = 'consumer_process_id %s and consumed_status consumed' % cpids_list
+            import_samweb()
+            nconsumed = samweb.countFiles(dimensions=dim)
+        else:
+            nconsumed = 0
+
+        # Get number of unconsumed files.
+
+        if cpids_list != '':
+            udim = '(defname: %s) minus (%s)' % (stage.inputdef, dim)
+        else:
+            udim = 'defname: %s' % stage.inputdef
+        nunconsumed = samweb.countFiles(dimensions=udim)
+        nerror = nerror + nunconsumed
+        
+        # Sam summary.
+
+        print '%d sam projects.' % len(sam_projects)
+        print '%d successful consumer process ids.' % len(cpids)
+        print '%d files consumed.' % nconsumed
+        print '%d files not consumed.' % nunconsumed
+
+        # Check project statuses.
+        
+        for sam_project in sam_projects:
+            print '\nChecking sam project %s' % sam_project
+            import_samweb()
+            url = samweb.findProject(sam_project, project_utilities.get_experiment())
+            if url != '':
+                result = samweb.projectSummary(url)
+                nd = 0
+                nc = 0
+                nf = 0
+                nproc = 0
+                nact = 0
+                if result.has_key('processes'):
+                    processes = result['processes']
+                    for process in processes:
+                        nproc = nproc + 1
+                        if process.has_key('status'):
+                            if process['status'] == 'active':
+                                nact = nact + 1
+                        if process.has_key('counts'):
+                            counts = process['counts']
+                            if counts.has_key('delivered'):
+                                nd = nd + counts['delivered']
+                            if counts.has_key('consumed'):
+                                nc = nc + counts['consumed']
+                            if counts.has_key('failed'):
+                                nf = nf + counts['failed']
+                print 'Status: %s' % result['project_status']
+                print '%d total processes' % nproc
+                print '%d active processes' % nact
+                print '%d files in snapshot' % result['files_in_snapshot']
+                print '%d files delivered' % (nd + nc)
+                print '%d files consumed' % nc
+                print '%d files failed' % nf
+                print
+
+    # Done
+
+    checkfilename = os.path.join(stage.logdir, 'checked')
+    checkfile = safeopen(checkfilename)
+    checkfile.write('\n')
+    checkfile.close()
+    project_utilities.addLayerTwo(checkfilename)
+
+    if stage.inputdef == '' or stage.pubs_input:
+        print '%d processes with errors.' % nerror
+        print '%d missing files.' % nmiss
+    else:
+        print '%d unconsumed files.' % nerror
+
+    # Return error status if any error or not good root file produced.
+    # Also return error if no successful processes were detected
+
+    result = 0
+    if nerror != 0:
+        result = 1
+    if not ana and nroot_tot == 0:
+        result = 1
+    if len(procmap) == 0:
+        result = 1
+    return result
+
+def doquickcheck(project, stage, ana):
+
+  # Check that output and log directories exist. Dirs could be lost due to ifdhcp failures
+>>>>>>> Directly copy root files to dropbox
 
 
   if not os.path.exists(stage.outdir):
@@ -827,8 +1299,7 @@ def docheck(project, stage, ana):
     # Only examine files in leaf directories.
     
     if len(subdirs) != 0:
-        continue
-    
+        continue    
     #skip start project jobs for now
     if log_subpath[-6:] == '_start':
       filename = os.path.join(log_subpath, 'sam_project.txt')
@@ -838,7 +1309,6 @@ def docheck(project, stage, ana):
            sam_projects.append(sam_project)
       continue
     
-        
     subdir = os.path.relpath(log_subpath, stage.logdir)   	
 
     out_subpath = os.path.join(stage.outdir, subdir)
@@ -849,8 +1319,6 @@ def docheck(project, stage, ana):
     validateOK = 0
     
     missingfilesname = os.path.join(out_subpath, 'missing_files.list')
-    
-    #print missingfilesname
     
     try:
        missingfiles = project_utilities.saferead(missingfilesname)

@@ -141,7 +141,6 @@ def main():
     ana = 0
     nproc = 0
     
-
     import_samweb() 
     
     
@@ -174,10 +173,6 @@ def main():
             return 1
 
     
-    #copy_to_dropbox = 1
-    status = 0 #global status code to tell us everything is ok.
-    
-    print "Do decleration in job: %d" % declare_file    
     status = 0 #global status code to tell us everything is ok.
     
     print "Do decleration in job: %d" % declare_file 
