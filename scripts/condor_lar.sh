@@ -237,6 +237,7 @@ GRID=0
 IFDH_OPT=""
 DECLARE_IN_JOB=0
 VALIDATE_IN_JOB=0
+COPY_TO_FTS=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -553,7 +554,10 @@ while [ $# -gt 0 ]; do
     --validate )
       VALIDATE_IN_JOB=1
       ;;
-   
+   # Copy Output to FTS.
+    --copy )
+      COPY_TO_FTS=1
+      ;;
 
     # Mix input sam dataset.
     --mix_defname )
@@ -1606,7 +1610,7 @@ fi
 
 if [ $VALIDATE_IN_JOB -eq 1 ]; then
 # do validation function in the job
-    validate_in_job.py --dir $PWD --logfiledir $PWD --outdir $OUTDIR/$OUTPUT_SUBDIR --declare $DECLARE_IN_JOB
+    validate_in_job.py --dir $PWD --logfiledir $PWD --outdir $OUTDIR/$OUTPUT_SUBDIR --declare $DECLARE_IN_JOB --copy $COPY_TO_FTS
     valstat=$?
 fi
 
