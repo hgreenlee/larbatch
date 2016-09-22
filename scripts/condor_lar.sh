@@ -1158,7 +1158,6 @@ fi
 
 #Break the master wrapper fcl into each stage
 nfcls=0
-<<<<<<< HEAD
 
 while read -r line
 do
@@ -1193,43 +1192,7 @@ while [ $stage -lt $nfcls ]; do
 
  #if [ [ $USE_SAM -eq 0 -a $NFILE_TOTAL -eq 0 -a $stage -eq 0 ];  -o [ "$INMODE" = 'textfile' ]; ]; then
  if [ $stage -eq 0 -a $USE_SAM -eq 0 -a $NFILE_TOTAL -eq 0  ]; then #need to ask what is going on here
- #if [ 1 -eq 0 ]; then
 
-=======
-
-while read -r line
-do
-
- if [ "$(echo $line | awk '{print $1}')" = "#---STAGE" ]; then
-    stage="$(echo $line | awk '{print $2}')"
-    stage_fcl="Stage$stage.fcl"
-    nfcls=$(( $nfcls + 1 )) 
-    continue
-  fi
-
-  if [ "$line" = "#---END_STAGE" ]; then
-     #cat EOF >> $fcl
-    continue
-  fi
-  echo $line >> $stage_fcl
-done < $FCL
-
-#We now have nStage fcl files, each which need to be run serially 
-
-stage=0
-
-echo "Start loop over stages"
-while [ $stage -lt $nfcls ]; do
- FCL="Stage$stage.fcl"
- 
- # In case no input files were specified, and we are not getting input
- # from sam (i.e. mc generation), recalculate the first event number,
- # the subrun number, and the number of events to generate in this worker.
- # This also applies to the textfile inputmode.
- # Note this only applies to the first stage by definition
-
- #if [ [ $USE_SAM -eq 0 -a $NFILE_TOTAL -eq 0 -a $stage -eq 0 ];  -o [ "$INMODE" = 'textfile' ]; ]; then
- if [ $stage -eq 0 -a $USE_SAM -eq 0 -a $NFILE_TOTAL -eq 0  ]; then
 
    # Don't allow --nskip.
 
@@ -1319,10 +1282,10 @@ EOF
 
     if [ x$SAM_DEFNAME = x -a x$MIX_DEFNAME = x ]; then
       
-     else
       echo "Start project requested, but no definition was specified."
       exit 1
-     fi
+    fi  
+     
   fi
 
   # Get the project url of a running project (maybe the one we just started,
