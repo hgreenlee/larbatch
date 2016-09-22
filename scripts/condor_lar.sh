@@ -1180,7 +1180,6 @@ do
   echo $line >> $stage_fcl
 done < $FCL
 
-
 #We now have nStage fcl files, each which need to be run serially 
 stage=0
 
@@ -1195,6 +1194,7 @@ while [ $stage -lt $nfcls ]; do
  # Note this only applies to the first stage by definition
 
  if [ $stage -eq 0 -a $USE_SAM -eq 0 -a $NFILE_TOTAL -eq 0  ]; then #need to ask what is going on here
+
 
    # Don't allow --nskip.
 
@@ -1280,10 +1280,11 @@ EOF
     fi
 
     if [ x$SAM_DEFNAME = x -a x$MIX_DEFNAME = x ]; then
-
       echo "Start project requested, but no definition was specified."
       exit 1
     fi
+     
+  fi
 
 
   # Get the project url of a running project (maybe the one we just started,
