@@ -2227,7 +2227,7 @@ def dojobsub(project, stage, makeup):
     elif inputdef != '':
         command.extend([' --sam_defname', inputdef,
                         ' --sam_project', prjname])
-    elif stage.mixinputdef != '':
+    if stage.mixinputdef != '':
         command.extend([' --mix_defname', stage.mixinputdef,
                         ' --mix_project', mixprjname])
     if stage.inputmode != '':
