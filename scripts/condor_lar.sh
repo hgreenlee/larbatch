@@ -1422,7 +1422,7 @@ EOF
   fi
  fi
 
- if [ x$INITSOURCE != x ]; then
+ if [ x$INITSOURCE != x -a $stage -eq 0 ]; then
   echo "Sourcing initialization source script ${INITSOURCE}."
   . $INITSOURCE
   status=$?
