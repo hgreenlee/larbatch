@@ -1268,19 +1268,7 @@ EOF
       fi
     fi
 
-    if [ x$MIX_DEFNAME != x ]; then
-
-      echo "Starting project $MIX_PROJECT using sam dataset definition $MIX_DEFNAME"
-      ifdh startProject $MIX_PROJECT $SAM_STATION $MIX_DEFNAME $SAM_USER $SAM_GROUP
-      if [ $? -eq 0 ]; then
-        echo "Start project succeeded."
-      else
-        echo "Start projet failed."
-        exit 1
-      fi
-    fi
-
-    if [ x$SAM_DEFNAME = x -a x$MIX_DEFNAME = x ]; then
+    if [ x$SAM_DEFNAME = x ]; then
       
       echo "Start project requested, but no definition was specified."
       exit 1
@@ -1419,7 +1407,7 @@ EOF
   fi
  fi
 
- if [ x$INITSOURCE != x ]; then
+ if [ x$INITSOURCE != x -a $stage -eq 0 ]; then
   echo "Sourcing initialization source script ${INITSOURCE}."
   . $INITSOURCE
   status=$?
