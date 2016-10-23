@@ -1747,13 +1747,13 @@ def docheck_declarations(logdir, outdir, declare, ana=False):
 
                     # Make lack of parent files a nonfatal error.
                     # This should probably be removed at some point.
-
-                    try:
-                        samweb.declareFile(md=md)
-                    except:
-                        if md.has_key('parents'):
-                            del md['parents']
-                            samweb.declareFile(md=md)
+		    try:
+			samweb.declareFile(md=md)
+ 		    except:
+			if md.has_key('parents'):
+			    del md['parents']
+			    samweb.declareFile(md=md)
+		    
                 else:
                     print 'No sam metadata found for %s.' % fn
             else:
@@ -2556,8 +2556,12 @@ def dojobsub(project, stage, makeup):
     if project.validate_on_worker == 1:
       #print 'Validation will be done on the worker node %d' % project.validate_on_worker
       command.extend([' --validate']) 
-      command.extend(['--declare'])			
-
+      command.extend(['--declare'])
+      command.extend(['--maintain_parentage'])			
+    
+    if project.copy_to_fts == 1:
+      command.extend(['--copy'])
+    
     # If input is from sam, also construct a dag file, or add --sam_start option.
 
     if (prjname != '' or mixprjname != '') and command_njobs == 1:

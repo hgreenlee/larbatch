@@ -172,7 +172,6 @@ def main():
             print 'Unknown option %s' % args[0]
             return 1
 
-    
     status = 0 #global status code to tell us everything is ok.
     
     print "Do decleration in job: %d" % declare_file 
@@ -310,13 +309,19 @@ def main():
 
              # Make lack of parent files a nonfatal error.
              # This should probably be removed at some point.
-
+	     print md
+             samweb.declareFile(md=md)
+	     
+	     '''      
              try:
          	 samweb.declareFile(md=md)
-             except:
-         	 if md.has_key('parents'):
-         	     del md['parents']
+             
+	     except:
+		 if md.has_key('parents'):
+         	     print 'Caught no parents excpetion!'
+		     del md['parents']
          	     samweb.declareFile(md=md)
+	    '''	     
            else:
              print 'No sam metadata found for %s.' % fn
 	     status = 1
