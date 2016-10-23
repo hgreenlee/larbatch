@@ -229,6 +229,10 @@ class ProjectDef:
 	worker_validation = project_element.getElementsByTagName('check')
 	if worker_validation:
 	    self.validate_on_worker = int(worker_validation[0].firstChild.data)
+	
+	worker_copy = project_element.getElementsByTagName('copy')
+	if worker_copy:
+	    self.copy_to_fts = int(worker_copy[0].firstChild.data)    
 
         # Also convert start and stop project scripts into full path.
         # It is not treated as an error here if these aren't found.

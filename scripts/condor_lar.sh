@@ -574,6 +574,11 @@ while [ $# -gt 0 ]; do
         shift
       fi
       ;;
+      
+    # Alter the output file's parentage such that it's parent(s) are from the input list OR sam process
+    --maintain_parentage )
+      MAINTAIN_PARENTAGE=1
+      ;;  
     
     # Other.
     * )
@@ -1000,6 +1005,8 @@ echo "IFDHC_DIR=$IFDHC_DIR"
 rm -f condor_lar_input.list
 rm -f transferred_uris.list
 NFILE_TOTAL=0
+parent_files=()
+aunt_files=() #for data overaly, the data files being brought in are the output's aunts. 
 
 if [ $USE_SAM -eq 0 -a x$INFILE != x ]; then
 
@@ -1012,6 +1019,9 @@ if [ $USE_SAM -eq 0 -a x$INFILE != x ]; then
     echo "File list options specified with single input file."
     exit 1
   fi
+
+  #set the parent file to be the input file
+  parent_files=("${parent_files[@]}" $INFILE)
 
   # Copy input file to scratch directoroy.
 
@@ -1124,6 +1134,7 @@ elif [ $USE_SAM -eq 0 -a x$INLIST != x ]; then
       if [ -f $LOCAL_INFILE -a $stat -eq 0 ]; then
         echo $infile >> transferred_uris.list
         echo $LOCAL_INFILE >> condor_lar_input.list
+	parent_files=("${parent_files[@]}" $LOCAL_INFILE)
       else
         echo "Error fetching input file ${infile}."
         exit 1
@@ -1448,6 +1459,13 @@ EOF
    
 
  next_stage_input=`ls -t1 *.root | head -n2 | grep -v 'hist*'`
+ #attemp to find if there was an overlaid (mixed) file. 
+ #do this for every stage, in this case we will catch all the aunt files in the case multiple overlays are run
+ mixed_file=`sam_metadata_dumper $next_stage_input | grep mixparent | awk -F ":" '{gsub("\"" ,""); gsub(",",""); gsub(" ",""); print $2}'`
+ if [ x$mixed_file != x ]; then
+    aunt_files=("${aunt_files[@]}" $mixed_file)
+ fi
+ 
  stage=$[$stage +1]
  FIRST_EVENT=0 #I don't think this does anything
  
@@ -1598,9 +1616,39 @@ fi
 
 
 if [ $VALIDATE_IN_JOB -eq 1 ]; then
-# do validation function in the job
+    #If SAM was used, get the parent files based on the cpid
+    if [ $USE_SAM -ne 0 ]; then
+     parent_files=($(`samweb list-files consumer_process_id=$CPID and consumed_status consumed`))
+    fi
+    
+    echo "The file's parents are: "
+    
+    for elt in ${parent_files[*]};
+    do
+      echo $elt
+    done 
+    
+    echo "The file's aunts are: "
+    for elt in ${aunt_files[*]};
+    do
+      echo $elt
+    done  
+    
+    #if we are maintain the output's parentage, combine the file's parents and aunts into a flat string
+    #this string will be interpretted by validate_in_job.py. If these are left empty, then validate_in_job will not change the file's parentage
+    if [ $MAINTAIN_PARENTAGE -ne 0 ]; then
+       export JOBS_PARENTS=`echo ${parent_files[*]}`
+       export JOBS_AUNTS=`echo ${aunt_files[*]}`
+    
+    
+    fi
+    
+    # do validation function in the job
     validate_in_job.py --dir $PWD --logfiledir $PWD --outdir $OUTDIR/$OUTPUT_SUBDIR --declare $DECLARE_IN_JOB --copy $COPY_TO_FTS
     valstat=$?
+    
+    
+    
 fi
 
 # Stash all of the files we want to save in a local

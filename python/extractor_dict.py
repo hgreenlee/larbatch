@@ -75,7 +75,7 @@ class MetaData(object):
     def mdart_gen(jobtuple):
         """Take Jobout and Joberr (in jobtuple) and return mdart object from that"""
         mdtext = ''.join(line.replace(", ,", ",") for line in jobtuple[0].split('\n') if line[-3:-1] != ' ,')
-        mdtop = json.JSONDecoder().decode(mdtext)
+	mdtop = json.JSONDecoder().decode(mdtext)
         if len(mdtop.keys()) == 0:
             print 'No top-level key in extracted metadata.'
             sys.exit(1)
@@ -117,10 +117,13 @@ class expMetaData(MetaData):
         # Some fields can be copied directly from art metadata to sam metadata.
         # Other fields require conversion.
 	md = {}
+	
+	
 
         # Loop over art metadata.
+	mixparents = []
         for mdkey, mdval in mdart.iteritems():
-            # mdval = mdart[mdkey]
+	    # mdval = mdart[mdkey]
             
             # Skip some art-specific fields.
             # Ignore primary run_type field (if any).
@@ -130,10 +133,10 @@ class expMetaData(MetaData):
 
             # Ignore data_stream if it begins with "out".
             # These kinds of stream names are probably junk module labels.
-            elif mdkey == 'data_stream' and mdval[:3] == 'out' and \
-                    mdval[3] >= '0' and mdval[3] <= '9':
+            
+	    elif mdkey == 'data_stream' and mdval[:3] == 'out':
                 pass
-
+	    
             # Application family/name/version.
             elif mdkey == 'applicationFamily':
                 md['application'], md['application']['family'] = self.md_handle_application(md), mdval
@@ -145,7 +148,10 @@ class expMetaData(MetaData):
             # Parents.
             elif mdkey == 'parents':
                 md['parents'] = [{'file_name': parent} for parent in mdval]
-
+	    
+	    elif mdkey == 'mixparent':	       
+		mixparents.append(mdval.strip(' ,"') )	
+		
             # Other fields where the key or value requires minor conversion.
             elif mdkey in ['first_event', 'last_event']:
                 md[mdkey] = mdval[2]
@@ -159,19 +165,16 @@ class expMetaData(MetaData):
             elif mdkey == 'fclVersion':
                 md['fcl.version'] = mdval
             
+	    #For all other keys, copy art metadata directly to sam metadata.
+            #This works for run-tuple (run, subrun, runtype) and time stamps.
             else:
                 md[mdkey] = mdval
-            
-            '''
-            elif mdkey == '%sProjectName' % exp:
-                md['%s_project.name' % exp] = mdval
-            elif mdkey == '%sProjectStage' % exp:
-                md['%s_project.stage' % exp] = mdval
-            elif mdkey == '%sProjectVersion' % exp:
-                md['%s_project.version' % exp] = mdval
-            '''
-            # For all other keys, copy art metadata directly to sam metadata.
-            # This works for run-tuple (run, subrun, runtype) and time stamps.
+                        
+	# Merge mix parents into normal parents.
+        
+        for mixparent in mixparents:
+           mixparent_dict = {'file_name': mixparent}
+           md['parents'].append(mixparent_dict)    
 
         # Get the other meta data field parameters.  
         

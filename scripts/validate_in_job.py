@@ -174,7 +174,7 @@ def main():
             return 1
 
     
-    copy_to_dropbox = 1
+    #copy_to_dropbox = 1
     status = 0 #global status code to tell us everything is ok.
     
     print "Do decleration in job: %d" % declare_file 
@@ -298,20 +298,37 @@ def main():
            else:
              expSpecificMetaData = expMetaData(os.environ['SAM_EXPERIMENT'],larbatch_posix.root_stream(path))
              md = expSpecificMetaData.getmetadata()
+	     #change the parentage of the file based on it's parents and aunts from condor_lar
+	     jobs_parents = os.getenv('JOBS_PARENTS', '').split(" ")
+             jobs_aunts   = os.getenv('JOBS_AUNTS', '').split(" ")
+             if(jobs_parents[0] != '' ):
+                  md['parents'] = [{'file_name': parent} for parent in jobs_parents]
+             if(jobs_aunts[0] != '' ):
+                for aunt in jobs_aunts:
+                   mixparent_dict = {'file_name': aunt}
+                   md['parents'].append(mixparent_dict)
+	        	         	     
            if len(md) > 0:
              project_utilities.test_kca()
 
              # Make lack of parent files a nonfatal error.
              # This should probably be removed at some point.
-
+	     print md
+             samweb.declareFile(md=md)
+	     
+	     '''      
              try:
          	 samweb.declareFile(md=md)
-             except:
-         	 if md.has_key('parents'):
-         	     del md['parents']
+             
+	     except:
+		 if md.has_key('parents'):
+         	     print 'Caught no parents excpetion!'
+		     del md['parents']
          	     samweb.declareFile(md=md)
+	    '''	     
            else:
              print 'No sam metadata found for %s.' % fn
+	     status = 1
 	     
            if copy_to_dropbox == 1:
 	     print "Copying to Dropbox"
