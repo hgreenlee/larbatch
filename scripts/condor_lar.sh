@@ -1616,6 +1616,7 @@ while [ $stageStat -lt $nfcls ]; do
   stageStat=$[$stageStat +1] 
 done
 echo $overallStat > lar.stat
+valstat=0
 
 # Make local output directories for files that don't have a subrun.
 

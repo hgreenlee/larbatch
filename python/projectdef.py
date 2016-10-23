@@ -48,6 +48,7 @@ class ProjectDef:
         self.run_number = 0               # Sam run number.
         self.script = 'condor_lar.sh'     # Batch script.
 	self.validate_on_worker = 0   # Run post-job validation on the worker node
+	self.copy_to_fts = 0          # Copy a copy of the file to a dropbox scanned by fts. Note that a copy is still sent to <outdir>
         self.start_script = 'condor_start_project.sh'  # Sam start project script.
         self.stop_script = 'condor_stop_project.sh'    # Sam stop project script.
         self.fclpath = []                 # Fcl search path.
