@@ -874,6 +874,7 @@ def docheck(project, stage, ana):
     cpids = []        # List of successful sam consumer process ids.
     uris = []         # List of input files processed successfully.
     bad_workers = []  # List of bad worker subdirectories.
+    
 
     for log_subpath, subdirs, files in larbatch_posix.walk(stage.logdir):
 
@@ -1269,9 +1270,6 @@ def docheck(project, stage, ana):
 def doquickcheck(project, stage, ana):
 
   # Check that output and log directories exist. Dirs could be lost due to ifdhcp failures
->>>>>>> Directly copy root files to dropbox
-
-
   if not os.path.exists(stage.outdir):
         print 'Output directory %s does not exist.' % stage.outdir
         return 1
@@ -1309,6 +1307,7 @@ def doquickcheck(project, stage, ana):
            sam_projects.append(sam_project)
       continue
     
+        
     subdir = os.path.relpath(log_subpath, stage.logdir)   	
 
     out_subpath = os.path.join(stage.outdir, subdir)
@@ -1320,16 +1319,19 @@ def doquickcheck(project, stage, ana):
     
     missingfilesname = os.path.join(out_subpath, 'missing_files.list')
     
+    #print missingfilesname
+    
     try:
        missingfiles = project_utilities.saferead(missingfilesname)
     #if we can't find missing_files the check will not work
     except:
        print 'Cannont open file: %s' % missingfilesname
        validateOK = 0
-
+    
     if len(missingfiles) == 0:
-       print '%s exists, but is empty' % missingfilesname
-       validateOK = 0      
+      print '%s exists, but is empty' % missingfilesname
+      validateOK = 0      
+    
     
     line = missingfiles[0]
     line = line.strip('\n')
@@ -1337,9 +1339,10 @@ def doquickcheck(project, stage, ana):
     if( int(line) == 0 ):
        validateOK = 1       
     else:
-       validateOK = 0                              
+       validateOK = 0
+                  
     
-    #If the validation failed, compile a missing_files list and terminate
+    #If the validation failed, compile a missing_files list and continue
     if validateOK != 1:
        nErrors += 1
        urislistname = os.path.join(out_subpath, 'transferred_uris.list')
@@ -1373,7 +1376,7 @@ def doquickcheck(project, stage, ana):
     #print 'Appending Files'
     
     # Check existence of sam_project.txt and cpid.txt.
-    # Update sam_projects and cpids.
+            # Update sam_projects and cpids.
 
     if stage.inputdef != '':
         
@@ -1411,7 +1414,8 @@ def doquickcheck(project, stage, ana):
        nErrors += 1
     else:
         eventLists.extend(tmpArray)
-	        
+    
+    
     badfilesrc = os.path.join(out_subpath, 'bad.list')
     
     
@@ -1488,6 +1492,7 @@ def doquickcheck(project, stage, ana):
   eventlistdest = os.path.join(stage.logdir, 'events.list')
   eventsOutList = safeopen(eventlistdest)
   for event in eventLists:
+    #print event
     eventsOutList.write("%s" % event)
   eventsOutList.close()
   project_utilities.addLayerTwo(eventlistdest)
@@ -1510,7 +1515,8 @@ def doquickcheck(project, stage, ana):
     missingOutList.close()  
     project_utilities.addLayerTwo(missingOutList)
   
-  #create the files.list for the next step  
+  #create the files.list for the next step
+  
   if ana:
     analistdest = os.path.join(stage.logdir, 'filesana.list')
     anaOutList = safeopen(analistdest)
@@ -1552,7 +1558,10 @@ def doquickcheck(project, stage, ana):
        streamOutList.write("%s" % line)
      streamOutList.close()
      project_utilities.addLayerTwo(streamdest)  
-        
+  
+  
+  
+    
 
   return nErrors
 
@@ -2557,7 +2566,10 @@ def dojobsub(project, stage, makeup):
       #print 'Validation will be done on the worker node %d' % project.validate_on_worker
       command.extend([' --validate']) 
       command.extend(['--declare'])
-      command.extend(['--maintain_parentage'])			
+      #Maintain parentage will only work if you are running one file per job
+      #Likewise only run it if we have multiple fcl files and thus are running in multiple stages
+      if stage.max_files_per_job == 1 and type(stage.fclname) != type(''):
+        command.extend(['--maintain_parentage'])			
     
     if project.copy_to_fts == 1:
       command.extend(['--copy'])
@@ -3549,6 +3561,29 @@ def safeopen(destination):
     return file
 
 # Invoke main program.
+
+#Utility funciton to scan a file and return its contents as a list
+def scan_file(fileName):
+  #openable = 1
+  returnArray = []
+  try:
+    fileList = project_utilities.saferead(fileName)  
+  #if we can't find missing_files the check will not work
+  except:
+    print 'Cannont open file: %s' % fileName
+    return [ -1 ]
+    
+  if len(fileList) > 0:
+    for line in fileList:
+      #line.strip('\n')
+      returnArray.append(line) 
+	            
+  else:  
+    print '%s exists, but is empty' % fileName
+    
+    return [ -1 ]
+  
+  return returnArray
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))

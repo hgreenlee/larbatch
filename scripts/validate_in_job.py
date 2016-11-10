@@ -140,6 +140,7 @@ def main():
         
     ana = 0
     nproc = 0
+    isSam = int(os.getenv("USE_SAM", "0"))
     
     import_samweb() 
     
@@ -218,8 +219,7 @@ def main():
     
     #will be empty if the checks succeed    
     bad_list = open('bad.list', 'w')
-    missing_list = open('missing_files.list', 'w')
-    
+    missing_list = open('missing_files.list', 'w')    
     
     # Print summary.
 
@@ -309,19 +309,15 @@ def main():
 
              # Make lack of parent files a nonfatal error.
              # This should probably be removed at some point.
-	     print md
-             samweb.declareFile(md=md)
-	     
-	     '''      
+      
              try:
          	 samweb.declareFile(md=md)
              
 	     except:
-		 if md.has_key('parents'):
-         	     print 'Caught no parents excpetion!'
+		 if md.has_key('parents'):         	     
 		     del md['parents']
          	     samweb.declareFile(md=md)
-	    '''	     
+	    	     
            else:
              print 'No sam metadata found for %s.' % fn
 	     status = 1
