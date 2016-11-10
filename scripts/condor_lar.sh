@@ -1619,7 +1619,7 @@ fi
 if [ $VALIDATE_IN_JOB -eq 1 ]; then
     #If SAM was used, get the parent files based on the cpid
     if [ $USE_SAM -ne 0 ]; then
-     parent_files=($(`samweb list-files consumer_process_id=$CPID and consumed_status consumed`))
+     parent_files=(`samweb list-files consumer_process_id=$CPID and consumed_status consumed`)
     fi
     
     echo "The file's parents are: "

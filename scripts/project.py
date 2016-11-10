@@ -874,6 +874,7 @@ def docheck(project, stage, ana):
     cpids = []        # List of successful sam consumer process ids.
     uris = []         # List of input files processed successfully.
     bad_workers = []  # List of bad worker subdirectories.
+    
 
     for log_subpath, subdirs, files in larbatch_posix.walk(stage.logdir):
 
@@ -1281,13 +1282,35 @@ def doquickcheck(project, stage, ana):
 
   #Copy the .list files form the logdir up one dir. This is where the old docheck would put them, and it double-checks that the files made it back from the worker node.
   
-  goodFiles = []      # list of art root files
+  #Copy the .list files form the logdir up one dir. This is where the old docheck would put them, and it double-checks that the files made it back from the worker node.
+  
+  goodFiles        = []       # list of art root files
+  eventLists       = []       # list of art root files and number of events
+  badLists         = []       # list of bad root files
+  missingLists     = []       # list of missing files
+  anaFiles         = []       # list of ana files
+  transferredFiles = []       # list of transferred files
+  streamLists      = {}       # dictionary which keeps track of files per stream
+  
+  sam_projects     = []      # list of sam projects
+  cpids            = []      # list of consumer process ids
+  nErrors = 0                # Number of erors uncovered
+  
   for log_subpath, subdirs, files in os.walk(stage.logdir):
     
     # Only examine files in leaf directories.
     
     if len(subdirs) != 0:
         continue
+    
+    #skip start project jobs for now
+    if log_subpath[-6:] == '_start':
+      filename = os.path.join(log_subpath, 'sam_project.txt')
+      if larbatch_posix.exists(filename):
+         sam_project = larbatch_posix.readlines(filename)[0].strip()
+         if sam_project != '' and not sam_project in sam_projects:
+           sam_projects.append(sam_project)
+      continue
     
         
     subdir = os.path.relpath(log_subpath, stage.logdir)   	
@@ -1298,20 +1321,21 @@ def doquickcheck(project, stage, ana):
     #first check the missing_file.list
     
     validateOK = 0
+    
     missingfilesname = os.path.join(out_subpath, 'missing_files.list')
     
-    print missingfilesname
+    #print missingfilesname
     
     try:
        missingfiles = project_utilities.saferead(missingfilesname)
     #if we can't find missing_files the check will not work
     except:
        print 'Cannont open file: %s' % missingfilesname
-       return 1
+       validateOK = 0
     
     if len(missingfiles) == 0:
       print '%s exists, but is empty' % missingfilesname
-      return 1      
+      validateOK = 0      
     
     
     line = missingfiles[0]
@@ -1320,10 +1344,12 @@ def doquickcheck(project, stage, ana):
     if( int(line) == 0 ):
        validateOK = 1       
     else:
-       validateOK = 0           
+       validateOK = 0
+                  
     
-    #If the validation failed, compile a missing_files list and terminate
+    #If the validation failed, compile a missing_files list and continue
     if validateOK != 1:
+       nErrors += 1
        urislistname = os.path.join(out_subpath, 'transferred_uris.list')
        urifile = safeopen(urislistname)
        uris = []
@@ -1332,93 +1358,127 @@ def doquickcheck(project, stage, ana):
        for line in lines:
            uri = line.strip()
            if uri != '':
-               uris.append(uri)
-       
-       new_missingfilesname = os.path.join(stage.logdir, 'missing_files.list')
-       new_missingfiles = safeopen(new_missingfilesname)
+               transferredFiles.append(uri)
+	       uris.append(uri)       
        
        if stage.inputdef == '' and not stage.pubs_output:
           input_files = get_input_files(stage)
           if len(input_files) > 0:
             missing_files = list(set(input_files) - set(uris))
             for missing_file in missing_files:
-                missingfiles.write('%s\n' % missing_file)
-                nmiss = nmiss + 1
+                missingLists.append(missing_files)
+		nmiss = nmiss + 1
+       
+       '''         
        else:
           nmiss = stage.num_jobs - len(procmap)
           for n in range(nmiss):
-              missingfiles.write('/dev/null\n')              
-       return 1
+              missingfiles.write('/dev/null\n')
+       '''                    
+       continue
               
     #Copy files.
-    print 'Copying Files'
+    #print 'Appending Files'
     
-     
+    # Check existence of sam_project.txt and cpid.txt.
+            # Update sam_projects and cpids.
+
+    if stage.inputdef != '':
+        
+	filename1 = os.path.join(log_subpath, 'sam_project.txt')
+        if not larbatch_posix.exists(filename1):
+            print 'Could not find file sam_project.txt'
+            nErrors += 1
+        else:
+	   sam_project = larbatch_posix.readlines(filename1)[0].strip()
+           if not sam_project in sam_projects:
+                sam_projects.append(sam_project)
+	
+	filename2 = os.path.join(log_subpath, 'cpid.txt')
+        if not larbatch_posix.exists(filename2):
+            print 'Could not find file cpid.txt'
+            nErrors += 1
+        else:
+           cpid = larbatch_posix.readlines(filename2)[0].strip()
+           if not cpid in cpids:
+                cpids.append(cpid) 
 
     filelistsrc = os.path.join(out_subpath, 'files.list')
-    try:
-       fileList = project_utilities.saferead(filelistsrc)
-    #if we can't find missing_files the check will not work
-    except:
-       print 'Cannont open file: %s' % filelistsrc
-       return 1
+    tmpArray = scan_file(filelistsrc)
     
-    if len(fileList) == 0:
-      print '%s exists, but is empty' % filelistsrc
-      return 1        
-    #add the file to the fileList
-    goodFiles.append(fileList[0])
+    if( tmpArray == [ -1 ] ):
+       nErrors += 1
+    else:
+        goodFiles.extend(tmpArray)  
 
-    eventslistsrc = os.path.join(out_subpath, 'events.list')
-    eventslistdest = os.path.join(stage.logdir, 'events.list')
+    eventlistsrc = os.path.join(out_subpath, 'events.list')
     
-    try:
-       project_utilities.safecopy(eventslistsrc, eventslistdest)
-
-    except:
-       print 'Cannont copy file: %s' % eventslistsrc
-       return 1
+    tmpArray = scan_file(eventlistsrc)
+    
+    if( tmpArray == [ -1 ] ):
+       nErrors += 1
+    else:
+        eventLists.extend(tmpArray)
+    
     
     badfilesrc = os.path.join(out_subpath, 'bad.list')
-    badfiledest = os.path.join(stage.logdir, 'bad.list')
     
-    try:
-       project_utilities.safecopy(badfilesrc, badfiledest)
-
-    except:
-       print 'Cannont copy file: %s' % badfilesrc
-       return 1
     
+    tmpArray = scan_file(badfilesrc)
+    
+    #bad list begin empty is okay
+    if( tmpArray == [ -1 ] ):
+       pass
+    else:
+        badLists.extend(tmpArray)
+    
+    '''
     missingfilesrc  = os.path.join(out_subpath, 'missing_files.list')
-    missingfiledest = os.path.join(stage.logdir, 'missing_files.list')
+        
+    tmpArray = scan_file(missingfilesrc)
     
-    try:
-       project_utilities.safecopy(missingfilesrc, missingfiledest)
-
-    except:
-       print 'Cannont copy file: %s' % missingfilesrc
-       return 1
+    if( tmpArray == [ -1 ] ):
+       nErrors += 1
+    else:
+        missingLists.extend(tmpArray)
+    '''
     
-    filesanalistsrc = os.path.join(out_subpath, 'filesana.list')
-    filesanalistdest = os.path.join(stage.logdir, 'filesana.list')
+    if ana:
+      filesanalistsrc = os.path.join(out_subpath, 'filesana.list')    
     
-    try:
-       project_utilities.safecopy(filesanalistsrc, filesanalistdest)
-
-    except:
-       print 'Cannont copy file: %s' % filesanalistsrc
-       return 1
+      tmpArray = scan_file(filesanalistsrc)
+    
+      if( tmpArray == [ -1 ] ):
+        nErrors += 1
+      else:
+        anaFiles.extend(tmpArray)    
     
     urislistsrc = os.path.join(out_subpath, 'transferred_uris.list')
-    urislistdest = os.path.join(stage.logdir, 'transferred_uris.list')
+        
+    tmpArray = scan_file(urislistsrc)
     
-    try:
-       project_utilities.safecopy(urislistsrc, urislistdest)
+    #empty uri file is not nessecary an error
+    if( tmpArray == [ -1 ] ):
+       pass
+    else:
+        transferredFiles.extend(tmpArray)
+    #create a list of files_*.list files. These are outputs from specific streams
+    streamList = os.listdir(out_subpath)
 
-    except:
-       print 'Cannont copy file: %s' % urislistsrc #not nessecarily an error
-       
-
+    for stream in streamList:
+       if( stream[:6] != "files_" ):
+         continue
+       streamfilesrc = os.path.join(out_subpath, stream)
+       #print stream
+       tmpArray = scan_file(streamfilesrc)
+       if( tmpArray == [ -1 ] ):
+          nErrors += 1
+       else:
+         if(streamLists.get(stream, "empty") == "empty" ):
+	   streamLists[stream] = tmpArray
+	 else:
+	   streamLists[stream].extend(tmpArray)   
+   
   checkfilename = os.path.join(stage.logdir, 'checked')
   checkfile = safeopen(checkfilename)
   checkfile.write('\n')
@@ -1432,10 +1492,83 @@ def doquickcheck(project, stage, ana):
     inputList.write("%s" % goodFile)
   inputList.close()
   project_utilities.addLayerTwo(filelistdest)
-
+  
+  #create the events.list for the next step
+  eventlistdest = os.path.join(stage.logdir, 'events.list')
+  eventsOutList = safeopen(eventlistdest)
+  for event in eventLists:
+    #print event
+    eventsOutList.write("%s" % event)
+  eventsOutList.close()
+  project_utilities.addLayerTwo(eventlistdest)
+  
+  #create the bad.list for makeup jobs
+  if(len(badLists) > 0):
+    badlistdest = os.path.join(stage.logdir, 'bad.list')
+    badOutList = safeopen(badlistdest)
+    for bad in badLists:
+      badOutList.write("%s" % bad)
+    badOutList.close()  
+    project_utilities.addLayerTwo(badlistdest)
+  
+  #create the missing_files.list for makeup jobs
+  if(len(missingLists) > 0):
+    missinglistdest = os.path.join(stage.logdir, 'missing_files.list')
+    missingOutList = safeopen(missinglistdest)
+    for missing in missingLists:
+      missingOutList.write("%s" % missing)
+    missingOutList.close()  
+    project_utilities.addLayerTwo(missingOutList)
+  
+  #create the files.list for the next step
+  
+  if ana:
+    analistdest = os.path.join(stage.logdir, 'filesana.list')
+    anaOutList = safeopen(analistdest)
+    for ana in anaFiles:
+      #print event
+      anaOutList.write("%s" % ana)
+    anaOutList.close()
+    project_utilities.addLayerTwo(analistdest)
+  
+  #create the transferred_uris for the next step
+  urilistdest = os.path.join(stage.logdir, 'transferred_uris.list')
+  uriOutList  = safeopen(urilistdest)
+  for uri in transferredFiles:
+    #print event
+    uriOutList.write("%s" % uri)
+  uriOutList.close()
+  project_utilities.addLayerTwo(urilistdest)
+  
+  if stage.inputdef != '':
+    samprojectdest = os.path.join(stage.logdir, 'sam_project.txt')
+    samprojectfile = safeopen(samprojectdest)
+    for sam in sam_projects:
+      samprojectfile.write("%s" % sam)
+    samprojectfile.close()
+    project_utilities.addLayerTwo(samprojectdest)
+    
+    cpiddest = os.path.join(stage.logdir, 'cpid.txt')
+    cpidfile = safeopen(cpiddest)
+    for cp in cpids:
+      cpidfile.write("%s \n" % cp)
+    cpidfile.close()
+    project_utilities.addLayerTwo(cpiddest)  
+      
+  
+  for stream in streamLists:
+     streamdest = os.path.join(stage.logdir, stream)
+     streamOutList = safeopen(streamdest)
+     for line in streamLists[stream]:
+       streamOutList.write("%s" % line)
+     streamOutList.close()
+     project_utilities.addLayerTwo(streamdest)  
+  
+  
+  
     
 
-  return 0
+  return nErrors
 
 # Check project results in the specified directory.
 
@@ -2438,7 +2571,10 @@ def dojobsub(project, stage, makeup):
       #print 'Validation will be done on the worker node %d' % project.validate_on_worker
       command.extend([' --validate']) 
       command.extend(['--declare'])
-      command.extend(['--maintain_parentage'])			
+      #Maintain parentage will only work if you are running one file per job
+      #Likewise only run it if we have multiple fcl files and thus are running in multiple stages
+      if stage.max_files_per_job == 1 and type(stage.fclname) != type(''):
+        command.extend(['--maintain_parentage'])			
     
     if project.copy_to_fts == 1:
       command.extend(['--copy'])
@@ -3430,6 +3566,29 @@ def safeopen(destination):
     return file
 
 # Invoke main program.
+
+#Utility funciton to scan a file and return its contents as a list
+def scan_file(fileName):
+  #openable = 1
+  returnArray = []
+  try:
+    fileList = project_utilities.saferead(fileName)  
+  #if we can't find missing_files the check will not work
+  except:
+    print 'Cannont open file: %s' % fileName
+    return [ -1 ]
+    
+  if len(fileList) > 0:
+    for line in fileList:
+      #line.strip('\n')
+      returnArray.append(line) 
+	            
+  else:  
+    print '%s exists, but is empty' % fileName
+    
+    return [ -1 ]
+  
+  return returnArray
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))
