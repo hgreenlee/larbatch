@@ -700,7 +700,20 @@ def rmtree(path):
     else:
         if debug:
             print '*** Larbatch_posix: Delete directoroy tree %s using posix.' % path
-        shutil.rmtree(path)
+
+        # Deleting a directory tree is a hang risk, especially, but not only, in dCache.
+        # Therefore, use the following procedure.
+        # 
+        # 1.  Rename directory to a random name (this can usually be done, even
+        #     for undeletable directories).
+        #
+        # 2.  Delete renamed directory in a subprocess.  No need to wait for
+        #     subprocess to finish, or check its exit status.
+
+        #shutil.rmtree(path)
+        newpath = path + str(uuid.uuid4())
+        os.rename(path, newpath)
+        os.system('rm -rf %s' % newpath)
 
     # Done
 
