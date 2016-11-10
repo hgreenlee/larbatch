@@ -383,6 +383,20 @@ def exists(path):
 def isdir(path):
 
     result = False
+
+    # Optimizations for speed and to reduce hang risk by not stat'ing every file.
+
+    if path[-5:] == '.list' or \
+            path[-5:] == '.root' or \
+            path[-5:] == '.json' or \
+            path[-4:] == '.txt' or \
+            path[-4:] == '.fcl' or \
+            path[-4:] == '.out' or \
+            path[-4:] == '.err' or \
+            path[-3:] == '.sh' or \
+            path[-5:] == '.stat':
+        return False
+
     if path.startswith('/pnfs/') and (prefer_grid or not pnfs_is_mounted):
         if debug:
             print '*** Larbatch_posix: Check existence of directory %s using ifdh.' % path
@@ -519,7 +533,7 @@ def access(path, mode):
     return result
 
 
-# Walk directory tree.  Like os.walk, this function returns a list of
+# Walk directory tree.  Like os.walk, this function returns an iterator over
 # 3-tuples, one for each directory in the tree rooted in the specified
 # top directory.  Each 3-tuple contains the following information.
 #
@@ -527,25 +541,23 @@ def access(path, mode):
 # 2.  List of dictory names in this directory.
 # 3.  List of non-directory files in this directory.
 #
-# The dCache implementation differs from the standard python implementation 
-# of os.walk in the following ways.
-#
-# 1.  Python os.walk returns an iterator.  The dCache implementation returns
-#     a completed list.
-# 2.  The dCache implementation respects the topdown argument, but ignores
-#     the remaining arguments (they are passed to os.walk for non-dCache files).
+# In case of posix mode, this function includes its own implementation
+# of the walking algorithm so that we can take advantage of optimzations
+# contained in this module's implementation of isdir.
 
-def walk(top, topdown=True, onerror=None, followlinks=False):
-    result = []
+def walk(top, topdown=True):
+
+    # Get contents of top directory using either ifdh or posix.
+
+    dirs = []
+    files = []
     if top.startswith('/pnfs/') and (prefer_grid or not pnfs_is_mounted):
         if debug:
             print '*** Larbatch_posix: Walk directory tree for %s using ifdh.' % top
 
-        # Retrieve the contents of this directory.
+        # Retrieve the contents of this directory using ifdh.
 
         lines = larbatch_utilities.ifdh_ll(top, 1)
-        dirs = []
-        files = []
         for line in lines:
             words = line.split()
             if len(words) > 5:
@@ -553,26 +565,31 @@ def walk(top, topdown=True, onerror=None, followlinks=False):
                     dirs.append(words[-1])
                 else:
                     files.append(words[-1])
-        result.append((top, dirs, files))
-
-        # Visit subdirectories recursively.
-
-        for dir in dirs:
-            result.extend(walk(os.path.join(top, dir)))   # Always top down, reverse at end.
-
-        # Top down or bottom up?
-
-        if not topdown:
-            result.reverse()
-
     else:
         if debug:
             print '*** Larbatch_posix: Walk directory tree for %s using posix.' % top
-        result = os.walk(top, topdown, onerror, followlinks)
+        contents = os.listdir(top)
+        for obj in contents:
+            if isdir(os.path.join(top, obj)):
+                dirs.append(obj)
+            else:
+                files.append(obj)
 
-    # Done
+    if topdown:
+        yield top, dirs, files
 
-    return result
+    # Recursively descend into subdirectories.
+
+    for dir in dirs:
+        for result in walk(os.path.join(top, dir), topdown):
+            yield result
+
+    if not topdown:
+        yield top, dirs, files
+
+    # Done.
+
+    return
 
 
 # Make directory (parent directory must exist).
