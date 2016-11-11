@@ -547,6 +547,11 @@ def access(path, mode):
 
 def walk(top, topdown=True):
 
+    # Quit if top directory doesn't exist.
+
+    if not exists(top):
+        return
+
     # Get contents of top directory using either ifdh or posix.
 
     dirs = []
