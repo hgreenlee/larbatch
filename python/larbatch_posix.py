@@ -371,7 +371,20 @@ def exists(path):
     else:
         if debug:
             print '*** Larbatch_posix: Check existence of %s using posix.' % path
-        result = os.path.exists(path)
+        #result = os.path.exists(path)
+
+        # In order to reduce hang risk from stat'ing file,
+        # check existence by getting contents of parent directory.
+
+        dir = os.path.dirname(path)
+        base = os.path.basename(path)
+        if dir == '':
+            dir = '.'
+        if os.path.isdir(dir):
+            files = os.listdir(dir)
+            for filename in files:
+                if base == filename:
+                    result = True
 
     # Done.
 
@@ -681,8 +694,20 @@ def remove(path):
     else:
         if debug:
             print '*** Larbatch_posix: Delete file %s using posix.' % path
-        os.remove(path)
 
+        # Deleting a file is a hang risk, especially, but not only, in dCache.
+        # Therefore, use the following procedure.
+        # 
+        # 1.  Rename file to a random name (this can usually be done, even
+        #     for undeletable files).
+        #
+        # 2.  Delete renamed file in a subprocess.  No need to wait for
+        #     subprocess to finish, or check its exit status.
+
+        #os.remove(path)
+        newpath = path + '_' + str(uuid.uuid4())
+        os.rename(path, newpath)
+        os.system('rm -f %s &' % newpath)
 
 # Delete empty directory.
 
@@ -733,9 +758,9 @@ def rmtree(path):
         #     subprocess to finish, or check its exit status.
 
         #shutil.rmtree(path)
-        newpath = path + str(uuid.uuid4())
+        newpath = path + '_' + str(uuid.uuid4())
         os.rename(path, newpath)
-        os.system('rm -rf %s' % newpath)
+        os.system('rm -rf %s &' % newpath)
 
     # Done
 
