@@ -1328,7 +1328,7 @@ def doquickcheck(project, stage, ana):
        print 'Cannont open file: %s' % missingfilesname
        validateOK = 0
     
-    if len(missingfiles) and validateOK == 1:
+    if len(missingfiles) == 0 and validateOK == 1:
       print '%s exists, but is empty' % missingfilesname
       validateOK = 0      
     
@@ -1397,7 +1397,7 @@ def doquickcheck(project, stage, ana):
 
     filelistsrc = os.path.join(out_subpath, 'files.list')
     tmpArray = scan_file(filelistsrc)
-    
+
     if( tmpArray == [ -1 ] ):
        nErrors += 1
     else:
@@ -1476,11 +1476,12 @@ def doquickcheck(project, stage, ana):
   checkfile.write('\n')
   checkfile.close()
   project_utilities.addLayerTwo(checkfilename)
-  
+
   #create the input file.list for the next stage
   filelistdest = os.path.join(stage.logdir, 'files.list')
   inputList = safeopen(filelistdest)
   for goodFile in goodFiles:
+    print goodFile
     inputList.write("%s" % goodFile)
   inputList.close()
   project_utilities.addLayerTwo(filelistdest)
