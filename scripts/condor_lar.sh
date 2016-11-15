@@ -618,7 +618,6 @@ done
 #echo "VALIDATE_IN_JOB=$VALIDATE_IN_JOB"
 
 
-
 # Done with arguments.
 
 echo "Nodename: `hostname -f`"
@@ -1206,7 +1205,6 @@ while [ $stage -lt $nfcls ]; do
 
  if [ $stage -eq 0 -a $USE_SAM -eq 0 -a $NFILE_TOTAL -eq 0  ]; then #need to ask what is going on here
 
-
    # Don't allow --nskip.
 
   if [ $NSKIP -gt 0 ]; then
@@ -1278,23 +1276,12 @@ EOF
       fi
     fi
 
-    if [ x$MIX_DEFNAME != x ]; then
-
-      echo "Starting project $MIX_PROJECT using sam dataset definition $MIX_DEFNAME"
-      ifdh startProject $MIX_PROJECT $SAM_STATION $MIX_DEFNAME $SAM_USER $SAM_GROUP
-      if [ $? -eq 0 ]; then
-        echo "Start project succeeded."
-      else
-        echo "Start projet failed."
-        exit 1
-      fi
-    fi
-
-    if [ x$SAM_DEFNAME = x -a x$MIX_DEFNAME = x ]; then
+    if [ x$SAM_DEFNAME = x ]; then
+      
       echo "Start project requested, but no definition was specified."
       exit 1
     fi
-     
+
   fi
 
 
@@ -1383,7 +1370,7 @@ EOF
  #If outfile is not defined and we are inputing a single file or file list, follow our 
  #convention that the output file should be %inputfilename_%systemtime_stage.root
 
- 
+
  # Construct options for lar command line.
 
  LAROPT="-c $FCL --rethrow-default"
@@ -1489,8 +1476,6 @@ EOF
  mv mem.db mem$stage.db
 
 done
-
-
 
 # Setup up current version of ifdhc (may be different than version setup by larsoft).
 
@@ -1768,8 +1753,9 @@ do
   stat=$?
   if [ $stat -ne 0 ]; then
     echo "ifdh cp failed with status ${stat}."
-  fi
     statout=$stat 
+  fi
+    
 done   
 
 if [ $statout -eq 0 ]; then

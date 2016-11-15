@@ -286,7 +286,6 @@ def main():
          	 mdjson = md
              except:
          	 pass
-         	 
 	 if declare_file == 1:
 	   md = {}
 	   if ana:

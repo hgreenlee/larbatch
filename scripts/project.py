@@ -1278,8 +1278,8 @@ def doquickcheck(project, stage, ana):
         print 'Log directory %s does not exist.' % stage.logdir
         return 1
 
-  #Aggegrate the .list files form the logdir up one dir. This is where the old docheck would put them, and it double-checks that the files made it back from the worker node.
 
+  #Aggegrate the .list files form the logdir up one dir. This is where the old docheck would put them, and it double-checks that the files made it back from the worker node.
   goodFiles        = []       # list of art root files
   eventLists       = []       # list of art root files and number of events
   badLists         = []       # list of bad root files
@@ -1297,7 +1297,8 @@ def doquickcheck(project, stage, ana):
     # Only examine files in leaf directories.
     
     if len(subdirs) != 0:
-        continue    
+        continue
+    
     #skip start project jobs for now
     if log_subpath[-6:] == '_start':
       filename = os.path.join(log_subpath, 'sam_project.txt')
@@ -1315,8 +1316,7 @@ def doquickcheck(project, stage, ana):
     
     #first check the missing_file.list
     
-    validateOK = 1
-    
+    validateOK = 1    
     missingfilesname = os.path.join(out_subpath, 'missing_files.list')
     
     #print missingfilesname
@@ -1338,7 +1338,7 @@ def doquickcheck(project, stage, ana):
       line = line.strip('\n')
       if( int(line) != 0 ):
         validateOK = 0       
-                      
+
     #If the validation failed, compile a missing_files list and continue
     if validateOK != 1:
        nErrors += 1
@@ -1555,10 +1555,6 @@ def doquickcheck(project, stage, ana):
        streamOutList.write("%s" % line)
      streamOutList.close()
      project_utilities.addLayerTwo(streamdest)  
-  
-  
-  
-    
 
   return nErrors
 
