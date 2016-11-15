@@ -1315,7 +1315,7 @@ def doquickcheck(project, stage, ana):
     
     #first check the missing_file.list
     
-    validateOK = 0
+    validateOK = 1
     
     missingfilesname = os.path.join(out_subpath, 'missing_files.list')
     
@@ -1328,20 +1328,17 @@ def doquickcheck(project, stage, ana):
        print 'Cannont open file: %s' % missingfilesname
        validateOK = 0
     
-    if len(missingfiles) == 0:
+    if len(missingfiles) and validateOK == 1:
       print '%s exists, but is empty' % missingfilesname
       validateOK = 0      
     
     
-    line = missingfiles[0]
-    line = line.strip('\n')
-    #print line
-    if( int(line) == 0 ):
-       validateOK = 1       
-    else:
-       validateOK = 0
-                  
-    
+    if validateOK == 1:
+      line = missingfiles[0]
+      line = line.strip('\n')
+      if( int(line) != 0 ):
+        validateOK = 0       
+                      
     #If the validation failed, compile a missing_files list and continue
     if validateOK != 1:
        nErrors += 1
