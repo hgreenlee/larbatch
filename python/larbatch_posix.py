@@ -318,6 +318,8 @@ def copy(src, dest):
 
 def listdir(path):
 
+    if not isdir(path):
+        raise OSError, '%s is not a directory.' % path
     result = []
     if path.startswith('/pnfs/') and (prefer_grid or not pnfs_is_mounted):
         if debug:
@@ -344,7 +346,28 @@ def listdir(path):
     else:
         if debug:
             print '*** Larbatch_posix: Listdir %s using posix.' % path
-        result = os.listdir(path)
+        #result = os.listdir(path)
+
+        # To reduce hang risk, read contents of directory in a subprocess with
+        # a timeout.
+
+        cmd = ['ls', path]
+        jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        q = Queue.Queue()
+        thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
+        thread.start()
+        thread.join(timeout=60)
+        if thread.is_alive():
+            print 'Terminating subprocess.'
+            jobinfo.terminate()
+            thread.join()
+        rc = q.get()
+        jobout = q.get()
+        joberr = q.get()
+        if rc == 0:
+            for word in jobout.split():
+                result.append(word)
 
     # Done.
 
@@ -380,8 +403,8 @@ def exists(path):
         base = os.path.basename(path)
         if dir == '':
             dir = '.'
-        if os.path.isdir(dir):
-            files = os.listdir(dir)
+        if isdir(dir):
+            files = listdir(dir)
             for filename in files:
                 if base == filename:
                     result = True
@@ -586,7 +609,7 @@ def walk(top, topdown=True):
     else:
         if debug:
             print '*** Larbatch_posix: Walk directory tree for %s using posix.' % top
-        contents = os.listdir(top)
+        contents = listdir(top)
         for obj in contents:
             if isdir(os.path.join(top, obj)):
                 dirs.append(obj)
