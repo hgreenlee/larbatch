@@ -1328,7 +1328,7 @@ def doquickcheck(project, stage, ana):
        print 'Cannont open file: %s' % missingfilesname
        validateOK = 0
     
-    if len(missingfiles) == 0 and validateOK == 1:
+    if validateOK == 1 and len(missingfiles) == 0:
       print '%s exists, but is empty' % missingfilesname
       validateOK = 0      
     
