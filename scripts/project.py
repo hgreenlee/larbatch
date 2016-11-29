@@ -1298,6 +1298,7 @@ def doquickcheck(project, stage, ana):
     
     if len(subdirs) != 0:
         continue    
+
     #skip start project jobs for now
     if log_subpath[-6:] == '_start':
       filename = os.path.join(log_subpath, 'sam_project.txt')
@@ -1315,6 +1316,7 @@ def doquickcheck(project, stage, ana):
     
     #first check the missing_file.list
     
+
     validateOK = 1
     
     missingfilesname = os.path.join(out_subpath, 'missing_files.list')
@@ -1328,7 +1330,8 @@ def doquickcheck(project, stage, ana):
        print 'Cannont open file: %s' % missingfilesname
        validateOK = 0
     
-    if len(missingfiles) == 0 and validateOK == 1:
+
+    if validateOK == 1 and len(missingfiles) == 0:
       print '%s exists, but is empty' % missingfilesname
       validateOK = 0      
     
@@ -1339,6 +1342,7 @@ def doquickcheck(project, stage, ana):
       if( int(line) != 0 ):
         validateOK = 0       
                       
+
     #If the validation failed, compile a missing_files list and continue
     if validateOK != 1:
        nErrors += 1
@@ -1560,6 +1564,7 @@ def doquickcheck(project, stage, ana):
   
   
     
+
 
   return nErrors
 

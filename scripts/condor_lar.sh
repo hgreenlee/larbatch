@@ -617,8 +617,6 @@ done
 #echo "ENDSCRIPT=$ENDSCRIPT"
 #echo "VALIDATE_IN_JOB=$VALIDATE_IN_JOB"
 
-
-
 # Done with arguments.
 
 echo "Nodename: `hostname -f`"
@@ -1278,19 +1276,8 @@ EOF
       fi
     fi
 
-    if [ x$MIX_DEFNAME != x ]; then
-
-      echo "Starting project $MIX_PROJECT using sam dataset definition $MIX_DEFNAME"
-      ifdh startProject $MIX_PROJECT $SAM_STATION $MIX_DEFNAME $SAM_USER $SAM_GROUP
-      if [ $? -eq 0 ]; then
-        echo "Start project succeeded."
-      else
-        echo "Start projet failed."
-        exit 1
-      fi
-    fi
-
-    if [ x$SAM_DEFNAME = x -a x$MIX_DEFNAME = x ]; then
+    if [ x$SAM_DEFNAME = x ]; then
+      
       echo "Start project requested, but no definition was specified."
       exit 1
     fi
@@ -1383,7 +1370,6 @@ EOF
  #If outfile is not defined and we are inputing a single file or file list, follow our 
  #convention that the output file should be %inputfilename_%systemtime_stage.root
 
- 
  # Construct options for lar command line.
 
  LAROPT="-c $FCL --rethrow-default"
@@ -1634,7 +1620,8 @@ fi
 if [ $VALIDATE_IN_JOB -eq 1 ]; then
     #If SAM was used, get the parent files based on the cpid
     if [ $USE_SAM -ne 0 ]; then
-     parent_files=(`samweb list-files consumer_process_id=$CPID and consumed_status consumed`)
+     id=`cat cpid.txt`
+     parent_files=($(samweb list-files consumer_process_id=$id and consumed_status consumed))
     fi
     
     echo "The file's parents are: "
@@ -1770,6 +1757,7 @@ do
     echo "ifdh cp failed with status ${stat}."
   fi
     statout=$stat 
+
 done   
 
 if [ $statout -eq 0 ]; then
