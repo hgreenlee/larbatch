@@ -1201,8 +1201,8 @@ while [ $stage -lt $nfcls ]; do
  # the subrun number, and the number of events to generate in this worker.
  # This also applies to the textfile inputmode.
  # Note this only applies to the first stage by definition
-
- if [ $stage -eq 0 -a $USE_SAM -eq 0 -a $NFILE_TOTAL -eq 0  ]; then #need to ask what is going on here
+ 
+ if [ $stage -eq 0 -a $USE_SAM -eq 0 ] && [ $NFILE_TOTAL -eq 0 -o "$INMODE" = 'textfile' ]; then #need to ask what is going on here
 
 
    # Don't allow --nskip.
