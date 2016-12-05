@@ -1676,6 +1676,7 @@ for outfile in *; do
     for subrun in ${subruns[*]}
     do
       cp $outfile log$subrun
+      rm -f log/$outfile
     done
   fi
 done
