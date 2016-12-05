@@ -325,7 +325,7 @@ def main():
            if copy_to_dropbox == 1:
 	     print "Copying to Dropbox"
 	     dropbox_dir = project_utilities.get_dropbox(fn)
-	     rootPath = dropbox_dir + fn
+	     rootPath = dropbox_dir + "/" + fn
 	     jsonPath = rootPath + ".json"
 	     ifdh_cp(path, rootPath)
 	     ifdh_cp(json_file, jsonPath)

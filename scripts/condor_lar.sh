@@ -1639,7 +1639,7 @@ if [ $VALIDATE_IN_JOB -eq 1 ]; then
     
     #if we are maintain the output's parentage, combine the file's parents and aunts into a flat string
     #this string will be interpretted by validate_in_job.py. If these are left empty, then validate_in_job will not change the file's parentage
-    if [ $MAINTAIN_PARENTAGE -ne 0 ]; then
+    if [ $MAINTAIN_PARENTAGE -eq 1 ]; then
        export JOBS_PARENTS=`echo ${parent_files[*]}`
        export JOBS_AUNTS=`echo ${aunt_files[*]}`
     
