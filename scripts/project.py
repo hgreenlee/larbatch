@@ -1045,6 +1045,17 @@ def docheck(project, stage, ana):
     # Dictionary procmap now contains a list of good processes
     # and root files.
 
+    # Before attempting to create bookkeeping files in stage.logdir, check
+    # whether this directory is readable.  If not readable, return error
+    # status without creating any bookkeeping files.  This is to prevent
+    # hangs.
+
+    contents = larbatch_posix.listdir(stage.logdir)
+    if len(contents) == 0:
+        print 'Directory %s may be dead.' % stage.logdir
+        print 'Returning error status without creating any bookkeeping files.'
+        return 1
+
     # Open files.
 
     filelistname = os.path.join(stage.logdir, 'files.list')
