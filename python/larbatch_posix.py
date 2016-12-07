@@ -359,7 +359,8 @@ def listdir(path):
         thread.start()
         thread.join(timeout=60)
         if thread.is_alive():
-            print 'Terminating subprocess.'
+            if debug:
+                print '*** Larbatch_posix: Terminating subprocess.'
             jobinfo.terminate()
             thread.join()
         rc = q.get()
@@ -693,7 +694,8 @@ def rename(src, dest):
         thread.start()
         thread.join(timeout=60)
         if thread.is_alive():
-            print 'Terminating subprocess.'
+            if debug:
+                print '*** Larbatch_posix: Terminating subprocess.'
             jobinfo.terminate()
             thread.join()
         rc = q.get()
@@ -822,7 +824,8 @@ def symlink(src, dest):
         thread.start()
         thread.join(timeout=60)
         if thread.is_alive():
-            print 'Terminating subprocess.'
+            if debug:
+                print '*** Larbatch_posix: Terminating subprocess.'
             jobinfo.terminate()
             thread.join()
         rc = q.get()
@@ -858,7 +861,8 @@ def readlink(path):
         thread.start()
         thread.join(timeout=60)
         if thread.is_alive():
-            print 'Terminating subprocess.'
+            if debug:
+                print '*** Larbatch_posix: Terminating subprocess.'
             jobinfo.terminate()
             thread.join()
         rc = q.get()
