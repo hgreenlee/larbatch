@@ -1281,11 +1281,11 @@ def docheck(project, stage, ana):
 def doquickcheck(project, stage, ana):
 
   # Check that output and log directories exist. Dirs could be lost due to ifdhcp failures
-  if not os.path.exists(stage.outdir):
+  if not larbatch_posix.isdir(stage.outdir):
         print 'Output directory %s does not exist.' % stage.outdir
         return 1
 
-  if not os.path.exists(stage.logdir):
+  if not larbatch_posix.isdir(stage.logdir):
         print 'Log directory %s does not exist.' % stage.logdir
         return 1
 
@@ -1303,7 +1303,7 @@ def doquickcheck(project, stage, ana):
   cpids            = []      # list of consumer process ids
   nErrors = 0                # Number of erors uncovered
   
-  for log_subpath, subdirs, files in os.walk(stage.logdir):
+  for log_subpath, subdirs, files in larbatch_posix.walk(stage.logdir):
     
     # Only examine files in leaf directories.
     
@@ -1338,7 +1338,7 @@ def doquickcheck(project, stage, ana):
        missingfiles = project_utilities.saferead(missingfilesname)
     #if we can't find missing_files the check will not work
     except:
-       print 'Cannont open file: %s' % missingfilesname
+       print 'Cannot open file: %s' % missingfilesname
        validateOK = 0
     
 
@@ -1470,7 +1470,7 @@ def doquickcheck(project, stage, ana):
     else:
         transferredFiles.extend(tmpArray)
     #create a list of files_*.list files. These are outputs from specific streams
-    streamList = os.listdir(out_subpath)
+    streamList = larbatch_posix.listdir(out_subpath)
 
     for stream in streamList:
        if( stream[:6] != "files_" ):
@@ -1496,10 +1496,11 @@ def doquickcheck(project, stage, ana):
   filelistdest = os.path.join(stage.logdir, 'files.list')
   inputList = safeopen(filelistdest)
   for goodFile in goodFiles:
-    print goodFile
+    #print goodFile
     inputList.write("%s" % goodFile)
   inputList.close()
-  project_utilities.addLayerTwo(filelistdest)
+  if len(goodFiles) == 0:
+      project_utilities.addLayerTwo(filelistdest)
   
   #create the events.list for the next step
   eventlistdest = os.path.join(stage.logdir, 'events.list')
@@ -1508,7 +1509,8 @@ def doquickcheck(project, stage, ana):
     #print event
     eventsOutList.write("%s" % event)
   eventsOutList.close()
-  project_utilities.addLayerTwo(eventlistdest)
+  if len(eventLists) == 0:
+      project_utilities.addLayerTwo(eventlistdest)
   
   #create the bad.list for makeup jobs
   if(len(badLists) > 0):
@@ -1516,8 +1518,8 @@ def doquickcheck(project, stage, ana):
     badOutList = safeopen(badlistdest)
     for bad in badLists:
       badOutList.write("%s" % bad)
-    badOutList.close()  
-    project_utilities.addLayerTwo(badlistdest)
+    badOutList.close()
+    #project_utilities.addLayerTwo(badlistdest)
   
   #create the missing_files.list for makeup jobs
   if(len(missingLists) > 0):
@@ -1526,7 +1528,7 @@ def doquickcheck(project, stage, ana):
     for missing in missingLists:
       missingOutList.write("%s" % missing)
     missingOutList.close()  
-    project_utilities.addLayerTwo(missingOutList)
+    #project_utilities.addLayerTwo(missingOutList)
   
   #create the files.list for the next step
   
@@ -1537,7 +1539,8 @@ def doquickcheck(project, stage, ana):
       #print event
       anaOutList.write("%s" % ana)
     anaOutList.close()
-    project_utilities.addLayerTwo(analistdest)
+    if len(anaFiles) == 0:
+        project_utilities.addLayerTwo(analistdest)
   
   #create the transferred_uris for the next step
   urilistdest = os.path.join(stage.logdir, 'transferred_uris.list')
@@ -1546,22 +1549,25 @@ def doquickcheck(project, stage, ana):
     #print event
     uriOutList.write("%s" % uri)
   uriOutList.close()
-  project_utilities.addLayerTwo(urilistdest)
+  if len(transferredFiles) == 0:
+      project_utilities.addLayerTwo(urilistdest)
   
   if stage.inputdef != '':
-    samprojectdest = os.path.join(stage.logdir, 'sam_project.txt')
+    samprojectdest = os.path.join(stage.logdir, 'sam_projects.list')
     samprojectfile = safeopen(samprojectdest)
     for sam in sam_projects:
       samprojectfile.write("%s" % sam)
     samprojectfile.close()
-    project_utilities.addLayerTwo(samprojectdest)
+    if len(sam_projects) == 0:
+        project_utilities.addLayerTwo(samprojectdest)
     
-    cpiddest = os.path.join(stage.logdir, 'cpid.txt')
+    cpiddest = os.path.join(stage.logdir, 'cpids.list')
     cpidfile = safeopen(cpiddest)
     for cp in cpids:
       cpidfile.write("%s \n" % cp)
     cpidfile.close()
-    project_utilities.addLayerTwo(cpiddest)  
+    if len(cpids) == 0:
+        project_utilities.addLayerTwo(cpiddest)  
       
   
   for stream in streamLists:
@@ -1570,7 +1576,8 @@ def doquickcheck(project, stage, ana):
      for line in streamLists[stream]:
        streamOutList.write("%s" % line)
      streamOutList.close()
-     project_utilities.addLayerTwo(streamdest)  
+     if len(streamLists[stream]) == 0:
+         project_utilities.addLayerTwo(streamdest)  
   
   
   
@@ -3584,7 +3591,7 @@ def scan_file(fileName):
     fileList = project_utilities.saferead(fileName)  
   #if we can't find missing_files the check will not work
   except:
-    print 'Cannont open file: %s' % fileName
+    #print 'Cannot open file: %s' % fileName
     return [ -1 ]
     
   if len(fileList) > 0:
@@ -3593,7 +3600,7 @@ def scan_file(fileName):
       returnArray.append(line) 
 	            
   else:  
-    print '%s exists, but is empty' % fileName
+    #print '%s exists, but is empty' % fileName
     
     return [ -1 ]
   

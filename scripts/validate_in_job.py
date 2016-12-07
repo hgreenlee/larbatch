@@ -232,6 +232,7 @@ def main():
         print "%d total good root files." % len(rootfiles)
         print "%d total good histogram files." % len(hists)
     
+    file_list_stream = {}
     for rootfile in rootfiles:
         
 	# Make sure root file names do not exceed 200 characters.	
@@ -240,13 +241,15 @@ def main():
            print 'Filename %s in subdirectory %s is longer than 200 characters.' % (
         	rootname, outdir)
            status = 1
-	
-	file_list_stream = open('files_%s.list' % rootfile[2], 'w')
+
+        streamname = rootfile[2]
+        if not file_list_stream.has_key(streamname):
+            file_list_stream[streamname] = open('files_%s.list' % streamname, 'w')
 	validate_list.write(rootfile[0] + '\n')
 	file_on_scratch = rootfile[0].split('/')[len(rootfile[0].split('/'))-1]
 	file_on_scratch = outdir + '/' + file_on_scratch
 	file_list.write(file_on_scratch + '\n')
-	file_list_stream.write(file_on_scratch + '\n')
+	file_list_stream[streamname].write(file_on_scratch + '\n')
 	events_list.write('%s %d \n' % (file_on_scratch, rootfile[1]) )
         
     for histfile in hists:
@@ -260,7 +263,8 @@ def main():
     validate_list.close()
     file_list.close()
     ana_file_list.close()
-    file_list_stream.close()
+    for streamname in file_list_stream.keys():
+        file_list_stream[streamname].close()
     events_list.close()
     
     #decide at this point if all the checks are ok. Write to missing_file_list first
