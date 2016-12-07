@@ -1217,7 +1217,6 @@ while [ $stage -lt $nfcls ]; do
   NSKIP=$(( $PROCESS * $NEVT / $NJOBS ))
   NEV=$(( ( $PROCESS + 1 ) * $NEVT / $NJOBS - $NSKIP ))
   FIRST_EVENT=$(( $NSKIP + 1 ))
-  FIRST_EVENT=0
   NSKIP=0
   NEVT=$NEV
 
