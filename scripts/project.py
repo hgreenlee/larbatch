@@ -3439,9 +3439,9 @@ def main(argv):
 
         #do an abbreviated check if we did some validation on the worker node
         if project.validate_on_worker == 1:
-           doquickcheck(project, stage, checkana)
+            doquickcheck(project, stage, checkana)
         else:
-           docheck(project, stage, checkana)
+            docheck(project, stage, checkana)
 
     if fetchlog:
 
