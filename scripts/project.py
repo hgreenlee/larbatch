@@ -40,7 +40,7 @@
 # --mergehist  - merge histogram files using hadd -T
 # --mergentuple- merge ntuple files using hadd
 # --merge      - merge non-ART root files using the specified merging program in the XML file
-#	         (default hadd -T)
+#                (default hadd -T)
 # --status     - Print status of each stage.
 # --makeup     - Submit makeup jobs for specified stage.
 # --clean      - Delete output from specified project and stage.
@@ -51,8 +51,8 @@
 # --upload     - Upload files to enstore.
 # --define     - Make sam dataset definition.
 # --undefine   - Delete sam dataset definition.
-# --audit      - compare input files to output files and look for extra 
-#		 or misssing files and take subsequent action
+# --audit      - compare input files to output files and look for extra
+#                or misssing files and take subsequent action
 #
 # --declare_ana          - Declare analysis files to sam.
 # --add_locations_ana    - Check sam analysis file disk locations and add missing ones.
@@ -83,7 +83,7 @@
 #
 # --check_declarations_ana - Check whether analysis files are declared to sam.
 # --test_declarations_ana  - Print a summary of analysis files returned by sam query.
-# --check_locations_ana    - Check sam locations for analysis files and report the 
+# --check_locations_ana    - Check sam locations for analysis files and report the
 #                            following:
 #                            a) Files that lack any location.
 #                            b) Disk locations that can be added.
@@ -91,9 +91,9 @@
 # --check_tape_ana         - Check analysis file sam tape locations.
 #                            Reports any files that lack tape (enstore) locations.
 # --check_definition_ana   - Reports whether the sam analysis dataset definition
-#                            associated with this project/stage exists, or needs to 
+#                            associated with this project/stage exists, or needs to
 #                            be created.
-# --test_definition_ana    - Print a summary of files returned by analysis dataset 
+# --test_definition_ana    - Print a summary of files returned by analysis dataset
 #                            definition.
 #
 ######################################################################
@@ -144,7 +144,7 @@
 # <runnumber> - Sam run number (default nont).
 # <parameter name="parametername"> - Specify experiment-specific metadata parameters
 #
-# <merge>    - special histogram merging program (default "hadd -T", 
+# <merge>    - special histogram merging program (default "hadd -T",
 #               can be overridden at each stage).
 #
 # <stage name="stagename"> - Information about project stage.  There can
@@ -171,7 +171,7 @@
 #             of batch jobs must be one.
 # <stage><inputlist> - Specify input file list (a file containing a list
 #             of input files, one per line, full path).
-# <stage><inputmode> - Specify input file tyle. Default is none which means 
+# <stage><inputmode> - Specify input file tyle. Default is none which means
 #             art root file. Alternative is textfile
 # <stage><inputdef>  - Specify input sam dataset definition.
 #
@@ -181,8 +181,8 @@
 #             the list of files produced by the previous production stage
 #             (if any) will be used as input to the current production stage
 #             (must have been checked using option --check).
-# <stage><inputstream> - Specify input stream.  This only effect of this 
-#             parameter is to change the default input file list name from 
+# <stage><inputstream> - Specify input stream.  This only effect of this
+#             parameter is to change the default input file list name from
 #             "files.list" to "files_<inputstream>.list."  This parameter has
 #             no effect if any non-default input is specified.
 # <stage><previousstage> - Specify the previous stage name to be something other
@@ -210,7 +210,7 @@
 # <stage><endscript>  - Worker end-of-job script (condor_lar.sh --end-script).
 #                       Initialization/end-of-job scripts can be specified using an
 #                       absolute or relative path relative to the current directory.
-# <stage><merge>  - Name of special histogram merging program or script (default "hadd -T", 
+# <stage><merge>  - Name of special histogram merging program or script (default "hadd -T",
 #                       can be overridden at each stage).
 # <stage><resource> - Jobsub resources (comma-separated list: DEDICATED,OPPORTUNISTIC,
 #                     OFFSITE,FERMICLOUD,PAID_CLOUD,FERMICLOUD8G).
@@ -222,10 +222,10 @@
 #                    Specify value and unit (e.g. 50GB).
 # <stage><memory>  - Specify amount of memory in MB (jobsub_submit --memory=...).
 # <stage><output>  - Specify output file name.
-# <stage><TFileName>   - Ability to specify unique output TFile Name 
-#		         (Required when generating Metadata for TFiles)
+# <stage><TFileName>   - Ability to specify unique output TFile Name
+#                        (Required when generating Metadata for TFiles)
 # <stage><jobsub>  - Arbitrary jobsub_submit option(s).  Space-separated list.
-#                    Only applies to main worker submission, not sam start/stop 
+#                    Only applies to main worker submission, not sam start/stop
 #                    project submissions.
 # <stage><maxfilesperjob> - Maximum number of files to be processed in a single worker.
 #
@@ -254,14 +254,14 @@
 #           of the latest check for this stage.
 # files.list - A list of all good art output files (full paths), one file
 #              per line.
-# file_<data_stream>.list - A list of all goot art output files in the 
+# file_<data_stream>.list - A list of all goot art output files in the
 #                           specified stream.
 # events.list - A list of all good art output files (full paths), one
 #               file per line, plus on the same line the number of events.
 # filesana.list - A list of all good non-art output root files (full
 #                 paths), one file per line.
 # transferred_uris.list - A list of input files that were successfully
-#                         processed.  This file is a concatenated version of 
+#                         processed.  This file is a concatenated version of
 #                         "transferred_uris.list" files from successful
 #                         process subdirectories.
 # missing_files.list - A list of input files that were not successfully
@@ -269,7 +269,7 @@
 # bad.list - A list of failed process subdirectories.
 # sam_projects.list - A list of at sam projects from successful processes.
 #                     This file is a concatenated and sorted version of
-#                     "sam_project.txt" files from successful process 
+#                     "sam_project.txt" files from successful process
 #                     subdirectories.
 # cpids.list - A list of successful sam consumer process ids.  This file
 #              is a concatenated version of "cpid.txt" files from
@@ -438,7 +438,7 @@ def dostatus(projects):
 
     project_utilities.test_kca()
 
-    # For backward compatibility, allow this function to be called with 
+    # For backward compatibility, allow this function to be called with
     # either a single project or a list of projects.
 
     prjs = projects
@@ -461,7 +461,7 @@ def dostatus(projects):
             b_stage_status = batch_status.get_stage_status(stagename)
             if stage_status.exists:
                 print '\nStage %s: %d art files, %d events, %d analysis files, %d errors, %d missing files.' % (
-                    stagename, stage_status.nfile, stage_status.nev, stage_status.nana, 
+                    stagename, stage_status.nfile, stage_status.nev, stage_status.nana,
                     stage_status.nerror, stage_status.nmiss)
             else:
                 print '\nStage %s output directory does not exist.' % stagename
@@ -477,7 +477,7 @@ def find_projects(element, default_first_input_list = ''):
     projects = []
     default_input = default_first_input_list
 
-    # First check if the input element is a project.  In that case, return a 
+    # First check if the input element is a project.  In that case, return a
     # list containing the project name as the single element of the list.
 
     if element.nodeName == 'project':
@@ -505,7 +505,7 @@ def find_projects(element, default_first_input_list = ''):
 # Extract all projects from the specified xml file.
 
 def get_projects(xmlfile):
-    
+
     # Parse xml (returns xml document).
 
     if xmlfile == '-':
@@ -519,7 +519,7 @@ def get_projects(xmlfile):
     root = doc.documentElement
 
     # Find project names in the root element.
-    
+
     projects = find_projects(root)
 
     # Done.
@@ -645,10 +645,10 @@ def check_root_file(path, logdir):
         # Get number of events from precalculated metadata.
 
         try:
-	    lines = larbatch_posix.readlines(json_path)
-     	    s = ''
+            lines = larbatch_posix.readlines(json_path)
+            s = ''
             for line in lines:
-               s = s + line
+                s = s + line
 
             # Convert json string to python dictionary.
 
@@ -660,10 +660,10 @@ def check_root_file(path, logdir):
 
             # Extract number of events and stream name from metadata.
 
-	    if len(md.keys()) > 0:
-      		nevroot = -1
+            if len(md.keys()) > 0:
+                nevroot = -1
                 stream = ''
-            	if md.has_key('events'):
+                if md.has_key('events'):
                     nevroot = int(md['events'])
                 if md.has_key('data_stream'):
                     stream = md['data_stream']
@@ -723,13 +723,13 @@ def check_root(outdir, logdir):
     # Done.
 
     return (nev, roots, hists)
-    
+
 
 # Get the list of input files for a project stage.
 
 def get_input_files(stage):
 
-    # In case of single file or file list input, files are returned exactly 
+    # In case of single file or file list input, files are returned exactly
     # as specified, which would normallly be as the full path.
     # In case of sam input, only the file names are returned (guaranteed unique).
 
@@ -874,7 +874,7 @@ def docheck(project, stage, ana):
     cpids = []        # List of successful sam consumer process ids.
     uris = []         # List of input files processed successfully.
     bad_workers = []  # List of bad worker subdirectories.
-    
+
 
     for log_subpath, subdirs, files in larbatch_posix.walk(stage.logdir):
 
@@ -884,8 +884,7 @@ def docheck(project, stage, ana):
             continue
 
         subdir = os.path.relpath(log_subpath, stage.logdir)
-        print subdir
-	if subdir == '.':
+        if subdir == '.':
             continue
         out_subpath = os.path.join(stage.outdir, subdir)
         dirok = project_utilities.fast_isdir(log_subpath)
@@ -941,7 +940,7 @@ def docheck(project, stage, ana):
                 elif nev < -1 or len(subhists) == 0:
                     print 'Problem with analysis root file(s) in subdirectory %s.' % subdir
                     bad = 1
-                    
+
 
             # Check for duplicate filenames (only if metadata is being generated).
 
@@ -1116,7 +1115,7 @@ def docheck(project, stage, ana):
             nmiss = stage.num_jobs - len(procmap)
             for n in range(nmiss):
                 missingfiles.write('/dev/null\n')
-                
+
 
     # Generate "filesana.list."
 
@@ -1166,7 +1165,7 @@ def docheck(project, stage, ana):
     if stage.inputdef != '' and not stage.pubs_input:
 
         # List of successful sam projects.
-        
+
         sam_projects_filename = os.path.join(stage.logdir, 'sam_projects.list')
         sam_projects_file = safeopen(sam_projects_filename)
         for sam_project in sam_projects:
@@ -1207,7 +1206,7 @@ def docheck(project, stage, ana):
             udim = 'defname: %s' % stage.inputdef
         nunconsumed = samweb.countFiles(dimensions=udim)
         nerror = nerror + nunconsumed
-        
+
         # Sam summary.
 
         print '%d sam projects.' % len(sam_projects)
@@ -1216,7 +1215,7 @@ def docheck(project, stage, ana):
         print '%d files not consumed.' % nunconsumed
 
         # Check project statuses.
-        
+
         for sam_project in sam_projects:
             print '\nChecking sam project %s' % sam_project
             import_samweb()
@@ -1280,311 +1279,311 @@ def docheck(project, stage, ana):
 
 def doquickcheck(project, stage, ana):
 
-  # Check that output and log directories exist. Dirs could be lost due to ifdhcp failures
-  if not larbatch_posix.isdir(stage.outdir):
+    # Check that output and log directories exist. Dirs could be lost due to ifdhcp failures
+    if not larbatch_posix.isdir(stage.outdir):
         print 'Output directory %s does not exist.' % stage.outdir
         return 1
 
-  if not larbatch_posix.isdir(stage.logdir):
+    if not larbatch_posix.isdir(stage.logdir):
         print 'Log directory %s does not exist.' % stage.logdir
         return 1
 
-  #Aggegrate the .list files form the logdir up one dir. This is where the old docheck would put them, and it double-checks that the files made it back from the worker node.
+    #Aggegrate the .list files form the logdir up one dir. This is where the old docheck would put them, and it double-checks that the files made it back from the worker node.
 
-  goodFiles        = []       # list of art root files
-  eventLists       = []       # list of art root files and number of events
-  badLists         = []       # list of bad root files
-  missingLists     = []       # list of missing files
-  anaFiles         = []       # list of ana files
-  transferredFiles = []       # list of transferred files
-  streamLists      = {}       # dictionary which keeps track of files per stream
-  
-  sam_projects     = []      # list of sam projects
-  cpids            = []      # list of consumer process ids
-  nErrors = 0                # Number of erors uncovered
-  
-  for log_subpath, subdirs, files in larbatch_posix.walk(stage.logdir):
-    
-    # Only examine files in leaf directories.
-    
-    if len(subdirs) != 0:
-        continue    
+    goodFiles        = []       # list of art root files
+    eventLists       = []       # list of art root files and number of events
+    badLists         = []       # list of bad root files
+    missingLists     = []       # list of missing files
+    anaFiles         = []       # list of ana files
+    transferredFiles = []       # list of transferred files
+    streamLists      = {}       # dictionary which keeps track of files per stream
 
-    #skip start project jobs for now
-    if log_subpath[-6:] == '_start':
-      filename = os.path.join(log_subpath, 'sam_project.txt')
-      if larbatch_posix.exists(filename):
-         sam_project = larbatch_posix.readlines(filename)[0].strip()
-         if sam_project != '' and not sam_project in sam_projects:
-           sam_projects.append(sam_project)
-      continue
-    
-        
-    subdir = os.path.relpath(log_subpath, stage.logdir)   	
+    sam_projects     = []      # list of sam projects
+    cpids            = []      # list of consumer process ids
+    nErrors = 0                # Number of erors uncovered
 
-    out_subpath = os.path.join(stage.outdir, subdir)
-    dirok = project_utilities.fast_isdir(log_subpath)
-    
-    #first check the missing_file.list
-    
+    for log_subpath, subdirs, files in larbatch_posix.walk(stage.logdir):
 
-    validateOK = 1
-    
-    missingfilesname = os.path.join(out_subpath, 'missing_files.list')
-    
-    #print missingfilesname
-    
-    try:
-       missingfiles = project_utilities.saferead(missingfilesname)
-    #if we can't find missing_files the check will not work
-    except:
-       print 'Cannot open file: %s' % missingfilesname
-       validateOK = 0
-    
+        # Only examine files in leaf directories.
 
-    if validateOK == 1 and len(missingfiles) == 0:
-      print '%s exists, but is empty' % missingfilesname
-      validateOK = 0      
-    
-    
-    if validateOK == 1:
-      line = missingfiles[0]
-      line = line.strip('\n')
-      if( int(line) != 0 ):
-        validateOK = 0       
-                      
+        if len(subdirs) != 0:
+            continue
 
-    #If the validation failed, compile a missing_files list and continue
-    if validateOK != 1:
-       nErrors += 1
-       urislistname = os.path.join(out_subpath, 'transferred_uris.list')
-       urifile = safeopen(urislistname)
-       uris = []
-       #update uris
-       lines = project_utilities.saferead(urislistname)
-       for line in lines:
-           uri = line.strip()
-           if uri != '':
-               transferredFiles.append(uri)
-	       uris.append(uri)       
-       
-       if stage.inputdef == '' and not stage.pubs_output:
-          input_files = get_input_files(stage)
-          if len(input_files) > 0:
-            missing_files = list(set(input_files) - set(uris))
-            for missing_file in missing_files:
-                missingLists.append(missing_files)
-		nmiss = nmiss + 1
-       
-       '''         
-       else:
-          nmiss = stage.num_jobs - len(procmap)
-          for n in range(nmiss):
-              missingfiles.write('/dev/null\n')
-       '''                    
-       continue
-              
-    #Copy files.
-    #print 'Appending Files'
-    
-    # Check existence of sam_project.txt and cpid.txt.
-            # Update sam_projects and cpids.
+        #skip start project jobs for now
+        if log_subpath[-6:] == '_start':
+            filename = os.path.join(log_subpath, 'sam_project.txt')
+            if larbatch_posix.exists(filename):
+                sam_project = larbatch_posix.readlines(filename)[0].strip()
+                if sam_project != '' and not sam_project in sam_projects:
+                    sam_projects.append(sam_project)
+            continue
+
+
+        subdir = os.path.relpath(log_subpath, stage.logdir)
+
+        out_subpath = os.path.join(stage.outdir, subdir)
+        dirok = project_utilities.fast_isdir(log_subpath)
+
+        #first check the missing_file.list
+
+
+        validateOK = 1
+
+        missingfilesname = os.path.join(out_subpath, 'missing_files.list')
+
+        #print missingfilesname
+
+        try:
+            missingfiles = project_utilities.saferead(missingfilesname)
+        #if we can't find missing_files the check will not work
+        except:
+            print 'Cannot open file: %s' % missingfilesname
+            validateOK = 0
+
+
+        if validateOK == 1 and len(missingfiles) == 0:
+            print '%s exists, but is empty' % missingfilesname
+            validateOK = 0
+
+
+        if validateOK == 1:
+            line = missingfiles[0]
+            line = line.strip('\n')
+            if( int(line) != 0 ):
+                validateOK = 0
+
+
+        #If the validation failed, compile a missing_files list and continue
+        if validateOK != 1:
+            nErrors += 1
+            urislistname = os.path.join(out_subpath, 'transferred_uris.list')
+            urifile = safeopen(urislistname)
+            uris = []
+            #update uris
+            lines = project_utilities.saferead(urislistname)
+            for line in lines:
+                uri = line.strip()
+                if uri != '':
+                    transferredFiles.append(uri)
+                    uris.append(uri)
+
+            if stage.inputdef == '' and not stage.pubs_output:
+                input_files = get_input_files(stage)
+                if len(input_files) > 0:
+                    missing_files = list(set(input_files) - set(uris))
+                    for missing_file in missing_files:
+                        missingLists.append(missing_files)
+                        nmiss = nmiss + 1
+
+            '''
+            else:
+               nmiss = stage.num_jobs - len(procmap)
+               for n in range(nmiss):
+                   missingfiles.write('/dev/null\n')
+            '''
+            continue
+
+        #Copy files.
+        #print 'Appending Files'
+
+        # Check existence of sam_project.txt and cpid.txt.
+        # Update sam_projects and cpids.
+
+        if stage.inputdef != '':
+
+            filename1 = os.path.join(log_subpath, 'sam_project.txt')
+            if not larbatch_posix.exists(filename1):
+                print 'Could not find file sam_project.txt'
+                nErrors += 1
+            else:
+                sam_project = larbatch_posix.readlines(filename1)[0].strip()
+                if not sam_project in sam_projects:
+                    sam_projects.append(sam_project)
+
+            filename2 = os.path.join(log_subpath, 'cpid.txt')
+            if not larbatch_posix.exists(filename2):
+                print 'Could not find file cpid.txt'
+                nErrors += 1
+            else:
+                cpid = larbatch_posix.readlines(filename2)[0].strip()
+                if not cpid in cpids:
+                    cpids.append(cpid)
+
+        filelistsrc = os.path.join(out_subpath, 'files.list')
+        tmpArray = scan_file(filelistsrc)
+
+        if( tmpArray == [ -1 ] ):
+            nErrors += 1
+        else:
+            goodFiles.extend(tmpArray)
+
+        eventlistsrc = os.path.join(out_subpath, 'events.list')
+
+        tmpArray = scan_file(eventlistsrc)
+
+        if( tmpArray == [ -1 ] ):
+            nErrors += 1
+        else:
+            eventLists.extend(tmpArray)
+
+
+        badfilesrc = os.path.join(out_subpath, 'bad.list')
+
+
+        tmpArray = scan_file(badfilesrc)
+
+        #bad list begin empty is okay
+        if( tmpArray == [ -1 ] ):
+            pass
+        else:
+            badLists.extend(tmpArray)
+
+        '''
+        missingfilesrc  = os.path.join(out_subpath, 'missing_files.list')
+
+        tmpArray = scan_file(missingfilesrc)
+
+        if( tmpArray == [ -1 ] ):
+            nErrors += 1
+        else:
+            missingLists.extend(tmpArray)
+        '''
+
+        if ana:
+            filesanalistsrc = os.path.join(out_subpath, 'filesana.list')
+
+            tmpArray = scan_file(filesanalistsrc)
+
+            if( tmpArray == [ -1 ] ):
+                nErrors += 1
+            else:
+                anaFiles.extend(tmpArray)
+
+        urislistsrc = os.path.join(out_subpath, 'transferred_uris.list')
+
+        tmpArray = scan_file(urislistsrc)
+
+        #empty uri file is not nessecary an error
+        if( tmpArray == [ -1 ] ):
+            pass
+        else:
+            transferredFiles.extend(tmpArray)
+        #create a list of files_*.list files. These are outputs from specific streams
+        streamList = larbatch_posix.listdir(out_subpath)
+
+        for stream in streamList:
+            if( stream[:6] != "files_" ):
+                continue
+            streamfilesrc = os.path.join(out_subpath, stream)
+            #print stream
+            tmpArray = scan_file(streamfilesrc)
+            if( tmpArray == [ -1 ] ):
+                nErrors += 1
+            else:
+                if(streamLists.get(stream, "empty") == "empty" ):
+                    streamLists[stream] = tmpArray
+                else:
+                    streamLists[stream].extend(tmpArray)
+
+    checkfilename = os.path.join(stage.logdir, 'checked')
+    checkfile = safeopen(checkfilename)
+    checkfile.write('\n')
+    checkfile.close()
+    project_utilities.addLayerTwo(checkfilename)
+
+    #create the input file.list for the next stage
+    filelistdest = os.path.join(stage.logdir, 'files.list')
+    inputList = safeopen(filelistdest)
+    for goodFile in goodFiles:
+        #print goodFile
+        inputList.write("%s" % goodFile)
+    inputList.close()
+    if len(goodFiles) == 0:
+        project_utilities.addLayerTwo(filelistdest)
+
+    #create the events.list for the next step
+    eventlistdest = os.path.join(stage.logdir, 'events.list')
+    eventsOutList = safeopen(eventlistdest)
+    for event in eventLists:
+        #print event
+        eventsOutList.write("%s" % event)
+    eventsOutList.close()
+    if len(eventLists) == 0:
+        project_utilities.addLayerTwo(eventlistdest)
+
+    #create the bad.list for makeup jobs
+    if(len(badLists) > 0):
+        badlistdest = os.path.join(stage.logdir, 'bad.list')
+        badOutList = safeopen(badlistdest)
+        for bad in badLists:
+            badOutList.write("%s" % bad)
+        badOutList.close()
+        #project_utilities.addLayerTwo(badlistdest)
+
+    #create the missing_files.list for makeup jobs
+    if(len(missingLists) > 0):
+        missinglistdest = os.path.join(stage.logdir, 'missing_files.list')
+        missingOutList = safeopen(missinglistdest)
+        for missing in missingLists:
+            missingOutList.write("%s" % missing)
+        missingOutList.close()
+        #project_utilities.addLayerTwo(missingOutList)
+
+    #create the files.list for the next step
+
+    if ana:
+        analistdest = os.path.join(stage.logdir, 'filesana.list')
+        anaOutList = safeopen(analistdest)
+        for ana in anaFiles:
+            #print event
+            anaOutList.write("%s" % ana)
+        anaOutList.close()
+        if len(anaFiles) == 0:
+            project_utilities.addLayerTwo(analistdest)
+
+    #create the transferred_uris for the next step
+    urilistdest = os.path.join(stage.logdir, 'transferred_uris.list')
+    uriOutList  = safeopen(urilistdest)
+    for uri in transferredFiles:
+        #print event
+        uriOutList.write("%s" % uri)
+    uriOutList.close()
+    if len(transferredFiles) == 0:
+        project_utilities.addLayerTwo(urilistdest)
 
     if stage.inputdef != '':
-        
-	filename1 = os.path.join(log_subpath, 'sam_project.txt')
-        if not larbatch_posix.exists(filename1):
-            print 'Could not find file sam_project.txt'
-            nErrors += 1
-        else:
-	   sam_project = larbatch_posix.readlines(filename1)[0].strip()
-           if not sam_project in sam_projects:
-                sam_projects.append(sam_project)
-	
-	filename2 = os.path.join(log_subpath, 'cpid.txt')
-        if not larbatch_posix.exists(filename2):
-            print 'Could not find file cpid.txt'
-            nErrors += 1
-        else:
-           cpid = larbatch_posix.readlines(filename2)[0].strip()
-           if not cpid in cpids:
-                cpids.append(cpid) 
+        samprojectdest = os.path.join(stage.logdir, 'sam_projects.list')
+        samprojectfile = safeopen(samprojectdest)
+        for sam in sam_projects:
+            samprojectfile.write("%s" % sam)
+        samprojectfile.close()
+        if len(sam_projects) == 0:
+            project_utilities.addLayerTwo(samprojectdest)
 
-    filelistsrc = os.path.join(out_subpath, 'files.list')
-    tmpArray = scan_file(filelistsrc)
-
-    if( tmpArray == [ -1 ] ):
-       nErrors += 1
-    else:
-        goodFiles.extend(tmpArray)  
-
-    eventlistsrc = os.path.join(out_subpath, 'events.list')
-    
-    tmpArray = scan_file(eventlistsrc)
-    
-    if( tmpArray == [ -1 ] ):
-       nErrors += 1
-    else:
-        eventLists.extend(tmpArray)
-    
-    
-    badfilesrc = os.path.join(out_subpath, 'bad.list')
-    
-    
-    tmpArray = scan_file(badfilesrc)
-    
-    #bad list begin empty is okay
-    if( tmpArray == [ -1 ] ):
-       pass
-    else:
-        badLists.extend(tmpArray)
-    
-    '''
-    missingfilesrc  = os.path.join(out_subpath, 'missing_files.list')
-        
-    tmpArray = scan_file(missingfilesrc)
-    
-    if( tmpArray == [ -1 ] ):
-       nErrors += 1
-    else:
-        missingLists.extend(tmpArray)
-    '''
-    
-    if ana:
-      filesanalistsrc = os.path.join(out_subpath, 'filesana.list')    
-    
-      tmpArray = scan_file(filesanalistsrc)
-    
-      if( tmpArray == [ -1 ] ):
-        nErrors += 1
-      else:
-        anaFiles.extend(tmpArray)    
-    
-    urislistsrc = os.path.join(out_subpath, 'transferred_uris.list')
-        
-    tmpArray = scan_file(urislistsrc)
-    
-    #empty uri file is not nessecary an error
-    if( tmpArray == [ -1 ] ):
-       pass
-    else:
-        transferredFiles.extend(tmpArray)
-    #create a list of files_*.list files. These are outputs from specific streams
-    streamList = larbatch_posix.listdir(out_subpath)
-
-    for stream in streamList:
-       if( stream[:6] != "files_" ):
-         continue
-       streamfilesrc = os.path.join(out_subpath, stream)
-       #print stream
-       tmpArray = scan_file(streamfilesrc)
-       if( tmpArray == [ -1 ] ):
-          nErrors += 1
-       else:
-         if(streamLists.get(stream, "empty") == "empty" ):
-	   streamLists[stream] = tmpArray
-	 else:
-	   streamLists[stream].extend(tmpArray)   
-   
-  checkfilename = os.path.join(stage.logdir, 'checked')
-  checkfile = safeopen(checkfilename)
-  checkfile.write('\n')
-  checkfile.close()
-  project_utilities.addLayerTwo(checkfilename)
-
-  #create the input file.list for the next stage
-  filelistdest = os.path.join(stage.logdir, 'files.list')
-  inputList = safeopen(filelistdest)
-  for goodFile in goodFiles:
-    #print goodFile
-    inputList.write("%s" % goodFile)
-  inputList.close()
-  if len(goodFiles) == 0:
-      project_utilities.addLayerTwo(filelistdest)
-  
-  #create the events.list for the next step
-  eventlistdest = os.path.join(stage.logdir, 'events.list')
-  eventsOutList = safeopen(eventlistdest)
-  for event in eventLists:
-    #print event
-    eventsOutList.write("%s" % event)
-  eventsOutList.close()
-  if len(eventLists) == 0:
-      project_utilities.addLayerTwo(eventlistdest)
-  
-  #create the bad.list for makeup jobs
-  if(len(badLists) > 0):
-    badlistdest = os.path.join(stage.logdir, 'bad.list')
-    badOutList = safeopen(badlistdest)
-    for bad in badLists:
-      badOutList.write("%s" % bad)
-    badOutList.close()
-    #project_utilities.addLayerTwo(badlistdest)
-  
-  #create the missing_files.list for makeup jobs
-  if(len(missingLists) > 0):
-    missinglistdest = os.path.join(stage.logdir, 'missing_files.list')
-    missingOutList = safeopen(missinglistdest)
-    for missing in missingLists:
-      missingOutList.write("%s" % missing)
-    missingOutList.close()  
-    #project_utilities.addLayerTwo(missingOutList)
-  
-  #create the files.list for the next step
-  
-  if ana:
-    analistdest = os.path.join(stage.logdir, 'filesana.list')
-    anaOutList = safeopen(analistdest)
-    for ana in anaFiles:
-      #print event
-      anaOutList.write("%s" % ana)
-    anaOutList.close()
-    if len(anaFiles) == 0:
-        project_utilities.addLayerTwo(analistdest)
-  
-  #create the transferred_uris for the next step
-  urilistdest = os.path.join(stage.logdir, 'transferred_uris.list')
-  uriOutList  = safeopen(urilistdest)
-  for uri in transferredFiles:
-    #print event
-    uriOutList.write("%s" % uri)
-  uriOutList.close()
-  if len(transferredFiles) == 0:
-      project_utilities.addLayerTwo(urilistdest)
-  
-  if stage.inputdef != '':
-    samprojectdest = os.path.join(stage.logdir, 'sam_projects.list')
-    samprojectfile = safeopen(samprojectdest)
-    for sam in sam_projects:
-      samprojectfile.write("%s" % sam)
-    samprojectfile.close()
-    if len(sam_projects) == 0:
-        project_utilities.addLayerTwo(samprojectdest)
-    
-    cpiddest = os.path.join(stage.logdir, 'cpids.list')
-    cpidfile = safeopen(cpiddest)
-    for cp in cpids:
-      cpidfile.write("%s \n" % cp)
-    cpidfile.close()
-    if len(cpids) == 0:
-        project_utilities.addLayerTwo(cpiddest)  
-      
-  
-  for stream in streamLists:
-     streamdest = os.path.join(stage.logdir, stream)
-     streamOutList = safeopen(streamdest)
-     for line in streamLists[stream]:
-       streamOutList.write("%s" % line)
-     streamOutList.close()
-     if len(streamLists[stream]) == 0:
-         project_utilities.addLayerTwo(streamdest)  
-  
-  
-  
-    
+        cpiddest = os.path.join(stage.logdir, 'cpids.list')
+        cpidfile = safeopen(cpiddest)
+        for cp in cpids:
+            cpidfile.write("%s \n" % cp)
+        cpidfile.close()
+        if len(cpids) == 0:
+            project_utilities.addLayerTwo(cpiddest)
 
 
-  return nErrors
+    for stream in streamLists:
+        streamdest = os.path.join(stage.logdir, stream)
+        streamOutList = safeopen(streamdest)
+        for line in streamLists[stream]:
+            streamOutList.write("%s" % line)
+        streamOutList.close()
+        if len(streamLists[stream]) == 0:
+            project_utilities.addLayerTwo(streamdest)
+
+
+
+
+
+
+    return nErrors
 
 # Check project results in the specified directory.
 
@@ -1616,7 +1615,7 @@ def dofetchlog(project, stage):
                 # 1. JOBSUBPARENTJOBID
                 # 2. JOBSUBJOBID
                 #
-                # In either case, construct the log file id by 
+                # In either case, construct the log file id by
                 # changing the process number to zero.
 
                 logid = ''
@@ -1674,7 +1673,7 @@ def dofetchlog(project, stage):
         larbatch_posix.mkdir(logdir)
 
         # Loop over log ids.
-                    
+
         for logid in set(logids):
 
             # Do the actual fetch.
@@ -1735,9 +1734,10 @@ def docheck_declarations(logdir, outdir, declare, ana=False):
 
     for root in roots:
         path = string.strip(root)
-	fn = os.path.basename(path)
-	dirpath = os.path.dirname(path)
-	dirname = os.path.relpath(dirpath, outdir)
+        fn = os.path.basename(path)
+        dirpath = os.path.dirname(path)
+        dirname = os.path.relpath(dirpath, outdir)
+
         # Check metadata
 
         has_metadata = False
@@ -1777,13 +1777,14 @@ def docheck_declarations(logdir, outdir, declare, ana=False):
 
                     # Make lack of parent files a nonfatal error.
                     # This should probably be removed at some point.
-		    try:
-			samweb.declareFile(md=md)
- 		    except:
-			if md.has_key('parents'):
-			    del md['parents']
-			    samweb.declareFile(md=md)
-		    
+
+                    try:
+                        samweb.declareFile(md=md)
+                    except:
+                        if md.has_key('parents'):
+                            del md['parents']
+                            samweb.declareFile(md=md)
+
                 else:
                     print 'No sam metadata found for %s.' % fn
             else:
@@ -2009,7 +2010,7 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
                     print 'Making dropbox directory %s.' % dropbox
                     larbatch_posix.makedirs(dropbox)
                 locs_to_upload[disk_locs[0]] = dropbox
-        
+
         # Report results and do the actual adding/removing/uploading.
 
         for loc in locs_to_add:
@@ -2036,13 +2037,13 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
             dropbox = locs_to_upload[loc]
 
             # Make sure dropbox directory exists.
-            
+
             if not larbatch_posix.isdir(dropbox):
                 print 'Dropbox directory %s does not exist.' % dropbox
             else:
 
                 # Test whether this file has already been copied to dropbox directory.
-                
+
                 dropbox_filename = os.path.join(dropbox, filename)
                 if larbatch_posix.exists(dropbox_filename):
                     print 'File %s already exists in dropbox %s.' % (filename, dropbox)
@@ -2124,8 +2125,6 @@ def docheck_tape(dim):
 
 def dojobsub(project, stage, makeup):
 
-    #print 'Called dojobsub.'
-
     # Default return.
 
     jobid = ''
@@ -2183,7 +2182,7 @@ def dojobsub(project, stage, makeup):
     jobsub_workdir_files_args.extend(['-f', wrapper_fcl_name])
     wrapper_fcl = safeopen(wrapper_fcl_name)
     stageNum = 0
-    
+
     for fcl in fcls:
       wrapper_fcl.write('#---STAGE %d\n' % stageNum)
       wrapper_fcl.write('#include "%s"\n' % os.path.basename(fcl))
@@ -2226,12 +2225,12 @@ def dojobsub(project, stage, makeup):
       # Add overrides for genie flux parameters.
       # This section will normally be generated for any kind of generator job,
       # and should be harmless for non-genie generators.
-    
+
       if stage.maxfluxfilemb != 0 and stageNum == 0:
          wrapper_fcl.write('physics.producers.generator.FluxCopyMethod: "IFDH"\n')
          wrapper_fcl.write('physics.producers.generator.MaxFluxFileMB: %d\n' % stage.maxfluxfilemb)
       wrapper_fcl.write('#---END_STAGE\n')
-      stageNum = 1 + stageNum	 
+      stageNum = 1 + stageNum
 
     wrapper_fcl.close()
     #print 'Done making wrapper.fcl'
@@ -2333,7 +2332,7 @@ def dojobsub(project, stage, makeup):
                         larbatch_posix.rmtree(bad_path)
 
         # Get a list of missing files, if any, for file list input.
-        # Regenerate the input file list in the work directory, and 
+        # Regenerate the input file list in the work directory, and
         # set the makeup job count.
 
         missing_files = []
@@ -2421,7 +2420,7 @@ def dojobsub(project, stage, makeup):
                 sep = ','
 
             # Construct makeup dimension.
-                
+
             dim = '(defname: %s) minus (consumer_process_id %s and consumed_status consumed)' % (stage.inputdef, cpids_list)
 
             # Create makeup dataset definition.
@@ -2467,7 +2466,7 @@ def dojobsub(project, stage, makeup):
     command_njobs = 1
 
     # Jobsub options.
-        
+
     command.append('--group=%s' % project_utilities.get_experiment())
     command.append('--role=%s' % role)
     command.extend(jobsub_workdir_files_args)
@@ -2570,7 +2569,7 @@ def dojobsub(project, stage, makeup):
     if stage.output != '':
         command.extend([' --output', stage.output])
     if stage.TFileName != '':
-        command.extend([' --TFileName', stage.TFileName]) 	    
+        command.extend([' --TFileName', stage.TFileName])
     if stage.init_script != '':
         command.extend([' --init-script',
                         os.path.join('.', os.path.basename(stage.init_script))])
@@ -2585,16 +2584,16 @@ def dojobsub(project, stage, makeup):
     #print 'Will Validation will be done on the worker node %d' % project.validate_on_worker
     if project.validate_on_worker == 1:
       #print 'Validation will be done on the worker node %d' % project.validate_on_worker
-      command.extend([' --validate']) 
+      command.extend([' --validate'])
       command.extend(['--declare'])
       #Maintain parentage will only work if you are running one file per job
       #Likewise only run it if we have multiple fcl files and thus are running in multiple stages
       if stage.max_files_per_job == 1 and type(stage.fclname) != type(''):
-        command.extend(['--maintain_parentage'])			
-    
+        command.extend(['--maintain_parentage'])
+
     if project.copy_to_fts == 1:
       command.extend(['--copy'])
-    
+
     # If input is from sam, also construct a dag file, or add --sam_start option.
 
     if (prjname != '' or mixprjname != '') and command_njobs == 1:
@@ -2624,11 +2623,11 @@ def dojobsub(project, stage, makeup):
             raise RuntimeError, 'Sam start or stop project script not found.'
 
         # Start project jobsub command.
-                
+
         start_command = ['jobsub']
 
         # General options.
-            
+
         start_command.append('--group=%s' % project_utilities.get_experiment())
         start_command.append('-f %s' % setupscript)
         #start_command.append('--role=%s' % role)
@@ -2669,11 +2668,11 @@ def dojobsub(project, stage, makeup):
         start_commands.append(start_command)
 
         # Stop project jobsub command.
-                
+
         stop_command = ['jobsub']
 
         # General options.
-            
+
         stop_command.append('--group=%s' % project_utilities.get_experiment())
         stop_command.append('-f %s' % setupscript)
         #stop_command.append('--role=%s' % role)
@@ -2937,7 +2936,7 @@ def dosubmit(project, stage, makeup=False):
 # Merge histogram files.
 # If mergehist is True, merge histograms using "hadd -T".
 # If mergentuple is True, do full merge using "hadd".
-# If neither argument is True, do custom merge using merge program specified 
+# If neither argument is True, do custom merge using merge program specified
 # in xml stage.
 
 def domerge(stage, mergehist, mergentuple):
@@ -2950,12 +2949,12 @@ def domerge(stage, mergehist, mergentuple):
         raise RuntimeError, 'No filesana.list file found %s, run project.py --checkana' % hnlist
 
     histurlsname_temp = 'histurls.list'
-    histurls = safeopen(histurlsname_temp) 
-	
+    histurls = safeopen(histurlsname_temp)
+
     for hist in hlist:
-        histurls.write('%s\n' % hist) 	
+        histurls.write('%s\n' % hist)
     histurls.close()
-       	
+
     if len(hlist) > 0:
         name = os.path.join(stage.outdir, 'anahist.root')
         if name[0:6] == '/pnfs/':
@@ -2974,9 +2973,9 @@ def domerge(stage, mergehist, mergentuple):
             mergecom = "hadd"
         else:
             mergecom = stage.merge
-           
+
         print "Merging %d root files using %s." % (len(hlist), mergecom)
-			          			         
+
         if larbatch_posix.exists(name_temp):
             larbatch_posix.remove(name_temp)
         comlist = mergecom.split()
@@ -2994,7 +2993,7 @@ def domerge(stage, mergehist, mergentuple):
                 larbatch_posix.copy(name_temp, name)
                 larbatch_posix.remove(name_temp)
                 larbatch_posix.rmdir(tempdir)
-        larbatch_posix.remove(histurlsname_temp)	     
+        larbatch_posix.remove(histurlsname_temp)
 
 
 # Sam audit.
@@ -3010,7 +3009,7 @@ def doaudit(stage):
 
     outputlist = []
     outparentlist = []
-    if stage.defname != '':	
+    if stage.defname != '':
         query = 'isparentof: (defname: %s) and availability: anylocation' %(stage.defname)
         try:
             outparentlist = samweb.listFiles(dimensions=query)
@@ -3019,11 +3018,11 @@ def doaudit(stage):
             raise RuntimeError, 'Error accessing sam information for definition %s.\nDoes definition exist?' % stage.defname
     else:
         raise RuntimeError, 'Output definition not found.'
-			
-    # To get input files one can use definition or get inputlist given to that stage or 
+
+    # To get input files one can use definition or get inputlist given to that stage or
     # get input files for a given stage as get_input_files(stage)
 
-    inputlist = []	
+    inputlist = []
     if stage.inputdef != '':
         import_samweb()
         inputlist=samweb.listFiles(defname=stage.inputdef)
@@ -3031,12 +3030,12 @@ def doaudit(stage):
         ilist = []
         if larbatch_posix.exists(stage.inputlist):
             ilist = larbatch_posix.readlines(stage.inputlist)
-            inputlist = [] 
+            inputlist = []
             for i in ilist:
-                inputlist.append(os.path.basename(string.strip(i)))	
+                inputlist.append(os.path.basename(string.strip(i)))
     else:
         raise RuntimeError, 'Input definition and/or input list does not exist.'
-    
+
     difflist = set(inputlist)^set(outparentlist)
     mc = 0;
     me = 0;
@@ -3047,7 +3046,7 @@ def doaudit(stage):
                 missingfilelistname = os.path.join(stage.logdir, 'missingfiles.list')
                 missingfilelist = safeopen(missingfilelistname)
                 if mc>=1:
-                    missingfilelist.write("%s\n" %item)	
+                    missingfilelist.write("%s\n" %item)
         elif item in outparentlist:
             me = me+1
             childcmd = 'samweb list-files "ischildof: (file_name=%s) and availability: anylocation"' %(item)
@@ -3058,14 +3057,14 @@ def doaudit(stage):
                 fnlist = os.path.join(stage.logdir, 'files.list')
                 if larbatch_posix.exists(fnlist):
                     flist = larbatch_posix.readlines(fnlist)
-                    slist = []  
+                    slist = []
                     for line in flist:
                         slist.append(string.split(line)[0])
                 else:
                     raise RuntimeError, 'No files.list file found %s, run project.py --check' % fnlist
 
             # Declare the content status of the file as bad in SAM.
-                        
+
             sdict = {'content_status':'bad'}
             project_utilities.test_kca()
             samweb.modifyFileMetadata(rmfile, sdict)
@@ -3073,27 +3072,27 @@ def doaudit(stage):
 
             # Remove this file from the files.list in the output directory.
 
-            fn = []  
-            fn = [x for x in slist if os.path.basename(string.strip(x)) != rmfile] 
+            fn = []
+            fn = [x for x in slist if os.path.basename(string.strip(x)) != rmfile]
             thefile = safeopen(fnlist)
             for item in fn:
-                thefile.write("%s\n" % item) 
-	
+                thefile.write("%s\n" % item)
+
     if mc==0 and me==0:
         print "Everything in order."
         return 0
-    else:	
+    else:
         print 'Missing parent file(s) = ', mc
         print 'Extra parent file(s) = ',me
-	
+
     if mc != 0:
-        missingfilelist.close()	
+        missingfilelist.close()
         print "Creating missingfiles.list in the output directory....done!"
     if me != 0:
-        thefile.close()	
+        thefile.close()
         #larbatch_posix.remove("jsonfile.json")
-        print "For extra parent files, files.list redefined and content status declared as bad in SAM...done!"	     
-    
+        print "For extra parent files, files.list redefined and content status declared as bad in SAM...done!"
+
 
 # Print help.
 
@@ -3103,7 +3102,7 @@ def help():
     file = open(filename, 'r')
 
     doprint=0
-    
+
     for line in file.readlines():
         if line[2:12] == 'project.py':
             doprint = 1
@@ -3124,7 +3123,7 @@ def xmlhelp():
     file = open(filename, 'r')
 
     doprint=0
-    
+
     for line in file.readlines():
         if line[2:20] == 'XML file structure':
             doprint = 1
@@ -3236,18 +3235,18 @@ def main(argv):
         elif args[0] == '--fetchlog':
             fetchlog = 1
             del args[0]
-	elif args[0] == '--merge':
-	    merge = 1
-            del args[0]     
-	elif args[0] == '--mergehist':
+        elif args[0] == '--merge':
+            merge = 1
+            del args[0]
+        elif args[0] == '--mergehist':
             mergehist = 1
-            del args[0]  
-	elif args[0] == '--mergentuple':
+            del args[0]
+        elif args[0] == '--mergentuple':
             mergentuple = 1
-            del args[0]     
-	elif args[0] == '--audit':
-	    audit = 1
-	    del args[0]     
+            del args[0]
+        elif args[0] == '--audit':
+            audit = 1
+            del args[0]
         elif args[0] == '--status':
             stage_status = 1
             del args[0]
@@ -3356,8 +3355,8 @@ def main(argv):
     if xmlfile == '':
         print 'No xml file specified.  Type "project.py -h" for help.'
         return 1
-    
-    # Make sure that no more than one action was specified (except clean, shorten, and info 
+
+    # Make sure that no more than one action was specified (except clean, shorten, and info
     # options).
 
     num_action = submit + check + checkana + fetchlog + merge + mergehist + mergentuple + audit + stage_status + makeup + define + define_ana + undefine + declare + declare_ana
@@ -3437,8 +3436,8 @@ def main(argv):
     if check or checkana:
 
         # Check results from specified project stage.
-	
-	#do an abbreviated check if we did some validation on the worker node
+
+        #do an abbreviated check if we did some validation on the worker node
         if project.validate_on_worker == 1:
            doquickcheck(project, stage, checkana)
         else:
@@ -3449,14 +3448,14 @@ def main(argv):
         # Fetch logfiles.
 
         rc = dofetchlog(project, stage)
-		   
+
     if mergehist or mergentuple or merge:
-        
-        # Make merged histogram or ntuple files using proper hadd option. 
+
+        # Make merged histogram or ntuple files using proper hadd option.
         # Makes a merged root file called anahist.root in the project output directory
-    
+
         domerge(stage, mergehist, mergentuple)
-		     
+
     if audit:
 
         # Sam audit.
@@ -3585,34 +3584,34 @@ def safeopen(destination):
 
 #Utility funciton to scan a file and return its contents as a list
 def scan_file(fileName):
-  #openable = 1
-  returnArray = []
-  try:
-    fileList = project_utilities.saferead(fileName)  
-  #if we can't find missing_files the check will not work
-  except:
-    #print 'Cannot open file: %s' % fileName
-    return [ -1 ]
-    
-  if len(fileList) > 0:
-    for line in fileList:
-      #line.strip('\n')
-      returnArray.append(line) 
-	            
-  else:  
-    #print '%s exists, but is empty' % fileName
-    
-    return [ -1 ]
-  
-  return returnArray
+    #openable = 1
+    returnArray = []
+    try:
+        fileList = project_utilities.saferead(fileName)
+    #if we can't find missing_files the check will not work
+    except:
+        #print 'Cannot open file: %s' % fileName
+        return [ -1 ]
+
+    if len(fileList) > 0:
+        for line in fileList:
+            #line.strip('\n')
+            returnArray.append(line)
+
+    else:
+        #print '%s exists, but is empty' % fileName
+
+        return [ -1 ]
+
+    return returnArray
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))
-    
-'''inputlist = [] 			 
-		inp = open(stage.inputlist,"r")
-		for line in inp:
-			columns = line.split("/")
-			columns = [col.strip() for col in columns]
-			inputlist.append(columns[8])
-		inp.close()'''    
+
+'''inputlist = []
+                inp = open(stage.inputlist,"r")
+                for line in inp:
+                    columns = line.split("/")
+                    columns = [col.strip() for col in columns]
+                    inputlist.append(columns[8])
+                inp.close()'''
