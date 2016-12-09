@@ -3,12 +3,6 @@ import sys, os, stat, string, subprocess, shutil, urllib, json, getpass, uuid
 import larbatch_posix
 import threading, Queue
 from xml.dom.minidom import parse
-import project_utilities, root_metadata
-from project_modules.projectdef import ProjectDef
-from project_modules.projectstatus import ProjectStatus
-from project_modules.batchstatus import BatchStatus
-from project_modules.jobsuberror import JobsubError
-from project_modules.ifdherror import IFDHError
 from larbatch_utilities import ifdh_cp
 import samweb_cli
 
