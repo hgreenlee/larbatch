@@ -2336,6 +2336,36 @@ def dojobsub(project, stage, makeup):
         else:
             print 'Helper script %s not found.' % helper
 
+    # Copy helper python modules to work directory.
+    # Note that for this to work, these modules must be single files.
+
+    helper_modules = ('larbatch_posix',
+                      'project_utilities',
+                      'larbatch_utilities',
+                      'experiment_utilities',
+                      'extractor_dict')
+
+    for helper_module in helper_modules:
+
+        # Find helper module files.
+
+        jobinfo = subprocess.Popen(['python'],
+                                   stdin=subprocess.PIPE,
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+        jobinfo.stdin.write('import %s\nprint %s.__file__\n' % (helper_module, helper_module))
+        jobout, joberr = jobinfo.communicate()
+        rc = jobinfo.poll()
+        helper_path = jobout.splitlines()[-1].strip()
+        if rc == 0:
+            #print 'helper_path = %s' % helper_path
+            work_helper = os.path.join(stage.workdir, os.path.basename(helper_path))
+            if helper_path != work_helper:
+                larbatch_posix.copy(helper_path, work_helper)
+            jobsub_workdir_files_args.extend(['-f', work_helper])
+        else:
+            print 'Helper python module %s not found.' % helper_module
+
     # If this is a makeup action, find list of missing files.
     # If sam information is present (cpids.list), create a makeup dataset.
 

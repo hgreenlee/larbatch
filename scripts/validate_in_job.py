@@ -4,6 +4,7 @@ import larbatch_posix
 import threading, Queue
 from xml.dom.minidom import parse
 from larbatch_utilities import ifdh_cp
+import project_utilities
 import samweb_cli
 
 samweb = None           # Initialized SAMWebClient object
