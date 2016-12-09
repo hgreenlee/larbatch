@@ -1296,6 +1296,7 @@ def doquickcheck(project, stage, ana):
     #Aggregate the .list files form the logdir up one dir. This is where the old docheck would put them, and it double-checks that the files made it back from the worker node.
 
     goodFiles        = []       # list of art root files
+    goodAnaFiles     = []       # list of analysis root files
     eventLists       = []       # list of art root files and number of events
     badLists         = []       # list of bad root files
     missingLists     = []       # list of missing files
@@ -1422,6 +1423,14 @@ def doquickcheck(project, stage, ana):
         else:
             goodFiles.extend(tmpArray)
 
+        fileanalistsrc = os.path.join(out_subpath, 'filesana.list')
+        tmpArray = scan_file(fileanalistsrc)
+
+        if( tmpArray == [ -1 ] ):
+            nErrors += 1
+        else:
+            goodAnaFiles.extend(tmpArray)
+
         eventlistsrc = os.path.join(out_subpath, 'events.list')
 
         tmpArray = scan_file(eventlistsrc)
@@ -1496,7 +1505,7 @@ def doquickcheck(project, stage, ana):
     checkfile.close()
     project_utilities.addLayerTwo(checkfilename)
 
-    #create the input file.list for the next stage
+    #create the input files.list for the next stage
     filelistdest = os.path.join(stage.logdir, 'files.list')
     inputList = safeopen(filelistdest)
     for goodFile in goodFiles:
@@ -1505,6 +1514,16 @@ def doquickcheck(project, stage, ana):
     inputList.close()
     if len(goodFiles) == 0:
         project_utilities.addLayerTwo(filelistdest)
+
+    #create the aggregated filesana.list
+    fileanalistdest = os.path.join(stage.logdir, 'filesana.list')
+    anaList = safeopen(fileanalistdest)
+    for goodAnaFile in goodAnaFiles:
+        #print goodAnaFile
+        anaList.write("%s" % goodAnaFile)
+    anaList.close()
+    if len(goodAnaFiles) == 0:
+        project_utilities.addLayerTwo(fileanalistdest)
 
     #create the events.list for the next step
     eventlistdest = os.path.join(stage.logdir, 'events.list')
@@ -2143,6 +2162,10 @@ def dojobsub(project, stage, makeup):
 
     tmpdir = tempfile.mkdtemp()
 
+    # Temporary directory where we will copy files destined for stage.workdir.
+
+    tmpworkdir = tempfile.mkdtemp()
+
     #we're going to let jobsub_submit copy the workdir contents for us
     #each file that would go into the workdir is going to be added with
     # '-f <input_file>' with the full path, it can be either BlueArc or /pnfs/uboone
@@ -2154,7 +2177,7 @@ def dojobsub(project, stage, makeup):
     input_list_name = ''
     if stage.inputlist != '':
         input_list_name = os.path.basename(stage.inputlist)
-        work_list_name = os.path.join(stage.workdir, input_list_name)
+        work_list_name = os.path.join(tmpworkdir, input_list_name)
         if stage.inputlist != work_list_name:
             input_files = larbatch_posix.readlines(stage.inputlist)
             print 'Making input list.'
@@ -2164,7 +2187,6 @@ def dojobsub(project, stage, makeup):
                 work_list.write('%s\n' % input_file.strip())
             work_list.close()
             print 'Done making input list.'
-        jobsub_workdir_files_args.extend(['-f', work_list_name])
 
     # Now locate the fcl file on the fcl search path.
 
@@ -2173,10 +2195,9 @@ def dojobsub(project, stage, makeup):
     # Copy the fcl file to the work directory.
 
     for fcl in fcls:
-      workfcl = os.path.join(stage.workdir, os.path.basename(fcl))
+      workfcl = os.path.join(tmpworkdir, os.path.basename(fcl))
       if os.path.abspath(fcl) != os.path.abspath(workfcl):
         larbatch_posix.copy(fcl, workfcl)
-      jobsub_workdir_files_args.extend(['-f', workfcl])
 
 
     # Construct a wrapper fcl file (called "wrapper.fcl") that will include
@@ -2184,8 +2205,7 @@ def dojobsub(project, stage, makeup):
     # in this script.
 
     #print 'Making wrapper.fcl'
-    wrapper_fcl_name = os.path.join(stage.workdir, 'wrapper.fcl')
-    jobsub_workdir_files_args.extend(['-f', wrapper_fcl_name])
+    wrapper_fcl_name = os.path.join(tmpworkdir, 'wrapper.fcl')
     wrapper_fcl = safeopen(wrapper_fcl_name)
     stageNum = 0
 
@@ -2251,7 +2271,7 @@ def dojobsub(project, stage, makeup):
 
     workname = '%s-%s-%s' % (stage.name, project.name, project.release_tag)
     workname = workname + os.path.splitext(project.script)[1]
-    #workscript = os.path.join(stage.workdir, workname)
+    #workscript = os.path.join(tmpworkdir, workname)
     workscript = os.path.join(tmpdir, workname)
     if project.script != workscript:
         larbatch_posix.copy(project.script, workscript)
@@ -2262,7 +2282,7 @@ def dojobsub(project, stage, makeup):
     workstartname = ''
     if project.start_script != '':
         workstartname = 'start-%s' % workname
-        #workstartscript = os.path.join(stage.workdir, workstartname)
+        #workstartscript = os.path.join(tmpworkdir, workstartname)
         workstartscript = os.path.join(tmpdir, workstartname)
         if project.start_script != workstartscript:
             larbatch_posix.copy(project.start_script, workstartscript)
@@ -2273,7 +2293,7 @@ def dojobsub(project, stage, makeup):
     workstopname = ''
     if project.stop_script != '':
         workstopname = 'stop-%s' % workname
-        #workstopscript = os.path.join(stage.workdir, workstopname)
+        #workstopscript = os.path.join(tmpworkdir, workstopname)
         workstopscript = os.path.join(tmpdir, workstopname)
         if project.stop_script != workstopscript:
             larbatch_posix.copy(project.stop_script, workstopscript)
@@ -2284,10 +2304,9 @@ def dojobsub(project, stage, makeup):
         if not larbatch_posix.exists(stage.init_script):
             raise RuntimeError, 'Worker initialization script %s does not exist.\n' % \
                 stage.init_script
-        work_init_script = os.path.join(stage.workdir, os.path.basename(stage.init_script))
+        work_init_script = os.path.join(tmpworkdir, os.path.basename(stage.init_script))
         if stage.init_script != work_init_script:
             larbatch_posix.copy(stage.init_script, work_init_script)
-        jobsub_workdir_files_args.extend(['-f', work_init_script])
 
     # Copy worker initialization source script to work directory.
 
@@ -2295,20 +2314,18 @@ def dojobsub(project, stage, makeup):
         if not larbatch_posix.exists(stage.init_source):
             raise RuntimeError, 'Worker initialization source script %s does not exist.\n' % \
                 stage.init_source
-        work_init_source = os.path.join(stage.workdir, os.path.basename(stage.init_source))
+        work_init_source = os.path.join(tmpworkdir, os.path.basename(stage.init_source))
         if stage.init_source != work_init_source:
             larbatch_posix.copy(stage.init_source, work_init_source)
-        jobsub_workdir_files_args.extend(['-f', work_init_source])
 
     # Copy worker end-of-job script to work directory.
 
     if stage.end_script != '':
         if not larbatch_posix.exists(stage.end_script):
             raise RuntimeError, 'Worker end-of-job script %s does not exist.\n' % stage.end_script
-        work_end_script = os.path.join(stage.workdir, os.path.basename(stage.end_script))
+        work_end_script = os.path.join(tmpworkdir, os.path.basename(stage.end_script))
         if stage.end_script != work_end_script:
             larbatch_posix.copy(stage.end_script, work_end_script)
-        jobsub_workdir_files_args.extend(['-f', work_end_script])
 
     # Copy helper scripts to work directory.
 
@@ -2330,10 +2347,9 @@ def dojobsub(project, stage, makeup):
         rc = jobinfo.poll()
         helper_path = jobout.splitlines()[0].strip()
         if rc == 0:
-            work_helper = os.path.join(stage.workdir, helper)
+            work_helper = os.path.join(tmpworkdir, helper)
             if helper_path != work_helper:
                 larbatch_posix.copy(helper_path, work_helper)
-            jobsub_workdir_files_args.extend(['-f', work_helper])
         else:
             print 'Helper script %s not found.' % helper
 
@@ -2360,10 +2376,9 @@ def dojobsub(project, stage, makeup):
         helper_path = jobout.splitlines()[-1].strip()
         if rc == 0:
             #print 'helper_path = %s' % helper_path
-            work_helper = os.path.join(stage.workdir, os.path.basename(helper_path))
+            work_helper = os.path.join(tmpworkdir, os.path.basename(helper_path))
             if helper_path != work_helper:
                 larbatch_posix.copy(helper_path, work_helper)
-            jobsub_workdir_files_args.extend(['-f', work_helper])
         else:
             print 'Helper python module %s not found.' % helper_module
 
@@ -2411,14 +2426,13 @@ def dojobsub(project, stage, makeup):
             print 'Makeup list contains %d files.' % makeup_count
 
         if input_list_name != '':
-            work_list_name = os.path.join(stage.workdir, input_list_name)
+            work_list_name = os.path.join(tmpworkdir, input_list_name)
             if larbatch_posix.exists(work_list_name):
                 larbatch_posix.remove(work_list_name)
             work_list = safeopen(work_list_name)
             for missing_file in missing_files:
                 work_list.write('%s\n' % missing_file)
             work_list.close()
-            jobsub_workdir_files_args.extend(['-f', work_list_name])
 
         # In case of making up generation jobs, produce a procmap file
         # for missing jobs that will ensure that made up generation
@@ -2447,12 +2461,11 @@ def dojobsub(project, stage, makeup):
 
                 if len(procs) > 0:
                     procmap = 'procmap.txt'
-                    procmap_path = os.path.join(stage.workdir, procmap)
+                    procmap_path = os.path.join(tmpworkdir, procmap)
                     procmap_file = safeopen(procmap_path)
                     for proc in procs:
                         procmap_file.write('%d\n' % proc)
                     procmap_file.close()
-                    jobsub_workdir_files_args.extend(['-f', procmap_path])
 
         # Prepare sam-related makeup information.
 
@@ -2493,6 +2506,18 @@ def dojobsub(project, stage, makeup):
             samweb.createDefinition(defname=makeup_defname, dims=dim)
             makeup_count = samweb.countFiles(defname=makeup_defname)
             print 'Makeup dataset contains %d files.' % makeup_count
+
+    # Make a tarball out of all of the files in tmpworkdir in stage.workdir
+
+    jobinfo = subprocess.Popen(['tar','-czf', '%s/work.tar' % stage.workdir, '-C', tmpworkdir, '.'],
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+    jobout, joberr = jobinfo.communicate()
+    rc = jobinfo.poll()
+    if rc != 0:
+        raise RuntimeError, 'Failed to create work tarball in %s from files in %s' % (
+            stage.workdir, tmpworkdir)
+    jobsub_workdir_files_args.extend(['-f', '%s/work.tar' % stage.workdir])
 
     # Sam stuff.
 
@@ -2778,7 +2803,6 @@ def dojobsub(project, stage, makeup):
 
         # Create dagNabbit.py configuration script in the work directory.
 
-        #dagfilepath = os.path.join(stage.workdir, 'submit.dag')
         dagfilepath = os.path.join(tmpdir, 'submit.dag')
         dag = safeopen(dagfilepath)
 
@@ -2895,6 +2919,8 @@ def dojobsub(project, stage, makeup):
             larbatch_posix.remove(checked_file)
         if larbatch_posix.isdir(tmpdir):
             larbatch_posix.rmtree(tmpdir)
+        if larbatch_posix.isdir(tmpworkdir):
+            larbatch_posix.rmtree(tmpworkdir)
 
     else:
 
