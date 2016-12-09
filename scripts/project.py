@@ -2309,6 +2309,33 @@ def dojobsub(project, stage, makeup):
             larbatch_posix.copy(stage.end_script, work_end_script)
         jobsub_workdir_files_args.extend(['-f', work_end_script])
 
+    # Copy helper scripts to work directory.
+
+    helpers = ('root_metadata.py',
+               'merge_json.py',
+               'subruns.py',
+               'validate_in_job.py',
+               'mkdir.py',
+               'emptydir.py')
+
+    for helper in helpers:
+
+        # Find helper script in execution path.
+
+        jobinfo = subprocess.Popen(['which', helper],
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+        jobout, joberr = jobinfo.communicate()
+        rc = jobinfo.poll()
+        helper_path = jobout.splitlines()[0].strip()
+        if rc == 0:
+            work_helper = os.path.join(stage.workdir, helper)
+            if helper_path != work_helper:
+                larbatch_posix.copy(helper_path, work_helper)
+            jobsub_workdir_files_args.extend(['-f', work_helper])
+        else:
+            print 'Helper script %s not found.' % helper
+
     # If this is a makeup action, find list of missing files.
     # If sam information is present (cpids.list), create a makeup dataset.
 
