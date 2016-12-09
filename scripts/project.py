@@ -1293,7 +1293,7 @@ def doquickcheck(project, stage, ana):
         print 'Log directory %s does not exist.' % stage.logdir
         return 1
 
-    #Aggegrate the .list files form the logdir up one dir. This is where the old docheck would put them, and it double-checks that the files made it back from the worker node.
+    #Aggregate the .list files form the logdir up one dir. This is where the old docheck would put them, and it double-checks that the files made it back from the worker node.
 
     goodFiles        = []       # list of art root files
     eventLists       = []       # list of art root files and number of events
@@ -1314,8 +1314,8 @@ def doquickcheck(project, stage, ana):
         if len(subdirs) != 0:
             continue
 
-        #skip start project jobs for now
-        if log_subpath[-6:] == '_start':
+        #skip start and stop project jobs for now
+        if log_subpath[-6:] == '_start' or log_subpath[-5:] == '_stop':
             filename = os.path.join(log_subpath, 'sam_project.txt')
             if larbatch_posix.exists(filename):
                 sam_project = larbatch_posix.readlines(filename)[0].strip()
