@@ -909,6 +909,8 @@ if [ x$LOCALDIR != x ]; then
   # Setup the environment.
 
   cd $TMP/work
+  find . -name \*.py -exec chmod +x {} \;
+  find . -name \*.sh -exec chmod +x {} \;
   echo "Initializing localProducts from ${LOCALDIR}."
   if [ ! -f $TMP/local/setup ]; then
     echo "Local test release directory $LOCALDIR does not contain a setup script."
