@@ -238,6 +238,7 @@ IFDH_OPT=""
 DECLARE_IN_JOB=0
 VALIDATE_IN_JOB=0
 COPY_TO_FTS=0
+MAINTAIN_PARENTAGE=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
