@@ -792,6 +792,7 @@ echo "that's now done with using jobsub -f commands"
 mkdir work
 cp ${CONDOR_DIR_INPUT}/* ./work/
 cd work
+find . -name \*.tar -exec tar xf {} \;
 find . -name \*.py -exec chmod +x {} \;
 find . -name \*.sh -exec chmod +x {} \;
 echo "Local working directoroy:"
