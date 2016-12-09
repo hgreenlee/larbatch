@@ -1587,6 +1587,7 @@ def doquickcheck(project, stage, ana):
 
 
 
+    print 'Number of errors = %d' % nErrors
 
     return nErrors
 
