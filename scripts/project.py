@@ -2615,16 +2615,17 @@ def dojobsub(project, stage, makeup):
 
     #print 'Will Validation will be done on the worker node %d' % project.validate_on_worker
     if project.validate_on_worker == 1:
-      #print 'Validation will be done on the worker node %d' % project.validate_on_worker
+      print 'Validation will be done on the worker node %d' % project.validate_on_worker
       command.extend([' --validate'])
-      command.extend(['--declare'])
+      command.extend([' --declare'])
       #Maintain parentage will only work if you are running one file per job
       #Likewise only run it if we have multiple fcl files and thus are running in multiple stages
-      if stage.max_files_per_job == 1 and type(stage.fclname) != type(''):
-        command.extend(['--maintain_parentage'])
+      if stage.max_files_per_job == 1 and type(stage.fclname) != type('') and \
+              type(stage.fclname) != type(u''):
+        command.extend([' --maintain_parentage'])
 
     if project.copy_to_fts == 1:
-      command.extend(['--copy'])
+      command.extend([' --copy'])
 
     # If input is from sam, also construct a dag file, or add --sam_start option.
 
