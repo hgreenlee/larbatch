@@ -795,7 +795,7 @@ def doshorten(stage):
 
 # Check project results in the specified directory.
 
-def docheck(project, stage, ana):
+def docheck(project, stage, ana, quick=False):
 
     # This method performs various checks on worker subdirectories, named
     # as <cluster>_<process>, where <cluster> and <process> are integers.
@@ -843,6 +843,11 @@ def docheck(project, stage, ana):
     # For projects with no input (i.e. generator jobs), if there are fewer than
     # the requisite number of good generator jobs, a "missing_files.list" will be
     # generated with lines containing /dev/null.
+
+    # Quick check?
+
+    if quick == 1:
+        return doquickcheck(project, stage, ana)
 
     stage.checkinput()
 
