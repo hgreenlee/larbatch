@@ -1745,10 +1745,12 @@ fi
 statout=0
 export IFDH_CP_MAXRETRIES=0
 echo "ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR"
-ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR
-stat=$?
-if [ $stat -ne 0 ]; then
-  echo "ifdh cp failed with status ${stat}."
+if [ "$( ls -A log )" ]; then
+  ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR
+  stat=$?
+  if [ $stat -ne 0 ]; then
+    echo "ifdh cp failed with status ${stat}."
+  fi
 fi
 
 for subrun in ${subruns[*]}
@@ -1762,11 +1764,13 @@ do
   fi
 done
 
-echo "ifdh cp -D $IFDH_OPT out/* ${OUTDIR}/$OUTPUT_SUBDIR"
-ifdh cp -D $IFDH_OPT out/* ${OUTDIR}/$OUTPUT_SUBDIR
-stat=$?
-if [ $stat -ne 0 ]; then
-  echo "ifdh cp failed with status ${stat}."
+if [ "$( ls -A out )" ]; then
+  echo "ifdh cp -D $IFDH_OPT out/* ${OUTDIR}/$OUTPUT_SUBDIR"
+  ifdh cp -D $IFDH_OPT out/* ${OUTDIR}/$OUTPUT_SUBDIR
+  stat=$?
+  if [ $stat -ne 0 ]; then
+    echo "ifdh cp failed with status ${stat}."
+  fi
 fi
 
 for subrun in ${subruns[*]}
