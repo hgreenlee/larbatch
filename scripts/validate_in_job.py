@@ -5,7 +5,6 @@ import threading, Queue
 from xml.dom.minidom import parse
 from larbatch_utilities import ifdh_cp
 import project_utilities
-import subruns
 import samweb_cli
 
 samweb = None           # Initialized SAMWebClient object
@@ -130,43 +129,6 @@ def import_samweb():
         samweb = project_utilities.samweb()
         from extractor_dict import expMetaData
 
-# Function to substitute subrun into output directory path containing "@s" wildcard.
-
-def real_outdir(outdir, rootfile):
-
-    # Default result is the original output directory template.
-
-    result = outdir
-
-    # Look for substring "@s".
-
-    nsub = outdir.find('@s')
-
-    # Don't do anything (return default result) unless we found this substring.
-
-    if nsub >= 0:
-
-        # Get subrun information from the data file.
-
-        rslist = subruns.get_subruns(rootfile)
-
-        # Don't do anything unless we were able to determine the subrun from the file.
-
-        if len(rslist) > 0:
-
-            # Extract the subrun.
-
-            subrun = rslist[0][1]
-
-            # Substitute the substring.
-
-            result = '%s%d%s' % (outdir[:nsub], subrun, outdir[nsub+2:])
-
-    # Done
-
-    return result
-
-
 # Main program.
 
 def main():
@@ -279,14 +241,16 @@ def main():
         if not file_list_stream.has_key(streamname):
             file_list_stream[streamname] = open('files_%s.list' % streamname, 'w')
 	validate_list.write(rootfile[0] + '\n')
-	file_on_scratch = real_outdir(outdir, rootfile[0]) + '/' + os.path.basename(rootfile[0])
+	file_on_scratch = rootfile[0].split('/')[len(rootfile[0].split('/'))-1]
+	file_on_scratch = outdir + '/' + file_on_scratch
 	file_list.write(file_on_scratch + '\n')
 	file_list_stream[streamname].write(file_on_scratch + '\n')
 	events_list.write('%s %d \n' % (file_on_scratch, rootfile[1]) )
         
     for histfile in hists:
         validate_list.write(histfile + '\n')
-        file_on_scratch = real_outdir(outdir, histfile) + '/' + os.path.basename(histfile)
+        file_on_scratch = histfile.split('/')[len(histfile.split('/'))-1]
+        file_on_scratch = outdir + '/' + file_on_scratch
         ana_file_list.write(file_on_scratch + '\n')
     
     	
