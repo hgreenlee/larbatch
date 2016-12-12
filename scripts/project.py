@@ -2509,7 +2509,7 @@ def dojobsub(project, stage, makeup):
 
     # Make a tarball out of all of the files in tmpworkdir in stage.workdir
 
-    jobinfo = subprocess.Popen(['tar','-czf', '%s/work.tar' % stage.workdir, '-C', tmpworkdir, '.'],
+    jobinfo = subprocess.Popen(['tar','-czf', '%s/work.tar' % tmpworkdir, '-C', tmpworkdir, '.'],
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE)
     jobout, joberr = jobinfo.communicate()
@@ -2517,6 +2517,10 @@ def dojobsub(project, stage, makeup):
     if rc != 0:
         raise RuntimeError, 'Failed to create work tarball in %s from files in %s' % (
             stage.workdir, tmpworkdir)
+
+    # Transfer tarball to work directory.
+
+    larbatch_posix.copy('%s/work.tar' % tmpworkdir, '%s/work.tar' % stage.workdir)
     jobsub_workdir_files_args.extend(['-f', '%s/work.tar' % stage.workdir])
 
     # Sam stuff.
