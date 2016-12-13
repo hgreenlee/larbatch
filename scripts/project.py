@@ -2513,8 +2513,7 @@ def dojobsub(project, stage, makeup):
     jobout, joberr = jobinfo.communicate()
     rc = jobinfo.poll()
     if rc != 0:
-        raise RuntimeError, 'Failed to create work tarball in %s from files in %s' % (
-            stage.workdir, tmpworkdir)
+        raise RuntimeError, 'Failed to create work tarball in %s' % tmpworkdir
 
     # Transfer tarball to work directory.
 
