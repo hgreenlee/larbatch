@@ -1620,6 +1620,35 @@ fi
 
 
 
+# Stash all of the files we want to save in a local
+# directories with a unique name.  Then copy these directories
+# and their contents recursively.
+
+# First move .root and corresponding .json files into one subdirectory.
+# Note that .root files never get replicated.
+
+for root in *.root; do
+  subrun=`subruns.py $root | awk 'NR==1{print $2}'`
+  mv $root out$subrun
+  mv ${root}.json log$subrun
+done
+
+# Copy any remaining files into all log subdirectories.
+# These small files get replicated.
+
+for outfile in *; do
+  if [ -f $outfile ]; then
+    cp $outfile log
+    for subrun in ${subruns[*]}
+    do
+      cp $outfile log$subrun
+      rm -f log/$outfile
+    done
+  fi
+done
+
+# Do validation (if requested).
+
 if [ $VALIDATE_IN_JOB -eq 1 ]; then
     #If SAM was used, get the parent files based on the cpid
     if [ $USE_SAM -ne 0 ]; then
@@ -1649,40 +1678,28 @@ if [ $VALIDATE_IN_JOB -eq 1 ]; then
     
     fi
     
-    # do validation function in the job
-    validate_in_job.py --dir $PWD --logfiledir $PWD --outdir $OUTDIR/$OUTPUT_SUBDIR --declare $DECLARE_IN_JOB --copy $COPY_TO_FTS
-    valstat=$?
-    
-    
-    
-fi
+    # Do validation function for the whole job.
 
-# Stash all of the files we want to save in a local
-# directories with a unique name.  Then copy these directories
-# and their contents recursively.
+    valstat=0
+    curdir=`pwd`
+    #cd $curdir/log
+    #validate_in_job.py --dir $curdir/out --logfiledir $curdir/log --outdir $OUTDIR/$OUTPUT_SUBDIR --declare $DECLARE_IN_JOB --copy $COPY_TO_FTS
+    #valstat=$?
+    #cd $curdir
 
-# First move .root and corresponding .json files into one subdirectory.
-# Note that .root files never get replicated.
+    # Do validation for each subrun.
 
-for root in *.root; do
-  subrun=`subruns.py $root | awk 'NR==1{print $2}'`
-  mv $root out$subrun
-  mv ${root}.json log$subrun
-done
-
-# Copy any remaining files into all log subdirectories.
-# These small files get replicated.
-
-for outfile in *; do
-  if [ -f $outfile ]; then
-    cp $outfile log
     for subrun in ${subruns[*]}
     do
-      cp $outfile log$subrun
-      rm -f log/$outfile
+      cd $curdir/log$subrun
+      
+      validate_in_job.py --dir $curdir/out$subrun --logfiledir $curdir/log$subrun --outdir ${outdirs[$subrun]}/$OUTPUT_SUBDIR --declare $DECLARE_IN_JOB --copy $COPY_TO_FTS
+      subvalstat=$?
+      valstat=$(( $valstat + $subvalstat ))
     done
-  fi
-done
+    cd $curdir
+    
+fi
 
 # Clean remote output and log directories.
 
@@ -1728,10 +1745,12 @@ fi
 statout=0
 export IFDH_CP_MAXRETRIES=0
 echo "ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR"
-ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR
-stat=$?
-if [ $stat -ne 0 ]; then
-  echo "ifdh cp failed with status ${stat}."
+if [ "$( ls -A log )" ]; then
+  ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR
+  stat=$?
+  if [ $stat -ne 0 ]; then
+    echo "ifdh cp failed with status ${stat}."
+  fi
 fi
 
 for subrun in ${subruns[*]}
@@ -1745,11 +1764,13 @@ do
   fi
 done
 
-echo "ifdh cp -D $IFDH_OPT out/* ${OUTDIR}/$OUTPUT_SUBDIR"
-ifdh cp -D $IFDH_OPT out/* ${OUTDIR}/$OUTPUT_SUBDIR
-stat=$?
-if [ $stat -ne 0 ]; then
-  echo "ifdh cp failed with status ${stat}."
+if [ "$( ls -A out )" ]; then
+  echo "ifdh cp -D $IFDH_OPT out/* ${OUTDIR}/$OUTPUT_SUBDIR"
+  ifdh cp -D $IFDH_OPT out/* ${OUTDIR}/$OUTPUT_SUBDIR
+  stat=$?
+  if [ $stat -ne 0 ]; then
+    echo "ifdh cp failed with status ${stat}."
+  fi
 fi
 
 for subrun in ${subruns[*]}

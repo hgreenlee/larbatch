@@ -334,7 +334,7 @@ def main():
     #something went wrong, so make a list of bad directories and potentially missing files
     else:      
       #first get the subdir name on pnfs. this contains the job id
-      dir_on_scratch = outdir.split('/')[len(outdir.split('/')-1)]
+      dir_on_scratch = outdir.split('/')[len(outdir.split('/'))-1]
       print 'Dir on scratch ' + dir_on_scratch
       bad_list.write('%s \n' % dir_on_scratch)
       bad_list.close()

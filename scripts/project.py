@@ -1426,9 +1426,7 @@ def doquickcheck(project, stage, ana):
         fileanalistsrc = os.path.join(out_subpath, 'filesana.list')
         tmpArray = scan_file(fileanalistsrc)
 
-        if( tmpArray == [ -1 ] ):
-            nErrors += 1
-        else:
+        if( not tmpArray == [ -1 ] ):
             goodAnaFiles.extend(tmpArray)
 
         eventlistsrc = os.path.join(out_subpath, 'events.list')
@@ -1463,15 +1461,15 @@ def doquickcheck(project, stage, ana):
             missingLists.extend(tmpArray)
         '''
 
-        if ana:
-            filesanalistsrc = os.path.join(out_subpath, 'filesana.list')
+        #if ana:
+        #    filesanalistsrc = os.path.join(out_subpath, 'filesana.list')
 
-            tmpArray = scan_file(filesanalistsrc)
+        #    tmpArray = scan_file(filesanalistsrc)
 
-            if( tmpArray == [ -1 ] ):
-                nErrors += 1
-            else:
-                anaFiles.extend(tmpArray)
+        #    if( tmpArray == [ -1 ] ):
+        #        nErrors += 1
+        #    else:
+        #        anaFiles.extend(tmpArray)
 
         urislistsrc = os.path.join(out_subpath, 'transferred_uris.list')
 
@@ -2515,8 +2513,7 @@ def dojobsub(project, stage, makeup):
     jobout, joberr = jobinfo.communicate()
     rc = jobinfo.poll()
     if rc != 0:
-        raise RuntimeError, 'Failed to create work tarball in %s from files in %s' % (
-            stage.workdir, tmpworkdir)
+        raise RuntimeError, 'Failed to create work tarball in %s' % tmpworkdir
 
     # Transfer tarball to work directory.
 
