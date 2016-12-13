@@ -1426,9 +1426,7 @@ def doquickcheck(project, stage, ana):
         fileanalistsrc = os.path.join(out_subpath, 'filesana.list')
         tmpArray = scan_file(fileanalistsrc)
 
-        if( tmpArray == [ -1 ] ):
-            nErrors += 1
-        else:
+        if( not tmpArray == [ -1 ] ):
             goodAnaFiles.extend(tmpArray)
 
         eventlistsrc = os.path.join(out_subpath, 'events.list')
