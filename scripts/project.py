@@ -1461,15 +1461,15 @@ def doquickcheck(project, stage, ana):
             missingLists.extend(tmpArray)
         '''
 
-        if ana:
-            filesanalistsrc = os.path.join(out_subpath, 'filesana.list')
+        #if ana:
+        #    filesanalistsrc = os.path.join(out_subpath, 'filesana.list')
 
-            tmpArray = scan_file(filesanalistsrc)
+        #    tmpArray = scan_file(filesanalistsrc)
 
-            if( tmpArray == [ -1 ] ):
-                nErrors += 1
-            else:
-                anaFiles.extend(tmpArray)
+        #    if( tmpArray == [ -1 ] ):
+        #        nErrors += 1
+        #    else:
+        #        anaFiles.extend(tmpArray)
 
         urislistsrc = os.path.join(out_subpath, 'transferred_uris.list')
 
