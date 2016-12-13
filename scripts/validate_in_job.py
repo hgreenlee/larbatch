@@ -236,22 +236,12 @@ def main():
            print 'Filename %s in subdirectory %s is longer than 200 characters.' % (
         	rootname, outdir)
            status = 1
-        
-	#get the subrun number
-	#print rootfile[0]
-	subrun = -1
-	subrun = os.popen('subruns.py %s | awk \'NR==1{print $2}\' ' % rootfile[0]).read()
-	subrun = subrun.strip('\n')
-	#subrun = subrun.strip('\'')
-	#print "Subrun: " + repr(subrun)
-	  
+
         streamname = rootfile[2]
         if not file_list_stream.has_key(streamname):
             file_list_stream[streamname] = open('files_%s.list' % streamname, 'w')
 	validate_list.write(rootfile[0] + '\n')
 	file_on_scratch = rootfile[0].split('/')[len(rootfile[0].split('/'))-1]
-	#swap @s for subrun number in outdir
-	outdir = outdir.replace("@s", subrun, 1)
 	file_on_scratch = outdir + '/' + file_on_scratch
 	file_list.write(file_on_scratch + '\n')
 	file_list_stream[streamname].write(file_on_scratch + '\n')
