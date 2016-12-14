@@ -731,8 +731,13 @@ def remove(path):
 
         #os.remove(path)
         newpath = path + '_' + str(uuid.uuid4())
-        os.rename(path, newpath)
-        os.system('rm -f %s &' % newpath)
+        try:
+            os.rename(path, newpath)
+            os.system('rm -f %s &' % newpath)
+            return
+        except:
+            pass
+        os.remove(path)
 
 # Delete empty directory.
 

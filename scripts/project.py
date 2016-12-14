@@ -1306,6 +1306,9 @@ def doquickcheck(project, stage, ana):
 
     sam_projects     = []      # list of sam projects
     cpids            = []      # list of consumer process ids
+
+    goodLogDirs      = set()   # Set of log directories.
+    goodOutDirs      = set()   # Set of output directories.
     nErrors = 0                # Number of erors uncovered
 
     for log_subpath, subdirs, files in larbatch_posix.walk(stage.logdir):
@@ -1340,6 +1343,7 @@ def doquickcheck(project, stage, ana):
         #print missingfilesname
 
         try:
+            #print 'Reading %s' % missingfilesname
             missingfiles = project_utilities.saferead(missingfilesname)
         #if we can't find missing_files the check will not work
         except:
@@ -1366,6 +1370,7 @@ def doquickcheck(project, stage, ana):
             urifile = safeopen(urislistname)
             uris = []
             #update uris
+            #print 'Reading %s' % urislistname
             lines = project_utilities.saferead(urislistname)
             for line in lines:
                 uri = line.strip()
@@ -1497,41 +1502,71 @@ def doquickcheck(project, stage, ana):
                 else:
                     streamLists[stream].extend(tmpArray)
 
+        if nErrors == 0:
+            goodLogDirs.add(log_subpath)
+            goodOutDirs.add(out_subpath)
+
     checkfilename = os.path.join(stage.logdir, 'checked')
     checkfile = safeopen(checkfilename)
     checkfile.write('\n')
     checkfile.close()
-    project_utilities.addLayerTwo(checkfilename)
 
     #create the input files.list for the next stage
     filelistdest = os.path.join(stage.logdir, 'files.list')
-    inputList = safeopen(filelistdest)
-    for goodFile in goodFiles:
-        #print goodFile
-        inputList.write("%s" % goodFile)
-    inputList.close()
+    if larbatch_posix.exists(filelistdest):
+        #print 'Deleting %s' % filelistdest
+        larbatch_posix.remove(filelistdest)
+    if len(goodOutDirs) == 1:
+        src = '%s/files.list' % goodOutDirs.copy().pop()
+        #print 'Symlinking %s to %s' % (src, filelistdest)
+        larbatch_posix.symlink(src, filelistdest)
+    else:
+        #print 'Aggregating files.list'
+        inputList = safeopen(filelistdest)
+        for goodFile in goodFiles:
+            #print goodFile
+            inputList.write("%s" % goodFile)
+        inputList.close()
     if len(goodFiles) == 0:
         project_utilities.addLayerTwo(filelistdest)
 
     #create the aggregated filesana.list
     fileanalistdest = os.path.join(stage.logdir, 'filesana.list')
-    anaList = safeopen(fileanalistdest)
-    for goodAnaFile in goodAnaFiles:
-        #print goodAnaFile
-        anaList.write("%s" % goodAnaFile)
-    anaList.close()
-    if len(goodAnaFiles) == 0:
-        project_utilities.addLayerTwo(fileanalistdest)
+    if larbatch_posix.exists(fileanalistdest):
+        #print 'Deleting %s' % fileanalistdest
+        larbatch_posix.remove(fileanalistdest)
+    if len(goodOutDirs) == 1:
+        src = '%s/filesana.list' % goodOutDirs.copy().pop()
+        #print 'Symlinking %s to %s' % (src, fileanalistdest)
+        larbatch_posix.symlink(src, fileanalistdest)
+    else:
+        #print 'Aggregating filesana.list'
+        anaList = safeopen(fileanalistdest)
+        for goodAnaFile in goodAnaFiles:
+            #print goodAnaFile
+            anaList.write("%s" % goodAnaFile)
+        anaList.close()
+        if len(goodAnaFiles) == 0:
+            project_utilities.addLayerTwo(fileanalistdest)
 
     #create the events.list for the next step
     eventlistdest = os.path.join(stage.logdir, 'events.list')
-    eventsOutList = safeopen(eventlistdest)
-    for event in eventLists:
-        #print event
-        eventsOutList.write("%s" % event)
-    eventsOutList.close()
-    if len(eventLists) == 0:
-        project_utilities.addLayerTwo(eventlistdest)
+    if larbatch_posix.exists(eventlistdest):
+        #print 'Deleting %s' % eventlistdest
+        larbatch_posix.remove(eventlistdest)
+    if len(goodOutDirs) == 1:
+        src = '%s/events.list' % goodOutDirs.copy().pop()
+        #print 'Symlinking %s to %s' % (src, eventlistdest)
+        larbatch_posix.symlink(src, eventlistdest)
+    else:
+        #print 'Aggregating events.list'
+        eventsOutList = safeopen(eventlistdest)
+        for event in eventLists:
+            #print event
+            eventsOutList.write("%s" % event)
+        eventsOutList.close()
+        if len(eventLists) == 0:
+            project_utilities.addLayerTwo(eventlistdest)
 
     #create the bad.list for makeup jobs
     if(len(badLists) > 0):
@@ -1551,54 +1586,77 @@ def doquickcheck(project, stage, ana):
         missingOutList.close()
         #project_utilities.addLayerTwo(missingOutList)
 
-    #create the files.list for the next step
-
-    if ana:
-        analistdest = os.path.join(stage.logdir, 'filesana.list')
-        anaOutList = safeopen(analistdest)
-        for ana in anaFiles:
-            #print event
-            anaOutList.write("%s" % ana)
-        anaOutList.close()
-        if len(anaFiles) == 0:
-            project_utilities.addLayerTwo(analistdest)
-
     #create the transferred_uris for the next step
     urilistdest = os.path.join(stage.logdir, 'transferred_uris.list')
-    uriOutList  = safeopen(urilistdest)
-    for uri in transferredFiles:
-        #print event
-        uriOutList.write("%s" % uri)
-    uriOutList.close()
-    if len(transferredFiles) == 0:
-        project_utilities.addLayerTwo(urilistdest)
+    if larbatch_posix.exists(urilistdest):
+        #print 'Deleting %s' % urilistdest
+        larbatch_posix.remove(urilistdest)
+    if len(goodOutDirs) == 1 and len(transferredFiles) > 0:
+        #print 'Symlinking %s to %s' % (src, urilistdest)
+        larbatch_posix.symlink(src, urilistdest)
+    else:
+        #print 'Aggregating transferred_uris.list'
+        uriOutList  = safeopen(urilistdest)
+        for uri in transferredFiles:
+            #print event
+            uriOutList.write("%s" % uri)
+        uriOutList.close()
+        if len(transferredFiles) == 0:
+            project_utilities.addLayerTwo(urilistdest)
 
     if stage.inputdef != '':
         samprojectdest = os.path.join(stage.logdir, 'sam_projects.list')
-        samprojectfile = safeopen(samprojectdest)
-        for sam in sam_projects:
-            samprojectfile.write("%s" % sam)
-        samprojectfile.close()
-        if len(sam_projects) == 0:
-            project_utilities.addLayerTwo(samprojectdest)
+        if larbatch_posix.exists(samprojectdest):
+            #print 'Deleting %s' % samprojectdest
+            larbatch_posix.remove(samprojectdest)
+        if len(goodLogDirs) == 1:
+            src = '%s/sam_project.txt' % goodLogDirs.copy().pop()
+            #print 'Symlinking %s to %s' % (src, samprojectdest)
+            larbatch_posix.symlink(src, samprojectdest)
+        else:
+            #print 'Aggregating sam_projects.list'
+            samprojectfile = safeopen(samprojectdest)
+            for sam in sam_projects:
+                samprojectfile.write("%s" % sam)
+            samprojectfile.close()
+            if len(sam_projects) == 0:
+                project_utilities.addLayerTwo(samprojectdest)
 
         cpiddest = os.path.join(stage.logdir, 'cpids.list')
-        cpidfile = safeopen(cpiddest)
-        for cp in cpids:
-            cpidfile.write("%s \n" % cp)
-        cpidfile.close()
-        if len(cpids) == 0:
-            project_utilities.addLayerTwo(cpiddest)
+        if larbatch_posix.exists(cpiddest):
+            #print 'Deleting %s' % cpiddest
+            larbatch_posix.remove(cpiddest)
+        if len(goodLogDirs) == 1:
+            src = '%s/cpid.txt' % goodLogDirs.copy().pop()
+            #print 'Symlinking %s to %s' % (src, cpiddest)
+            larbatch_posix.symlink(src, cpiddest)
+        else:
+            #print 'Aggregating cpids.list'
+            cpidfile = safeopen(cpiddest)
+            for cp in cpids:
+                cpidfile.write("%s \n" % cp)
+            cpidfile.close()
+            if len(cpids) == 0:
+                project_utilities.addLayerTwo(cpiddest)
 
 
     for stream in streamLists:
         streamdest = os.path.join(stage.logdir, stream)
-        streamOutList = safeopen(streamdest)
-        for line in streamLists[stream]:
-            streamOutList.write("%s" % line)
-        streamOutList.close()
-        if len(streamLists[stream]) == 0:
-            project_utilities.addLayerTwo(streamdest)
+        if larbatch_posix.exists(streamdest):
+            #print 'Deleting %s' % streamdest
+            larbatch_posix.remove(streamdest)
+        if len(goodOutDirs) == 1:
+            src = '%s/%s' % (goodOutDirs.copy().pop(), stream)
+            #print 'Symlinking %s to %s' % (src, streamdest)
+            larbatch_posix.symlink(src, streamdest)
+        else:
+            #print 'Aggregating %s' % stream
+            streamOutList = safeopen(streamdest)
+            for line in streamLists[stream]:
+                streamOutList.write("%s" % line)
+            streamOutList.close()
+            if len(streamLists[stream]) == 0:
+                project_utilities.addLayerTwo(streamdest)
 
 
 
@@ -3678,6 +3736,7 @@ def scan_file(fileName):
     #openable = 1
     returnArray = []
     try:
+        #print 'Reading %s' % fileName
         fileList = project_utilities.saferead(fileName)
     #if we can't find missing_files the check will not work
     except:
