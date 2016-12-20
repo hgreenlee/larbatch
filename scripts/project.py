@@ -2565,7 +2565,8 @@ def dojobsub(project, stage, makeup):
 
     # Make a tarball out of all of the files in tmpworkdir in stage.workdir
 
-    jobinfo = subprocess.Popen(['tar','-czf', '%s/work.tar' % tmpworkdir, '-C', tmpworkdir, '.'],
+    jobinfo = subprocess.Popen(['tar','-cf', '%s/work.tar' % tmpworkdir, '-C', tmpworkdir,
+                                '--exclude=work.tar', '.'],
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE)
     jobout, joberr = jobinfo.communicate()
