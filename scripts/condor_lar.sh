@@ -1536,15 +1536,19 @@ fi
 # Also randomize the names of root files if there is no input specified
 # for this job (i.e. generator jobs).
 
+# Also randomize and shorten names of root files that are longer than
+# 200 characters.
+
 ran=0
 if [ $USE_SAM -eq 0 -a x$INFILE = x -a x$INLIST = x ]; then
   ran=1
 fi
 
 for root in *.root; do
-  if [ -f ${root}.json -o $ran != 0 ]; then
+  nc=`echo $root | wc -c`
+  if [ -f ${root}.json -o $ran != 0 -o $nc -ge 200 ]; then
     echo "Move file 1 $root"
-    base=`basename $root .root`_`uuidgen`
+    base=`basename $root .root | cut -c1-150`_`uuidgen`
     echo "Move file 2 $base"
     mv $root ${base}.root
     mv ${root}.json ${base}.root.json
