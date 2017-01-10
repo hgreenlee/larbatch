@@ -790,7 +790,7 @@ class StageDef:
     def makedirs(self):
         if not larbatch_posix.exists(self.outdir):
             larbatch_posix.makedirs(self.outdir)
-        if not larbatch_posix.exists(self.logdir):
+        if self.logdir != self.outdir and not larbatch_posix.exists(self.logdir):
             larbatch_posix.makedirs(self.logdir)
         if not larbatch_posix.exists(self.workdir):
             larbatch_posix.makedirs(self.workdir)
