@@ -400,8 +400,9 @@ def exists(path):
         # In order to reduce hang risk from stat'ing file,
         # check existence by getting contents of parent directory.
 
-        dir = os.path.dirname(path)
-        base = os.path.basename(path)
+        npath = os.path.normpath(path)     # Strip trailing '/'.
+        dir = os.path.dirname(npath)
+        base = os.path.basename(npath)
         if dir == '':
             dir = '.'
         if isdir(dir):
@@ -788,8 +789,9 @@ def rmtree(path):
         #     subprocess to finish, or check its exit status.
 
         #shutil.rmtree(path)
-        newpath = path + '_' + str(uuid.uuid4())
-        os.rename(path, newpath)
+        npath = os.path.normpath(path)              # Strip trailing '/'
+        newpath = npath + '_' + str(uuid.uuid4())
+        os.rename(npath, newpath)
         os.system('rm -rf %s &' % newpath)
 
     # Done
