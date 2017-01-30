@@ -607,6 +607,13 @@ class StageDef:
             if len(lines) == 0:
                 raise PubsInputError(run, subruns[0], version)
 
+            # Verify that input files actually exist.
+
+            for line in lines:
+                input_file = line.strip()
+                if not larbatch_posix.exists(input_file):
+                    raise PubsInputError(run, subruns[0], version)
+
             # Specify that there will be exactly one job submitted.
 
             self.num_jobs = 1
