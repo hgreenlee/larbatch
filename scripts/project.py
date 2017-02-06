@@ -3139,10 +3139,8 @@ def domerge(stage, mergehist, mergentuple):
             if larbatch_posix.exists(name_temp):
 
                 # Copy merged file.
-
                 larbatch_posix.copy(name_temp, name)
-                larbatch_posix.remove(name_temp)
-                larbatch_posix.rmdir(tempdir)
+                larbatch_posix.rmtree(tempdir)
         larbatch_posix.remove(histurlsname_temp)
 
 
