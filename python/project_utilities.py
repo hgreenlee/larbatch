@@ -347,7 +347,10 @@ def safeexist(path):
     return larbatch_posix.exists(path)
 
 def saferead(path):
-    return larbatch_posix.readlines(path)
+    if safeexist(path):
+        return larbatch_posix.readlines(path)
+    else:
+        return []
 
 def safecopy(src, dest):
     return larbatch_posix.copy(src, dest)

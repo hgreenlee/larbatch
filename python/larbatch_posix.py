@@ -276,11 +276,11 @@ class dcache_file:
 def open(path, mode='r', buf=-1):
     if path.startswith('/pnfs/') and (prefer_grid or not pnfs_is_mounted):
         if debug:
-            print '*** Larbatch_posix: Opening dcache_file %s.' % path
+            print '*** Larbatch_posix: Opening dcache_file %s using mode %s.' % (path, mode)
         return dcache_file(path, mode, buf)
     else:
         if debug:
-            print '*** Larbatch_posix: Opening normal file %s.' % path
+            print '*** Larbatch_posix: Opening normal file %s using mode %s.' % (path, mode)
         return __builtins__['open'](path, mode, buf)
 
 

@@ -35,6 +35,7 @@ class StageDef:
 	self.outdir = ''       # Output directory.
         self.logdir = ''       # Log directory.
         self.workdir = ''      # Work directory.
+        self.bookdir = ''      # Bookkeeping directory.
         self.dynamic = 0       # Dynamic output/log directory.
         self.inputfile = ''    # Single input file.
         self.inputlist = ''    # Input file list.
@@ -118,6 +119,14 @@ class StageDef:
         if self.workdir == '':
             raise XMLError, 'Work directory not specified for stage %s.' % self.name
 
+        # Bookkeeping directory (subelement).
+
+        bookdir_elements = stage_element.getElementsByTagName('bookdir')
+        if bookdir_elements:
+            self.bookdir = bookdir_elements[0].firstChild.data
+        if self.bookdir == '':
+            self.bookdir = self.logdir
+
         # Single input file (subelement).
 
         inputfile_elements = stage_element.getElementsByTagName('inputfile')
@@ -177,7 +186,7 @@ class StageDef:
 
         # If none of input definition, input file, nor input list were specified, set
         # the input list to the dafault input list.  If an input stream was specified,
-        # insert it in from of the file type.
+        # insert it in front of the file type.
 
         if self.inputfile == '' and self.inputlist == '' and self.inputdef == '':
 
@@ -436,6 +445,7 @@ class StageDef:
 	result += 'Output directory = %s\n' % self.outdir
         result += 'Log directory = %s\n' % self.logdir
         result += 'Work directory = %s\n' % self.workdir
+        result += 'Bookkeeping directory = %s\n' % self.bookdir
         result += 'Dynamic directories = %d\n' % self.dynamic
         result += 'Input file = %s\n' % self.inputfile
         result += 'Input list = %s\n' % self.inputlist
@@ -739,7 +749,7 @@ class StageDef:
         self.output_subruns = subruns;
         self.output_version = version;
 
-        # Append run and subrun to workdir, outdir, and logdir.
+        # Append run and subrun to workdir, outdir, logdir, and bookdir.
         # In case of multiple subruns, encode the subdir directory as "@s",
         # which informs the batch worker to determine the subrun dynamically.
 
@@ -758,6 +768,7 @@ class StageDef:
             self.dynamic = 1
         self.outdir = os.path.join(self.outdir, pubs_path)
         self.logdir = os.path.join(self.logdir, pubs_path)
+        self.bookdir = os.path.join(self.bookdir, pubs_path)
 
 
     # Raise an exception if any specified input file/list doesn't exist.
@@ -800,7 +811,7 @@ class StageDef:
             raise IOError, 'Log directory %s does not exist.' % self.logdir
         return
     
-    # Raise an exception if output directory, log directory, or work directory doesn't exist.
+    # Raise an exception if output, log, work, or bookkeeping directory doesn't exist.
 
     def checkdirs(self):
         if not larbatch_posix.exists(self.outdir):
@@ -809,9 +820,11 @@ class StageDef:
             raise IOError, 'Log directory %s does not exist.' % self.logdir
         if not larbatch_posix.exists(self.workdir):
             raise IOError, 'Work directory %s does not exist.' % self.workdir
+        if not larbatch_posix.exists(self.bookdir):
+            raise IOError, 'Bookkeeping directory %s does not exist.' % self.bookdir
         return
     
-    # Make output, log, and work directory, if they don't exist.
+    # Make output, log, work, and bookkeeping directory, if they don't exist.
 
     def makedirs(self):
         if not larbatch_posix.exists(self.outdir):
@@ -820,6 +833,8 @@ class StageDef:
             larbatch_posix.makedirs(self.logdir)
         if not larbatch_posix.exists(self.workdir):
             larbatch_posix.makedirs(self.workdir)
+        if not larbatch_posix.exists(self.bookdir):
+            larbatch_posix.makedirs(self.bookdir)
 
         # If output is on dcache, make output directory group-writable.
 

@@ -26,7 +26,7 @@ class StageStatus:
         # Default values.
 
         self.stage = stage               # Stage name.
-        self.exists = False              # Does logdir exist?
+        self.exists = False              # Does bookdir exist?
         self.nfile = 0                   # Number of good art files.
         self.nev = 0                     # Number of good art events.
         self.nana = 0                    # Number of good non-art root files.
@@ -41,11 +41,11 @@ class StageStatus:
 
     def update(self):
 
-        logdir = self.stage.logdir
+        bookdir = self.stage.bookdir
 
         # Test whether output directory exists.
 
-        if larbatch_posix.exists(logdir):
+        if larbatch_posix.exists(bookdir):
 
             # Output directory exists.
 
@@ -58,7 +58,7 @@ class StageStatus:
 
             # Count good files and events.
 
-            eventsfile = os.path.join(logdir, 'events.list')
+            eventsfile = os.path.join(bookdir, 'events.list')
             if larbatch_posix.exists(eventsfile):
                 lines = larbatch_posix.readlines(eventsfile)
                 for line in lines:
@@ -69,7 +69,7 @@ class StageStatus:
 
             # Count good files analysis root files.
 
-            filesana = os.path.join(logdir, 'filesana.list')
+            filesana = os.path.join(bookdir, 'filesana.list')
             if larbatch_posix.exists(filesana):
                 lines = larbatch_posix.readlines(filesana)
                 for line in lines:
@@ -77,7 +77,7 @@ class StageStatus:
 
             # Count errors.
 
-            badfile = os.path.join(logdir, 'bad.list')
+            badfile = os.path.join(bookdir, 'bad.list')
             if larbatch_posix.exists(badfile):
                 lines = larbatch_posix.readlines(badfile)
                 for line in lines:
@@ -86,7 +86,7 @@ class StageStatus:
 
             # Count missing files.
 
-            missingfile = os.path.join(logdir, 'missing_files.list')
+            missingfile = os.path.join(bookdir, 'missing_files.list')
             if larbatch_posix.exists(missingfile):
                 lines = larbatch_posix.readlines(missingfile)
                 for line in lines:

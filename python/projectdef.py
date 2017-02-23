@@ -303,7 +303,7 @@ class ProjectDef:
                                         self.disk,
                                         self.memory))
             default_previous_stage = self.stages[-1].name
-            default_input_lists[default_previous_stage] = os.path.join(self.stages[-1].logdir,
+            default_input_lists[default_previous_stage] = os.path.join(self.stages[-1].bookdir,
                                                                        'files.list')
 
         # Dictionary of metadata parameters
