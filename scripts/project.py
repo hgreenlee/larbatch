@@ -148,6 +148,8 @@
 #
 # <merge>    - special histogram merging program (default "hadd -T",
 #               can be overridden at each stage).
+# <check>    - Do on-node validation and sam declaration (0 or 1, default 0).
+# <copy>     - Copy validated root files to FTS (0 or 1, default 0).
 #
 # <stage name="stagename"> - Information about project stage.  There can
 #             be multiple instances of this tag with different name
