@@ -792,6 +792,10 @@ def get_input_files(stage):
 
 def doshorten(stage):
 
+    # Untar log files.
+
+    untarlog(stage)
+
     # Loop over .root files in outdir.
 
     for out_subpath, subdirs, files in larbatch_posix.walk(stage.outdir):
@@ -802,7 +806,7 @@ def doshorten(stage):
             continue
 
         subdir = os.path.relpath(out_subpath, stage.outdir)
-        log_subpath = os.path.join(stage.logdir, subdir)
+        log_subpath = os.path.join(stage.bookdir, subdir)
 
         for file in files:
             if file[-5:] == '.root':
@@ -824,6 +828,52 @@ def doshorten(stage):
                         shortjson_path = os.path.join(log_subpath, shortjson)
                         print '%s\n->%s\n' % (json_path, shortjson_path)
                         larbatch_posix.rename(json_path, shortjson_path)
+
+    return
+
+# Untar tarred up log files in logtir into bookdir.
+
+def untarlog(stage):
+
+    # If bookdir is the same as logdir, don't do anything.
+
+    if stage.bookdir == stage.logdir:
+        return
+
+    # Walk over logdir to look for log files.
+
+    for log_subpath, subdirs, files in larbatch_posix.walk(stage.logdir):
+
+        # Only examine leaf directories.
+
+        if len(subdirs) != 0:
+            continue
+        subdir = os.path.relpath(log_subpath, stage.logdir)
+        if subdir == '.':
+            continue
+        book_subpath = os.path.join(stage.bookdir, subdir)
+        for file in files:
+            if file == 'log.tar':
+                src = '%s/%s' % (log_subpath, file)
+                dst = '%s/%s' % (book_subpath, file)
+                if not larbatch_posix.exists(dst):
+
+                    # Copy tarball to bookdir.
+
+                    print 'Untar %s into %s' % (src, book_subpath)
+                    if not larbatch_posix.isdir(book_subpath):
+                        larbatch_posix.mkdir(book_subpath)
+                    larbatch_posix.copy(src, dst)
+
+                    # Extract tarball.
+
+                    jobinfo = subprocess.Popen(['tar','-xf', dst, '-C', book_subpath],
+                                               stdout=subprocess.PIPE,
+                                               stderr=subprocess.PIPE)
+                    jobout, joberr = jobinfo.communicate()
+                    rc = jobinfo.poll()
+                    if rc != 0:
+                        raise RuntimeError, 'Failed to extract log tarball in %s' % dst
 
     return
 
@@ -878,9 +928,13 @@ def docheck(project, stage, ana, quick=False):
     # the requisite number of good generator jobs, a "missing_files.list" will be
     # generated with lines containing /dev/null.
 
+    # Untar log files into bookdir.
+
+    untarlog(stage)
+
     # Quick check?
 
-    if quick == 1:
+    if quick == 1 and not ana:
         return doquickcheck(project, stage, ana)
 
     stage.checkinput()
@@ -890,14 +944,14 @@ def docheck(project, stage, ana, quick=False):
     if not larbatch_posix.exists(stage.outdir):
         print 'Output directory %s does not exist.' % stage.outdir
         return 1
-    if not larbatch_posix.exists(stage.logdir):
-        print 'Log directory %s does not exist.' % stage.logdir
+    if not larbatch_posix.exists(stage.bookdir):
+        print 'Log directory %s does not exist.' % stage.bookdir
         return 1
 
     import_samweb()
     has_metadata = project.file_type != '' or project.run_type != ''
     has_input = stage.inputfile != '' or stage.inputlist != '' or stage.inputdef != ''
-    print 'Checking directory %s' % stage.logdir
+    print 'Checking directory %s' % stage.bookdir
 
     # Count total number of events and root files.
 
@@ -915,14 +969,14 @@ def docheck(project, stage, ana, quick=False):
     bad_workers = []  # List of bad worker subdirectories.
 
 
-    for log_subpath, subdirs, files in larbatch_posix.walk(stage.logdir):
+    for log_subpath, subdirs, files in larbatch_posix.walk(stage.bookdir):
 
         # Only examine files in leaf directories.
 
         if len(subdirs) != 0:
             continue
 
-        subdir = os.path.relpath(log_subpath, stage.logdir)
+        subdir = os.path.relpath(log_subpath, stage.bookdir)
         if subdir == '.':
             continue
         out_subpath = os.path.join(stage.outdir, subdir)
@@ -1083,14 +1137,14 @@ def docheck(project, stage, ana, quick=False):
     # Dictionary procmap now contains a list of good processes
     # and root files.
 
-    # Before attempting to create bookkeeping files in stage.logdir, check
+    # Before attempting to create bookkeeping files in stage.bookdir, check
     # whether this directory is readable.  If not readable, return error
     # status without creating any bookkeeping files.  This is to prevent
     # hangs.
 
-    contents = larbatch_posix.listdir(stage.logdir)
+    contents = larbatch_posix.listdir(stage.bookdir)
     if len(contents) == 0:
-        print 'Directory %s may be dead.' % stage.logdir
+        print 'Directory %s may be dead.' % stage.bookdir
         print 'Returning error status without creating any bookkeeping files.'
         return 1
 
@@ -1323,13 +1377,13 @@ def doquickcheck(project, stage, ana):
         print 'Output directory %s does not exist.' % stage.outdir
         return 1
 
-    if not larbatch_posix.isdir(stage.logdir):
-        print 'Log directory %s does not exist.' % stage.logdir
+    if not larbatch_posix.isdir(stage.bookdir):
+        print 'Log directory %s does not exist.' % stage.bookdir
         return 1
 
-    print 'Checking directory %s' % stage.logdir
+    print 'Checking directory %s' % stage.bookdir
 
-    #Aggregate the .list files form the logdir up one dir. This is where the old docheck would put them, and it double-checks that the files made it back from the worker node.
+    #Aggregate the .list files form the bookdir up one dir. This is where the old docheck would put them, and it double-checks that the files made it back from the worker node.
 
     goodFiles        = []       # list of art root files
     goodAnaFiles     = []       # list of analysis root files
@@ -1347,7 +1401,7 @@ def doquickcheck(project, stage, ana):
     goodOutDirs      = set()   # Set of output directories.
     nErrors = 0                # Number of erors uncovered
 
-    for log_subpath, subdirs, files in larbatch_posix.walk(stage.logdir):
+    for log_subpath, subdirs, files in larbatch_posix.walk(stage.bookdir):
 
         # Only examine files in leaf directories.
 
@@ -1366,7 +1420,7 @@ def doquickcheck(project, stage, ana):
 
         print 'Doing quick check of directory %s.' % log_subpath
 
-        subdir = os.path.relpath(log_subpath, stage.logdir)
+        subdir = os.path.relpath(log_subpath, stage.bookdir)
 
         out_subpath = os.path.join(stage.outdir, subdir)
         dirok = project_utilities.fast_isdir(log_subpath)
@@ -1721,10 +1775,10 @@ def dofetchlog(project, stage):
     stage.checkdirs()
 
     # Look for files called "env.txt" in any subdirectory of
-    # stage.logdir.
+    # stage.bookdir.
 
     logids = []
-    for dirpath, dirnames, filenames in larbatch_posix.walk(stage.logdir):
+    for dirpath, dirnames, filenames in larbatch_posix.walk(stage.bookdir):
         for filename in filenames:
             if filename == 'env.txt':
 
@@ -1785,7 +1839,7 @@ def dofetchlog(project, stage):
 
         # Make a directory to receive log files.
 
-        logdir = os.path.join(stage.logdir, 'log')
+        logdir = os.path.join(stage.bookdir, 'log')
         if larbatch_posix.exists(logdir):
             larbatch_posix.rmtree(logdir)
         larbatch_posix.mkdir(logdir)
@@ -2480,14 +2534,14 @@ def dojobsub(project, stage, makeup):
 
     if makeup:
 
-        checked_file = os.path.join(stage.logdir, 'checked')
+        checked_file = os.path.join(stage.bookdir, 'checked')
         if not larbatch_posix.exists(checked_file):
             raise RuntimeError, 'Wait for any running jobs to finish and run project.py --check'
         makeup_count = 0
 
         # First delete bad worker subdirectories.
 
-        bad_filename = os.path.join(stage.logdir, 'bad.list')
+        bad_filename = os.path.join(stage.bookdir, 'bad.list')
         if larbatch_posix.exists(bad_filename):
             lines = larbatch_posix.readlines(bad_filename)
             for line in lines:
@@ -2501,6 +2555,10 @@ def dojobsub(project, stage, makeup):
                     if larbatch_posix.exists(bad_path):
                         print 'Deleting %s' % bad_path
                         larbatch_posix.rmtree(bad_path)
+                    bad_path = os.path.join(stage.bookdir, bad_subdir)
+                    if larbatch_posix.exists(bad_path):
+                        print 'Deleting %s' % bad_path
+                        larbatch_posix.rmtree(bad_path)
 
         # Get a list of missing files, if any, for file list input.
         # Regenerate the input file list in the work directory, and
@@ -2508,7 +2566,7 @@ def dojobsub(project, stage, makeup):
 
         missing_files = []
         if stage.inputdef == '':
-            missing_filename = os.path.join(stage.logdir, 'missing_files.list')
+            missing_filename = os.path.join(stage.bookdir, 'missing_files.list')
             if larbatch_posix.exists(missing_filename):
                 lines = larbatch_posix.readlines(missing_filename)
                 for line in lines:
@@ -2537,7 +2595,7 @@ def dojobsub(project, stage, makeup):
             # Loop over good output files to extract existing
             # process numbers and determine missing process numbers.
 
-            output_files = os.path.join(stage.logdir, 'files.list')
+            output_files = os.path.join(stage.bookdir, 'files.list')
             if larbatch_posix.exists(output_files):
                 lines = larbatch_posix.readlines(output_files)
                 for line in lines:
@@ -2567,7 +2625,7 @@ def dojobsub(project, stage, makeup):
         # Get list of successful consumer process ids.
 
         cpids = []
-        cpids_filename = os.path.join(stage.logdir, 'cpids.list')
+        cpids_filename = os.path.join(stage.bookdir, 'cpids.list')
         if larbatch_posix.exists(cpids_filename):
             cpids_files = larbatch_posix.readlines(cpids_filename)
             for line in cpids_files:
@@ -2978,7 +3036,7 @@ def dojobsub(project, stage, makeup):
         dagfileurl = 'file://'+ dagfilepath
         command.append(dagfileurl)
 
-    checked_file = os.path.join(stage.logdir, 'checked')
+    checked_file = os.path.join(stage.bookdir, 'checked')
 
     # Calculate submit timeout.
 
@@ -3074,6 +3132,8 @@ def dosubmit(project, stage, makeup=False):
             larbatch_posix.rmtree(stage.outdir)
         if larbatch_posix.exists(stage.logdir):
             larbatch_posix.rmtree(stage.logdir)
+        if larbatch_posix.exists(stage.bookdir):
+            larbatch_posix.rmtree(stage.bookdir)
 
     # Make or check directories.
 
@@ -3093,6 +3153,8 @@ def dosubmit(project, stage, makeup=False):
             raise RuntimeError, 'Output directory %s is not empty.' % stage.outdir
         if len(larbatch_posix.listdir(stage.logdir)) != 0:
             raise RuntimeError, 'Log directory %s is not empty.' % stage.logdir
+        if len(larbatch_posix.listdir(stage.bookdir)) != 0:
+            raise RuntimeError, 'Log directory %s is not empty.' % stage.bookdir
 
     # Copy files to workdir and issue jobsub command to submit jobs.
 
@@ -3129,7 +3191,7 @@ def dosubmit(project, stage, makeup=False):
 def domerge(stage, mergehist, mergentuple):
 
     hlist = []
-    hnlist = os.path.join(stage.logdir, 'filesana.list')
+    hnlist = os.path.join(stage.bookdir, 'filesana.list')
     if larbatch_posix.exists(hnlist):
         hlist = larbatch_posix.readlines(hnlist)
     else:
@@ -3239,7 +3301,7 @@ def doaudit(stage):
             rmfile = list(set(children) & set(outputlist))[0]
             if me ==1:
                 flist = []
-                fnlist = os.path.join(stage.logdir, 'files.list')
+                fnlist = os.path.join(stage.bookdir, 'files.list')
                 if larbatch_posix.exists(fnlist):
                     flist = larbatch_posix.readlines(fnlist)
                     slist = []
@@ -3640,11 +3702,7 @@ def main(argv):
 
         # Check results from specified project stage.
 
-        #do an abbreviated check if we did some validation on the worker node
-        if project.validate_on_worker == 1:
-            doquickcheck(project, stage, checkana)
-        else:
-            docheck(project, stage, checkana)
+        docheck(project, stage, checkana, project.validate_on_worker)
 
     if fetchlog:
 
@@ -3716,13 +3774,13 @@ def main(argv):
 
         # Check sam declarations.
 
-        docheck_declarations(stage.logdir, stage.outdir, declare, ana=False)
+        docheck_declarations(stage.bookdir, stage.outdir, declare, ana=False)
 
     if check_declarations_ana or declare_ana:
 
         # Check sam analysis declarations.
 
-        docheck_declarations(stage.logdir, stage.outdir, declare_ana, ana=True)
+        docheck_declarations(stage.bookdir, stage.outdir, declare_ana, ana=True)
 
     if test_declarations:
 

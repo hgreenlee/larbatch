@@ -1705,6 +1705,18 @@ if [ $VALIDATE_IN_JOB -eq 1 ]; then
     
 fi
 
+# Make a tarball of each log directory, and save the tarball in its own log directory.
+
+rm -f log0.tar
+tar -cjf log0.tar -C log .
+mv log0.tar log
+for subrun in ${subruns[*]}
+do
+  rm -f log.tar
+  tar -cjf log.tar -C log$subrun .
+  mv log.tar log$subrun
+done
+
 # Clean remote output and log directories.
 
 if [  1 -eq 0 ]; then
@@ -1748,6 +1760,8 @@ fi
 
 statout=0
 export IFDH_CP_MAXRETRIES=0
+echo "ls log"
+ls log
 echo "ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR"
 if [ "$( ls -A log )" ]; then
   ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR
@@ -1759,6 +1773,8 @@ fi
 
 for subrun in ${subruns[*]}
 do
+  echo "ls log$subrun"
+  ls log$subrun
   echo "ifdh cp -D $IFDH_OPT log${subrun}/* ${logdirs[$subrun]}/$OUTPUT_SUBDIR"
   ifdh cp -D $IFDH_OPT log${subrun}/* ${logdirs[$subrun]}/$OUTPUT_SUBDIR
   stat=$?
