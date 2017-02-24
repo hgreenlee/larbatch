@@ -1430,7 +1430,7 @@ def doquickcheck(project, stage, ana):
 
         validateOK = 1
 
-        missingfilesname = os.path.join(out_subpath, 'missing_files.list')
+        missingfilesname = os.path.join(log_subpath, 'missing_files.list')
 
         #print missingfilesname
 
@@ -1458,7 +1458,7 @@ def doquickcheck(project, stage, ana):
         #If the validation failed, compile a missing_files list and continue
         if validateOK != 1:
             nErrors += 1
-            urislistname = os.path.join(out_subpath, 'transferred_uris.list')
+            urislistname = os.path.join(log_subpath, 'transferred_uris.list')
             uris = []
             #update uris
             #print 'Reading %s' % urislistname
@@ -1511,7 +1511,7 @@ def doquickcheck(project, stage, ana):
                 if not cpid in cpids:
                     cpids.append(cpid)
 
-        filelistsrc = os.path.join(out_subpath, 'files.list')
+        filelistsrc = os.path.join(log_subpath, 'files.list')
         tmpArray = scan_file(filelistsrc)
 
         if( tmpArray == [ -1 ] ):
@@ -1519,13 +1519,13 @@ def doquickcheck(project, stage, ana):
         else:
             goodFiles.extend(tmpArray)
 
-        fileanalistsrc = os.path.join(out_subpath, 'filesana.list')
+        fileanalistsrc = os.path.join(log_subpath, 'filesana.list')
         tmpArray = scan_file(fileanalistsrc)
 
         if( not tmpArray == [ -1 ] ):
             goodAnaFiles.extend(tmpArray)
 
-        eventlistsrc = os.path.join(out_subpath, 'events.list')
+        eventlistsrc = os.path.join(log_subpath, 'events.list')
 
         tmpArray = scan_file(eventlistsrc)
 
@@ -1535,7 +1535,7 @@ def doquickcheck(project, stage, ana):
             eventLists.extend(tmpArray)
 
 
-        badfilesrc = os.path.join(out_subpath, 'bad.list')
+        badfilesrc = os.path.join(log_subpath, 'bad.list')
 
 
         tmpArray = scan_file(badfilesrc)
@@ -1547,7 +1547,7 @@ def doquickcheck(project, stage, ana):
             badLists.extend(tmpArray)
 
         '''
-        missingfilesrc  = os.path.join(out_subpath, 'missing_files.list')
+        missingfilesrc  = os.path.join(log_subpath, 'missing_files.list')
 
         tmpArray = scan_file(missingfilesrc)
 
@@ -1558,7 +1558,7 @@ def doquickcheck(project, stage, ana):
         '''
 
         #if ana:
-        #    filesanalistsrc = os.path.join(out_subpath, 'filesana.list')
+        #    filesanalistsrc = os.path.join(log_subpath, 'filesana.list')
 
         #    tmpArray = scan_file(filesanalistsrc)
 
@@ -1567,7 +1567,7 @@ def doquickcheck(project, stage, ana):
         #    else:
         #        anaFiles.extend(tmpArray)
 
-        urislistsrc = os.path.join(out_subpath, 'transferred_uris.list')
+        urislistsrc = os.path.join(log_subpath, 'transferred_uris.list')
 
         tmpArray = scan_file(urislistsrc)
 
@@ -1577,12 +1577,12 @@ def doquickcheck(project, stage, ana):
         else:
             transferredFiles.extend(tmpArray)
         #create a list of files_*.list files. These are outputs from specific streams
-        streamList = larbatch_posix.listdir(out_subpath)
+        streamList = larbatch_posix.listdir(log_subpath)
 
         for stream in streamList:
             if( stream[:6] != "files_" ):
                 continue
-            streamfilesrc = os.path.join(out_subpath, stream)
+            streamfilesrc = os.path.join(log_subpath, stream)
             #print stream
             tmpArray = scan_file(streamfilesrc)
             if( tmpArray == [ -1 ] ):
