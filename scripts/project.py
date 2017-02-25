@@ -1469,6 +1469,7 @@ def doquickcheck(project, stage, ana):
                     transferredFiles.append(uri)
                     uris.append(uri)
 
+            nmiss = 0
             if stage.inputdef == '' and not stage.pubs_output:
                 input_files = get_input_files(stage)
                 if len(input_files) > 0:
