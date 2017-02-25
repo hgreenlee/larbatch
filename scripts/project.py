@@ -853,7 +853,7 @@ def untarlog(stage):
             continue
         book_subpath = os.path.join(stage.bookdir, subdir)
         for file in files:
-            if file == 'log.tar':
+            if file.startswith('log') and file.endswith('.tar'):
                 src = '%s/%s' % (log_subpath, file)
                 dst = '%s/%s' % (book_subpath, file)
                 if not larbatch_posix.exists(dst):
