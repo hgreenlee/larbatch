@@ -816,11 +816,11 @@ class StageDef:
     def checkdirs(self):
         if not larbatch_posix.exists(self.outdir):
             raise IOError, 'Output directory %s does not exist.' % self.outdir
-        if not larbatch_posix.exists(self.logdir):
+        if self.logdir != self.outdir and not larbatch_posix.exists(self.logdir):
             raise IOError, 'Log directory %s does not exist.' % self.logdir
         if not larbatch_posix.exists(self.workdir):
             raise IOError, 'Work directory %s does not exist.' % self.workdir
-        if not larbatch_posix.exists(self.bookdir):
+        if self.bookdir != self.logdir and not larbatch_posix.exists(self.bookdir):
             raise IOError, 'Bookkeeping directory %s does not exist.' % self.bookdir
         return
     
@@ -833,7 +833,7 @@ class StageDef:
             larbatch_posix.makedirs(self.logdir)
         if not larbatch_posix.exists(self.workdir):
             larbatch_posix.makedirs(self.workdir)
-        if not larbatch_posix.exists(self.bookdir):
+        if self.bookdir != self.logdir and not larbatch_posix.exists(self.bookdir):
             larbatch_posix.makedirs(self.bookdir)
 
         # If output is on dcache, make output directory group-writable.
