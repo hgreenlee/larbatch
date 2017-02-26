@@ -862,7 +862,7 @@ def untarlog(stage):
 
                     print 'Untar %s into %s' % (src, book_subpath)
                     if not larbatch_posix.isdir(book_subpath):
-                        larbatch_posix.mkdir(book_subpath)
+                        larbatch_posix.makedirs(book_subpath)
                     larbatch_posix.copy(src, dst)
 
                     # Extract tarball.
