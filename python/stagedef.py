@@ -659,7 +659,11 @@ class StageDef:
             nsubruns = 0
             total_size = 0
             actual_subruns = []
+            truncate = False
             for subrun in subruns:
+
+                if truncate:
+                    break
 
                 nsubruns += 1
 
@@ -700,6 +704,7 @@ class StageDef:
                     # truncate the list of subruns and break out of the loop.
 
                     if self.target_size != 0 and total_size >= self.target_size:
+                        truncate = True
                         break
 
             # Done looping over subruns.
