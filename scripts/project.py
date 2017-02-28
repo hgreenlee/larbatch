@@ -1398,7 +1398,6 @@ def doquickcheck(project, stage, ana):
     cpids            = []      # list of consumer process ids
 
     goodLogDirs      = set()   # Set of log directories.
-    goodOutDirs      = set()   # Set of output directories.
     nErrors = 0                # Number of erors uncovered
 
     for log_subpath, subdirs, files in larbatch_posix.walk(stage.bookdir):
@@ -1596,7 +1595,6 @@ def doquickcheck(project, stage, ana):
 
         if nErrors == 0:
             goodLogDirs.add(log_subpath)
-            goodOutDirs.add(out_subpath)
 
     checkfilename = os.path.join(stage.bookdir, 'checked')
     checkfile = safeopen(checkfilename)
@@ -1608,8 +1606,8 @@ def doquickcheck(project, stage, ana):
     if larbatch_posix.exists(filelistdest):
         #print 'Deleting %s' % filelistdest
         larbatch_posix.remove(filelistdest)
-    if len(goodOutDirs) == 1:
-        src = '%s/files.list' % goodOutDirs.copy().pop()
+    if len(goodLogDirs) == 1:
+        src = '%s/files.list' % goodLogDirs.copy().pop()
         #print 'Symlinking %s to %s' % (src, filelistdest)
         larbatch_posix.symlink(src, filelistdest)
     else:
@@ -1627,8 +1625,8 @@ def doquickcheck(project, stage, ana):
     if larbatch_posix.exists(fileanalistdest):
         #print 'Deleting %s' % fileanalistdest
         larbatch_posix.remove(fileanalistdest)
-    if len(goodOutDirs) == 1:
-        src = '%s/filesana.list' % goodOutDirs.copy().pop()
+    if len(goodLogDirs) == 1:
+        src = '%s/filesana.list' % goodLogDirs.copy().pop()
         #print 'Symlinking %s to %s' % (src, fileanalistdest)
         larbatch_posix.symlink(src, fileanalistdest)
     else:
@@ -1646,8 +1644,8 @@ def doquickcheck(project, stage, ana):
     if larbatch_posix.exists(eventlistdest):
         #print 'Deleting %s' % eventlistdest
         larbatch_posix.remove(eventlistdest)
-    if len(goodOutDirs) == 1:
-        src = '%s/events.list' % goodOutDirs.copy().pop()
+    if len(goodLogDirs) == 1:
+        src = '%s/events.list' % goodLogDirs.copy().pop()
         #print 'Symlinking %s to %s' % (src, eventlistdest)
         larbatch_posix.symlink(src, eventlistdest)
     else:
@@ -1683,7 +1681,8 @@ def doquickcheck(project, stage, ana):
     if larbatch_posix.exists(urilistdest):
         #print 'Deleting %s' % urilistdest
         larbatch_posix.remove(urilistdest)
-    if len(goodOutDirs) == 1 and len(transferredFiles) > 0:
+    if len(goodLogDirs) == 1 and len(transferredFiles) > 0:
+        src = '%s/transferred_uris.list' % goodLogDirs.copy().pop()
         #print 'Symlinking %s to %s' % (src, urilistdest)
         larbatch_posix.symlink(src, urilistdest)
     else:
@@ -1737,8 +1736,8 @@ def doquickcheck(project, stage, ana):
         if larbatch_posix.exists(streamdest):
             #print 'Deleting %s' % streamdest
             larbatch_posix.remove(streamdest)
-        if len(goodOutDirs) == 1:
-            src = '%s/%s' % (goodOutDirs.copy().pop(), stream)
+        if len(goodLogDirs) == 1:
+            src = '%s/%s' % (goodLogDirs.copy().pop(), stream)
             #print 'Symlinking %s to %s' % (src, streamdest)
             larbatch_posix.symlink(src, streamdest)
         else:
