@@ -134,7 +134,13 @@ class expMetaData(MetaData):
 
             # Ignore data_stream if it begins with "out".
             # These kinds of stream names are probably junk module labels.
-            
+
+            # First check if the data_stream is just "out" Catches an edge case 
+            # where the stream does not have a number
+
+            elif mdkey == 'data_stream' and mdval == 'out':
+                pass
+
 	    elif mdkey == 'data_stream' and mdval[:3] == 'out' and \
                     mdval[3] >= '0' and mdval[3] <= '9':
                 pass
