@@ -463,24 +463,50 @@ def ifdh_rm(path):
 
 def posix_cp(source, destination):
 
-    # Do cp.
-
     cmd = ['cp', source, destination]
-    jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-    q = Queue.Queue()
-    thread = threading.Thread(target=wait_for_subprocess, args=[jobinfo, q])
-    thread.start()
-    thread.join(timeout=60)
-    if thread.is_alive():
-        print 'Terminating subprocess.'
-        jobinfo.terminate()
-        thread.join()
-    rc = q.get()
-    jobout = q.get()
-    joberr = q.get()
-    if rc != 0:
-        raise IFDHError(cmd, rc, jobout, joberr)
+    # Fork buffer process.
+
+    buffer_pid = os.fork()
+    if buffer_pid == 0:
+
+        # In child process.
+        # Launch cp subprocess.
+
+        jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        q = Queue.Queue()
+        thread = threading.Thread(target=wait_for_subprocess, args=[jobinfo, q])
+        thread.start()
+        thread.join(timeout=60)
+        if thread.is_alive():
+
+            # Subprocess did not finish (may be hanging and unkillable).
+            # Try to kill the subprocess and exit process.
+            # Unkillable process will become detached.
+
+            print 'Terminating subprocess.'
+            jobinfo.kill()
+            os._exit(1)
+
+        else:
+
+            # Subprocess finished normally.
+
+            rc = q.get()
+            jobout = q.get()
+            joberr = q.get()
+            os._exit(rc)
+
+    else:
+
+        # In parent process.
+        # Wait for buffer subprocess to finish.
+
+        buffer_result = os.waitpid(buffer_pid, 0)
+        rc = buffer_result[1]/256
+        if rc != 0:
+            raise IFDHError(cmd, rc, '', '')
 
     # Done.
 
