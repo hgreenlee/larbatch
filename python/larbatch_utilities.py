@@ -147,7 +147,7 @@ def ifdh_ls(path, depth):
     q = Queue.Queue()
     thread = threading.Thread(target=wait_for_subprocess, args=[jobinfo, q])
     thread.start()
-    thread.join(timeout=60)
+    thread.join(timeout=600)
     if thread.is_alive():
         print 'Terminating subprocess.'
         jobinfo.terminate()
