@@ -77,6 +77,7 @@ class StageDef:
         self.TFileName = ''    # TFile output file name.
         self.jobsub = ''       # Arbitrary jobsub_submit options.
         self.jobsub_start = '' # Arbitrary jobsub_submit options for sam start/stop jobs.
+        self.jobsub_timeout = 0 # Jobsub submit timeout.
 	
         # Extract values from xml.
 
@@ -424,19 +425,25 @@ class StageDef:
 
         TFileName_elements = stage_element.getElementsByTagName('TFileName')
         if TFileName_elements:
-            self.TFileName = TFileName_elements[0].firstChild.data     
+            self.TFileName = TFileName_elements[0].firstChild.data
 
 	# Jobsub.
 
         jobsub_elements = stage_element.getElementsByTagName('jobsub')
         if jobsub_elements:
-            self.jobsub = jobsub_elements[0].firstChild.data     
+            self.jobsub = jobsub_elements[0].firstChild.data
 
 	# Jobsub start/stop.
 
         jobsub_start_elements = stage_element.getElementsByTagName('jobsub_start')
         if jobsub_start_elements:
-            self.jobsub_start = jobsub_start_elements[0].firstChild.data     
+            self.jobsub_start = jobsub_start_elements[0].firstChild.data
+
+	# Jobsub submit timeout.
+
+        jobsub_timeout_elements = stage_element.getElementsByTagName('jobsub_timeout')
+        if jobsub_timeout_elements:
+            self.jobsub_timeout = int(jobsub_timeout_elements[0].firstChild.data)
 
         # Done.
 
@@ -500,6 +507,7 @@ class StageDef:
         result += 'TFile name = %s\n' % self.TFileName
         result += 'Jobsub_submit options = %s\n' % self.jobsub
         result += 'Jobsub_submit start/stop options = %s\n' % self.jobsub_start
+        result += 'Jobsub submit timeout = %d\n' % self.jobsub_timeout
         return result
 
     # The purpose of this method is to limit input to the specified run

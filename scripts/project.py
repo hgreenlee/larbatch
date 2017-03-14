@@ -243,6 +243,7 @@
 #                    project submissions.
 # <stage><jobsub_start>  - Arbitrary jobsub_submit option(s).  Space-separated list.
 #                    Applies to sam start/stop project submissions.
+# <stage><jobsub_timeout> - Jobsubmission timeout (seconds).
 # <stage><maxfilesperjob> - Maximum number of files to be processed in a single worker.
 #
 #
@@ -3051,6 +3052,8 @@ def dojobsub(project, stage, makeup):
     submit_timeout = 60
     if prjname != '':
         submit_timeout += 0.2 * command_njobs
+    if stage.jobsub_timeout > submit_timeout:
+        submit_timeout = stage.jobsub_timeout
 
     # Submit jobs.
 
