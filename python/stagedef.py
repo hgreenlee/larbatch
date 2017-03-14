@@ -76,6 +76,7 @@ class StageDef:
         self.output = ''       # Art output file name.
         self.TFileName = ''    # TFile output file name.
         self.jobsub = ''       # Arbitrary jobsub_submit options.
+        self.jobsub_start = '' # Arbitrary jobsub_submit options for sam start/stop jobs.
 	
         # Extract values from xml.
 
@@ -431,6 +432,12 @@ class StageDef:
         if jobsub_elements:
             self.jobsub = jobsub_elements[0].firstChild.data     
 
+	# Jobsub start/stop.
+
+        jobsub_start_elements = stage_element.getElementsByTagName('jobsub_start')
+        if jobsub_start_elements:
+            self.jobsub_start = jobsub_start_elements[0].firstChild.data     
+
         # Done.
 
         return
@@ -492,6 +499,7 @@ class StageDef:
         result += 'Output file name = %s\n' % self.output
         result += 'TFile name = %s\n' % self.TFileName
         result += 'Jobsub_submit options = %s\n' % self.jobsub
+        result += 'Jobsub_submit start/stop options = %s\n' % self.jobsub_start
         return result
 
     # The purpose of this method is to limit input to the specified run

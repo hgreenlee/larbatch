@@ -241,6 +241,8 @@
 # <stage><jobsub>  - Arbitrary jobsub_submit option(s).  Space-separated list.
 #                    Only applies to main worker submission, not sam start/stop
 #                    project submissions.
+# <stage><jobsub_start>  - Arbitrary jobsub_submit option(s).  Space-separated list.
+#                    Applies to sam start/stop project submissions.
 # <stage><maxfilesperjob> - Maximum number of files to be processed in a single worker.
 #
 #
@@ -2889,6 +2891,9 @@ def dojobsub(project, stage, makeup):
             start_command.append('--site=%s' % project.site)
         if project.os != '':
             start_command.append('--OS=%s' % project.os)
+        if stage.jobsub_start != '':
+            for word in stage.jobsub_start.split():
+                start_command.append(word)
 
         # Start project script.
 
@@ -2934,6 +2939,9 @@ def dojobsub(project, stage, makeup):
             stop_command.append('--site=%s' % project.site)
         if project.os != '':
             stop_command.append('--OS=%s' % project.os)
+        if stage.jobsub_start != '':
+            for word in stage.jobsub_start.split():
+                stop_command.append(word)
 
         # Stop project script.
 
