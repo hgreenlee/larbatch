@@ -3049,9 +3049,9 @@ def dojobsub(project, stage, makeup):
 
     # Calculate submit timeout.
 
-    submit_timeout = 60
+    submit_timeout = 600
     if prjname != '':
-        submit_timeout += 0.2 * command_njobs
+        submit_timeout += 1.0 * command_njobs
     if stage.jobsub_timeout > submit_timeout:
         submit_timeout = stage.jobsub_timeout
 
