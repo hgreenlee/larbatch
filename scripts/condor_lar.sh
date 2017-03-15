@@ -233,6 +233,7 @@ SAM_START=0
 USE_SAM=0
 MIX_DEFNAME=""
 MIX_PROJECT=""
+MIX_SAM=0
 GRID=0
 IFDH_OPT=""
 DECLARE_IN_JOB=0
@@ -565,6 +566,7 @@ while [ $# -gt 0 ]; do
     --mix_defname )
       if [ $# -gt 1 ]; then
         MIX_DEFNAME=$2
+        MIX_SAM=1
         shift
       fi
       ;;
@@ -573,6 +575,7 @@ while [ $# -gt 0 ]; do
     --mix_project )
       if [ $# -gt 1 ]; then
         MIX_PROJECT=$2
+        MIX_SAM=1
         shift
       fi
       ;;
@@ -1179,7 +1182,7 @@ nfcls=0
 while read -r line
 do
 
- if [ "$(echo $line | awk '{print $1}')" = "#---STAGE" ]; then
+  if [ "$(echo $line | awk '{print $1}')" = "#---STAGE" ]; then
     stage="$(echo $line | awk '{print $2}')"
     stage_fcl="Stage$stage.fcl"
     nfcls=$(( $nfcls + 1 )) 
@@ -1198,147 +1201,148 @@ stage=0
 
 echo "Start loop over stages"
 while [ $stage -lt $nfcls ]; do
- FCL="Stage$stage.fcl"
+  FCL="Stage$stage.fcl"
  
- # In case no input files were specified, and we are not getting input
- # from sam (i.e. mc generation), recalculate the first event number,
- # the subrun number, and the number of events to generate in this worker.
- # This also applies to the textfile inputmode.
- # Note this only applies to the first stage by definition
+  # In case no input files were specified, and we are not getting input
+  # from sam (i.e. mc generation), recalculate the first event number,
+  # the subrun number, and the number of events to generate in this worker.
+  # This also applies to the textfile inputmode.
+  # Note this only applies to the first stage by definition
  
- if [ $stage -eq 0 -a $USE_SAM -eq 0 ] && [ $NFILE_TOTAL -eq 0 -o "$INMODE" = 'textfile' ]; then #need to ask what is going on here
+  if [ $stage -eq 0 -a $USE_SAM -eq 0 ] && [ $NFILE_TOTAL -eq 0 -o "$INMODE" = 'textfile' ]; then #need to ask what is going on here
 
 
-   # Don't allow --nskip.
+    # Don't allow --nskip.
 
-  if [ $NSKIP -gt 0 ]; then
-    echo "Illegal option --nskip specified with no input."
-    exit 1
-  fi
+    if [ $NSKIP -gt 0 ]; then
+      echo "Illegal option --nskip specified with no input."
+      exit 1
+    fi
 
-   # Do calculation.
+    # Do calculation.
 
-  NSKIP=$(( $PROCESS * $NEVT / $NJOBS ))
-  NEV=$(( ( $PROCESS + 1 ) * $NEVT / $NJOBS - $NSKIP ))
-  FIRST_EVENT=$(( $NSKIP + 1 ))
-  NSKIP=0
-  NEVT=$NEV
+    NSKIP=$(( $PROCESS * $NEVT / $NJOBS ))
+    NEV=$(( ( $PROCESS + 1 ) * $NEVT / $NJOBS - $NSKIP ))
+    FIRST_EVENT=$(( $NSKIP + 1 ))
+    NSKIP=0
+    NEVT=$NEV
 
-   # Set subrun=$PROCESS+1 in a wrapper fcl file.
+    # Set subrun=$PROCESS+1 in a wrapper fcl file.
 
-  SUBRUN=$(( $PROCESS + 1))
-cat <<EOF > subrun_wrapper.fcl
+    SUBRUN=$(( $PROCESS + 1))
+    cat <<EOF > subrun_wrapper.fcl
 #include "$FCL"  
 
 source.firstSubRun: $SUBRUN
 
 EOF
-  if [ "$INMODE" = 'textfile' ]; then
+    if [ "$INMODE" = 'textfile' ]; then
     
-    if [ $NFILE_LOCAL -ne 1 ]; then
-      echo "Text file input mode specified with wrong number of input files."
-      exit 1
-    fi
-    echo "physics.producers.generator.InputFileName: \"`cat condor_lar_input.list`\"" >> subrun_wrapper.fcl
-  fi
-  
-  FCL=subrun_wrapper.fcl
-  
-  echo "First MC event: $FIRST_EVENT"
-  echo "MC subrun: $SUBRUN"
-  echo "Number of MC events: $NEVT"
- 
- fi
-
- PURL=''
- CPID=''
- #if  [ 1 -eq 0 ]; then
- if [ $USE_SAM -ne 0 -a $stage -eq 0 ]; then
-   echo "In SAM if" 
-
-   # Make sure a project name has been specified.
-
-  if [ x$SAM_PROJECT = x ]; then
-    echo "No sam project was specified."
-    exit 1
-  fi
-  echo "Sam project: $SAM_PROJECT"
-
-   # Start project (if requested).
-
-   if [ $SAM_START -ne 0 ]; then
-     if [ x$SAM_DEFNAME != x ]; then
-
-      echo "Starting project $SAM_PROJECT using sam dataset definition $SAM_DEFNAME"
-      ifdh startProject $SAM_PROJECT $SAM_STATION $SAM_DEFNAME $SAM_USER $SAM_GROUP
-      if [ $? -eq 0 ]; then
-        echo "Start project succeeded."
-      else
-        echo "Start projet failed."
+      if [ $NFILE_LOCAL -ne 1 ]; then
+        echo "Text file input mode specified with wrong number of input files."
         exit 1
       fi
+      echo "physics.producers.generator.InputFileName: \"`cat condor_lar_input.list`\"" >> subrun_wrapper.fcl
+    fi
+  
+    FCL=subrun_wrapper.fcl
+  
+    echo "First MC event: $FIRST_EVENT"
+    echo "MC subrun: $SUBRUN"
+    echo "Number of MC events: $NEVT"
+ 
+  fi
+
+  # Sam stuff for main input.
+
+  PURL=''
+  CPID=''
+  if [ $USE_SAM -ne 0 -a $stage -eq 0 ]; then
+    echo "In SAM if" 
+
+    # Make sure a project name has been specified.
+
+    if [ x$SAM_PROJECT = x ]; then
+      echo "No sam project was specified."
+      exit 1
+    fi
+    echo "Sam project: $SAM_PROJECT"
+
+    # Start project (if requested).
+
+    if [ $SAM_START -ne 0 ]; then
+      if [ x$SAM_DEFNAME != x ]; then
+
+        echo "Starting project $SAM_PROJECT using sam dataset definition $SAM_DEFNAME"
+        ifdh startProject $SAM_PROJECT $SAM_STATION $SAM_DEFNAME $SAM_USER $SAM_GROUP
+        if [ $? -eq 0 ]; then
+          echo "Start project succeeded."
+        else
+          echo "Start projet failed."
+          exit 1
+        fi
+      fi
+
+      if [ x$SAM_DEFNAME = x ]; then
+
+        echo "Start project requested, but no definition was specified."
+        exit 1
+      fi
+
     fi
 
-    if [ x$SAM_DEFNAME = x ]; then
-      
-      echo "Start project requested, but no definition was specified."
+
+    # Get the project url of a running project (maybe the one we just started,
+    # or maybe started externally).  This command has to succeed, or we can't
+    # continue.
+
+    PURL=`ifdh findProject $SAM_PROJECT $SAM_STATION`
+    if [ x$PURL = x ]; then
+      echo "Unable to find url for project ${SAM_PROJECT}."
+      exit 1
+    else
+      echo "Project url: $PURL"
+    fi
+
+    # Start the consumer process.  This command also has to succeed.
+
+    NODE=`hostname`
+    APPFAMILY=art
+
+    # Use lar to parse fcl file to extract process_name, and use that
+    # as the application name for starting the consumer process.
+
+    export ART_DEBUG_CONFIG=1
+    APPNAME=`lar -c $FCL 2>&1 > /dev/null | grep process_name: | tr -d '"' | awk '{print $2}'`
+    if [ $? -ne 0 ]; then
+      echo "lar -c $FCL failed to run. May be missing a ups product, library, or fcl file."
+      exit 1
+    fi
+    unset ART_DEBUG_CONFIG
+    if [ x$APPNAME = x ]; then
+      echo "Trouble determining application name."
       exit 1
     fi
 
-  fi
+    echo "Starting consumer process."
+    echo "ifdh establishProcess $PURL $APPNAME $REL $NODE $SAM_USER $APPFAMILY $FCL $NFILE"
+    CPID=`ifdh establishProcess $PURL $APPNAME $REL $NODE $SAM_USER $APPFAMILY $FCL $NFILE`
+    if [ x$CPID = x ]; then
+      echo "Unable to start consumer process for project url ${PURL}."
+      exit 1
+    else
+      echo "Consumer process id $CPID"
+    fi
 
+    # Stash away the project name and consumer process id in case we need them
+    # later for bookkeeping.
 
-  # Get the project url of a running project (maybe the one we just started,
-  # or maybe started externally).  This command has to succeed, or we can't
-  # continue.
+    echo $SAM_PROJECT > sam_project.txt
+    echo $CPID > cpid.txt
 
-  PURL=`ifdh findProject $SAM_PROJECT $SAM_STATION`
-  if [ x$PURL = x ]; then
-    echo "Unable to find url for project ${SAM_PROJECT}."
-    exit 1
-  else
-    echo "Project url: $PURL"
-  fi
+    # Generate a fcl wrapper for all sam-related fcl parameters.
 
-  # Start the consumer process.  This command also has to succeed.
-
-  NODE=`hostname`
-  APPFAMILY=art
-
-  # Use lar to parse fcl file to extract process_name, and use that
-  # as the application name for starting the consumer process.
-
-  export ART_DEBUG_CONFIG=1
-  APPNAME=`lar -c $FCL 2>&1 > /dev/null | grep process_name: | tr -d '"' | awk '{print $2}'`
-  if [ $? -ne 0 ]; then
-     echo "lar -c $FCL failed to run. May be missing a ups product, library, or fcl file."
-     exit 1
-  fi
-  unset ART_DEBUG_CONFIG
-  if [ x$APPNAME = x ]; then
-    echo "Trouble determining application name."
-    exit 1
-  fi
-
-  echo "Starting consumer process."
-  echo "ifdh establishProcess $PURL $APPNAME $REL $NODE $SAM_USER $APPFAMILY $FCL $NFILE"
-  CPID=`ifdh establishProcess $PURL $APPNAME $REL $NODE $SAM_USER $APPFAMILY $FCL $NFILE`
-  if [ x$CPID = x ]; then
-    echo "Unable to start consumer process for project url ${PURL}."
-    exit 1
-  else
-    echo "Consumer process id $CPID"
-  fi
-
-   # Stash away the project name and consumer process id in case we need them
-   # later for bookkeeping.
-
-  echo $SAM_PROJECT > sam_project.txt
-  echo $CPID > cpid.txt
-
-   # Generate an fcl wrapper for all sam-related fcl parameters.
-
-  cat <<EOF > sam_wrapper.fcl
+    cat <<EOF > sam_wrapper.fcl
 #include "$FCL"
 
 services.CatalogInterface:
@@ -1357,125 +1361,161 @@ services.FileTransfer:
 source.fileNames: [ "$CPID" ]
 
 EOF
-  if ! lar --debug-config=/dev/stdout -c $FCL | grep -q IFDH:; then
-    cat <<EOF >> sam_wrapper.fcl
+    if ! lar --debug-config=/dev/stdout -c $FCL | grep -q IFDH:; then
+      cat <<EOF >> sam_wrapper.fcl
 services.IFDH:
 {
 }
 
 EOF
+    fi
+    FCL=sam_wrapper.fcl
+
   fi
-  FCL=sam_wrapper.fcl
  
- fi
- 
- #Figure out output file names.
- #If outfile is not defined and we are inputing a single file or file list, follow our 
- #convention that the output file should be %inputfilename_%systemtime_stage.root
+  # Sam stuff for secondary input.
 
- # Construct options for lar command line.
+  if [ $MIX_SAM -ne 0 ]; then
+    echo "In Mix SAM if" 
 
- LAROPT="-c $FCL --rethrow-default"
- echo "Laropt: $LAROPT"
- if [ -f condor_lar_input.list -a $stage -eq 0 ]; then
-  if [ "$INMODE" != 'textfile' ]; then
-    LAROPT="$LAROPT -S condor_lar_input.list" #artroot files to read in
-    #AOUTFILE=`cat condor_lar_input.list`
+    # Make sure a project name has been specified.
+
+    if [ x$MIX_PROJECT = x ]; then
+      echo "No mix sam project was specified."
+      exit 1
+    fi
+    echo "Mix project: $MIX_PROJECT"
+
+    # Start mix project (if requested).
+
+    if [ $SAM_START -ne 0 ]; then
+      if [ x$MIX_DEFNAME != x ]; then
+
+        echo "Starting project $MIX_PROJECT using sam dataset definition $MIX_DEFNAME"
+        ifdh startProject $MIX_PROJECT $SAM_STATION $MIX_DEFNAME $SAM_USER $SAM_GROUP
+        if [ $? -eq 0 ]; then
+          echo "Start project succeeded."
+        else
+          echo "Start projet failed."
+          exit 1
+        fi
+      fi
+
+      if [ x$MIX_DEFNAME = x ]; then
+
+        echo "Start project requested, but no mix definition was specified."
+        exit 1
+      fi
+    fi
   fi
- fi
- 
- if [ x$OUTFILE != x ]; then
-  LAROPT="$LAROPT -o `basename $OUTFILE .root`$stage.root"
-  outstem=`basename $OUTFILE .root` 
- fi
 
- if [ x$TFILE != x ]; then
-  LAROPT="$LAROPT -T $TFILE"
- fi
+  #Figure out output file names.
+  #If outfile is not defined and we are inputing a single file or file list, follow our 
+  #convention that the output file should be %inputfilename_%systemtime_stage.root
 
- if [ $NEVT -ne 0 ]; then
-  LAROPT="$LAROPT -n $NEVT"  
- fi
+  # Construct options for lar command line.
 
- if [ $NSKIP -ne 0 ]; then
-  LAROPT="$LAROPT --nskip $NSKIP"
- fi
-
- if [ $FIRST_EVENT -ne 0 ]; then
-  LAROPT="$LAROPT -e $FIRST_EVENT"
- fi
-
- if [ -n "$ARGS" ]; then
-  LAROPT="$LAROPT $ARGS"  
- fi
- 
- if [ $stage -ne 0 ]; then
-  LAROPT="$LAROPT -s $next_stage_input"
- fi 
-
-# Run/source optional initialization scripts.
-
- if [ x$INITSCRIPT != x ]; then
-  echo "Running initialization script ${INITSCRIPT}."
-  if ! ./${INITSCRIPT}; then
-    exit $?
+  LAROPT="-c $FCL --rethrow-default"
+  echo "Laropt: $LAROPT"
+  if [ -f condor_lar_input.list -a $stage -eq 0 ]; then
+    if [ "$INMODE" != 'textfile' ]; then
+      LAROPT="$LAROPT -S condor_lar_input.list" #artroot files to read in
+      #AOUTFILE=`cat condor_lar_input.list`
+    fi
   fi
- fi
-
- if [ x$INITSOURCE != x -a $stage -eq 0 ]; then
-  echo "Sourcing initialization source script ${INITSOURCE}."
-  . $INITSOURCE
-  status=$?
-  if [ $status -ne 0 ]; then
-    exit $status
-  fi
- fi
-
- # Save a copy of the environment, which can be helpful for debugging.
-
- env > env.txt
-
- # Save a canonicalized version of the fcl configuration.
-
- ART_DEBUG_CONFIG=cfgStage$stage.fcl lar -c $FCL
-
- # Run lar.
- pwd
- echo "lar $LAROPT"
- echo "lar $LAROPT" > commandStage$stage.txt
- lar $LAROPT > larStage$stage.out 2> larStage$stage.err
- #lar $LAROPT
- stat=$?
- echo $stat > larStage$stage.stat
- echo "lar completed with exit status ${stat}."
- #If lar returns a status other than 0, do not move on to other stages
- if [ $stat -ne 0 ]; then
-   break
- fi
  
- if [ $stage -ne 0 ]; then
+  if [ x$OUTFILE != x ]; then
+    LAROPT="$LAROPT -o `basename $OUTFILE .root`$stage.root"
+    outstem=`basename $OUTFILE .root` 
+  fi
+
+  if [ x$TFILE != x ]; then
+    LAROPT="$LAROPT -T $TFILE"
+  fi
+
+  if [ $NEVT -ne 0 ]; then
+    LAROPT="$LAROPT -n $NEVT"  
+  fi
+
+  if [ $NSKIP -ne 0 ]; then
+    LAROPT="$LAROPT --nskip $NSKIP"
+  fi
+
+  if [ $FIRST_EVENT -ne 0 ]; then
+    LAROPT="$LAROPT -e $FIRST_EVENT"
+  fi
+
+  if [ -n "$ARGS" ]; then
+    LAROPT="$LAROPT $ARGS"  
+  fi
+ 
+  if [ $stage -ne 0 ]; then
+    LAROPT="$LAROPT -s $next_stage_input"
+  fi 
+
+  # Run/source optional initialization scripts.
+
+  if [ x$INITSCRIPT != x ]; then
+    echo "Running initialization script ${INITSCRIPT}."
+    if ! ./${INITSCRIPT}; then
+      exit $?
+    fi
+  fi
+
+  if [ x$INITSOURCE != x -a $stage -eq 0 ]; then
+    echo "Sourcing initialization source script ${INITSOURCE}."
+    . $INITSOURCE
+    status=$?
+    if [ $status -ne 0 ]; then
+      exit $status
+    fi
+  fi
+
+  # Save a copy of the environment, which can be helpful for debugging.
+
+  env > env.txt
+
+  # Save a canonicalized version of the fcl configuration.
+
+  ART_DEBUG_CONFIG=cfgStage$stage.fcl lar -c $FCL
+
+  # Run lar.
+  pwd
+  echo "lar $LAROPT"
+  echo "lar $LAROPT" > commandStage$stage.txt
+  lar $LAROPT > larStage$stage.out 2> larStage$stage.err
+  #lar $LAROPT
+  stat=$?
+  echo $stat > larStage$stage.stat
+  echo "lar completed with exit status ${stat}."
+  #If lar returns a status other than 0, do not move on to other stages
+  if [ $stat -ne 0 ]; then
+    break
+  fi
+ 
+  if [ $stage -ne 0 ]; then
    rm -rf $next_stage_input
- fi
+  fi
  
- #echo `ls -t1 *.root | head -n2 | grep -v 'hist*'`
+  #echo `ls -t1 *.root | head -n2 | grep -v 'hist*'`
  
- #echo "Outfile is $OUTFILE"
+  #echo "Outfile is $OUTFILE"
    
 
- next_stage_input=`ls -t1 *.root | head -n2 | grep -v 'hist*'`
+  next_stage_input=`ls -t1 *.root | head -n2 | grep -v 'hist*'`
 
- mixed_file=`sam_metadata_dumper $next_stage_input | grep mixparent | awk -F ":" '{gsub("\"" ,""); gsub(",",""); gsub(" ",""); print $2}'`
+  mixed_file=`sam_metadata_dumper $next_stage_input | grep mixparent | awk -F ":" '{gsub("\"" ,""); gsub(",",""); gsub(" ",""); print $2}'`
  
- if [ x$mixed_file != x ]; then
+  if [ x$mixed_file != x ]; then
     aunt_files=("${aunt_files[@]}" $mixed_file)
- fi
+  fi
 
- stage=$[$stage +1]
- FIRST_EVENT=0 #I don't think this does anything
+  stage=$[$stage +1]
+  FIRST_EVENT=0 #I don't think this does anything
  
- #rename the mem and time profile DBs by stage
- mv time.db time$stage.db
- mv mem.db mem$stage.db
+  #rename the mem and time profile DBs by stage
+  mv time.db time$stage.db
+  mv mem.db mem$stage.db
 
 done
 
@@ -1507,6 +1547,19 @@ if [ $USE_SAM -ne 0 ]; then
   if [ $SAM_START -ne 0 ]; then
     echo "Stopping project."
     ifdh endProject $PURL
+  fi
+fi
+
+# Secondary sam cleanups.
+
+if [ $MIX_SAM -ne 0 ]; then
+
+  # Stop project (if appropriate).
+
+  if [ $SAM_START -ne 0 ]; then
+    echo "Stopping project."
+    MURL=`ifdh findProject $MIX_PROJECT $SAM_STATION`
+    ifdh endProject $MURL
   fi
 fi
 
@@ -1604,8 +1657,8 @@ while [ $stageStat -lt $nfcls ]; do
   fi    
   overallStat=$[$stat+$overallStat]
   
-   #do some cleanup of intermediate files
-  rm Stage$stageStat.fcl  
+  #do some cleanup of intermediate files
+  #rm Stage$stageStat.fcl  
   stageStat=$[$stageStat +1] 
 done
 echo $overallStat > lar.stat
@@ -1656,8 +1709,8 @@ done
 if [ $VALIDATE_IN_JOB -eq 1 ]; then
     #If SAM was used, get the parent files based on the cpid
     if [ $USE_SAM -ne 0 ]; then
-     id=`cat cpid.txt`
-     parent_files=($(samweb list-files consumer_process_id=$id and consumed_status consumed))
+      id=`cat cpid.txt`
+      parent_files=($(samweb list-files consumer_process_id=$id and consumed_status consumed))
     fi
     
     echo "The file's parents are: "
