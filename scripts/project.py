@@ -2095,33 +2095,29 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
     import_samweb()
 
     # Loop over files queried by dimension string.
-    filelist = samweb.listFiles(dimensions=dim, stream=True)
-    while 1:
-        try:
-            filename = filelist.next()
-        except StopIteration:
-            break
 
-        # Got a filename.
+    filelist = samweb.listFiles(dimensions=dim, stream=False)
 
-        # Look for locations on disk.
-        # Look subdirectories of outdir.
+    # Look for listed files on disk under outdir.
 
-        disk_locs = []
-        for out_subpath, subdirs, files in larbatch_posix.walk(outdir):
+    disk_dict = {}
+    for filename in filelist:
+        disk_dict[filename] = []
+    for out_subpath, subdirs, files in larbatch_posix.walk(outdir):
 
-            # Only examine files in leaf directories.
+        # Only examine files in leaf directories.
 
-            if len(subdirs) != 0:
-                continue
+        if len(subdirs) != 0:
+            continue
 
-            for fn in files:
-                if fn == filename:
-                    filepath = os.path.join(out_subpath, fn)
-                    disk_locs.append(os.path.dirname(filepath))
+        for fn in files:
+            if fn in filelist:
+                disk_dict[fn].append(out_subpath)
 
-        # Also get sam locations.
+    # Check sam locations.
 
+    for filename in filelist:
+        disk_locs = disk_dict[filename]
         sam_locs = samweb.locateFile(filenameorid=filename)
         if len(sam_locs) == 0 and not upload:
             print 'No location: %s' % filename
