@@ -526,10 +526,10 @@ def find_projects(element, default_first_input_list = ''):
         # Input element is not a project.
         # Loop over subelements.
 
-        subelements = element.getElementsByTagName('*')
+        subelements = element.getElementsByTagName('project')
         for subelement in subelements:
-            subprojects = find_projects(subelement, default_input)
-            projects.extend(subprojects)
+            project = ProjectDef(subelement, default_input)
+            projects.append(project)
             if len(projects) > 0:
                 if len(projects[-1].stages) > 0:
                     default_input = os.path.join(projects[-1].stages[-1].bookdir, 'files.list')
@@ -542,6 +542,11 @@ def find_projects(element, default_first_input_list = ''):
 # Extract all projects from the specified xml file.
 
 def get_projects(xmlfile):
+
+    # Cache results.
+
+    if get_projects.cache.has_key(xmlfile):
+        return get_projects.cache[xmlfile]
 
     # Parse xml (returns xml document).
 
@@ -559,9 +564,17 @@ def get_projects(xmlfile):
 
     projects = find_projects(root)
 
+    # Cache result.
+
+    get_projects.cache[xmlfile] = projects
+
     # Done.
 
     return projects
+
+# Get_projects result cache.
+
+get_projects.cache = {}
 
 
 # Select the specified project.
