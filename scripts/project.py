@@ -654,6 +654,7 @@ def previous_stage(projects, stagename, circular=False):
 # Return value is a 2-tuple (project, stage).
 
 def get_pubs_stage(xmlfile, projectname, stagename, run, subruns, version=None):
+    get_projects.cache = {}
     projects = get_projects(xmlfile)
     project = select_project(projects, projectname, stagename)
     if project == None:
