@@ -478,7 +478,7 @@ def posix_cp(source, destination):
         q = Queue.Queue()
         thread = threading.Thread(target=wait_for_subprocess, args=[jobinfo, q])
         thread.start()
-        thread.join(timeout=60)
+        thread.join(timeout=600)
         if thread.is_alive():
 
             # Subprocess did not finish (may be hanging and unkillable).
