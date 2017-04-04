@@ -1321,6 +1321,8 @@ EOF
     unset ART_DEBUG_CONFIG
     if [ x$APPNAME = x ]; then
       echo "Trouble determining application name."
+      echo "cat $FCL"
+      cat $FCL
       exit 1
     fi
 
@@ -1339,37 +1341,6 @@ EOF
 
     echo $SAM_PROJECT > sam_project.txt
     echo $CPID > cpid.txt
-
-    # Generate a fcl wrapper for all sam-related fcl parameters.
-
-    cat <<EOF > sam_wrapper.fcl
-#include "$FCL"
-
-services.CatalogInterface:
-{
-  service_provider: "IFCatalogInterface"
-  webURI: "$PURL"
-}
-
-services.FileCatalogMetadata.processID: "$CPID"
-
-services.FileTransfer:
-{
-  service_provider: "IFFileTransfer"
-}
-
-source.fileNames: [ "$CPID" ]
-
-EOF
-    if ! lar --debug-config=/dev/stdout -c $FCL | grep -q IFDH:; then
-      cat <<EOF >> sam_wrapper.fcl
-services.IFDH:
-{
-}
-
-EOF
-    fi
-    FCL=sam_wrapper.fcl
 
   fi
  
@@ -1443,6 +1414,14 @@ EOF
 
   if [ $FIRST_EVENT -ne 0 ]; then
     LAROPT="$LAROPT -e $FIRST_EVENT"
+  fi
+
+  if [ x$PURL != x -a $stage -eq 0 ]; then
+    LAROPT="$LAROPT --sam-web-uri $PURL"
+  fi
+
+  if [ x$CPID != x -a $stage -eq 0 ]; then
+    LAROPT="$LAROPT --sam-process-id $CPID"
   fi
 
   if [ -n "$ARGS" ]; then
