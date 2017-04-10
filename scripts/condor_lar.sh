@@ -69,6 +69,7 @@
 # --init-script <arg>     - User initialization script execute.
 # --init-source <arg>     - User initialization script to source (bash).
 # --end-script <arg>      - User end-of-job script to execute.
+# --exe <arg>             - Specify art-like executable (default "lar").
 #
 # End options.
 #
@@ -240,6 +241,7 @@ DECLARE_IN_JOB=0
 VALIDATE_IN_JOB=0
 COPY_TO_FTS=0
 MAINTAIN_PARENTAGE=0
+EXE="lar"
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -585,6 +587,14 @@ while [ $# -gt 0 ]; do
       MAINTAIN_PARENTAGE=1
       ;;  
     
+    # Specify alternate art-like executable.
+    --exe )
+      if [ $# -gt 1 ]; then
+        EXE=$2
+        shift
+      fi
+      ;;
+
     # Other.
     * )
       echo "Unknown option $1"
@@ -1309,16 +1319,14 @@ EOF
     NODE=`hostname`
     APPFAMILY=art
 
-    # Use lar to parse fcl file to extract process_name, and use that
+    # Parse fcl file to extract process_name, and use that
     # as the application name for starting the consumer process.
 
-    export ART_DEBUG_CONFIG=1
-    APPNAME=`lar -c $FCL 2>&1 > /dev/null | grep process_name: | tr -d '"' | awk '{print $2}'`
+    APPNAME=`fhicl-dump $FCL | grep process_name: | tr -d '"' | awk '{print $2}'`
     if [ $? -ne 0 ]; then
-      echo "lar -c $FCL failed to run. May be missing a ups product, library, or fcl file."
+      echo "fhicl-dump $FCL failed to run. May be missing a ups product, library, or fcl file."
       exit 1
     fi
-    unset ART_DEBUG_CONFIG
     if [ x$APPNAME = x ]; then
       echo "Trouble determining application name."
       echo "cat $FCL"
@@ -1456,17 +1464,16 @@ EOF
 
   # Save a canonicalized version of the fcl configuration.
 
-  ART_DEBUG_CONFIG=cfgStage$stage.fcl lar -c $FCL
+  fhicl-dump $FCL > cfgStage$stage.fcl
 
   # Run lar.
   pwd
-  echo "lar $LAROPT"
-  echo "lar $LAROPT" > commandStage$stage.txt
-  lar $LAROPT > larStage$stage.out 2> larStage$stage.err
-  #lar $LAROPT
+  echo "$EXE $LAROPT"
+  echo "$EXE $LAROPT" > commandStage$stage.txt
+  $EXE $LAROPT > larStage$stage.out 2> larStage$stage.err
   stat=$?
   echo $stat > larStage$stage.stat
-  echo "lar completed with exit status ${stat}."
+  echo "$EXE completed with exit status ${stat}."
   #If lar returns a status other than 0, do not move on to other stages
   if [ $stat -ne 0 ]; then
     break

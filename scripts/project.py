@@ -2794,6 +2794,8 @@ def dojobsub(project, stage, makeup):
     command.extend([' --workdir', stage.workdir])
     command.extend([' --outdir', stage.outdir])
     command.extend([' --logdir', stage.logdir])
+    if stage.exe != '':
+        command.extend([' --exe', stage.exe])
 
     # Set the process number for pubs jobs that are the first in the chain.
 

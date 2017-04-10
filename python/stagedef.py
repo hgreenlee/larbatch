@@ -78,6 +78,7 @@ class StageDef:
         self.jobsub = ''       # Arbitrary jobsub_submit options.
         self.jobsub_start = '' # Arbitrary jobsub_submit options for sam start/stop jobs.
         self.jobsub_timeout = 0 # Jobsub submit timeout.
+        self.exe = ''          # Art-like executable.
 	
         # Extract values from xml.
 
@@ -445,6 +446,12 @@ class StageDef:
         if jobsub_timeout_elements:
             self.jobsub_timeout = int(jobsub_timeout_elements[0].firstChild.data)
 
+	# Name of art-like executable.
+
+        exe_elements = stage_element.getElementsByTagName('exe')
+        if exe_elements:
+            self.exe = exe_elements[0].firstChild.data
+
         # Done.
 
         return
@@ -508,6 +515,7 @@ class StageDef:
         result += 'Jobsub_submit options = %s\n' % self.jobsub
         result += 'Jobsub_submit start/stop options = %s\n' % self.jobsub_start
         result += 'Jobsub submit timeout = %d\n' % self.jobsub_timeout
+        result += 'Executable = %s\n' % self.exe
         return result
 
     # The purpose of this method is to limit input to the specified run
