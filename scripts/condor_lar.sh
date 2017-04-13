@@ -32,6 +32,8 @@
 # --sam_project <arg>     - Sam project name.
 # --sam_start             - Specify that this worker should be responsible for
 #                           starting and stopping the sam project.
+# --sam_schema <arg>      - Use this option with argument "root" to stream files using
+#                           xrootd.  Leave this option out for standard file copy.
 # --njobs <arg>           - Parallel project with specified number of jobs (default one).
 # --single                - Specify that the output and log directories will be emptied
 #                           by the batch worker, and therefore the output and log
@@ -231,6 +233,7 @@ SAM_STATION=""
 SAM_DEFNAME=""
 SAM_PROJECT=""
 SAM_START=0
+SAM_SCHEMA=""
 USE_SAM=0
 MIX_DEFNAME=""
 MIX_PROJECT=""
@@ -390,6 +393,14 @@ while [ $# -gt 0 ]; do
     # Sam start/stop project flag.
     --sam_start )
       SAM_START=1
+      ;;
+
+    # Sam schema.
+    --sam_schema )
+      if [ $# -gt 1 ]; then
+        SAM_SCHEMA=$2
+        shift
+      fi
       ;;
 
     # General arguments for lar command line.
@@ -1335,8 +1346,8 @@ EOF
     fi
 
     echo "Starting consumer process."
-    echo "ifdh establishProcess $PURL $APPNAME $REL $NODE $SAM_USER $APPFAMILY $FCL $NFILE"
-    CPID=`ifdh establishProcess $PURL $APPNAME $REL $NODE $SAM_USER $APPFAMILY $FCL $NFILE`
+    echo "ifdh establishProcess $PURL $APPNAME $REL $NODE $SAM_USER $APPFAMILY $FCL $NFILE $SAM_SCHEMA"
+    CPID=`ifdh establishProcess $PURL $APPNAME $REL $NODE $SAM_USER $APPFAMILY $FCL $NFILE $SAM_SCHEMA`
     if [ x$CPID = x ]; then
       echo "Unable to start consumer process for project url ${PURL}."
       exit 1

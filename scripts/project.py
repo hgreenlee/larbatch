@@ -245,6 +245,8 @@
 #                    Applies to sam start/stop project submissions.
 # <stage><jobsub_timeout> - Jobsubmission timeout (seconds).
 # <stage><maxfilesperjob> - Maximum number of files to be processed in a single worker.
+# <stage><exe>     - Executable (default "lar").
+# <stage><schema>  - Sam schema (default none).  Use "root" to stream using xrootd.
 #
 #
 # <fcldir>  - Directory in which to search for fcl files (optional, repeatable).
@@ -2796,6 +2798,8 @@ def dojobsub(project, stage, makeup):
     command.extend([' --logdir', stage.logdir])
     if stage.exe != '':
         command.extend([' --exe', stage.exe])
+    if stage.schema != '':
+        command.extend([' --sam_schema', stage.schema])
 
     # Set the process number for pubs jobs that are the first in the chain.
 
