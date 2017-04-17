@@ -665,6 +665,7 @@ def get_pubs_stage(xmlfile, projectname, stagename, run, subruns, version=None):
     if stage == None:
         raise RuntimeError, 'No stage selected for projectname=%s, stagename=%s' % (
             projectname, stagename)
+    get_projects.cache = {}
     stage.pubsify_input(run, subruns, version)
     stage.pubsify_output(run, subruns, version)
     get_projects.cache = {}
