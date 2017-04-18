@@ -213,33 +213,19 @@ def create_limited_dataset(defname, run, subruns):
             run_subrun_dim += ','
         run_subrun_dim += "%d.%d" % (run, subrun)
 
-    # Take a snapshot of the original dataset definition.
-
-    snapid = None
-    try:
-
-        # Make sure we have a kca certificate.
-
-        test_kca()
-
-        # Take the snapshot
-
-        snapid = samweb().takeSnapshot(defname, group=get_experiment())
-    except:
-        snapid = None
-    if snapid == None:
-        print 'Failed to make snapshot of dataset definition %s' % defname
-        return ''
-
     # Construct dimension including run and subrun constraints.
 
-    dim = "snapshot_id %d and run_number %s" % (snapid, run_subrun_dim)
+    dim = "defname: %s and run_number %s" % (defname, run_subrun_dim)
 
     # Test the new dimension.
 
     nfiles = samweb().countFiles(dimensions=dim)
     if nfiles == 0:
         return ''
+
+    # Make sure we have a kca certificate.
+
+    test_kca()
 
     # Construct a new unique definition name.
 
