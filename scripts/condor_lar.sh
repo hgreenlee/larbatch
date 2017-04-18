@@ -663,6 +663,15 @@ if [ x$SAM_STATION = x ]; then
   SAM_STATION=$GRP
 fi
 
+# Fix for sites with newer linux kernels:
+
+case `uname -r` in
+    3.*) export UPS_OVERRIDE="-H Linux64bit+2.6-2.12";;
+    4.*) export UPS_OVERRIDE="-H Linux64bit+2.6-2.12";;
+esac
+echo "uname -r: `uname -r`"
+echo "UPS_OVERRIDE: $UPS_OVERRIDE"
+
 # Make sure work directory is defined and exists.
 
 if [ x$WORKDIR = x ]; then
