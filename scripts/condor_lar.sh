@@ -1529,8 +1529,13 @@ EOF
   FIRST_EVENT=0 #I don't think this does anything
  
   #rename the mem and time profile DBs by stage
-  mv time.db time$stage.db
-  mv mem.db mem$stage.db
+  
+  if [ -f time.db ]; then
+    mv time.db time$stage.db
+  fi
+  if [ -f mem.db ]; then
+    mv mem.db mem$stage.db
+  fi
 
 done
 
@@ -1551,6 +1556,9 @@ if [ $USE_SAM -ne 0 ]; then
 
   # Get list of consumed files.
 
+  if [ x$CPID = x -a -f cpid.txt ]; then
+    CPID=`cat cpid.txt`
+  fi
   ifdh translateConstraints "consumer_process_id $CPID and consumed_status consumed" > consumed_files.list
 
   # End consumer process.
@@ -1619,7 +1627,9 @@ for root in *.root; do
     base=`basename $root .root | cut -c1-150`_`uuidgen`
     echo "Move file 2 $base"
     mv $root ${base}.root
-    mv ${root}.json ${base}.root.json
+    if [ -f ${root}.json ]; then
+      mv ${root}.json ${base}.root.json
+    fi
   fi
 done
 
