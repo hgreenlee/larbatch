@@ -1096,6 +1096,16 @@ elif [ $USE_SAM -eq 0 -a x$INLIST != x ]; then
   NFILE_TOTAL=`cat $INLIST | wc -l`
   echo "Input file list contains $NFILE_TOTAL total files."
 
+  # Clamp the total number of files to be a maximum of NFILE * NJOBS, where
+  # NFILE and NJOBS are specified via command line options.  In project.py
+  # terms, NFILE is <maxfilesperjob> and NOJBS is <numjobs>.
+
+  MAX_TOTAL=$(( $NFILE * $NJOBS ))
+  if [ $MAX_TOTAL -gt 0 -a $NFILE_TOTAL -gt $MAX_TOTAL ]; then
+    NFILE_TOTAL=$MAX_TOTAL
+    echo "Number of files to be processed will be limited to ${NFILE_TOTAL}."
+  fi
+
   # If --njobs was specified, calculate how many files
   # to skip and process in this worker.
 

@@ -25,7 +25,8 @@ class StageDef:
 
     def __init__(self, stage_element, default_input_lists, default_previous_stage, 
                  default_num_jobs, default_num_events, default_max_files_per_job, default_merge,
-                 default_cpu, default_disk, default_memory):
+                 default_cpu, default_disk, default_memory, default_validate_on_worker,
+                 default_copy_to_fts):
 
         # Assign default values.
         
@@ -80,6 +81,8 @@ class StageDef:
         self.jobsub_timeout = 0 # Jobsub submit timeout.
         self.exe = ''          # Art-like executable.
         self.schema = ''       # Sam schema.
+        self.validate_on_worker = default_validate_on_worker # Validate-on-worker flag.
+        self.copy_to_fts = default_copy_to_fts   # Upload-on-worker flag.
 	
         # Extract values from xml.
 
@@ -459,6 +462,18 @@ class StageDef:
         if schema_elements:
             self.schema = schema_elements[0].firstChild.data
 
+	# Validate-on-worker.
+
+        validate_on_worker_elements = stage_element.getElementsByTagName('check')
+        if validate_on_worker_elements:
+            self.validate_on_worker = validate_on_worker_elements[0].firstChild.data
+
+	# Upload-on-worker.
+
+        copy_to_fts_elements = stage_element.getElementsByTagName('copy')
+        if copy_to_fts_elements:
+            self.copy_to_fts = copy_to_fts_elements[0].firstChild.data
+
         # Done.
 
         return
@@ -524,6 +539,8 @@ class StageDef:
         result += 'Jobsub submit timeout = %d\n' % self.jobsub_timeout
         result += 'Executable = %s\n' % self.exe
         result += 'Schema = %s\n' % self.schema
+        result += 'Validate-on-worker = %d\n' % self.validate_on_worker
+        result += 'Upload-on-worker = %d\n' % self.copy_to_fts
         return result
 
     # The purpose of this method is to limit input to the specified run

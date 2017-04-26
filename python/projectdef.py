@@ -301,7 +301,9 @@ class ProjectDef:
                                         self.merge,
                                         self.cpu,
                                         self.disk,
-                                        self.memory))
+                                        self.memory,
+                                        self.validate_on_worker,
+                                        self.copy_to_fts))
             default_previous_stage = self.stages[-1].name
             default_input_lists[default_previous_stage] = os.path.join(self.stages[-1].bookdir,
                                                                        'files.list')

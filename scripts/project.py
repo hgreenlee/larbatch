@@ -2844,9 +2844,9 @@ def dojobsub(project, stage, makeup):
                         os.path.join('.', os.path.basename(stage.end_script))])
 
 
-    #print 'Will Validation will be done on the worker node %d' % project.validate_on_worker
-    if project.validate_on_worker == 1:
-      print 'Validation will be done on the worker node %d' % project.validate_on_worker
+    #print 'Will Validation will be done on the worker node %d' % stage.validate_on_worker
+    if stage.validate_on_worker == 1:
+      print 'Validation will be done on the worker node %d' % stage.validate_on_worker
       command.extend([' --validate'])
       command.extend([' --declare'])
       #Maintain parentage will only work if you are running one file per job
@@ -2855,7 +2855,7 @@ def dojobsub(project, stage, makeup):
               type(stage.fclname) != type(u''):
         command.extend([' --maintain_parentage'])
 
-    if project.copy_to_fts == 1:
+    if stage.copy_to_fts == 1:
       command.extend([' --copy'])
 
     # If input is from sam, also construct a dag file, or add --sam_start option.
@@ -3730,7 +3730,7 @@ def main(argv):
 
         # Check results from specified project stage.
 
-        docheck(project, stage, checkana, project.validate_on_worker)
+        docheck(project, stage, checkana, stage.validate_on_worker)
 
     if fetchlog:
 
