@@ -60,7 +60,7 @@ class ProjectDef:
         # Project name (attribute)
 
         if project_element.attributes.has_key('name'):
-            self.name = project_element.attributes['name'].firstChild.data
+            self.name = str(project_element.attributes['name'].firstChild.data)
         if self.name == '':
             raise XMLError, 'Project name not specified.'
 
@@ -88,33 +88,33 @@ class ProjectDef:
 
         os_elements = project_element.getElementsByTagName('os')
         if os_elements:
-            self.os = os_elements[0].firstChild.data
+            self.os = str(os_elements[0].firstChild.data)
             self.os = ''.join(self.os.split())
 
         # Resource (subelement).
 
         resource_elements = project_element.getElementsByTagName('resource')
         if resource_elements:
-            self.resource = resource_elements[0].firstChild.data
+            self.resource = str(resource_elements[0].firstChild.data)
             self.resource = ''.join(self.resource.split())
 
         # Lines (subelement).
 
         lines_elements = project_element.getElementsByTagName('lines')
         if lines_elements:
-            self.lines = lines_elements[0].firstChild.data
+            self.lines = str(lines_elements[0].firstChild.data)
 
         # Server (subelement).
 
         server_elements = project_element.getElementsByTagName('server')
         if server_elements:
-            self.server = server_elements[0].firstChild.data
+            self.server = str(server_elements[0].firstChild.data)
 
         # Site (subelement).
 
         site_elements = project_element.getElementsByTagName('site')
         if site_elements:
-            self.site = site_elements[0].firstChild.data
+            self.site = str(site_elements[0].firstChild.data)
             self.site = ''.join(self.site.split())
 
         # Cpu (subelement).
@@ -127,7 +127,7 @@ class ProjectDef:
 
         disk_elements = project_element.getElementsByTagName('disk')
         if disk_elements and disk_elements[0].parentNode == project_element:
-            self.disk = disk_elements[0].firstChild.data
+            self.disk = str(disk_elements[0].firstChild.data)
             self.disk = ''.join(self.disk.split())
 
         # Memory (subelement).
@@ -141,7 +141,7 @@ class ProjectDef:
         merge_elements = project_element.getElementsByTagName('merge')
         if merge_elements and merge_elements[0].parentNode == project_element:
             if merge_elements[0].firstChild:
-                self.merge = merge_elements[0].firstChild.data
+                self.merge = str(merge_elements[0].firstChild.data)
             else:
                 self.merge = ''
 	    
@@ -154,20 +154,20 @@ class ProjectDef:
 
             tag_elements = larsoft_elements[0].getElementsByTagName('tag')
             if tag_elements and tag_elements[0].firstChild != None:
-                self.release_tag = tag_elements[0].firstChild.data
+                self.release_tag = str(tag_elements[0].firstChild.data)
 
             # Release qualifier (subelement).
 
             qual_elements = larsoft_elements[0].getElementsByTagName('qual')
             if qual_elements:
-                self.release_qual = qual_elements[0].firstChild.data
+                self.release_qual = str(qual_elements[0].firstChild.data)
 
             # Local release directory or tarball (subelement).
             # 
 
             local_elements = larsoft_elements[0].getElementsByTagName('local')
             if local_elements:
-                local = local_elements[0].firstChild.data
+                local = str(local_elements[0].firstChild.data)
                 if larbatch_posix.isdir(local):
                     self.local_release_dir = local
                 else:
@@ -177,7 +177,7 @@ class ProjectDef:
 
         version_elements = project_element.getElementsByTagName('version')
         if version_elements:
-            self.version = version_elements[0].firstChild.data
+            self.version = str(version_elements[0].firstChild.data)
         else:
             self.version = self.release_tag
 
@@ -191,13 +191,13 @@ class ProjectDef:
 
         file_type_elements = project_element.getElementsByTagName('filetype')
         if file_type_elements:
-            self.file_type = file_type_elements[0].firstChild.data
+            self.file_type = str(file_type_elements[0].firstChild.data)
 
         # Sam run type (subelement).
 
         run_type_elements = project_element.getElementsByTagName('runtype')
         if run_type_elements:
-            self.run_type = run_type_elements[0].firstChild.data
+            self.run_type = str(run_type_elements[0].firstChild.data)
 
         # Sam run number (subelement).
 
@@ -209,7 +209,7 @@ class ProjectDef:
 
         script_elements = project_element.getElementsByTagName('script')
         if script_elements:
-            self.script = script_elements[0].firstChild.data
+            self.script = str(script_elements[0].firstChild.data)
 
         # Make sure batch script exists, and convert into a full path.
 
@@ -270,7 +270,7 @@ class ProjectDef:
 
         fclpath_elements = project_element.getElementsByTagName('fcldir')
         for fclpath_element in fclpath_elements:
-            self.fclpath.append(fclpath_element.firstChild.data)
+            self.fclpath.append(str(fclpath_element.firstChild.data))
 
         # Add $FHICL_FILE_PATH.
 
@@ -312,8 +312,8 @@ class ProjectDef:
 
         param_elements = project_element.getElementsByTagName('parameter')
         for param_element in param_elements:
-            name = param_element.attributes['name'].firstChild.data
-            value = param_element.firstChild.data
+            name = str(param_element.attributes['name'].firstChild.data)
+            value = str(param_element.firstChild.data)
             self.parameters[name] = value
 
         # Done.

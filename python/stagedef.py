@@ -89,7 +89,7 @@ class StageDef:
         # Stage name (attribute).
 
         if stage_element.attributes.has_key('name'):
-            self.name = stage_element.attributes['name'].firstChild.data
+            self.name = str(stage_element.attributes['name'].firstChild.data)
         if self.name == '':
             raise XMLError, "Stage name not specified."
 
@@ -98,7 +98,7 @@ class StageDef:
         fclname_elements = stage_element.getElementsByTagName('fcl')
         
 	for fcl in fclname_elements:
-	    self.fclname.append(fcl.firstChild.data)
+	    self.fclname.append(str(fcl.firstChild.data))
         if len(self.fclname) == 0:
             raise XMLError, 'No Fcl names specified for stage %s.' % self.name
 
@@ -106,7 +106,7 @@ class StageDef:
 
         outdir_elements = stage_element.getElementsByTagName('outdir')
         if outdir_elements:
-            self.outdir = outdir_elements[0].firstChild.data
+            self.outdir = str(outdir_elements[0].firstChild.data)
         if self.outdir == '':
             raise XMLError, 'Output directory not specified for stage %s.' % self.name
 
@@ -114,7 +114,7 @@ class StageDef:
 
         logdir_elements = stage_element.getElementsByTagName('logdir')
         if logdir_elements:
-            self.logdir = logdir_elements[0].firstChild.data
+            self.logdir = str(logdir_elements[0].firstChild.data)
         if self.logdir == '':
             self.logdir = self.outdir
 
@@ -122,7 +122,7 @@ class StageDef:
 
         workdir_elements = stage_element.getElementsByTagName('workdir')
         if workdir_elements:
-            self.workdir = workdir_elements[0].firstChild.data
+            self.workdir = str(workdir_elements[0].firstChild.data)
         if self.workdir == '':
             raise XMLError, 'Work directory not specified for stage %s.' % self.name
 
@@ -130,7 +130,7 @@ class StageDef:
 
         bookdir_elements = stage_element.getElementsByTagName('bookdir')
         if bookdir_elements:
-            self.bookdir = bookdir_elements[0].firstChild.data
+            self.bookdir = str(bookdir_elements[0].firstChild.data)
         if self.bookdir == '':
             self.bookdir = self.logdir
 
@@ -138,43 +138,43 @@ class StageDef:
 
         inputfile_elements = stage_element.getElementsByTagName('inputfile')
         if inputfile_elements:
-            self.inputfile = inputfile_elements[0].firstChild.data
+            self.inputfile = str(inputfile_elements[0].firstChild.data)
 
         # Input file list (subelement).
 
         inputlist_elements = stage_element.getElementsByTagName('inputlist')
         if inputlist_elements:
-            self.inputlist = inputlist_elements[0].firstChild.data
+            self.inputlist = str(inputlist_elements[0].firstChild.data)
 
         # Input file type (subelement).
 
         inputmode_elements = stage_element.getElementsByTagName('inputmode')
         if inputmode_elements:
-            self.inputmode = inputmode_elements[0].firstChild.data
+            self.inputmode = str(inputmode_elements[0].firstChild.data)
 
         # Input sam dataset dfeinition (subelement).
 
         inputdef_elements = stage_element.getElementsByTagName('inputdef')
         if inputdef_elements:
-            self.inputdef = inputdef_elements[0].firstChild.data
+            self.inputdef = str(inputdef_elements[0].firstChild.data)
 
         # Input stream (subelement).
 
         inputstream_elements = stage_element.getElementsByTagName('inputstream')
         if inputstream_elements:
-            self.inputstream = inputstream_elements[0].firstChild.data
+            self.inputstream = str(inputstream_elements[0].firstChild.data)
 
         # Previous stage name (subelement).
 
         previousstage_elements = stage_element.getElementsByTagName('previousstage')
         if previousstage_elements:
-            self.previousstage = previousstage_elements[0].firstChild.data
+            self.previousstage = str(previousstage_elements[0].firstChild.data)
 
         # Mix input sam dataset (subelement).
 
         mixinputdef_elements = stage_element.getElementsByTagName('mixinputdef')
         if mixinputdef_elements:
-            self.mixinputdef = mixinputdef_elements[0].firstChild.data
+            self.mixinputdef = str(mixinputdef_elements[0].firstChild.data)
 
         # It is an error to specify both input file and input list.
 
@@ -266,31 +266,31 @@ class StageDef:
 
         defname_elements = stage_element.getElementsByTagName('defname')
         if defname_elements:
-            self.defname = defname_elements[0].firstChild.data
+            self.defname = str(defname_elements[0].firstChild.data)
 
         # Sam analysis dataset definition name (subelement).
 
         ana_defname_elements = stage_element.getElementsByTagName('anadefname')
         if ana_defname_elements:
-            self.ana_defname = ana_defname_elements[0].firstChild.data
+            self.ana_defname = str(ana_defname_elements[0].firstChild.data)
 
         # Sam data tier (subelement).
 
         data_tier_elements = stage_element.getElementsByTagName('datatier')
         if data_tier_elements:
-            self.data_tier = data_tier_elements[0].firstChild.data
+            self.data_tier = str(data_tier_elements[0].firstChild.data)
 
         # Sam analysis data tier (subelement).
 
         ana_data_tier_elements = stage_element.getElementsByTagName('anadatatier')
         if ana_data_tier_elements:
-            self.ana_data_tier = ana_data_tier_elements[0].firstChild.data
+            self.ana_data_tier = str(ana_data_tier_elements[0].firstChild.data)
 
         # Worker initialization script (subelement).
 
         init_script_elements = stage_element.getElementsByTagName('initscript')
         if init_script_elements:
-            self.init_script = init_script_elements[0].firstChild.data
+            self.init_script = str(init_script_elements[0].firstChild.data)
 
         # Make sure init script exists, and convert into a full path.
 
@@ -317,7 +317,7 @@ class StageDef:
 
         init_source_elements = stage_element.getElementsByTagName('initsource')
         if init_source_elements:
-            self.init_source = init_source_elements[0].firstChild.data
+            self.init_source = str(init_source_elements[0].firstChild.data)
 
         # Make sure init source script exists, and convert into a full path.
 
@@ -344,7 +344,7 @@ class StageDef:
 
         end_script_elements = stage_element.getElementsByTagName('endscript')
         if end_script_elements:
-            self.end_script = end_script_elements[0].firstChild.data
+            self.end_script = str(end_script_elements[0].firstChild.data)
 
         # Make sure end-of-job script exists, and convert into a full path.
 
@@ -371,26 +371,26 @@ class StageDef:
 
         merge_elements = stage_element.getElementsByTagName('merge')
         if merge_elements:
-            self.merge = merge_elements[0].firstChild.data
+            self.merge = str(merge_elements[0].firstChild.data)
 	
         # Resource (subelement).
 
         resource_elements = stage_element.getElementsByTagName('resource')
         if resource_elements:
-            self.resource = resource_elements[0].firstChild.data
+            self.resource = str(resource_elements[0].firstChild.data)
             self.resource = ''.join(self.resource.split())
 
         # Lines (subelement).
 
         lines_elements = stage_element.getElementsByTagName('lines')
         if lines_elements:
-            self.lines = lines_elements[0].firstChild.data
+            self.lines = str(lines_elements[0].firstChild.data)
 
         # Site (subelement).
 
         site_elements = stage_element.getElementsByTagName('site')
         if site_elements:
-            self.site = site_elements[0].firstChild.data
+            self.site = str(site_elements[0].firstChild.data)
             self.site = ''.join(self.site.split())
 
         # Cpu (subelement).
@@ -403,7 +403,7 @@ class StageDef:
 
         disk_elements = stage_element.getElementsByTagName('disk')
         if disk_elements:
-            self.disk = disk_elements[0].firstChild.data
+            self.disk = str(disk_elements[0].firstChild.data)
             self.disk = ''.join(self.disk.split())
 
         # Memory (subelement).
@@ -416,33 +416,33 @@ class StageDef:
 
         param_elements = stage_element.getElementsByTagName('parameter')
         for param_element in param_elements:
-            name = param_element.attributes['name'].firstChild.data
-            value = param_element.firstChild.data
+            name = str(param_element.attributes['name'].firstChild.data)
+            value = str(param_element.firstChild.data)
             self.parameters[name] = value
 
         # Output file name (subelement).
 
         output_elements = stage_element.getElementsByTagName('output')
         if output_elements:
-            self.output = output_elements[0].firstChild.data
+            self.output = str(output_elements[0].firstChild.data)
 	    
 	# TFileName (subelement).
 
         TFileName_elements = stage_element.getElementsByTagName('TFileName')
         if TFileName_elements:
-            self.TFileName = TFileName_elements[0].firstChild.data
+            self.TFileName = str(TFileName_elements[0].firstChild.data)
 
 	# Jobsub.
 
         jobsub_elements = stage_element.getElementsByTagName('jobsub')
         if jobsub_elements:
-            self.jobsub = jobsub_elements[0].firstChild.data
+            self.jobsub = str(jobsub_elements[0].firstChild.data)
 
 	# Jobsub start/stop.
 
         jobsub_start_elements = stage_element.getElementsByTagName('jobsub_start')
         if jobsub_start_elements:
-            self.jobsub_start = jobsub_start_elements[0].firstChild.data
+            self.jobsub_start = str(jobsub_start_elements[0].firstChild.data)
 
 	# Jobsub submit timeout.
 
@@ -454,13 +454,13 @@ class StageDef:
 
         exe_elements = stage_element.getElementsByTagName('exe')
         if exe_elements:
-            self.exe = exe_elements[0].firstChild.data
+            self.exe = str(exe_elements[0].firstChild.data)
 
 	# Sam schema.
 
         schema_elements = stage_element.getElementsByTagName('schema')
         if schema_elements:
-            self.schema = schema_elements[0].firstChild.data
+            self.schema = str(schema_elements[0].firstChild.data)
 
 	# Validate-on-worker.
 
