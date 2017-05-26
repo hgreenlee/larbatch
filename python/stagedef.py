@@ -752,7 +752,8 @@ class StageDef:
                     # If at this point the total size exceeds the target size,
                     # truncate the list of subruns and break out of the loop.
 
-                    if self.target_size != 0 and total_size >= self.target_size:
+                    if self.max_files_per_job > 1 and self.target_size != 0 \
+                            and total_size >= self.target_size:
                         truncate = True
                         break
 
