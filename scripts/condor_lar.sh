@@ -1503,6 +1503,30 @@ EOF
   stat=$?
   echo $stat > larStage$stage.stat
   echo "$EXE completed with exit status ${stat}."
+
+  # Sam cleanups.
+
+  if [ $USE_SAM -ne 0 -a $stage -eq 0 ]; then
+
+    # Get list of consumed files.
+
+    if [ x$CPID = x -a -f cpid.txt ]; then
+      CPID=`cat cpid.txt`
+    fi
+    ifdh translateConstraints "consumer_process_id $CPID and consumed_status consumed" > consumed_files.list
+
+    # End consumer process.
+
+    ifdh endProcess $PURL $CPID
+
+    # Stop project (if appropriate).
+
+    if [ $SAM_START -ne 0 ]; then
+      echo "Stopping project."
+      ifdh endProject $PURL
+    fi
+  fi
+
   #If lar returns a status other than 0, do not move on to other stages
   if [ $stat -ne 0 ]; then
     break
@@ -1549,29 +1573,6 @@ done
 #fi
 #setup ifdhc v1_3_2
 echo "IFDHC_DIR=$IFDHC_DIR"
-
-# Sam cleanups.
-
-if [ $USE_SAM -ne 0 ]; then
-
-  # Get list of consumed files.
-
-  if [ x$CPID = x -a -f cpid.txt ]; then
-    CPID=`cat cpid.txt`
-  fi
-  ifdh translateConstraints "consumer_process_id $CPID and consumed_status consumed" > consumed_files.list
-
-  # End consumer process.
-
-  ifdh endProcess $PURL $CPID
-
-  # Stop project (if appropriate).
-
-  if [ $SAM_START -ne 0 ]; then
-    echo "Stopping project."
-    ifdh endProject $PURL
-  fi
-fi
 
 # Secondary sam cleanups.
 
