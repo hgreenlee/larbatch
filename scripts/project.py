@@ -3090,6 +3090,12 @@ def dojobsub(project, stage, makeup):
         rc = q.get()
         jobout = q.get()
         joberr = q.get()
+        if larbatch_posix.exists(checked_file):
+            larbatch_posix.remove(checked_file)
+        if larbatch_posix.isdir(tmpdir):
+            larbatch_posix.rmtree(tmpdir)
+        if larbatch_posix.isdir(tmpworkdir):
+            larbatch_posix.rmtree(tmpworkdir)
         if rc != 0:
             raise JobsubError(command, rc, jobout, joberr)
         for line in jobout.split('\n'):
@@ -3098,12 +3104,6 @@ def dojobsub(project, stage, makeup):
         if not jobid:
             raise JobsubError(command, rc, jobout, joberr)
         print 'jobsub_submit finished.'
-        if larbatch_posix.exists(checked_file):
-            larbatch_posix.remove(checked_file)
-        if larbatch_posix.isdir(tmpdir):
-            larbatch_posix.rmtree(tmpdir)
-        if larbatch_posix.isdir(tmpworkdir):
-            larbatch_posix.rmtree(tmpworkdir)
 
     else:
 
@@ -3122,6 +3122,12 @@ def dojobsub(project, stage, makeup):
             rc = q.get()
             jobout = q.get()
             joberr = q.get()
+            if larbatch_posix.exists(checked_file):
+                larbatch_posix.remove(checked_file)
+            if larbatch_posix.isdir(tmpdir):
+                larbatch_posix.rmtree(tmpdir)
+            if larbatch_posix.isdir(tmpworkdir):
+                larbatch_posix.rmtree(tmpworkdir)
             if rc != 0:
                 raise JobsubError(command, rc, jobout, joberr)
             for line in jobout.split('\n'):
@@ -3129,10 +3135,6 @@ def dojobsub(project, stage, makeup):
                     jobid = line.strip().split()[-1]
             if not jobid:
                 raise JobsubError(command, rc, jobout, joberr)
-            if larbatch_posix.exists(checked_file):
-                larbatch_posix.remove(checked_file)
-            if larbatch_posix.isdir(tmpdir):
-                larbatch_posix.rmtree(tmpdir)
         else:
             print 'Makeup action aborted because makeup job count is zero.'
 
