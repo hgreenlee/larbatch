@@ -1409,7 +1409,6 @@ def doquickcheck(project, stage, ana):
     goodAnaFiles     = []       # list of analysis root files
     eventLists       = []       # list of art root files and number of events
     badLists         = []       # list of bad root files
-    missingLists     = []       # list of missing files
     anaFiles         = []       # list of ana files
     transferredFiles = []       # list of transferred files
     streamLists      = {}       # dictionary which keeps track of files per stream
@@ -1474,35 +1473,9 @@ def doquickcheck(project, stage, ana):
                 validateOK = 0
 
 
-        #If the validation failed, compile a missing_files list and continue
+        #If the validation failed, continue.
         if validateOK != 1:
             nErrors += 1
-            urislistname = os.path.join(log_subpath, 'transferred_uris.list')
-            uris = []
-            #update uris
-            #print 'Reading %s' % urislistname
-            lines = project_utilities.saferead(urislistname)
-            for line in lines:
-                uri = line.strip()
-                if uri != '':
-                    transferredFiles.append(uri)
-                    uris.append(uri)
-
-            nmiss = 0
-            if stage.inputdef == '' and not stage.pubs_output:
-                input_files = get_input_files(stage)
-                if len(input_files) > 0:
-                    missing_files = list(set(input_files) - set(uris))
-                    for missing_file in missing_files:
-                        missingLists.append(missing_files)
-                        nmiss = nmiss + 1
-
-            '''
-            else:
-               nmiss = stage.num_jobs - len(procmap)
-               for n in range(nmiss):
-                   missingfiles.write('/dev/null\n')
-            '''
             continue
 
         #Copy files.
@@ -1613,7 +1586,7 @@ def doquickcheck(project, stage, ana):
                 else:
                     streamLists[stream].extend(tmpArray)
 
-        if nErrors == 0:
+        if validateOK == 1:
             goodLogDirs.add(log_subpath)
 
     checkfilename = os.path.join(stage.bookdir, 'checked')
@@ -1635,7 +1608,7 @@ def doquickcheck(project, stage, ana):
         inputList = safeopen(filelistdest)
         for goodFile in goodFiles:
             #print goodFile
-            inputList.write("%s" % goodFile)
+            inputList.write("%s\n" % goodFile)
         inputList.close()
     if len(goodFiles) == 0:
         project_utilities.addLayerTwo(filelistdest)
@@ -1654,7 +1627,7 @@ def doquickcheck(project, stage, ana):
         anaList = safeopen(fileanalistdest)
         for goodAnaFile in goodAnaFiles:
             #print goodAnaFile
-            anaList.write("%s" % goodAnaFile)
+            anaList.write("%s\n" % goodAnaFile)
         anaList.close()
         if len(goodAnaFiles) == 0:
             project_utilities.addLayerTwo(fileanalistdest)
@@ -1673,7 +1646,7 @@ def doquickcheck(project, stage, ana):
         eventsOutList = safeopen(eventlistdest)
         for event in eventLists:
             #print event
-            eventsOutList.write("%s" % event)
+            eventsOutList.write("%s\n" % event)
         eventsOutList.close()
         if len(eventLists) == 0:
             project_utilities.addLayerTwo(eventlistdest)
@@ -1683,16 +1656,22 @@ def doquickcheck(project, stage, ana):
         badlistdest = os.path.join(stage.bookdir, 'bad.list')
         badOutList = safeopen(badlistdest)
         for bad in badLists:
-            badOutList.write("%s" % bad)
+            badOutList.write("%s\n" % bad)
         badOutList.close()
         #project_utilities.addLayerTwo(badlistdest)
 
     #create the missing_files.list for makeup jobs
-    if(len(missingLists) > 0):
+    missing_files = []
+    if stage.inputdef == '' and not stage.pubs_output:
+        input_files = get_input_files(stage)
+        if len(input_files) > 0:
+            missing_files = list(set(input_files) - set(transferredFiles))
+
+    if len(missing_files) > 0:
         missinglistdest = os.path.join(stage.bookdir, 'missing_files.list')
         missingOutList = safeopen(missinglistdest)
-        for missing in missingLists:
-            missingOutList.write("%s" % missing)
+        for missing in missing_files:
+            missingOutList.write("%s\n" % missing)
         missingOutList.close()
         #project_utilities.addLayerTwo(missingOutList)
 
@@ -1710,7 +1689,7 @@ def doquickcheck(project, stage, ana):
         uriOutList  = safeopen(urilistdest)
         for uri in transferredFiles:
             #print event
-            uriOutList.write("%s" % uri)
+            uriOutList.write("%s\n" % uri)
         uriOutList.close()
         if len(transferredFiles) == 0:
             project_utilities.addLayerTwo(urilistdest)
@@ -1728,7 +1707,7 @@ def doquickcheck(project, stage, ana):
             #print 'Aggregating sam_projects.list'
             samprojectfile = safeopen(samprojectdest)
             for sam in sam_projects:
-                samprojectfile.write("%s" % sam)
+                samprojectfile.write("%s\n" % sam)
             samprojectfile.close()
             if len(sam_projects) == 0:
                 project_utilities.addLayerTwo(samprojectdest)
@@ -1764,7 +1743,7 @@ def doquickcheck(project, stage, ana):
             #print 'Aggregating %s' % stream
             streamOutList = safeopen(streamdest)
             for line in streamLists[stream]:
-                streamOutList.write("%s" % line)
+                streamOutList.write("%s\n" % line)
             streamOutList.close()
             if len(streamLists[stream]) == 0:
                 project_utilities.addLayerTwo(streamdest)
@@ -3887,8 +3866,7 @@ def scan_file(fileName):
 
     if len(fileList) > 0:
         for line in fileList:
-            #line.strip('\n')
-            returnArray.append(line)
+            returnArray.append(line.strip())
 
     else:
         #print '%s exists, but is empty' % fileName
