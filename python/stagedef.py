@@ -23,66 +23,119 @@ class StageDef:
 
     # Constructor.
 
-    def __init__(self, stage_element, default_input_lists, default_previous_stage, 
+    def __init__(self, stage_element, base_stage, default_input_lists, default_previous_stage, 
                  default_num_jobs, default_num_events, default_max_files_per_job, default_merge,
                  default_cpu, default_disk, default_memory, default_validate_on_worker,
                  default_copy_to_fts):
 
         # Assign default values.
-        
-        self.name = ''         # Stage name.
-        #self.fclname = ''      # Fcl name (just name, not path).
-        self.fclname = []
-	self.outdir = ''       # Output directory.
-        self.logdir = ''       # Log directory.
-        self.workdir = ''      # Work directory.
-        self.bookdir = ''      # Bookkeeping directory.
-        self.dynamic = 0       # Dynamic output/log directory.
-        self.inputfile = ''    # Single input file.
-        self.inputlist = ''    # Input file list.
-        self.inputmode = ''    # Input file type (none or textfile)
-        self.inputdef = ''     # Input sam dataset definition.
-        self.inputstream = ''  # Input file stream.
-        self.previousstage = '' # Previous stage name.
-        self.mixinputdef = ''  # Mix input sam dataset definition.
-        self.pubs_input_ok = 1 # Is pubs input allowed?
-        self.pubs_input = 0    # Pubs input mode.
-        self.input_run = 0     # Pubs input run.
-        self.input_subruns = [] # Pubs input subrun number(s).
-        self.input_version = 0 # Pubs input version number.
-        self.pubs_output = 0   # Pubs output mode.
-        self.output_run = 0    # Pubs output run.
-        self.output_subruns = [] # Pubs output subrun number.
-        self.output_version = 0 # Pubs output version number.
-        self.maxfluxfilemb = 0 # MaxFluxFileMB (size of genie flux files to fetch).
-        self.num_jobs = default_num_jobs # Number of jobs.
-        self.num_events = default_num_events # Number of events.
-        self.max_files_per_job = default_max_files_per_job #max num of files per job
-        self.target_size = 0   # Target size for output files.
-        self.defname = ''      # Sam dataset definition name.
-        self.ana_defname = ''  # Sam dataset definition name.
-        self.data_tier = ''    # Sam data tier.
-        self.ana_data_tier = '' # Sam data tier.
-        self.init_script = ''  # Worker initialization script.
-        self.init_source = ''  # Worker initialization bash source script.
-        self.end_script = ''   # Worker end-of-job script.
-        self.merge = default_merge    # Histogram merging program
-        self.resource = ''     # Jobsub resources.
-        self.lines = ''        # Arbitrary condor commands.
-        self.site = ''         # Site.
-        self.cpu = default_cpu # Number of cpus.
-        self.disk = default_disk     # Disk space (string value+unit).
-        self.memory = default_memory # Amount of memory (integer MB).
-        self.parameters = {}   # Dictionary of metadata parameters.
-        self.output = ''       # Art output file name.
-        self.TFileName = ''    # TFile output file name.
-        self.jobsub = ''       # Arbitrary jobsub_submit options.
-        self.jobsub_start = '' # Arbitrary jobsub_submit options for sam start/stop jobs.
-        self.jobsub_timeout = 0 # Jobsub submit timeout.
-        self.exe = ''          # Art-like executable.
-        self.schema = ''       # Sam schema.
-        self.validate_on_worker = default_validate_on_worker # Validate-on-worker flag.
-        self.copy_to_fts = default_copy_to_fts   # Upload-on-worker flag.
+
+        if base_stage != None:
+            self.name = base_stage.name
+            self.fclname = base_stage.fclname
+            self.outdir = base_stage.outdir
+            self.logdir = base_stage.logdir
+            self.workdir = base_stage.workdir
+            self.bookdir = base_stage.bookdir
+            self.dynamic = base_stage.dynamic
+            self.inputfile = base_stage.inputfile
+            self.inputlist = base_stage.inputlist
+            self.inputmode = base_stage.inputmode
+            self.inputdef = base_stage.inputdef
+            self.inputstream = base_stage.inputstream
+            self.previousstage = base_stage.previousstage
+            self.mixinputdef = base_stage.mixinputdef
+            self.pubs_input_ok = base_stage.pubs_input_ok
+            self.pubs_input = base_stage.pubs_input
+            self.input_run = base_stage.input_run
+            self.input_subruns = base_stage.input_subruns
+            self.input_version = base_stage.input_version
+            self.pubs_output = base_stage.pubs_output
+            self.output_run = base_stage.output_run
+            self.output_subruns = base_stage.output_subruns
+            self.output_version = base_stage.output_version
+            self.maxfluxfilemb = base_stage.maxfluxfilemb
+            self.num_jobs = base_stage.num_jobs
+            self.num_events = base_stage.num_events
+            self.max_files_per_job = base_stage.max_files_per_job
+            self.target_size = base_stage.target_size
+            self.defname = base_stage.defname
+            self.ana_defname = base_stage.ana_defname
+            self.data_tier = base_stage.data_tier
+            self.ana_data_tier = base_stage.ana_data_tier
+            self.init_script = base_stage.init_script
+            self.init_source = base_stage.init_source
+            self.end_script = base_stage.end_script
+            self.merge = base_stage.merge
+            self.resource = base_stage.resource
+            self.lines = base_stage.lines
+            self.site = base_stage.site
+            self.cpu = base_stage.cpu
+            self.disk = base_stage.disk
+            self.memory = base_stage.memory
+            self.parameters = base_stage.parameters
+            self.output = base_stage.output
+            self.TFileName = base_stage.TFileName
+            self.jobsub = base_stage.jobsub
+            self.jobsub_start = base_stage.jobsub_start
+            self.jobsub_timeout = base_stage.jobsub_timeout
+            self.exe = base_stage.exe
+            self.schema = base_stage.schema
+            self.validate_on_worker = base_stage. validate_on_worker
+            self.copy_to_fts = base_stage.copy_to_fts
+        else:
+            self.name = ''         # Stage name.
+            self.fclname = []
+            self.outdir = ''       # Output directory.
+            self.logdir = ''       # Log directory.
+            self.workdir = ''      # Work directory.
+            self.bookdir = ''      # Bookkeeping directory.
+            self.dynamic = 0       # Dynamic output/log directory.
+            self.inputfile = ''    # Single input file.
+            self.inputlist = ''    # Input file list.
+            self.inputmode = ''    # Input file type (none or textfile)
+            self.inputdef = ''     # Input sam dataset definition.
+            self.inputstream = ''  # Input file stream.
+            self.previousstage = '' # Previous stage name.
+            self.mixinputdef = ''  # Mix input sam dataset definition.
+            self.pubs_input_ok = 1 # Is pubs input allowed?
+            self.pubs_input = 0    # Pubs input mode.
+            self.input_run = 0     # Pubs input run.
+            self.input_subruns = [] # Pubs input subrun number(s).
+            self.input_version = 0 # Pubs input version number.
+            self.pubs_output = 0   # Pubs output mode.
+            self.output_run = 0    # Pubs output run.
+            self.output_subruns = [] # Pubs output subrun number.
+            self.output_version = 0 # Pubs output version number.
+            self.maxfluxfilemb = 0 # MaxFluxFileMB (size of genie flux files to fetch).
+            self.num_jobs = default_num_jobs # Number of jobs.
+            self.num_events = default_num_events # Number of events.
+            self.max_files_per_job = default_max_files_per_job #max num of files per job
+            self.target_size = 0   # Target size for output files.
+            self.defname = ''      # Sam dataset definition name.
+            self.ana_defname = ''  # Sam dataset definition name.
+            self.data_tier = ''    # Sam data tier.
+            self.ana_data_tier = '' # Sam data tier.
+            self.init_script = ''  # Worker initialization script.
+            self.init_source = ''  # Worker initialization bash source script.
+            self.end_script = ''   # Worker end-of-job script.
+            self.merge = default_merge    # Histogram merging program
+            self.resource = ''     # Jobsub resources.
+            self.lines = ''        # Arbitrary condor commands.
+            self.site = ''         # Site.
+            self.cpu = default_cpu # Number of cpus.
+            self.disk = default_disk     # Disk space (string value+unit).
+            self.memory = default_memory # Amount of memory (integer MB).
+            self.parameters = {}   # Dictionary of metadata parameters.
+            self.output = ''       # Art output file name.
+            self.TFileName = ''    # TFile output file name.
+            self.jobsub = ''       # Arbitrary jobsub_submit options.
+            self.jobsub_start = '' # Arbitrary jobsub_submit options for sam start/stop jobs.
+            self.jobsub_timeout = 0 # Jobsub submit timeout.
+            self.exe = ''          # Art-like executable.
+            self.schema = ''       # Sam schema.
+            self.validate_on_worker = default_validate_on_worker # Validate-on-worker flag.
+            self.copy_to_fts = default_copy_to_fts   # Upload-on-worker flag.
 	
         # Extract values from xml.
 
@@ -96,9 +149,10 @@ class StageDef:
         # Fcl file name (repeatable subelement).
 
         fclname_elements = stage_element.getElementsByTagName('fcl')
-        
-	for fcl in fclname_elements:
-	    self.fclname.append(str(fcl.firstChild.data))
+        if len(fclname_elements) > 0:
+            self.fclname = []
+            for fcl in fclname_elements:
+                self.fclname.append(str(fcl.firstChild.data))
         if len(self.fclname) == 0:
             raise XMLError, 'No Fcl names specified for stage %s.' % self.name
 
@@ -412,13 +466,15 @@ class StageDef:
         if memory_elements:
             self.memory = int(memory_elements[0].firstChild.data)
 
-        # Dictionary of metadata parameters
+        # Dictionary of metadata parameters (repeatable subelement).
 
         param_elements = stage_element.getElementsByTagName('parameter')
-        for param_element in param_elements:
-            name = str(param_element.attributes['name'].firstChild.data)
-            value = str(param_element.firstChild.data)
-            self.parameters[name] = value
+        if len(param_elements) > 0:
+            self.parameters = {}
+            for param_element in param_elements:
+                name = str(param_element.attributes['name'].firstChild.data)
+                value = str(param_element.firstChild.data)
+                self.parameters[name] = value
 
         # Output file name (subelement).
 
