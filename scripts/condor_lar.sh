@@ -1646,14 +1646,14 @@ declare -a subruns
 for root in *.root; do
   json=${root}.json
   if [ -f $json ]; then
-    root_metadata.py $root > ${json}2
-    merge_json.py $json ${json}2 > ${json}3
+    ./root_metadata.py $root > ${json}2
+    ./merge_json.py $json ${json}2 > ${json}3
     mv -f ${json}3 $json
     rm ${json}2
   else
-    root_metadata.py $root > $json
+    ./root_metadata.py $root > $json
   fi
-  subrun=`subruns.py $root | awk 'NR==1{print $2}'`
+  subrun=`./subruns.py $root | awk 'NR==1{print $2}'`
   if [ x$subrun != x ]; then
     subruns[$subrun]=$subrun
     outdirs[$subrun]=`echo $OUTDIR | sed "s/@s/$subrun/"`
@@ -1711,7 +1711,7 @@ fi
 # Note that .root files never get replicated.
 
 for root in *.root; do
-  subrun=`subruns.py $root | awk 'NR==1{print $2}'`
+  subrun=`./subruns.py $root | awk 'NR==1{print $2}'`
   mv $root out$subrun
   mv ${root}.json log$subrun
 done
@@ -1766,7 +1766,7 @@ if [ $VALIDATE_IN_JOB -eq 1 ]; then
     valstat=0
     curdir=`pwd`
     #cd $curdir/log
-    #validate_in_job.py --dir $curdir/out --logfiledir $curdir/log --outdir $OUTDIR/$OUTPUT_SUBDIR --declare $DECLARE_IN_JOB --copy $COPY_TO_FTS
+    #./validate_in_job.py --dir $curdir/out --logfiledir $curdir/log --outdir $OUTDIR/$OUTPUT_SUBDIR --declare $DECLARE_IN_JOB --copy $COPY_TO_FTS
     #valstat=$?
     #cd $curdir
 
@@ -1776,7 +1776,7 @@ if [ $VALIDATE_IN_JOB -eq 1 ]; then
     do
       cd $curdir/log$subrun
       
-      validate_in_job.py --dir $curdir/out$subrun --logfiledir $curdir/log$subrun --outdir ${outdirs[$subrun]}/$OUTPUT_SUBDIR --declare $DECLARE_IN_JOB --copy $COPY_TO_FTS
+      ./validate_in_job.py --dir $curdir/out$subrun --logfiledir $curdir/log$subrun --outdir ${outdirs[$subrun]}/$OUTPUT_SUBDIR --declare $DECLARE_IN_JOB --copy $COPY_TO_FTS
       subvalstat=$?
       valstat=$(( $valstat + $subvalstat ))
     done
@@ -1808,10 +1808,10 @@ do
   echo "Make sure directory0 ${dir}/$OUTPUT_SUBDIR exists."
   
   #mkdir ${dir}/$OUTPUT_SUBDIR 
-  mkdir.py -v ${dir}/$OUTPUT_SUBDIR
+  ./mkdir.py -v ${dir}/$OUTPUT_SUBDIR
   echo "Make sure directory0 ${dir}/$OUTPUT_SUBDIR is empty."
-  emptydir.py -v ${dir}/$OUTPUT_SUBDIR
-  mkdir.py -v ${dir}/$OUTPUT_SUBDIR
+  ./emptydir.py -v ${dir}/$OUTPUT_SUBDIR
+  ./mkdir.py -v ${dir}/$OUTPUT_SUBDIR
   echo "Directory0 ${dir}/$OUTPUT_SUBDIR clean ok."
 done
 
@@ -1819,20 +1819,20 @@ if [ $SINGLE != 0 ]; then
   for dir in ${logdirs[*]} ${outdirs[*]}
   do
     echo "Make sure directory1 $dir exists."
-    mkdir.py -v $dir
+    ./mkdir.py -v $dir
     echo "Make sure directory1 $dir is empty."
-    emptydir.py -v $dir
-    mkdir.py -v $dir/$OUTPUT_SUBDIR
+    ./emptydir.py -v $dir
+    ./mkdir.py -v $dir/$OUTPUT_SUBDIR
     echo "Directory1 $dir/$OUTPUT_SUBDIR clean ok."
   done
 else
   for dir in ${logdirs[*]} ${outdirs[*]}
   do
     echo "Make sure directory2 ${dir}/$OUTPUT_SUBDIR exists."
-    mkdir.py -v ${dir}/$OUTPUT_SUBDIR
+    ./mkdir.py -v ${dir}/$OUTPUT_SUBDIR
     echo "Make sure directory2 ${dir}/$OUTPUT_SUBDIR is empty."
-    emptydir.py -v ${dir}/$OUTPUT_SUBDIR
-    mkdir.py -v ${dir}/$OUTPUT_SUBDIR
+    ./emptydir.py -v ${dir}/$OUTPUT_SUBDIR
+    ./mkdir.py -v ${dir}/$OUTPUT_SUBDIR
     echo "Directory2 ${dir}/$OUTPUT_SUBDIR clean ok."
   done
 fi
