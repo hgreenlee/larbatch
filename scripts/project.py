@@ -63,6 +63,9 @@
 #
 # Information only actions:
 #
+# --dump_project - Dump project object (dumps all stages).
+# --dump_stage   - Dump stage object.
+#
 # --outdir     - Print the name of the output directory for stage.
 # --logdir     - Print the name of the log directory for stage.
 # --workdir    - Print the name of the work directory for stage.
@@ -3417,6 +3420,8 @@ def main(argv):
     stage_status = 0
     makeup = 0
     clean = 0
+    dump_project = 0
+    dump_stage = 0
     print_outdir = 0
     print_logdir = 0
     print_workdir = 0
@@ -3513,6 +3518,12 @@ def main(argv):
             del args[0]
         elif args[0] == '--clean':
             clean = 1
+            del args[0]
+        elif args[0] == '--dump_project':
+            dump_project = 1
+            del args[0]
+        elif args[0] == '--dump_stage':
+            dump_stage = 1
             del args[0]
         elif args[0] == '--outdir':
             print_outdir = 1
@@ -3658,6 +3669,16 @@ def main(argv):
     if pubs:
         stage.pubsify_input(pubs_run, pubs_subruns, pubs_version)
         stage.pubsify_output(pubs_run, pubs_subruns, pubs_version)
+
+    # Do dump project action now.
+
+    if dump_project:
+        print project
+
+    # Do dump stage action now.
+
+    if dump_stage:
+        print stage
 
     # Do outdir action now.
 
