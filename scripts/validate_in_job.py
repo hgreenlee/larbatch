@@ -192,10 +192,10 @@ def main():
     stat_filename = os.path.join(logdir, 'lar.stat')
     if project_utilities.safeexist(stat_filename):    	
 	try:
-    	   status = int(project_utilities.saferead(stat_filename)[0].strip())
-    	   if status != 0:
-    	     print 'Job in subdirectory %s ended with non-zero exit status %d.' % (checkdir, status)
-    	     status = 1
+            status = int(project_utilities.saferead(stat_filename)[0].strip())
+            if status != 0:
+                print 'Job in subdirectory %s ended with non-zero exit status %d.' % (checkdir, status)
+                status = 1
     	
 	except:
     	    print 'Bad file lar.stat in subdirectory %s.' % checkdir
@@ -219,14 +219,14 @@ def main():
         ana = 1
     
     if not ana:
-      if len(rootfiles) == 0 or nevts < 0:
+        if len(rootfiles) == 0 or nevts < 0:
     	    print 'Problem with root file(s) in  %s.' % checkdir
     	    status = 1
       
     
     elif nevts < -1 or len(hists) == 0:
-      print 'Problem with analysis root file(s) in  %s.' % checkdir
-      status = 1
+        print 'Problem with analysis root file(s) in  %s.' % checkdir
+        status = 1
     
     
 # Then we need to loop over rootfiles and hists because those are good.
@@ -268,9 +268,9 @@ def main():
 	# Make sure root file names do not exceed 200 characters.	
 	rootname = os.path.basename(rootpath)
         if len(rootname) >= 200:
-           print 'Filename %s in subdirectory %s is longer than 200 characters.' % (
+            print 'Filename %s in subdirectory %s is longer than 200 characters.' % (
         	rootname, outdir)
-           status = 1
+            status = 1
 
         if not file_list_stream.has_key(streamname):
             file_list_stream[streamname] = open('files_%s.list' % streamname, 'w')
@@ -300,126 +300,126 @@ def main():
     missing_list.write('%d \n' %status)
     
     if status == 0:
-      bad_list.close()
+        bad_list.close()
 
-      # begin SAM decleration
+        # begin SAM decleration
 
-      if declare_file:
+        if declare_file:
 
-        # Declare artroot files.
+            # Declare artroot files.
 
-        for rootfile in rootfiles:
+            for rootfile in rootfiles:
 
-            rootpath = rootfile[0]
-            fn   = os.path.basename(rootpath)
-            print 'Declaring %s' % fn
-            expSpecificMetaData = expMetaData(project_utilities.get_experiment(), rootpath)
-            md = expSpecificMetaData.getmetadata()
+                rootpath = rootfile[0]
+                fn   = os.path.basename(rootpath)
+                print 'Declaring %s' % fn
+                expSpecificMetaData = expMetaData(project_utilities.get_experiment(), rootpath)
+                md = expSpecificMetaData.getmetadata()
 
-	    # change the parentage of the file based on it's parents and aunts from condor_lar
+                # change the parentage of the file based on it's parents and aunts from condor_lar
 
-	    jobs_parents = os.getenv('JOBS_PARENTS', '').split(" ")
-            jobs_aunts   = os.getenv('JOBS_AUNTS', '').split(" ")
-            if(jobs_parents[0] != '' ):
-                md['parents'] = [{'file_name': parent} for parent in jobs_parents]
-            if(jobs_aunts[0] != '' ):
-                for aunt in jobs_aunts:
-                    mixparent_dict = {'file_name': aunt}
-                    md['parents'].append(mixparent_dict)
+                jobs_parents = os.getenv('JOBS_PARENTS', '').split(" ")
+                jobs_aunts   = os.getenv('JOBS_AUNTS', '').split(" ")
+                if(jobs_parents[0] != '' ):
+                    md['parents'] = [{'file_name': parent} for parent in jobs_parents]
+                if(jobs_aunts[0] != '' ):
+                    for aunt in jobs_aunts:
+                        mixparent_dict = {'file_name': aunt}
+                        md['parents'].append(mixparent_dict)
 	        	         	     
-            if len(md) > 0:
-                project_utilities.test_kca()
+                if len(md) > 0:
+                    project_utilities.test_kca()
 
-                # Make lack of parent files a nonfatal error.
-                # This should probably be removed at some point.
+                    # Make lack of parent files a nonfatal error.
+                    # This should probably be removed at some point.
       
-                try:
-                    samweb.declareFile(md=md)
-             
-                except:
-                    if md.has_key('parents'):         	     
-                        del md['parents']
+                    try:
                         samweb.declareFile(md=md)
+             
+                    except:
+                        if md.has_key('parents'):         	     
+                            del md['parents']
+                            samweb.declareFile(md=md)
 	    	     
-            else:
-                print 'No sam metadata found for %s.' % fn
-                status = 1
+                else:
+                    print 'No sam metadata found for %s.' % fn
+                    status = 1
 	     
-            if copy_to_dropbox == 1:
-                print "Copying to Dropbox"
-                dropbox_dir = project_utilities.get_dropbox(fn)
-                rootPath = os.path.join(dropbox_dir, fn)
-                jsonPath = rootPath + ".json"
-                ifdh_cp(path, rootPath)
+                if copy_to_dropbox == 1:
+                    print "Copying to Dropbox"
+                    dropbox_dir = project_utilities.get_dropbox(fn)
+                    rootPath = os.path.join(dropbox_dir, fn)
+                    jsonPath = rootPath + ".json"
+                    ifdh_cp(path, rootPath)
 
-        # Declare histogram files.
+            # Declare histogram files.
 	     
-        for histpath in hists:
+            for histpath in hists:
 
-            fn   = os.path.basename(histpath)
-            print 'Declaring %s' % fn
-            json_file = os.path.join(logdir, fn + '.json')
+                fn   = os.path.basename(histpath)
+                print 'Declaring %s' % fn
+                json_file = os.path.join(logdir, fn + '.json')
 
-            # Get metadata from json
+                # Get metadata from json
 
-            md = {}
-            if project_utilities.safeexist(json_file):
-                mdlines = project_utilities.saferead(json_file)
-                mdtext = ''
-                for line in mdlines:
-                    mdtext = mdtext + line
-                try:
-                    md = json.loads(mdtext)
-                except:
-                    md = {}
-                    pass
+                md = {}
+                if project_utilities.safeexist(json_file):
+                    mdlines = project_utilities.saferead(json_file)
+                    mdtext = ''
+                    for line in mdlines:
+                        mdtext = mdtext + line
+                    try:
+                        md = json.loads(mdtext)
+                    except:
+                        md = {}
+                        pass
 
-            # change the parentage of the file based on it's parents and aunts from condor_lar
+                # change the parentage of the file based on it's parents and aunts from condor_lar
 
-            jobs_parents = os.getenv('JOBS_PARENTS', '').split(" ")
-            jobs_aunts   = os.getenv('JOBS_AUNTS', '').split(" ")
-            if(jobs_parents[0] != '' ):
-                md['parents'] = [{'file_name': parent} for parent in jobs_parents]
-            if(jobs_aunts[0] != '' ):
-                for aunt in jobs_aunts:
-                    mixparent_dict = {'file_name': aunt}
-                    md['parents'].append(mixparent_dict)
+                jobs_parents = os.getenv('JOBS_PARENTS', '').split(" ")
+                jobs_aunts   = os.getenv('JOBS_AUNTS', '').split(" ")
+                if(jobs_parents[0] != '' ):
+                    md['parents'] = [{'file_name': parent} for parent in jobs_parents]
+                if(jobs_aunts[0] != '' ):
+                    for aunt in jobs_aunts:
+                        mixparent_dict = {'file_name': aunt}
+                        md['parents'].append(mixparent_dict)
 	        	         	     
-            if len(md) > 0:
-                project_utilities.test_kca()
+                if len(md) > 0:
+                    project_utilities.test_kca()
 
-                # Make lack of parent files a nonfatal error.
-                # This should probably be removed at some point.
+                    # Make lack of parent files a nonfatal error.
+                    # This should probably be removed at some point.
       
-                try:
-                    samweb.declareFile(md=md)
-             
-                except:
-                    if md.has_key('parents'):         	     
-                        del md['parents']
+                    try:
                         samweb.declareFile(md=md)
+             
+                    except:
+                        if md.has_key('parents'):         	     
+                            del md['parents']
+                            samweb.declareFile(md=md)
 	    	     
-            else:
-                print 'No sam metadata found for %s.' % fn
-                status = 1
+                else:
+                    print 'No sam metadata found for %s.' % fn
+                    status = 1
 	     
-            if copy_to_dropbox == 1:
-                print "Copying to Dropbox"
-                dropbox_dir = project_utilities.get_dropbox(fn)
-                rootPath = dropbox_dir + "/" + fn
-                jsonPath = rootPath + ".json"
-                ifdh_cp(path, rootPath)
+                if copy_to_dropbox == 1:
+                    print "Copying to Dropbox"
+                    dropbox_dir = project_utilities.get_dropbox(fn)
+                    rootPath = dropbox_dir + "/" + fn
+                    jsonPath = rootPath + ".json"
+                    ifdh_cp(path, rootPath)
 	     
-      return status
+        return status
     
     # something went wrong, so make a list of bad directories and potentially missing files
     else:      
-      #first get the subdir name on pnfs. this contains the job id
-      dir_on_scratch = os.path.basename(outdir)
-      print 'Dir on scratch ' + dir_on_scratch
-      bad_list.write('%s \n' % dir_on_scratch)
-      bad_list.close()
-      return status  
+        # first get the subdir name on pnfs. this contains the job id
+        dir_on_scratch = os.path.basename(outdir)
+        print 'Dir on scratch ' + dir_on_scratch
+        bad_list.write('%s \n' % dir_on_scratch)
+        bad_list.close()
+        return status  
     
 
 if __name__ == '__main__' :
