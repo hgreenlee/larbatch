@@ -418,17 +418,47 @@ def docleanx(projects, projectname, stagename):
     # permissions (directories may be group- or public-write
     # because of batch system).
 
-    match = 0
-    projectmatch = 0
     uid = os.getuid()
     euid = os.geteuid()
+    cleaned = {}
+    clean_this_stage = False
+
+    # Loop over projects and stages.
+
     for project in projects:
         for stage in project.stages:
-            if projectname == '' or project.name == projectname:
-                projectmatch = 1
-            if projectmatch and (stagename == '' or stage.name == stagename):
-                match = 1
-            if match:
+
+            clean_last_stage = clean_this_stage
+            clean_this_stage = False
+
+            # Determine if this is the first stage we want to clean.
+
+            if (projectname == '' or project.name == projectname) and \
+               (stagename == '' or stage.name == stagename):
+
+                if not cleaned.has_key(project.name):
+                    cleaned[project.name] = set()
+                cleaned[project.name].add(stage.name)
+                clean_this_stage = True
+
+            # Determine if we want to clean this stage because its predecessor stage
+            # was cleaned.
+
+            if stage.previousstage == '':
+                if clean_last_stage:
+                    if not cleaned.has_key(project.name):
+                        cleaned[project.name] = set()
+                    cleaned[project.name].add(stage.name)
+                    clean_this_stage = True
+
+            elif cleaned.has_key(project.name) and stage.previousstage in cleaned[project.name]:
+                
+                cleaned[project.name].add(stage.name)
+                clean_this_stage = True
+
+            if clean_this_stage:
+
+                print 'Clean project %s, stage %s' % (project.name, stage.name)
 
                 # Clean this stage outdir.
 
