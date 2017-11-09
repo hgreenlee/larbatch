@@ -16,8 +16,8 @@
 # --xml <-|file|url>  - Xml file containing project description.
 # --project <project> - Project name (required if xml file contains
 #                       more than one project description).
-# --stage <stage>     - Project stage (required if project contains
-#                       more than one stage).
+# --stage <stage>[,<stage2>,...] - Project stage(s) (required if project 
+#                       contains more than one stage).
 # --tmpdir <tempdir>  - Override TMPDIR internally.  If TMPDIR is set
 #                       use ifdh cp instead of xrootd for accessing
 #                       content of root files in dCache.
@@ -154,10 +154,12 @@
 # <check>    - Do on-node validation and sam declaration (0 or 1, default 0).
 # <copy>     - Copy validated root files to FTS (0 or 1, default 0).
 #
-# <stage name="stagename"> - Information about project stage.  There can
-#             be multiple instances of this tag with different name
+# <stage name="stagename" base="basestage"> - Information about project stage.
+#             There can be multiple instances of this tag with different name
 #             attributes.  The name attribute is optional if there is
-#             only one project stage.
+#             only one project stage.  The base attribute is also optional.
+#             If present, it specifies a "base stage" which supplies default
+#             values for all unspecified xml tags.
 # <stage><fcl> - Name of fcl file (required).  Specify just the filename,
 #             not the full path.
 # <stage><outdir> - Output directory (required).  A subdirectory with the
