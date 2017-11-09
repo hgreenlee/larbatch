@@ -474,7 +474,7 @@ class ProjectApp(tk.Frame):
             top['cursor'] = 'watch'
             top.update_idletasks()
             project.docheck(self.current_project_def, self.current_stage_def, ana=False,
-                            quick=self.current_project_def.validate_on_worker)
+                            quick=self.current_stage_def.validate_on_worker)
             top['cursor'] = old_cursor
         except:
             top['cursor'] = old_cursor

@@ -522,7 +522,7 @@ class StageDef:
 
         validate_on_worker_elements = stage_element.getElementsByTagName('check')
         if validate_on_worker_elements:
-            self.validate_on_worker = validate_on_worker_elements[0].firstChild.data
+            self.validate_on_worker = int(validate_on_worker_elements[0].firstChild.data)
 
 	# Upload-on-worker.
 
