@@ -21,7 +21,7 @@ class ProjectDef:
     # Constructor.
     # project_element argument can be an xml element or None.
 
-    def __init__(self, project_element, default_first_input_list):
+    def __init__(self, project_element, default_first_input_list, default_input_lists):
 
         # Assign default values.
         
@@ -288,11 +288,26 @@ class ProjectDef:
         # Project stages (repeatable subelement).
 
         stage_elements = project_element.getElementsByTagName('stage')
-        default_input_lists = {}
         default_previous_stage = ''
         default_input_lists[default_previous_stage] = default_first_input_list
         for stage_element in stage_elements:
+
+            # Get base stage, if any.
+
+            base_stage = None
+            if stage_element.attributes.has_key('base'):
+                base_name = str(stage_element.attributes['base'].firstChild.data)
+                if base_name != '':
+                    for stage in self.stages:
+                        if stage.name == base_name:
+                            base_stage = stage
+                            break
+
+                    if base_stage == None:
+                        raise LookupError, 'Base stage %s not found.' % base_name
+
             self.stages.append(StageDef(stage_element, 
+                                        base_stage, 
                                         default_input_lists,
                                         default_previous_stage,
                                         self.num_jobs,

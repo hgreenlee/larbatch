@@ -11,7 +11,6 @@
 ######################################################################
 
 import os, string
-from project_modules.stagedef import StageDef
 import project_utilities
 import larbatch_posix
 

@@ -16,8 +16,8 @@
 # --xml <-|file|url>  - Xml file containing project description.
 # --project <project> - Project name (required if xml file contains
 #                       more than one project description).
-# --stage <stage>     - Project stage (required if project contains
-#                       more than one stage).
+# --stage <stage>[,<stage2>,...] - Project stage(s) (required if project 
+#                       contains more than one stage).
 # --tmpdir <tempdir>  - Override TMPDIR internally.  If TMPDIR is set
 #                       use ifdh cp instead of xrootd for accessing
 #                       content of root files in dCache.
@@ -154,10 +154,12 @@
 # <check>    - Do on-node validation and sam declaration (0 or 1, default 0).
 # <copy>     - Copy validated root files to FTS (0 or 1, default 0).
 #
-# <stage name="stagename"> - Information about project stage.  There can
-#             be multiple instances of this tag with different name
+# <stage name="stagename" base="basestage"> - Information about project stage.
+#             There can be multiple instances of this tag with different name
 #             attributes.  The name attribute is optional if there is
-#             only one project stage.
+#             only one project stage.  The base attribute is also optional.
+#             If present, it specifies a "base stage" which supplies default
+#             values for all unspecified xml tags.
 # <stage><fcl> - Name of fcl file (required).  Specify just the filename,
 #             not the full path.
 # <stage><outdir> - Output directory (required).  A subdirectory with the
@@ -416,57 +418,92 @@ def docleanx(projects, projectname, stagename):
     # permissions (directories may be group- or public-write
     # because of batch system).
 
-    match = 0
-    projectmatch = 0
     uid = os.getuid()
     euid = os.geteuid()
-    for project in projects:
-        for stage in project.stages:
-            if projectname == '' or project.name == projectname:
-                projectmatch = 1
-            if projectmatch and (stagename == '' or stage.name == stagename):
-                match = 1
-            if match:
+    cleaned_bookdirs = []
 
-                # Clean this stage outdir.
+    # Clean iteratively.
 
-                if larbatch_posix.exists(stage.outdir):
-                    dir_uid = larbatch_posix.stat(stage.outdir).st_uid
-                    if dir_uid == uid or dir_uid == euid:
-                        print 'Clean directory %s.' % stage.outdir
-                        larbatch_posix.rmtree(stage.outdir)
-                    else:
-                        raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.outdir
+    done_cleaning = False
+    while not done_cleaning:
 
-                # Clean this stage logdir.
+        cleaned_something = False
 
-                if larbatch_posix.exists(stage.logdir):
-                    dir_uid = larbatch_posix.stat(stage.logdir).st_uid
-                    if dir_uid == uid or dir_uid == euid:
-                        print 'Clean directory %s.' % stage.logdir
-                        larbatch_posix.rmtree(stage.logdir)
-                    else:
-                        raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.logdir
+        # Loop over projects and stages.
 
-                # Clean this stage workdir.
+        for project in projects:
+            for stage in project.stages:
 
-                if larbatch_posix.exists(stage.workdir):
-                    dir_uid = larbatch_posix.stat(stage.workdir).st_uid
-                    if dir_uid == uid or dir_uid == euid:
-                        print 'Clean directory %s.' % stage.workdir
-                        larbatch_posix.rmtree(stage.workdir)
-                    else:
-                        raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.workdir
+                clean_this_stage = False
 
-                # Clean this stage bookdir.
+                # Skip this stage if it has already been cleaned.
 
-                if larbatch_posix.exists(stage.bookdir):
-                    dir_uid = larbatch_posix.stat(stage.bookdir).st_uid
-                    if dir_uid == uid or dir_uid == euid:
-                        print 'Clean directory %s.' % stage.bookdir
-                        larbatch_posix.rmtree(stage.bookdir)
-                    else:
-                        raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.bookdir
+                if not stage.bookdir in cleaned_bookdirs:
+
+                    # Determine if this is the first stage we want to clean.
+
+                    if (projectname == '' or project.name == projectname) and \
+                       (stagename == '' or stage.name == stagename):
+
+                        clean_this_stage = True
+
+                    # Determine if we want to clean this stage because it uses
+                    # an input filelist that lives in an already-cleaned bookdir.
+
+                    elif stage.inputlist != '' and \
+                            os.path.dirname(stage.inputlist) in cleaned_bookdirs:
+
+                        clean_this_stage = True
+
+                    # Do cleaning.
+
+                    if clean_this_stage:
+                        cleaned_something = True
+                        cleaned_bookdirs.append(stage.bookdir)
+
+                        print 'Clean project %s, stage %s' % (project.name, stage.name)
+
+                        # Clean this stage outdir.
+
+                        if larbatch_posix.exists(stage.outdir):
+                            dir_uid = larbatch_posix.stat(stage.outdir).st_uid
+                            if dir_uid == uid or dir_uid == euid:
+                                print 'Clean directory %s.' % stage.outdir
+                                larbatch_posix.rmtree(stage.outdir)
+                            else:
+                                raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.outdir
+
+                        # Clean this stage logdir.
+
+                        if larbatch_posix.exists(stage.logdir):
+                            dir_uid = larbatch_posix.stat(stage.logdir).st_uid
+                            if dir_uid == uid or dir_uid == euid:
+                                print 'Clean directory %s.' % stage.logdir
+                                larbatch_posix.rmtree(stage.logdir)
+                            else:
+                                raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.logdir
+
+                        # Clean this stage workdir.
+
+                        if larbatch_posix.exists(stage.workdir):
+                            dir_uid = larbatch_posix.stat(stage.workdir).st_uid
+                            if dir_uid == uid or dir_uid == euid:
+                                print 'Clean directory %s.' % stage.workdir
+                                larbatch_posix.rmtree(stage.workdir)
+                            else:
+                                raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.workdir
+
+                        # Clean this stage bookdir.
+
+                        if larbatch_posix.exists(stage.bookdir):
+                            dir_uid = larbatch_posix.stat(stage.bookdir).st_uid
+                            if dir_uid == uid or dir_uid == euid:
+                                print 'Clean directory %s.' % stage.bookdir
+                                larbatch_posix.rmtree(stage.bookdir)
+                            else:
+                                raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.bookdir
+
+        done_cleaning = not cleaned_something
 
     # Done.
 
@@ -514,16 +551,15 @@ def dostatus(projects):
 
 # Recursively extract projects from an xml element.
 
-def find_projects(element, default_first_input_list = ''):
+def find_projects(element):
 
     projects = []
-    default_input = default_first_input_list
 
     # First check if the input element is a project.  In that case, return a
     # list containing the project name as the single element of the list.
 
     if element.nodeName == 'project':
-        project = ProjectDef(element, default_input)
+        project = ProjectDef(element, '')
         projects.append(project)
 
     else:
@@ -531,13 +567,16 @@ def find_projects(element, default_first_input_list = ''):
         # Input element is not a project.
         # Loop over subelements.
 
+        default_input = ''
+        default_input_by_stage = {}
         subelements = element.getElementsByTagName('project')
         for subelement in subelements:
-            project = ProjectDef(subelement, default_input)
+            project = ProjectDef(subelement, default_input, default_input_by_stage)
             projects.append(project)
-            if len(projects) > 0:
-                if len(projects[-1].stages) > 0:
-                    default_input = os.path.join(projects[-1].stages[-1].bookdir, 'files.list')
+            for stage in project.stages:
+                stage_list = os.path.join(stage.bookdir, 'files.list')
+                default_input_by_stage[stage.name] = stage_list
+                default_input = stage_list
 
     # Done.
 
@@ -3470,7 +3509,7 @@ def main(argv):
             projectname = args[1]
             del args[0:2]
         elif args[0] == '--stage' and len(args) > 1:
-            stagename = args[1]
+            stagenames = args[1].split(',')
             del args[0:2]
         elif args[0] == '--tmpdir' and len(args) > 1:
             os.environ['TMPDIR'] = args[1]
@@ -3645,17 +3684,19 @@ def main(argv):
 
     # Get the selected project element.
 
-    project = select_project(projects, projectname, stagename)
-    if project != None:
-        if projectname == '':
-            projectname = project.name
-    else:
-        raise RuntimeError, 'No project selected.\n'
+    for stagename in stagenames:
+        project = select_project(projects, projectname, stagename)
+        if project != None:
+            if projectname == '':
+                projectname = project.name
+        else:
+            raise RuntimeError, 'No project selected.\n'
 
     # Do clean action now.  Cleaning can be combined with submission.
 
     if clean:
-        docleanx(projects, projectname, stagename)
+        for stagename in stagenames:
+            docleanx(projects, projectname, stagename)
 
     # Do stage_status now.
 
@@ -3665,58 +3706,85 @@ def main(argv):
 
     # Get the current stage definition, and pubsify it if necessary.
 
-    stage = project.get_stage(stagename)
-    if pubs:
-        stage.pubsify_input(pubs_run, pubs_subruns, pubs_version)
-        stage.pubsify_output(pubs_run, pubs_subruns, pubs_version)
+    stages = {}
+    for stagename in stagenames:
+        stage = project.get_stage(stagename)
+        stages[stagename] = stage
+        if pubs:
+            stage.pubsify_input(pubs_run, pubs_subruns, pubs_version)
+            stage.pubsify_output(pubs_run, pubs_subruns, pubs_version)
+
+    # Do dump stage action now.
+
+    if dump_stage:
+        for stagename in stagenames:
+            print 'Stage %s:' % stagename
+            stage = stages[stagename]
+            print stage
 
     # Do dump project action now.
 
     if dump_project:
         print project
 
-    # Do dump stage action now.
-
-    if dump_stage:
-        print stage
-
     # Do outdir action now.
 
     if print_outdir:
-        print stage.outdir
+        for stagename in stagenames:
+            print 'Stage %s:' % stagename
+            stage = stages[stagename]
+            print stage.outdir
 
     # Do logdir action now.
 
     if print_logdir:
-        print stage.logdir
+        for stagename in stagenames:
+            print 'Stage %s:' % stagename
+            stage = stages[stagename]
+            print stage.logdir
 
     # Do logdir action now.
 
     if print_workdir:
-        print stage.workdir
+        for stagename in stagenames:
+            print 'Stage %s:' % stagename
+            stage = stages[stagename]
+            print stage.workdir
 
     # Do bookdir action now.
 
     if print_bookdir:
-        print stage.bookdir
+        for stagename in stagenames:
+            print 'Stage %s:' % stagename
+            stage = stages[stagename]
+            print stage.bookdir
 
     # Do defname action now.
 
     if defname:
-        if stage.defname != '':
-            print stage.defname
+        for stagename in stagenames:
+            print 'Stage %s:' % stagename
+            stage = stages[stagename]
+            if stage.defname != '':
+                print stage.defname
 
     # Do input_names action now.
 
     if do_input_files:
-        input_files = get_input_files(stage)
-        for input_file in input_files:
-            print input_file
+        for stagename in stagenames:
+            print 'Stage %s:' % stagename
+            stage = stages[stagename]
+            input_files = get_input_files(stage)
+            for input_file in input_files:
+                print input_file
 
     # Do shorten action now.
 
     if shorten:
-        doshorten(stage)
+        for stagename in stagenames:
+            print 'Stage %s:' % stagename
+            stage = stages[stagename]
+            doshorten(stage)
 
     # Do actions.
 
@@ -3726,138 +3794,192 @@ def main(argv):
 
         # Submit jobs.
 
-        dosubmit(project, stage, makeup)
+        for stagename in stagenames:
+            print 'Stage %s:' % stagename
+            stage = stages[stagename]
+            dosubmit(project, stage, makeup)
 
     if check or checkana:
 
         # Check results from specified project stage.
 
-        docheck(project, stage, checkana, stage.validate_on_worker)
+        for stagename in stagenames:
+            print 'Stage %s:' % stagename
+            stage = stages[stagename]
+            docheck(project, stage, checkana, stage.validate_on_worker)
 
     if fetchlog:
 
         # Fetch logfiles.
 
-        rc = dofetchlog(project, stage)
+        for stagename in stagenames:
+            print 'Stage %s:' % stagename
+            stage = stages[stagename]
+            rc += dofetchlog(project, stage)
 
     if mergehist or mergentuple or merge:
 
         # Make merged histogram or ntuple files using proper hadd option.
         # Makes a merged root file called anahist.root in the project output directory
 
-        domerge(stage, mergehist, mergentuple)
+        for stagename in stagenames:
+            print 'Stage %s:' % stagename
+            stage = stages[stagename]
+            domerge(stage, mergehist, mergentuple)
 
     if audit:
 
         # Sam audit.
 
-        doaudit(stage)
+        for stagename in stagenames:
+            print 'Stage %s:' % stagename
+            stage = stages[stagename]
+            doaudit(stage)
 
     if check_definition or define:
 
         # Make sam dataset definition.
 
-        if stage.defname == '':
-            print 'No sam dataset definition name specified for this stage.'
-            return 1
-        dim = project_utilities.dimensions(project, stage, ana=False)
-        docheck_definition(stage.defname, dim, define)
+        for stagename in stagenames:
+            print 'Stage %s:' % stagename
+            stage = stages[stagename]
+            if stage.defname == '':
+                print 'No sam dataset definition name specified for this stage.'
+                return 1
+            dim = project_utilities.dimensions(project, stage, ana=False)
+            docheck_definition(stage.defname, dim, define)
 
     if check_definition_ana or define_ana:
 
         # Make sam dataset definition for analysis files.
 
-        if stage.ana_defname == '':
-            print 'No sam analysis dataset definition name specified for this stage.'
-            return 1
-        dim = project_utilities.dimensions(project, stage, ana=True)
-        docheck_definition(stage.ana_defname, dim, define_ana)
+        for stagename in stagenames:
+            print 'Stage %s:' % stagename
+            stage = stages[stagename]
+            if stage.ana_defname == '':
+                print 'No sam analysis dataset definition name specified for this stage.'
+                return 1
+            dim = project_utilities.dimensions(project, stage, ana=True)
+            docheck_definition(stage.ana_defname, dim, define_ana)
 
     if test_definition:
 
         # Print summary of files returned by dataset definition.
 
-        if stage.defname == '':
-            print 'No sam dataset definition name specified for this stage.'
-            return 1
-        rc = dotest_definition(stage.defname)
+        for stagename in stagenames:
+            print 'Stage %s:' % stagename
+            stage = stages[stagename]
+            if stage.defname == '':
+                print 'No sam dataset definition name specified for this stage.'
+                return 1
+            rc += dotest_definition(stage.defname)
 
     if test_definition_ana:
 
         # Print summary of files returned by analysis dataset definition.
 
-        if stage.ana_defname == '':
-            print 'No sam dataset definition name specified for this stage.'
-            return 1
-        rc = dotest_definition(stage.ana_defname)
+        for stagename in stagenames:
+            print 'Stage %s:' % stagename
+            stage = stages[stagename]
+            if stage.ana_defname == '':
+                print 'No sam dataset definition name specified for this stage.'
+                return 1
+            rc += dotest_definition(stage.ana_defname)
 
     if undefine:
 
         # Delete sam dataset definition.
 
-        if stage.defname == '':
-            print 'No sam dataset definition name specified for this stage.'
-            return 1
-        rc = doundefine(stage.defname)
+        for stagename in stagenames:
+            print 'Stage %s:' % stagename
+            stage = stages[stagename]
+            if stage.defname == '':
+                print 'No sam dataset definition name specified for this stage.'
+                return 1
+            rc += doundefine(stage.defname)
 
     if check_declarations or declare:
 
         # Check sam declarations.
 
-        docheck_declarations(stage.bookdir, stage.outdir, declare, ana=False)
+        for stagename in stagenames:
+            print 'Stage %s:' % stagename
+            stage = stages[stagename]
+            docheck_declarations(stage.bookdir, stage.outdir, declare, ana=False)
 
     if check_declarations_ana or declare_ana:
 
         # Check sam analysis declarations.
 
-        docheck_declarations(stage.bookdir, stage.outdir, declare_ana, ana=True)
+        for stagename in stagenames:
+            print 'Stage %s:' % stagename
+            stage = stages[stagename]
+            docheck_declarations(stage.bookdir, stage.outdir, declare_ana, ana=True)
 
     if test_declarations:
 
         # Print summary of declared files.
 
-        dim = project_utilities.dimensions(project, stage, ana=False)
-        rc = dotest_declarations(dim)
+        for stagename in stagenames:
+            print 'Stage %s:' % stagename
+            stage = stages[stagename]
+            dim = project_utilities.dimensions(project, stage, ana=False)
+            rc += dotest_declarations(dim)
 
     if test_declarations_ana:
 
         # Print summary of declared files.
 
-        dim = project_utilities.dimensions(project, stage, ana=True)
-        rc = dotest_declarations(dim)
+        for stagename in stagenames:
+            print 'Stage %s:' % stagename
+            stage = stages[stagename]
+            dim = project_utilities.dimensions(project, stage, ana=True)
+            rc += dotest_declarations(dim)
 
     if check_locations or add_locations or clean_locations or remove_locations or upload:
 
         # Check sam disk locations.
 
-        dim = project_utilities.dimensions(project, stage)
-        docheck_locations(dim, stage.outdir,
-                          add_locations, clean_locations, remove_locations,
-                          upload)
+        for stagename in stagenames:
+            print 'Stage %s:' % stagename
+            stage = stages[stagename]
+            dim = project_utilities.dimensions(project, stage)
+            docheck_locations(dim, stage.outdir,
+                              add_locations, clean_locations, remove_locations,
+                              upload)
 
     if check_locations_ana or add_locations_ana or clean_locations_ana or \
        remove_locations_ana or upload_ana:
 
         # Check sam disk locations.
 
-        dim = project_utilities.dimensions(project, stage, ana=True)
-        docheck_locations(dim, stage.outdir,
-                          add_locations_ana, clean_locations_ana, remove_locations_ana,
-                          upload_ana)
+        for stagename in stagenames:
+            print 'Stage %s:' % stagename
+            stage = stages[stagename]
+            dim = project_utilities.dimensions(project, stage, ana=True)
+            docheck_locations(dim, stage.outdir,
+                              add_locations_ana, clean_locations_ana, remove_locations_ana,
+                              upload_ana)
 
     if check_tape:
 
         # Check sam tape locations.
 
-        dim = project_utilities.dimensions(project, stage)
-        docheck_tape(dim)
+        for stagename in stagenames:
+            print 'Stage %s:' % stagename
+            stage = stages[stagename]
+            dim = project_utilities.dimensions(project, stage)
+            docheck_tape(dim)
 
     if check_tape_ana:
 
         # Check analysis file sam tape locations.
 
-        dim = project_utilities.dimensions(project, stage, ana=True)
-        docheck_tape(dim)
+        for stagename in stagenames:
+            print 'Stage %s:' % stagename
+            stage = stages[stagename]
+            dim = project_utilities.dimensions(project, stage, ana=True)
+            docheck_tape(dim)
 
     # Done.
 
