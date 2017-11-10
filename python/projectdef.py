@@ -21,7 +21,7 @@ class ProjectDef:
     # Constructor.
     # project_element argument can be an xml element or None.
 
-    def __init__(self, project_element, default_first_input_list):
+    def __init__(self, project_element, default_first_input_list, default_input_lists):
 
         # Assign default values.
         
@@ -288,7 +288,6 @@ class ProjectDef:
         # Project stages (repeatable subelement).
 
         stage_elements = project_element.getElementsByTagName('stage')
-        default_input_lists = {}
         default_previous_stage = ''
         default_input_lists[default_previous_stage] = default_first_input_list
         for stage_element in stage_elements:

@@ -420,85 +420,90 @@ def docleanx(projects, projectname, stagename):
 
     uid = os.getuid()
     euid = os.geteuid()
-    cleaned = {}
-    clean_this_stage = False
+    cleaned_bookdirs = []
 
-    # Loop over projects and stages.
+    # Clean iteratively.
 
-    for project in projects:
-        for stage in project.stages:
+    done_cleaning = False
+    while not done_cleaning:
 
-            clean_last_stage = clean_this_stage
-            clean_this_stage = False
+        cleaned_something = False
 
-            # Determine if this is the first stage we want to clean.
+        # Loop over projects and stages.
 
-            if (projectname == '' or project.name == projectname) and \
-               (stagename == '' or stage.name == stagename):
+        for project in projects:
+            for stage in project.stages:
 
-                if not cleaned.has_key(project.name):
-                    cleaned[project.name] = set()
-                cleaned[project.name].add(stage.name)
-                clean_this_stage = True
+                clean_this_stage = False
 
-            # Determine if we want to clean this stage because its predecessor stage
-            # was cleaned.
+                # Skip this stage if it has already been cleaned.
 
-            if stage.previousstage == '':
-                if clean_last_stage:
-                    if not cleaned.has_key(project.name):
-                        cleaned[project.name] = set()
-                    cleaned[project.name].add(stage.name)
-                    clean_this_stage = True
+                if not stage.bookdir in cleaned_bookdirs:
 
-            elif cleaned.has_key(project.name) and stage.previousstage in cleaned[project.name]:
-                
-                cleaned[project.name].add(stage.name)
-                clean_this_stage = True
+                    # Determine if this is the first stage we want to clean.
 
-            if clean_this_stage:
+                    if (projectname == '' or project.name == projectname) and \
+                       (stagename == '' or stage.name == stagename):
 
-                print 'Clean project %s, stage %s' % (project.name, stage.name)
+                        clean_this_stage = True
 
-                # Clean this stage outdir.
+                    # Determine if we want to clean this stage because it uses
+                    # an input filelist that lives in an already-cleaned bookdir.
 
-                if larbatch_posix.exists(stage.outdir):
-                    dir_uid = larbatch_posix.stat(stage.outdir).st_uid
-                    if dir_uid == uid or dir_uid == euid:
-                        print 'Clean directory %s.' % stage.outdir
-                        larbatch_posix.rmtree(stage.outdir)
-                    else:
-                        raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.outdir
+                    elif stage.inputlist != '' and \
+                            os.path.dirname(stage.inputlist) in cleaned_bookdirs:
 
-                # Clean this stage logdir.
+                        clean_this_stage = True
 
-                if larbatch_posix.exists(stage.logdir):
-                    dir_uid = larbatch_posix.stat(stage.logdir).st_uid
-                    if dir_uid == uid or dir_uid == euid:
-                        print 'Clean directory %s.' % stage.logdir
-                        larbatch_posix.rmtree(stage.logdir)
-                    else:
-                        raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.logdir
+                    # Do cleaning.
 
-                # Clean this stage workdir.
+                    if clean_this_stage:
+                        cleaned_something = True
+                        cleaned_bookdirs.append(stage.bookdir)
 
-                if larbatch_posix.exists(stage.workdir):
-                    dir_uid = larbatch_posix.stat(stage.workdir).st_uid
-                    if dir_uid == uid or dir_uid == euid:
-                        print 'Clean directory %s.' % stage.workdir
-                        larbatch_posix.rmtree(stage.workdir)
-                    else:
-                        raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.workdir
+                        print 'Clean project %s, stage %s' % (project.name, stage.name)
 
-                # Clean this stage bookdir.
+                        # Clean this stage outdir.
 
-                if larbatch_posix.exists(stage.bookdir):
-                    dir_uid = larbatch_posix.stat(stage.bookdir).st_uid
-                    if dir_uid == uid or dir_uid == euid:
-                        print 'Clean directory %s.' % stage.bookdir
-                        larbatch_posix.rmtree(stage.bookdir)
-                    else:
-                        raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.bookdir
+                        if larbatch_posix.exists(stage.outdir):
+                            dir_uid = larbatch_posix.stat(stage.outdir).st_uid
+                            if dir_uid == uid or dir_uid == euid:
+                                print 'Clean directory %s.' % stage.outdir
+                                larbatch_posix.rmtree(stage.outdir)
+                            else:
+                                raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.outdir
+
+                        # Clean this stage logdir.
+
+                        if larbatch_posix.exists(stage.logdir):
+                            dir_uid = larbatch_posix.stat(stage.logdir).st_uid
+                            if dir_uid == uid or dir_uid == euid:
+                                print 'Clean directory %s.' % stage.logdir
+                                larbatch_posix.rmtree(stage.logdir)
+                            else:
+                                raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.logdir
+
+                        # Clean this stage workdir.
+
+                        if larbatch_posix.exists(stage.workdir):
+                            dir_uid = larbatch_posix.stat(stage.workdir).st_uid
+                            if dir_uid == uid or dir_uid == euid:
+                                print 'Clean directory %s.' % stage.workdir
+                                larbatch_posix.rmtree(stage.workdir)
+                            else:
+                                raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.workdir
+
+                        # Clean this stage bookdir.
+
+                        if larbatch_posix.exists(stage.bookdir):
+                            dir_uid = larbatch_posix.stat(stage.bookdir).st_uid
+                            if dir_uid == uid or dir_uid == euid:
+                                print 'Clean directory %s.' % stage.bookdir
+                                larbatch_posix.rmtree(stage.bookdir)
+                            else:
+                                raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.bookdir
+
+        done_cleaning = not cleaned_something
 
     # Done.
 
@@ -546,16 +551,15 @@ def dostatus(projects):
 
 # Recursively extract projects from an xml element.
 
-def find_projects(element, default_first_input_list = ''):
+def find_projects(element):
 
     projects = []
-    default_input = default_first_input_list
 
     # First check if the input element is a project.  In that case, return a
     # list containing the project name as the single element of the list.
 
     if element.nodeName == 'project':
-        project = ProjectDef(element, default_input)
+        project = ProjectDef(element, '')
         projects.append(project)
 
     else:
@@ -563,13 +567,16 @@ def find_projects(element, default_first_input_list = ''):
         # Input element is not a project.
         # Loop over subelements.
 
+        default_input = ''
+        default_input_by_stage = {}
         subelements = element.getElementsByTagName('project')
         for subelement in subelements:
-            project = ProjectDef(subelement, default_input)
+            project = ProjectDef(subelement, default_input, default_input_by_stage)
             projects.append(project)
-            if len(projects) > 0:
-                if len(projects[-1].stages) > 0:
-                    default_input = os.path.join(projects[-1].stages[-1].bookdir, 'files.list')
+            for stage in project.stages:
+                stage_list = os.path.join(stage.bookdir, 'files.list')
+                default_input_by_stage[stage.name] = stage_list
+                default_input = stage_list
 
     # Done.
 
@@ -3719,11 +3726,6 @@ def main(argv):
 
     if dump_project:
         print project
-
-    # Do dump stage action now.
-
-    if dump_stage:
-        print stage
 
     # Do outdir action now.
 
