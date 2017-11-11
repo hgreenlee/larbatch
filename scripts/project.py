@@ -43,7 +43,8 @@
 #                (default hadd -T)
 # --status     - Print status of each stage.
 # --makeup     - Submit makeup jobs for specified stage.
-# --clean      - Delete output from specified project and stage.
+# --clean      - Delete output from specified project and stage and following stages.
+# --clean_one  - Delete output from specified project and stage (don't clean following stages).
 # --declare    - Declare files to sam.
 # --add_locations    - Check sam disk locations and add missing ones.
 # --clean_locations  - Check sam disk locations and remove non-existent ones.
@@ -336,76 +337,9 @@ def import_samweb():
         samweb = project_utilities.samweb()
         from extractor_dict import expMetaData
 
-# Clean function.
-
-def doclean(project, stagename):
-
-    # Loop over stages.
-    # Clean all stages beginning with the specified stage.
-    # For empty stagename, clean all stages.
-    #
-    # For safety, only clean directories if the uid of the
-    # directory owner matches the current uid or effective uid.
-    # Do this even if the delete operation is allowed by filesystem
-    # permissions (directories may be group- or public-write
-    # because of batch system).
-
-    match = 0
-    uid = os.getuid()
-    euid = os.geteuid()
-    for stage in project.stages:
-        if stagename == '' or stage.name == stagename:
-            match = 1
-        if match:
-
-            # Clean this stage outdir.
-
-            if larbatch_posix.exists(stage.outdir):
-                dir_uid = larbatch_posix.stat(stage.outdir).st_uid
-                if dir_uid == uid or dir_uid == euid:
-                    print 'Clean directory %s.' % stage.outdir
-                    larbatch_posix.rmtree(stage.outdir)
-                else:
-                    raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.outdir
-
-            # Clean this stage logdir.
-
-            if larbatch_posix.exists(stage.logdir):
-                dir_uid = larbatch_posix.stat(stage.logdir).st_uid
-                if dir_uid == uid or dir_uid == euid:
-                    print 'Clean directory %s.' % stage.logdir
-                    larbatch_posix.rmtree(stage.logdir)
-                else:
-                    raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.logdir
-
-            # Clean this stage workdir.
-
-            if larbatch_posix.exists(stage.workdir):
-                dir_uid = larbatch_posix.stat(stage.workdir).st_uid
-                if dir_uid == uid or dir_uid == euid:
-                    print 'Clean directory %s.' % stage.workdir
-                    larbatch_posix.rmtree(stage.workdir)
-                else:
-                    raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.workdir
-
-            # Clean this stage bookdir.
-
-            if larbatch_posix.exists(stage.bookdir):
-                dir_uid = larbatch_posix.stat(stage.bookdir).st_uid
-                if dir_uid == uid or dir_uid == euid:
-                    print 'Clean directory %s.' % stage.bookdir
-                    larbatch_posix.rmtree(stage.bookdir)
-                else:
-                    raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.bookdir
-
-    # Done.
-
-    return
-
-
 # Multi-project clean function.
 
-def docleanx(projects, projectname, stagename):
+def docleanx(projects, projectname, stagename, clean_descendants = True):
     print projectname, stagename
 
     # Loop over projects and stages.
@@ -450,8 +384,8 @@ def docleanx(projects, projectname, stagename):
                     # Determine if we want to clean this stage because it uses
                     # an input filelist that lives in an already-cleaned bookdir.
 
-                    elif stage.inputlist != '' and \
-                            os.path.dirname(stage.inputlist) in cleaned_bookdirs:
+                    elif clean_descendants and stage.inputlist != '' and \
+                         os.path.dirname(stage.inputlist) in cleaned_bookdirs:
 
                         clean_this_stage = True
 
@@ -3459,6 +3393,7 @@ def main(argv):
     stage_status = 0
     makeup = 0
     clean = 0
+    clean_one = 0
     dump_project = 0
     dump_stage = 0
     print_outdir = 0
@@ -3557,6 +3492,9 @@ def main(argv):
             del args[0]
         elif args[0] == '--clean':
             clean = 1
+            del args[0]
+        elif args[0] == '--clean_one':
+            clean_one = 1
             del args[0]
         elif args[0] == '--dump_project':
             dump_project = 1
@@ -3696,7 +3634,13 @@ def main(argv):
 
     if clean:
         for stagename in stagenames:
-            docleanx(projects, projectname, stagename)
+            docleanx(projects, projectname, stagename, clean_descendants = True)
+
+    # Do clean_one action now.  Cleaning can be combined with submission.
+
+    if clean_one:
+        for stagename in stagenames:
+            docleanx(projects, projectname, stagename, clean_descendants = False)
 
     # Do stage_status now.
 
