@@ -33,6 +33,9 @@
 # [-h|--help]  - Print help (this message).
 # [-xh|--xmlhelp] - Print xml help.
 # --submit     - Submit all jobs for specified stage.
+# --recur      - Input dataset is recursive.  Used in conjunction with --submit, 
+#                allows job submission even if output directories are not empty.
+#                Also forces a new snapshot.
 # --check      - Check results for specified stage and print message.
 # --checkana   - Check analysis results for specified stage and print message.
 # --shorten    - Shorten root filenames to have fewer than than 200 characters.
@@ -2266,7 +2269,7 @@ def docheck_tape(dim):
 # Return jobsubid.
 # Raise exception if jobsub_submit returns a nonzero status.
 
-def dojobsub(project, stage, makeup):
+def dojobsub(project, stage, makeup, recur):
 
     # Default return.
 
@@ -2774,6 +2777,8 @@ def dojobsub(project, stage, makeup):
     elif inputdef != '':
         command.extend([' --sam_defname', inputdef,
                         ' --sam_project', prjname])
+    if recur:
+        command.extend([' --recur'])
     if stage.mixinputdef != '':
         command.extend([' --mix_defname', stage.mixinputdef,
                         ' --mix_project', mixprjname])
@@ -2880,6 +2885,8 @@ def dojobsub(project, stage, makeup):
                               ' --sam_defname', dag_prj[0],
                               ' --sam_project', dag_prj[1],
                               ' -g'])
+        if recur:
+            start_command.extend([' --recur'])
 
         # Output directory.
 
@@ -3100,7 +3107,7 @@ def dojobsub(project, stage, makeup):
 
 # Submit/makeup action.
 
-def dosubmit(project, stage, makeup=False):
+def dosubmit(project, stage, makeup=False, recur=False):
 
     # Make sure we have a kerberos ticket.
 
@@ -3133,7 +3140,7 @@ def dosubmit(project, stage, makeup=False):
 
     # Make sure output and log directories are empty (submit only).
 
-    if not makeup and not stage.dynamic:
+    if not makeup and not recur and not stage.dynamic:
         if len(larbatch_posix.listdir(stage.outdir)) != 0:
             raise RuntimeError, 'Output directory %s is not empty.' % stage.outdir
         if len(larbatch_posix.listdir(stage.logdir)) != 0:
@@ -3143,7 +3150,7 @@ def dosubmit(project, stage, makeup=False):
 
     # Copy files to workdir and issue jobsub command to submit jobs.
 
-    jobid = dojobsub(project, stage, makeup)
+    jobid = dojobsub(project, stage, makeup, recur)
 
     # Append jobid to file "jobids.list" in the log directory.
 
@@ -3379,6 +3386,7 @@ def main(argv):
     stagename = ''
     merge = 0
     submit = 0
+    recur = 0
     pubs = 0
     pubs_run = 0
     pubs_subruns = []
@@ -3451,6 +3459,9 @@ def main(argv):
             del args[0:2]
         elif args[0] == '--submit':
             submit = 1
+            del args[0]
+        elif args[0] == '--recur':
+            recur = 1
             del args[0]
         elif args[0] == '--pubs' and len(args) > 2:
             pubs = 1
@@ -3741,7 +3752,7 @@ def main(argv):
         for stagename in stagenames:
             print 'Stage %s:' % stagename
             stage = stages[stagename]
-            dosubmit(project, stage, makeup)
+            dosubmit(project, stage, makeup, recur)
 
     if check or checkana:
 

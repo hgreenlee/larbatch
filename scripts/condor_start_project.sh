@@ -14,6 +14,7 @@
 # --sam_project <arg> - Sam project name (required).
 # --logdir <arg>      - Specify log directory (optional). 
 # -g, --grid          - Be grid-friendly.
+# --recur             - Recursive input dataset (force snapshot).
 #
 # End options.
 #
@@ -30,6 +31,7 @@ SAM_DEFNAME=""
 SAM_PROJECT=""
 LOGDIR=""
 GRID=0
+RECUR=0
 IFDH_OPT=""
 
 while [ $# -gt 0 ]; do
@@ -92,6 +94,11 @@ while [ $# -gt 0 ]; do
     # Grid flag.
     -g|--grid )
       GRID=1
+      ;;
+
+    # Recursive flag.
+    --recur )
+      RECUR=1
       ;;
 
     # Other.
@@ -161,6 +168,12 @@ if [ x$IFDHC_DIR = x ]; then
 fi
 echo "IFDHC_DIR=$IFDHC_DIR"
 
+# Set up sam_web_client (needed for take snapshot).
+
+echo "Setting up sam_web_client."
+setup sam_web_client
+echo "SAM_WEB_CLIENT_DIR = $SAM_WEB_CLIENT_DIR"
+
 # Set options for ifdh.
 
 if [ $GRID -ne 0 ]; then
@@ -204,6 +217,13 @@ fi
 # Save the project name in a file.
 
 echo $SAM_PROJECT > sam_project.txt
+
+# If recursive flag, take snapshot of input dataset.
+
+if [ $RECUR -ne 0 ]; then
+  echo "Taking snapshot of dataset $SAM_DEFNAME"
+  samweb -e $EXPERIMENT take-snapshot $SAM_DEFNAME
+fi
 
 # Start the project.
 

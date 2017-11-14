@@ -32,6 +32,7 @@
 # --sam_project <arg>     - Sam project name.
 # --sam_start             - Specify that this worker should be responsible for
 #                           starting and stopping the sam project.
+# --recur                 - Recursive input dataset (force snapshot).
 # --sam_schema <arg>      - Use this option with argument "root" to stream files using
 #                           xrootd.  Leave this option out for standard file copy.
 # --njobs <arg>           - Parallel project with specified number of jobs (default one).
@@ -233,6 +234,7 @@ SAM_STATION=""
 SAM_DEFNAME=""
 SAM_PROJECT=""
 SAM_START=0
+RECUR=0
 SAM_SCHEMA=""
 USE_SAM=0
 MIX_DEFNAME=""
@@ -393,6 +395,11 @@ while [ $# -gt 0 ]; do
     # Sam start/stop project flag.
     --sam_start )
       SAM_START=1
+      ;;
+
+    # Recursive flag.
+    --recur )
+      RECUR=1
       ;;
 
     # Sam schema.
@@ -706,6 +713,12 @@ if [ x$IFDHC_DIR = x ]; then
   setup ifdhc
 fi
 echo "IFDHC_DIR=$IFDHC_DIR"
+
+# Set up sam_web_client (needed for take snapshot).
+
+echo "Setting up sam_web_client."
+setup sam_web_client
+echo "SAM_WEB_CLIENT_DIR = $SAM_WEB_CLIENT_DIR"
 
 # Set GROUP environment variable.
 
@@ -1311,6 +1324,15 @@ EOF
 
     if [ $SAM_START -ne 0 ]; then
       if [ x$SAM_DEFNAME != x ]; then
+
+        # If recursive flag, take snapshot of input dataset.
+
+          if [ $RECUR -ne 0 ]; then
+            echo "Taking snapshot of dataset $SAM_DEFNAME"
+            samweb -e $EXPERIMENT take-snapshot $SAM_DEFNAME
+          fi
+
+        # Start the project.
 
         echo "Starting project $SAM_PROJECT using sam dataset definition $SAM_DEFNAME"
         ifdh startProject $SAM_PROJECT $SAM_STATION $SAM_DEFNAME $SAM_USER $SAM_GROUP
