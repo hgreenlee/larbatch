@@ -3383,7 +3383,7 @@ def main(argv):
 
     xmlfile = ''
     projectname = ''
-    stagename = ''
+    stagenames = ['']
     merge = 0
     submit = 0
     recur = 0
