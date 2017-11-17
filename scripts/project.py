@@ -496,7 +496,8 @@ def find_projects(element):
     # list containing the project name as the single element of the list.
 
     if element.nodeName == 'project':
-        project = ProjectDef(element, '')
+        default_input_by_stage = {}
+        project = ProjectDef(element, '', default_input_by_stage)
         projects.append(project)
 
     else:
