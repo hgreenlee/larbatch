@@ -1922,7 +1922,7 @@ def docheck_declarations(logdir, outdir, declare, ana=False):
                     md = mdjson
                 else:
                     expSpecificMetaData = expMetaData(os.environ['SAM_EXPERIMENT'],larbatch_posix.root_stream(path))
-                    md = expSpecificMetaData.getmetadata()
+                    md = expSpecificMetaData.getmetadata(mdjson)
                 if len(md) > 0:
                     project_utilities.test_kca()
 
