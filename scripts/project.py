@@ -22,6 +22,18 @@
 #                       use ifdh cp instead of xrootd for accessing
 #                       content of root files in dCache.
 #
+# XML stage configuration overrides.  Note that most of these options, except --inputdef, 
+# are passed directly to jobsub_submit.  Refer to jobsub_submit documentation for 
+# additional details.
+#
+# --lines <arg>        - Override stage element <lines>...</lines>.
+# --site <site>        - Override stage element <site>...</site> (comma-separated list).
+# --cpu <ncpus>        - Override stage element <cpu>...</cpu> (integer # of cpus).
+# --disk <disk>        - Override stage element <disk>...</disk> (value and unit).
+# --memory <mem>       - Override stage element <memory>...</memory> (MB).
+# --inputdef <defname> - Override stage element <inputdef>...</inputdef>.  Any existing
+#                        element of type <inputfile> or <inputlist> is nullified.
+#
 # Pubs options (combine with any action option).
 #
 # --pubs <run> <subrun> [<version>] - Modifies selected stage to specify pubs mode.
@@ -132,7 +144,7 @@
 #              OFFSITE,FERMICLOUD,PAID_CLOUD,FERMICLOUD8G).
 #              Default: DEDICATED,OPPORTUNISTIC.
 # <lines>   - Arbitrary condor commands (expert option, jobsub_submit --lines=...).
-# <site>    - Specify site (default jobsub decides).
+# <site>    - Specify site (comma-separated list, default jobsub decides).
 #
 # <cpu>     - Number of cpus (jobsub_submit --cpu=...).
 # <disk>    - Amount of scratch disk space (jobsub_submit --disk=...).
@@ -240,7 +252,7 @@
 #                     Default: DEDICATED,OPPORTUNISTIC.
 # <stage><lines>   - Arbitrary condor commands (expert option, jobsub_submit --lines=...).
 # <stage><site>    - Specify site (default jobsub decides).
-# <stage><cpus>    - Number of cpus (jobsub_submit --cpus=...).
+# <stage><cpu>     - Number of cpus (jobsub_submit --cpu=...).
 # <stage><disk>    - Amount of scratch disk space (jobsub_submit --disk=...).
 #                    Specify value and unit (e.g. 50GB).
 # <stage><memory>  - Specify amount of memory in MB (jobsub_submit --memory=...).
@@ -3385,6 +3397,12 @@ def main(argv):
     xmlfile = ''
     projectname = ''
     stagenames = ['']
+    lines = ''
+    site = ''
+    cpu = 0
+    disk = ''
+    memory = 0
+    inputdef = ''
     merge = 0
     submit = 0
     recur = 0
@@ -3457,6 +3475,24 @@ def main(argv):
             del args[0:2]
         elif args[0] == '--tmpdir' and len(args) > 1:
             os.environ['TMPDIR'] = args[1]
+            del args[0:2]
+        elif args[0] == '--lines' and len(args) > 1:
+            lines = args[1]
+            del args[0:2]
+        elif args[0] == '--site' and len(args) > 1:
+            site = args[1]
+            del args[0:2]
+        elif args[0] == '--cpu' and len(args) > 1:
+            cpu = int(args[1])
+            del args[0:2]
+        elif args[0] == '--disk' and len(args) > 1:
+            disk = args[1]
+            del args[0:2]
+        elif args[0] == '--memory' and len(args) > 1:
+            memory = int(args[1])
+            del args[0:2]
+        elif args[0] == '--inputdef' and len(args) > 1:
+            inputdef = args[1]
             del args[0:2]
         elif args[0] == '--submit':
             submit = 1
@@ -3661,11 +3697,32 @@ def main(argv):
         return 0
 
     # Get the current stage definition, and pubsify it if necessary.
+    # Also process any command line stage configuration overrides.
 
     stages = {}
     for stagename in stagenames:
         stage = project.get_stage(stagename)
         stages[stagename] = stage
+
+        # Command line configuration overrides handled here.
+
+        if lines != '':
+            stage.lines = lines
+        if site != '':
+            stage.site = site
+        if cpu != 0:
+            stage.cpu = cpu
+        if disk != '':
+            stage.disk = disk
+        if memory != '':
+            stage.memory = memory
+        if inputdef != '':
+            stage.inputdef = inputdef
+            stage.inputfile = ''
+            stage.inputlist = ''
+
+        # Pubs mode overrides handled here.
+
         if pubs:
             stage.pubsify_input(pubs_run, pubs_subruns, pubs_version)
             stage.pubsify_output(pubs_run, pubs_subruns, pubs_version)
