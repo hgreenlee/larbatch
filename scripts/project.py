@@ -143,6 +143,8 @@
 # <resource> - Jobsub resources (comma-separated list: DEDICATED,OPPORTUNISTIC,
 #              OFFSITE,FERMICLOUD,PAID_CLOUD,FERMICLOUD8G).
 #              Default: DEDICATED,OPPORTUNISTIC.
+# <role>    - Role (normally Analysis or Production).  This element overrides the
+#             default role-determining algorithm in larbatch_utilities.get_role().
 # <lines>   - Arbitrary condor commands (expert option, jobsub_submit --lines=...).
 # <site>    - Specify site (comma-separated list, default jobsub decides).
 #
@@ -2689,6 +2691,8 @@ def dojobsub(project, stage, makeup, recur):
     # Get role
 
     role = project_utilities.get_role()
+    if project.role != '':
+        role = project.role
 
     # Construct jobsub command line for workers.
 

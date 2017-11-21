@@ -31,6 +31,7 @@ class ProjectDef:
         self.max_files_per_job = 0        # Max number of files per job.
         self.os = ''                      # Batch OS.
         self.resource = 'DEDICATED,OPPORTUNISTIC' # Jobsub resources.
+        self.role = ''                    # Role (normally Analysis or Production).
         self.lines = ''                   # Arbitrary condor commands.
         self.server = '-'                 # Jobsub server.
         self.site = ''                    # Site.
@@ -97,6 +98,12 @@ class ProjectDef:
         if resource_elements:
             self.resource = str(resource_elements[0].firstChild.data)
             self.resource = ''.join(self.resource.split())
+
+        # Role (subelement).
+
+        resource_elements = project_element.getElementsByTagName('role')
+        if resource_elements:
+            self.role = str(resource_elements[0].firstChild.data)
 
         # Lines (subelement).
 
@@ -344,6 +351,7 @@ class ProjectDef:
         result += 'Max files per job = %d\n' % self.max_files_per_job
         result += 'OS = %s\n' % self.os
         result += 'Resource = %s\n' % self.resource
+        result += 'Role = %s\n' % self.role
         result += 'Lines = %s\n' % self.lines
         result += 'Jobsub server = %s\n' % self.server
         result += 'Site = %s\n' % self.site
