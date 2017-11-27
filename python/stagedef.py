@@ -224,6 +224,18 @@ class StageDef:
         if previousstage_elements:
             self.previousstage = str(previousstage_elements[0].firstChild.data)
 
+            # If a base stage was specified, nullify any input inherted from base.
+
+            if base_stage != None:
+                self.inputfile = ''
+                self.inputlist = ''
+                self.inputdef = ''
+
+            # It never makes sense to specify a previous stage with some other input.
+
+            if self.inputfile != '' or self.inputlist != '' or self.inputdef != '':
+                raise XMLError, 'Previous stage and input specified for stage %s.' % self.name
+
         # Mix input sam dataset (subelement).
 
         mixinputdef_elements = stage_element.getElementsByTagName('mixinputdef')
