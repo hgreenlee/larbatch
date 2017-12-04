@@ -3718,7 +3718,7 @@ def main(argv):
             stage.cpu = cpu
         if disk != '':
             stage.disk = disk
-        if memory != '':
+        if memory != 0:
             stage.memory = memory
         if inputdef != '':
             stage.inputdef = inputdef
