@@ -1558,12 +1558,12 @@ EOF
    rm -rf $next_stage_input
   fi
  
-  #echo `ls -t1 *.root | head -n2 | grep -v 'hist*'`
+  #echo `ls -t1 *.root | egrep -v 'hist|larlite|larcv' | head -n1`
  
   #echo "Outfile is $OUTFILE"
    
 
-  next_stage_input=`ls -t1 *.root | head -n2 | grep -v 'hist*'`
+  next_stage_input=`ls -t1 *.root | egrep -v 'hist|larlite|larcv' | head -n1`
 
   mixed_file=`sam_metadata_dumper $next_stage_input | grep mixparent | awk -F ":" '{gsub("\"" ,""); gsub(",",""); gsub(" ",""); print $2}'`
  
