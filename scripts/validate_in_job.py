@@ -350,7 +350,7 @@ def main():
                     dropbox_dir = project_utilities.get_dropbox(fn)
                     rootPath = os.path.join(dropbox_dir, fn)
                     jsonPath = rootPath + ".json"
-                    ifdh_cp(path, rootPath)
+                    ifdh_cp(rootpath, rootPath)
 
             # Declare histogram files.
 	     
@@ -408,7 +408,7 @@ def main():
                     dropbox_dir = project_utilities.get_dropbox(fn)
                     rootPath = dropbox_dir + "/" + fn
                     jsonPath = rootPath + ".json"
-                    ifdh_cp(path, rootPath)
+                    ifdh_cp(histpath, rootPath)
 	     
         return status
     
