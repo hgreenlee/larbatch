@@ -1739,7 +1739,7 @@ for root in *.root; do
 done
 
 # Copy any remaining files into all log subdirectories.
-# These small files get replicated.
+# These small files may get replicated.
 
 for outfile in *; do
   if [ -f $outfile ]; then
@@ -1747,7 +1747,6 @@ for outfile in *; do
     for subrun in ${subruns[*]}
     do
       cp $outfile log$subrun
-      rm -f log/$outfile
     done
   fi
 done
@@ -1806,6 +1805,21 @@ if [ $VALIDATE_IN_JOB -eq 1 ]; then
     
 fi
 
+# Remove duplicate files in log subdirectories, because they will cause ifdh to hang.
+
+for outfile in log/*; do
+  for subrun in ${subruns[*]}
+  do
+    if [ ${logdirs[$subrun]} = $LOGDIR ]; then
+      dupfile=log$subrun/`basename $outfile`
+      if [ -f $dupfile ]; then
+        echo "Removing duplicate file ${dupfile}."
+        rm -f $dupfile
+      fi
+    fi
+  done
+done
+
 # Make a tarball of each log directory, and save the tarball in its own log directory.
 
 rm -f log0.tar
@@ -1815,7 +1829,7 @@ for subrun in ${subruns[*]}
 do
   rm -f log.tar
   tar -cjf log.tar -C log$subrun .
-  mv log.tar log$subrun
+  mv log.tar log$subrun/log_s${subrun}.tar
 done
 
 # Clean remote output and log directories.
@@ -1830,42 +1844,57 @@ do
   echo "Make sure directory0 ${dir}/$OUTPUT_SUBDIR exists."
   
   #mkdir ${dir}/$OUTPUT_SUBDIR 
+  date
   ./mkdir.py -v ${dir}/$OUTPUT_SUBDIR
   echo "Make sure directory0 ${dir}/$OUTPUT_SUBDIR is empty."
+  date
   ./emptydir.py -v ${dir}/$OUTPUT_SUBDIR
+  date
   ./mkdir.py -v ${dir}/$OUTPUT_SUBDIR
   echo "Directory0 ${dir}/$OUTPUT_SUBDIR clean ok."
+  date
 done
 
 if [ $SINGLE != 0 ]; then
   for dir in ${logdirs[*]} ${outdirs[*]}
   do
     echo "Make sure directory1 $dir exists."
+    date
     ./mkdir.py -v $dir
     echo "Make sure directory1 $dir is empty."
+    date
     ./emptydir.py -v $dir
+    date
     ./mkdir.py -v $dir/$OUTPUT_SUBDIR
     echo "Directory1 $dir/$OUTPUT_SUBDIR clean ok."
+    date
   done
 else
   for dir in ${logdirs[*]} ${outdirs[*]}
   do
     echo "Make sure directory2 ${dir}/$OUTPUT_SUBDIR exists."
+    date
     ./mkdir.py -v ${dir}/$OUTPUT_SUBDIR
     echo "Make sure directory2 ${dir}/$OUTPUT_SUBDIR is empty."
+    date
     ./emptydir.py -v ${dir}/$OUTPUT_SUBDIR
+    date
     ./mkdir.py -v ${dir}/$OUTPUT_SUBDIR
     echo "Directory2 ${dir}/$OUTPUT_SUBDIR clean ok."
+    date
   done
 fi
 
 statout=0
-export IFDH_CP_MAXRETRIES=5
+export IFDH_CP_MAXRETRIES=3
 echo "ls log"
 ls log
 echo "ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR"
 if [ "$( ls -A log )" ]; then
+  date
+  echo "ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR"
   ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR
+  date
   stat=$?
   if [ $stat -ne 0 ]; then
     echo "ifdh cp failed with status ${stat}."
@@ -1876,8 +1905,10 @@ for subrun in ${subruns[*]}
 do
   echo "ls log$subrun"
   ls log$subrun
+  date
   echo "ifdh cp -D $IFDH_OPT log${subrun}/* ${logdirs[$subrun]}/$OUTPUT_SUBDIR"
   ifdh cp -D $IFDH_OPT log${subrun}/* ${logdirs[$subrun]}/$OUTPUT_SUBDIR
+  date
   stat=$?
   if [ $stat -ne 0 ]; then
     echo "ifdh cp failed with status ${stat}."
@@ -1886,8 +1917,10 @@ do
 done
 
 if [ "$( ls -A out )" ]; then
+  date
   echo "ifdh cp -D $IFDH_OPT out/* ${OUTDIR}/$OUTPUT_SUBDIR"
   ifdh cp -D $IFDH_OPT out/* ${OUTDIR}/$OUTPUT_SUBDIR
+  date
   stat=$?
   if [ $stat -ne 0 ]; then
     echo "ifdh cp failed with status ${stat}."
@@ -1896,8 +1929,10 @@ fi
 
 for subrun in ${subruns[*]}
 do
+  date
   echo "ifdh cp -D $IFDH_OPT out${subrun}/* ${outdirs[$subrun]}/$OUTPUT_SUBDIR"
   ifdh cp -D $IFDH_OPT out${subrun}/* ${outdirs[$subrun]}/$OUTPUT_SUBDIR
+  date
   stat=$?
   if [ $stat -ne 0 ]; then
     echo "ifdh cp failed with status ${stat}."
