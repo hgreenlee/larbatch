@@ -15,6 +15,7 @@
 # --logdir <arg>      - Specify log directory (optional). 
 # -g, --grid          - Be grid-friendly.
 # --recur             - Recursive input dataset (force snapshot).
+# --init <path>       - Absolute path of environment initialization script (optional).
 #
 # End options.
 #
@@ -32,6 +33,7 @@ SAM_PROJECT=""
 LOGDIR=""
 GRID=0
 RECUR=0
+INIT=""
 IFDH_OPT=""
 
 while [ $# -gt 0 ]; do
@@ -101,6 +103,14 @@ while [ $# -gt 0 ]; do
       RECUR=1
       ;;
 
+    # Specify environment initialization script path.
+    --init )
+      if [ $# -gt 1 ]; then
+        INIT=$2
+        shift
+      fi
+      ;;
+
     # Other.
     * )
       echo "Unknown option $1"
@@ -153,8 +163,17 @@ fi
 
 echo "Initializing ups and mrb."
 
-echo "Sourcing setup_experiment.sh"
-source ${CONDOR_DIR_INPUT}/setup_experiment.sh
+if [ x$INIT != x ]; then
+  if [ ! -f $INIT ]; then
+    echo "Environment initialization script $INIT not found."
+    exit 1
+  fi
+  echo "Sourcing $INIT"
+  source $INIT
+else
+  echo "Sourcing setup_experiment.sh"
+  source ${CONDOR_DIR_INPUT}/setup_experiment.sh
+fi
 
 echo PRODUCTS=$PRODUCTS
 
@@ -168,20 +187,14 @@ if [ x$IFDHC_DIR = x ]; then
 fi
 echo "IFDHC_DIR=$IFDHC_DIR"
 
-# Set up sam_web_client (needed for take snapshot).
-
-echo "Setting up sam_web_client."
-setup sam_web_client
-echo "SAM_WEB_CLIENT_DIR = $SAM_WEB_CLIENT_DIR"
-
 # Set options for ifdh.
 
-if [ $GRID -ne 0 ]; then
-  echo "X509_USER_PROXY = $X509_USER_PROXY"
-  if ! echo $X509_USER_PROXY | grep -q Production; then
-    IFDH_OPT="--force=expgridftp"
-  fi
-fi
+#if [ $GRID -ne 0 ]; then
+#  echo "X509_USER_PROXY = $X509_USER_PROXY"
+#  if ! echo $X509_USER_PROXY | grep -q Production; then
+#    IFDH_OPT="--force=expgridftp"
+#  fi
+#fi
 echo "IFDH_OPT=$IFDH_OPT"
 
 # Create the scratch directory in the condor scratch diretory.
@@ -221,13 +234,13 @@ echo $SAM_PROJECT > sam_project.txt
 # If recursive flag, take snapshot of input dataset.
 
 if [ $RECUR -ne 0 ]; then
-  echo "Taking snapshot of dataset $SAM_DEFNAME"
-  samweb -e $EXPERIMENT take-snapshot $SAM_DEFNAME
+  echo "Forcing snapshot"
+  SAM_DEFNAME=${SAM_DEFNAME}:force
 fi
 
 # Start the project.
 
-echo "Starting project."
+echo "Starting project ${SAM_PROJECT}."
 ifdh startProject $SAM_PROJECT $SAM_STATION $SAM_DEFNAME $SAM_USER $SAM_GROUP
 if [ $? -eq 0 ]; then
   echo "Project successfully started."

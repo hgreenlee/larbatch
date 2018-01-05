@@ -2397,11 +2397,17 @@ def dojobsub(project, stage, makeup, recur):
     wrapper_fcl.close()
     #print 'Done making wrapper.fcl'
 
-    # Copy and rename experiment setup script to the work directory.
+    # Get experiment setup script.  Maybe copy to work directory.
+    # After this section, either variable (not both) abssetupscript or
+    # setupscript will be set to a non-null value.
 
-    setupscript = os.path.join(stage.workdir,'setup_experiment.sh')
-    larbatch_posix.copy(project_utilities.get_setup_script_path(), setupscript)
-    jobsub_workdir_files_args.extend(['-f', setupscript])
+    abssetupscript = project_utilities.get_setup_script_path()
+    setupscript = ''
+    if not abssetupscript.startswith('/cvmfs/'):
+        setupscript = os.path.join(stage.workdir,'setup_experiment.sh')
+        larbatch_posix.copy(abssetupscript, setupscript)
+        jobsub_workdir_files_args.extend(['-f', setupscript])
+        abssetupscript = ''
 
     # Copy and rename batch script to the work directory.
 
@@ -2819,6 +2825,8 @@ def dojobsub(project, stage, makeup, recur):
     if stage.end_script != '':
         command.extend([' --end-script',
                         os.path.join('.', os.path.basename(stage.end_script))])
+    if abssetupscript != '':
+        command.extend([' --init', abssetupscript])
 
 
     #print 'Will Validation will be done on the worker node %d' % stage.validate_on_worker
@@ -2870,7 +2878,8 @@ def dojobsub(project, stage, makeup, recur):
         # General options.
 
         start_command.append('--group=%s' % project_utilities.get_experiment())
-        start_command.append('-f %s' % setupscript)
+        if setupscript != '':
+            start_command.append('-f %s' % setupscript)
         #start_command.append('--role=%s' % role)
         if stage.resource != '':
             start_command.append('--resource-provides=usage_model=%s' % stage.resource)
@@ -2905,6 +2914,9 @@ def dojobsub(project, stage, makeup, recur):
         if recur:
             start_command.extend([' --recur'])
 
+        if abssetupscript != '':
+            start_command.extend([' --init', abssetupscript])
+
         # Output directory.
 
         start_command.extend([' --logdir', stage.logdir])
@@ -2920,7 +2932,8 @@ def dojobsub(project, stage, makeup, recur):
         # General options.
 
         stop_command.append('--group=%s' % project_utilities.get_experiment())
-        stop_command.append('-f %s' % setupscript)
+        if setupscript != '':
+            stop_command.append('-f %s' % setupscript)
         #stop_command.append('--role=%s' % role)
         if stage.resource != '':
             stop_command.append('--resource-provides=usage_model=%s' % stage.resource)
@@ -2954,6 +2967,9 @@ def dojobsub(project, stage, makeup, recur):
         # Output directory.
 
         stop_command.extend([' --logdir', stage.logdir])
+
+        if abssetupscript != '':
+            stop_command.extend([' --init', abssetupscript])
 
         # Done with start command.
 

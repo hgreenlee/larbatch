@@ -73,6 +73,7 @@
 # --init-source <arg>     - User initialization script to source (bash).
 # --end-script <arg>      - User end-of-job script to execute.
 # --exe <arg>             - Specify art-like executable (default "lar").
+# --init <path>           - Absolute path of environment initialization script.
 #
 # End options.
 #
@@ -187,6 +188,13 @@
 #     command line options or fcl wrappers) should be handled by user
 #     provided initialization scripts (--init-script, --init-source).
 #
+# 11. Option --init <path> is optional.  If specified, it should point to
+#     the absolute path of the experiment environment initialization script,
+#     which path must be visible from the batch worker (e.g. /cvmfs/...).
+#     If this option is not specified, this script will look for and source
+#     a script with hardwired name "setup_experiment.sh" in directory
+#     ${CONDIR_DIR_INPUT}.
+#
 #
 # Created: H. Greenlee, 29-Aug-2012
 #
@@ -247,6 +255,7 @@ VALIDATE_IN_JOB=0
 COPY_TO_FTS=0
 MAINTAIN_PARENTAGE=0
 EXE="lar"
+INIT=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -613,6 +622,14 @@ while [ $# -gt 0 ]; do
       fi
       ;;
 
+    # Specify environment initialization script path.
+    --init )
+      if [ $# -gt 1 ]; then
+        INIT=$2
+        shift
+      fi
+      ;;
+
     # Other.
     * )
       echo "Unknown option $1"
@@ -699,8 +716,17 @@ echo "Condor dir input: $CONDOR_DIR_INPUT"
 
 echo "Initializing ups and mrb."
 
-echo "Sourcing setup_experiment.sh"
-source ${CONDOR_DIR_INPUT}/setup_experiment.sh
+if [ x$INIT != x ]; then
+  if [ ! -f $INIT ]; then
+    echo "Environment initialization script $INIT not found."
+    exit 1
+  fi
+  echo "Sourcing $INIT"
+  source $INIT
+else
+  echo "Sourcing setup_experiment.sh"
+  source ${CONDOR_DIR_INPUT}/setup_experiment.sh
+fi
 
 echo PRODUCTS=$PRODUCTS
 
@@ -741,13 +767,13 @@ if [ $GRID -ne 0 ]; then
   # It affects the ownership of copied back files.
 
   echo "X509_USER_PROXY = $X509_USER_PROXY"
-  if ! echo $X509_USER_PROXY | grep -q Production; then
-    FORCE=expgridftp
-    IFDH_OPT="--force=$FORCE"
-  else
-    FORCE=gridftp
-    IFDH_OPT="--force=$FORCE"
-  fi
+  #if ! echo $X509_USER_PROXY | grep -q Production; then
+  #  FORCE=expgridftp
+  #  IFDH_OPT="--force=$FORCE"
+  #else
+  #  FORCE=gridftp
+  #  IFDH_OPT="--force=$FORCE"
+  #fi
 fi
 echo "IFDH_OPT=$IFDH_OPT"
 
@@ -1834,9 +1860,9 @@ done
 
 # Clean remote output and log directories.
 
-if [  1 -eq 0 ]; then
-  export IFDH_FORCE=$FORCE #this isn't set when running interactive, causing problems...
-fi
+#if [  1 -eq 0 ]; then
+#  export IFDH_FORCE=$FORCE #this isn't set when running interactive, causing problems...
+#fi
 
 for dir in ${LOGDIR} ${OUTDIR}
 do
