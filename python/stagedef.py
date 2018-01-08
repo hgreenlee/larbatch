@@ -41,6 +41,7 @@ class StageDef:
             self.inputfile = base_stage.inputfile
             self.inputlist = base_stage.inputlist
             self.inputmode = base_stage.inputmode
+            self.basedef = base_stage.basedef
             self.inputdef = base_stage.inputdef
             self.inputstream = base_stage.inputstream
             self.previousstage = base_stage.previousstage
@@ -54,6 +55,9 @@ class StageDef:
             self.output_run = base_stage.output_run
             self.output_subruns = base_stage.output_subruns
             self.output_version = base_stage.output_version
+            self.recur = base_stage.recur
+            self.recurtype = base_stage.recurtype
+            self.recurlimit = base_stage.recurlimit
             self.maxfluxfilemb = base_stage.maxfluxfilemb
             self.num_jobs = base_stage.num_jobs
             self.num_events = base_stage.num_events
@@ -94,6 +98,7 @@ class StageDef:
             self.inputfile = ''    # Single input file.
             self.inputlist = ''    # Input file list.
             self.inputmode = ''    # Input file type (none or textfile)
+            self.basedef = ''      # Base sam dataset definition.
             self.inputdef = ''     # Input sam dataset definition.
             self.inputstream = ''  # Input file stream.
             self.previousstage = '' # Previous stage name.
@@ -107,6 +112,9 @@ class StageDef:
             self.output_run = 0    # Pubs output run.
             self.output_subruns = [] # Pubs output subrun number.
             self.output_version = 0 # Pubs output version number.
+            self.recur = 0         # Recursive flag.
+            self.recurtype = ''    # Recursive type.
+            self.recurlimit = 0    # Recursive limit.
             self.maxfluxfilemb = 0 # MaxFluxFileMB (size of genie flux files to fetch).
             self.num_jobs = default_num_jobs # Number of jobs.
             self.num_events = default_num_events # Number of events.
@@ -211,6 +219,26 @@ class StageDef:
         inputdef_elements = stage_element.getElementsByTagName('inputdef')
         if inputdef_elements:
             self.inputdef = str(inputdef_elements[0].firstChild.data)
+
+        # Recursive type (subelement).
+
+        recurtype_elements = stage_element.getElementsByTagName('recurtype')
+        if recurtype_elements:
+            self.recurtype = str(recurtype_elements[0].firstChild.data)
+
+        # Recursive limit (subelement).
+
+        recurlimit_elements = stage_element.getElementsByTagName('recurlimit')
+        if recurlimit_elements:
+            self.recurlimit = int(recurlimit_elements[0].firstChild.data)
+
+        # Recursive input sam dataset dfeinition (subelement).
+
+        recurdef_elements = stage_element.getElementsByTagName('recurdef')
+        if recurdef_elements:
+            self.basedef = self.inputdef
+            self.inputdef = str(recurdef_elements[0].firstChild.data)
+            self.recur = 1
 
         # Input stream (subelement).
 
@@ -561,7 +589,13 @@ class StageDef:
         result += 'Input file = %s\n' % self.inputfile
         result += 'Input list = %s\n' % self.inputlist
         result += 'Input mode = %s\n' % self.inputmode
-        result += 'Input sam dataset = %s\n' % self.inputdef
+        result += 'Input sam dataset = %s' % self.inputdef
+        if self.recur:
+            result += ' (recursive)'
+        result += '\n'
+        result += 'Base sam dataset = %s\n' % self.basedef
+        result += 'Recursive type = %s\n' % self.recurtype
+        result += 'Recursive limit = %d\n' % self.recurlimit
         result += 'Input stream = %s\n' % self.inputstream
         result += 'Previous stage name = %s\n' % self.previousstage
         result += 'Mix input sam dataset = %s\n' % self.mixinputdef

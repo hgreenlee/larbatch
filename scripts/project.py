@@ -230,6 +230,36 @@
 # <stage><pubsinput> - 0 (false) or 1 (true).  If true, modify input file list
 #                      for specific (run, subrun, version) in pubs mode.  Default is true.
 # <stage><maxfluxfilemb> - Specify GENIEHelper fcl parameter MaxFluxFileMB.
+#
+# <stage><recurdef>   - Specify recursive (aka draining) input dataset name.  Can be 
+#                       a predefined dataset definition or project.py can define it 
+#                       for you.
+#
+#                       The dataset specified by <recurdef> is used as input in preference
+#                       to <inputdef> (if specified).  Another effect of specifying 
+#                       <recurdef> is the same as using command line option "--recur."
+#
+#                       If you want project.py to create a recursive dataset definition
+#                       for you, specify both <recurdef> and <inputdef>.  Then 
+#                       project.py will create a dataset definition (if one doesn't exist)
+#                       using <intputdef> as base, and adding optional "minus" and/or
+#                       "with limit" clause in the sam dimension.  
+#
+# <stage><recurtype>  - Specify the type of minus clause to use in a an automatically
+#                       generated recursive dataset definition.  If this element is
+#                       missing, the generated dataset definition will not include
+#                       a minus clause.
+#
+#                       Allowed values are:
+#
+#                       none     - Don't generate a minus clause.
+#                       snapshot - "minus snapshot_for_project_name ...".
+#                       consumed - "minus (project_name ... and consumed_status consumed)"
+#
+# <stage><recurlimit> - Specify an integer value for "with limit" clause.  If this 
+#                       element is missing or the value is zero, the generated dataset
+#                       definition will not include a "with limit" clause.
+#
 # <stage><numjobs> - Number of worker jobs (default 1).
 # <stage><numevents> - Number of events (override project level number of events).
 # <stage><maxfilesperjob> - Maximum number of files to deliver to a single job
@@ -3740,12 +3770,58 @@ def main(argv):
             stage.inputdef = inputdef
             stage.inputfile = ''
             stage.inputlist = ''
+        if recur != 0:
+            stage.recur = recur
 
         # Pubs mode overrides handled here.
 
         if pubs:
             stage.pubsify_input(pubs_run, pubs_subruns, pubs_version)
             stage.pubsify_output(pubs_run, pubs_subruns, pubs_version)
+
+        # Make recursive dataset definition here, if necessary.
+
+        if stage.recur and stage.inputdef != '' and stage.basedef != '':
+
+            # First check if stage.inptudef already exists.
+
+            import_samweb()
+            def_exists = False
+            try:
+                desc = samweb.descDefinition(defname=stage.inputdef)
+                def_exists = True
+            except samweb_cli.exceptions.DefinitionNotFound:
+                pass
+
+            if not def_exists:
+
+                # Recurcive definition doesn't exist, so create it.
+
+                project_utilities.test_kca()
+
+                # Start sam dimension with the base dataset.
+
+                dim = 'defname: %s' % stage.basedef
+
+                # Add minus clause.
+
+                if stage.recurtype == 'snapshot':
+                    dim += ' minus snapshot_for_project_name %s_%%' % stage.inputdef
+                elif stage.recurtype == 'consumed':
+                    dim += ' minus (project_name %s_%% and consumed_status consumed)' % stage.inputdef
+                elif stage.recurtype != '' and stage.recurtype != 'none':
+                    raise RuntimeError, 'Unknown recursive type %s.' % stage.recurtype
+
+                # Add "with limit" clause.
+
+                if stage.recurlimit != 0:
+                    dim += ' with limit %d' % stage.recurlimit
+
+                # Create definition.
+
+                print 'Creating recursive dataset definition %s' % stage.inputdef
+                samweb.createDefinition(defname=stage.inputdef, dims=dim)
+
 
     # Do dump stage action now.
 
@@ -3830,7 +3906,7 @@ def main(argv):
         for stagename in stagenames:
             print 'Stage %s:' % stagename
             stage = stages[stagename]
-            dosubmit(project, stage, makeup, recur)
+            dosubmit(project, stage, makeup, stage.recur)
 
     if check or checkana:
 
