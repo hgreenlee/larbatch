@@ -47,7 +47,7 @@
 # --submit     - Submit all jobs for specified stage.
 # --recur      - Input dataset is recursive.  Used in conjunction with --submit, 
 #                allows job submission even if output directories are not empty.
-#                Also forces a new snapshot.
+#                Also forces a new snapshot in case of input from sam.
 # --check      - Check results for specified stage and print message.
 # --checkana   - Check analysis results for specified stage and print message.
 # --shorten    - Shorten root filenames to have fewer than than 200 characters.
@@ -229,15 +229,20 @@
 # <stage><mixinputdef> - Specify mix input from a sam dataset.
 # <stage><pubsinput> - 0 (false) or 1 (true).  If true, modify input file list
 #                      for specific (run, subrun, version) in pubs mode.  Default is true.
-# <stage><maxfluxfilemb> - Specify GENIEHelper fcl parameter MaxFluxFileMB.
+# <stage><maxfluxfilemb> - Specify GENIEHelper fcl parameter MaxFluxFileMB (default 500).
+#                          Specifying this parameter as 0 will inhibit genie flux fcl 
+#                          overrides, which may be useful for non-genie generators.
+#                          
 #
+# <stage><recur>      - Recursive flag (0 or 1).  Same as command line option --recur.
 # <stage><recurdef>   - Specify recursive (aka draining) input dataset name.  Can be 
 #                       a predefined dataset definition or project.py can define it 
 #                       for you.
 #
 #                       The dataset specified by <recurdef> is used as input in preference
-#                       to <inputdef> (if specified).  Another effect of specifying 
-#                       <recurdef> is the same as using command line option "--recur."
+#                       to <inputdef> (if specified).
+#
+#                       This element also implicitly sets the recursive flag.
 #
 #                       If you want project.py to create a recursive dataset definition
 #                       for you, specify both <recurdef> and <inputdef>.  Then 
@@ -259,6 +264,12 @@
 # <stage><recurlimit> - Specify an integer value for "with limit" clause.  If this 
 #                       element is missing or the value is zero, the generated dataset
 #                       definition will not include a "with limit" clause.
+#
+# <stage><ana>        - Analysis flag (0 or 1, default 0).  Setting this flag to 1
+#                       informs project.py that this stage does not contain a RootOutput
+#                       module, and not to expect any artroot output file.  This flag
+#                       effectively converts command line action options to the
+#                       analysis equivalent (e.g. --check acts like --checkana).
 #
 # <stage><numjobs> - Number of worker jobs (default 1).
 # <stage><numevents> - Number of events (override project level number of events).
@@ -3915,7 +3926,7 @@ def main(argv):
         for stagename in stagenames:
             print 'Stage %s:' % stagename
             stage = stages[stagename]
-            docheck(project, stage, checkana, stage.validate_on_worker)
+            docheck(project, stage, checkana or stage.ana, stage.validate_on_worker)
 
     if fetchlog:
 
@@ -3952,11 +3963,18 @@ def main(argv):
         for stagename in stagenames:
             print 'Stage %s:' % stagename
             stage = stages[stagename]
-            if stage.defname == '':
-                print 'No sam dataset definition name specified for this stage.'
-                return 1
-            dim = project_utilities.dimensions(project, stage, ana=False)
-            docheck_definition(stage.defname, dim, define)
+            if stage.ana:
+                if stage.ana_defname == '':
+                    print 'No sam analysis dataset definition name specified for this stage.'
+                    return 1
+                dim = project_utilities.dimensions(project, stage, ana=True)
+                docheck_definition(stage.ana_defname, dim, define)
+            else:
+                if stage.defname == '':
+                    print 'No sam dataset definition name specified for this stage.'
+                    return 1
+                dim = project_utilities.dimensions(project, stage, ana=False)
+                docheck_definition(stage.defname, dim, define)
 
     if check_definition_ana or define_ana:
 
@@ -3978,10 +3996,16 @@ def main(argv):
         for stagename in stagenames:
             print 'Stage %s:' % stagename
             stage = stages[stagename]
-            if stage.defname == '':
-                print 'No sam dataset definition name specified for this stage.'
-                return 1
-            rc += dotest_definition(stage.defname)
+            if stage.ana:
+                if stage.ana_defname == '':
+                    print 'No sam dataset definition name specified for this stage.'
+                    return 1
+                rc += dotest_definition(stage.ana_defname)
+            else:
+                if stage.defname == '':
+                    print 'No sam dataset definition name specified for this stage.'
+                    return 1
+                rc += dotest_definition(stage.defname)
 
     if test_definition_ana:
 
@@ -4014,7 +4038,7 @@ def main(argv):
         for stagename in stagenames:
             print 'Stage %s:' % stagename
             stage = stages[stagename]
-            docheck_declarations(stage.bookdir, stage.outdir, declare, ana=False)
+            docheck_declarations(stage.bookdir, stage.outdir, declare, ana=stage.ana)
 
     if check_declarations_ana or declare_ana:
 
@@ -4032,7 +4056,7 @@ def main(argv):
         for stagename in stagenames:
             print 'Stage %s:' % stagename
             stage = stages[stagename]
-            dim = project_utilities.dimensions(project, stage, ana=False)
+            dim = project_utilities.dimensions(project, stage, ana=stage.ana)
             rc += dotest_declarations(dim)
 
     if test_declarations_ana:
@@ -4052,7 +4076,7 @@ def main(argv):
         for stagename in stagenames:
             print 'Stage %s:' % stagename
             stage = stages[stagename]
-            dim = project_utilities.dimensions(project, stage)
+            dim = project_utilities.dimensions(project, stage, ana=stage.ana)
             docheck_locations(dim, stage.outdir,
                               add_locations, clean_locations, remove_locations,
                               upload)
@@ -4077,7 +4101,7 @@ def main(argv):
         for stagename in stagenames:
             print 'Stage %s:' % stagename
             stage = stages[stagename]
-            dim = project_utilities.dimensions(project, stage)
+            dim = project_utilities.dimensions(project, stage, ana=stage.ana)
             docheck_tape(dim)
 
     if check_tape_ana:

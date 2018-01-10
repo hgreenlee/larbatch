@@ -55,6 +55,7 @@ class StageDef:
             self.output_run = base_stage.output_run
             self.output_subruns = base_stage.output_subruns
             self.output_version = base_stage.output_version
+            self.ana = base_stage.ana
             self.recur = base_stage.recur
             self.recurtype = base_stage.recurtype
             self.recurlimit = base_stage.recurlimit
@@ -112,6 +113,7 @@ class StageDef:
             self.output_run = 0    # Pubs output run.
             self.output_subruns = [] # Pubs output subrun number.
             self.output_version = 0 # Pubs output version number.
+            self.ana = 0           # Analysis flag.
             self.recur = 0         # Recursive flag.
             self.recurtype = ''    # Recursive type.
             self.recurlimit = 0    # Recursive limit.
@@ -219,6 +221,18 @@ class StageDef:
         inputdef_elements = stage_element.getElementsByTagName('inputdef')
         if inputdef_elements:
             self.inputdef = str(inputdef_elements[0].firstChild.data)
+
+        # Analysis flag (subelement).
+
+        ana_elements = stage_element.getElementsByTagName('ana')
+        if ana_elements:
+            self.ana = int(ana_elements[0].firstChild.data)
+
+        # Recursive flag (subelement).
+
+        recur_elements = stage_element.getElementsByTagName('recur')
+        if recur_elements:
+            self.recur = int(recur_elements[0].firstChild.data)
 
         # Recursive type (subelement).
 
@@ -594,6 +608,8 @@ class StageDef:
             result += ' (recursive)'
         result += '\n'
         result += 'Base sam dataset = %s\n' % self.basedef
+        result += 'Analysis flag = %d\n' % self.ana
+        result += 'Recursive flag = %d\n' % self.recur
         result += 'Recursive type = %s\n' % self.recurtype
         result += 'Recursive limit = %d\n' % self.recurlimit
         result += 'Input stream = %s\n' % self.inputstream
