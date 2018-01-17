@@ -740,12 +740,6 @@ if [ x$IFDHC_DIR = x ]; then
 fi
 echo "IFDHC_DIR=$IFDHC_DIR"
 
-# Set up sam_web_client (needed for take snapshot).
-
-echo "Setting up sam_web_client."
-setup sam_web_client
-echo "SAM_WEB_CLIENT_DIR = $SAM_WEB_CLIENT_DIR"
-
 # Set GROUP environment variable.
 
 unset GROUP
@@ -1354,8 +1348,8 @@ EOF
         # If recursive flag, take snapshot of input dataset.
 
           if [ $RECUR -ne 0 ]; then
-            echo "Taking snapshot of dataset $SAM_DEFNAME"
-            samweb -e $EXPERIMENT take-snapshot $SAM_DEFNAME
+            echo "Forcing snapshot"
+            SAM_DEFNAME=${SAM_DEFNAME}:force
           fi
 
         # Start the project.
@@ -1783,7 +1777,12 @@ if [ $VALIDATE_IN_JOB -eq 1 ]; then
     #If SAM was used, get the parent files based on the cpid
     if [ $USE_SAM -ne 0 ]; then
       id=`cat cpid.txt`
-      parent_files=($(samweb list-files consumer_process_id=$id and consumed_status consumed))
+      parent_files=($(ifdh translateConstraints "consumer_process_id=$id and consumed_status consumed"))
+      stat=$?
+      if [ $stat -ne 0 ]; then
+        echo "Failed to determine parentage."
+        exit 1
+      fi
     fi
     
     echo "The file's parents are: "

@@ -337,9 +337,11 @@ def main():
                         samweb.declareFile(md=md)
              
                     except:
-                        if md.has_key('parents'):         	     
-                            del md['parents']
-                            samweb.declareFile(md=md)
+                        #if md.has_key('parents'):         	     
+                        #    del md['parents']
+                        #    samweb.declareFile(md=md)
+                        print 'SAM declare failed.'
+                        return 1
 	    	     
                 else:
                     print 'No sam metadata found for %s.' % fn
@@ -395,9 +397,11 @@ def main():
                         samweb.declareFile(md=md)
              
                     except:
-                        if md.has_key('parents'):         	     
-                            del md['parents']
-                            samweb.declareFile(md=md)
+                        #if md.has_key('parents'):         	     
+                        #    del md['parents']
+                        #    samweb.declareFile(md=md)
+                        print 'SAM declare failed.'
+                        return 1
 	    	     
                 else:
                     print 'No sam metadata found for %s.' % fn
