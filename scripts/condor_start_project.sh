@@ -240,12 +240,37 @@ fi
 
 # Start the project.
 
+nostart=1
 echo "Starting project ${SAM_PROJECT}."
 ifdh startProject $SAM_PROJECT $SAM_STATION $SAM_DEFNAME $SAM_USER $SAM_GROUP
 if [ $? -eq 0 ]; then
   echo "Project successfully started."
+  nostart=0
 else
   echo "Start project error status $?"
+fi
+
+# Check the project snapshot.
+
+nf=0
+if [ $nostart -eq 0 ]; then
+  nf=`ifdh translateConstraints "snapshot_for_project_name $SAM_PROJECT" | wc -l`
+  echo "Project snapshot contains $nf files."
+fi
+
+# Abort if snapshot contains zero files.  Stop project and eventually exit with error status.
+
+if [ $nostart -eq 0 -a $nf -eq 0 ]; then
+  echo "Stopping project."
+  nostart=1
+  PURL=`ifdh findProject $SAM_PROJECT $SAM_STATION`
+  if [ x$PURL != x ]; then
+    echo "Project url: $PURL"
+    ifdh endProject $PURL
+    if [ $? -eq 0 ]; then
+      echo "Project successfully stopped."
+    fi
+  fi
 fi
 
 # Stash all of the files we want to save in a local
@@ -269,3 +294,7 @@ if [ x$LOGDIR != x ]; then
     exit $stat
   fi 
 fi
+
+# Done.  Set exit status to reflect whether project was started (0=success).
+
+exit $nostart
