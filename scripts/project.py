@@ -2424,7 +2424,7 @@ def dojobsub(project, stage, makeup, recur):
       # In case of generator jobs, add override for pubs run number
       # (subrun number is overridden inside condor_lar.sh).
 
-      if not stage.pubs_input and stage.pubs_output:
+      if (not stage.pubs_input and stage.pubs_output) or stage.output_run:
         wrapper_fcl.write('source.firstRun: %d\n' % stage.output_run)
 
       # Add overrides for genie flux parameters.

@@ -1583,7 +1583,7 @@ EOF
   #echo "Outfile is $OUTFILE"
    
 
-  next_stage_input=`ls -t1 *.root | egrep -v 'hist|larlite|larcv' | head -n1`
+  next_stage_input=`ls -t1 *.root | egrep -v 'hist|larlite|larcv|TGraphs' | head -n1`
 
   mixed_file=`sam_metadata_dumper $next_stage_input | grep mixparent | awk -F ":" '{gsub("\"" ,""); gsub(",",""); gsub(" ",""); print $2}'`
  
@@ -1941,30 +1941,29 @@ do
   fi
 done
 
-if [ "$( ls -A out )" ]; then
-  date
-  echo "ifdh cp -D $IFDH_OPT out/* ${OUTDIR}/$OUTPUT_SUBDIR"
-  ifdh cp -D $IFDH_OPT out/* ${OUTDIR}/$OUTPUT_SUBDIR
-  date
-  stat=$?
-  if [ $stat -ne 0 ]; then
-    echo "ifdh cp failed with status ${stat}."
-  fi
-fi
+if [ $COPY_TO_FTS -eq 0 ]; then
 
-for subrun in ${subruns[*]}
-do
-  date
-  echo "ifdh cp -D $IFDH_OPT out${subrun}/* ${outdirs[$subrun]}/$OUTPUT_SUBDIR"
-  ifdh cp -D $IFDH_OPT out${subrun}/* ${outdirs[$subrun]}/$OUTPUT_SUBDIR
-  date
-  stat=$?
-  if [ $stat -ne 0 ]; then
-    echo "ifdh cp failed with status ${stat}."
+  if [ "$( ls -A out )" ]; then
+    echo "ifdh cp -D $IFDH_OPT out/* ${OUTDIR}/$OUTPUT_SUBDIR"
+    ifdh cp -D $IFDH_OPT out/* ${OUTDIR}/$OUTPUT_SUBDIR
+    stat=$?
+    if [ $stat -ne 0 ]; then
+      echo "ifdh cp failed with status ${stat}."
+    fi
   fi
-    statout=$stat 
 
-done   
+  for subrun in ${subruns[*]}
+  do
+    echo "ifdh cp -D $IFDH_OPT out${subrun}/* ${outdirs[$subrun]}/$OUTPUT_SUBDIR"
+    ifdh cp -D $IFDH_OPT out${subrun}/* ${outdirs[$subrun]}/$OUTPUT_SUBDIR
+    stat=$?
+    if [ $stat -ne 0 ]; then
+      echo "ifdh cp failed with status ${stat}."
+    fi
+      statout=$stat 
+
+  done   
+fi  
 
 if [ $statout -eq 0 ]; then
   statout=`cat lar.stat`

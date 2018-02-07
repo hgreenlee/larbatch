@@ -362,6 +362,13 @@ class StageDef:
         max_files_per_job_elements = stage_element.getElementsByTagName('maxfilesperjob')
         if max_files_per_job_elements:
             self.max_files_per_job = int(max_files_per_job_elements[0].firstChild.data)
+	
+	# Run number of events (MC Gen only).
+	#overriden by --pubs <run> is running in pubs mode
+
+        run_number = stage_element.getElementsByTagName('runnumber')
+        if run_number:
+            self.output_run = int(run_number[0].firstChild.data)    
 
         # Target size for output files (subelement).
 

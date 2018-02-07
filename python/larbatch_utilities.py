@@ -102,7 +102,7 @@ def ifdh_cp(source, destination):
     q = Queue.Queue()
     thread = threading.Thread(target=wait_for_subprocess, args=[jobinfo, q])
     thread.start()
-    thread.join(timeout=600)
+    thread.join(timeout=3600)
     if thread.is_alive():
         print 'Terminating subprocess.'
         jobinfo.terminate()
