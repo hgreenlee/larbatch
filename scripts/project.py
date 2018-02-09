@@ -2519,7 +2519,8 @@ def dojobsub(project, stage, makeup, recur):
                'subruns.py',
                'validate_in_job.py',
                'mkdir.py',
-               'emptydir.py')
+               'emptydir.py',
+               'file_to_url.sh')
 
     for helper in helpers:
 

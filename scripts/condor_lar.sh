@@ -1069,9 +1069,12 @@ echo "IFDHC_DIR=$IFDHC_DIR"
 
 # Get input files to process, either single file, file list, or sam.
 #
-# For non-sam input, copy all files local using ifdh cp, and make a 
+# For non-sam non-xrootd input, copy all files local using ifdh cp, and make a 
 # local file list called condor_lar_input.list.  Save the remote file names (uri's)
 # in another file called transferred_uris.list
+#
+# For non-sam xrootd input ("--sam_schema root") convert input list to xrootd uri's,
+# if possible.
 
 rm -f condor_lar_input.list
 rm -f transferred_uris.list
@@ -1094,23 +1097,33 @@ if [ $USE_SAM -eq 0 -a x$INFILE != x ]; then
   #set the parent file to be the input file
   parent_files=("${parent_files[@]}" $INFILE)
 
-  # Copy input file to scratch directoroy.
+  # Copy input file to scratch directoroy or convert to xrootd url.
 
   NFILE_TOTAL=1
-  LOCAL_INFILE=`basename $INFILE`
-  echo "Copying $INFILE"
-  ifdh cp $INFILE $LOCAL_INFILE
-  stat=$?
-  if [ $stat -ne 0 ]; then
-    echo "ifdh cp failed with status ${stat}."
-    exit $stat
-  fi 
-  if [ -f $LOCAL_INFILE -a $stat -eq 0 ]; then
+  XROOTD_URI=$INFILE
+  if [ x$SAM_SCHEMA = xroot ]; then
+    XROOTD_URI=`file_to_url.sh $INFILE`
+  fi
+  if [ $XROOTD_URI != $INFILE ]; then
     echo $INFILE > transferred_uris.list
-    echo $LOCAL_INFILE > condor_lar_input.list
+    echo $XROOTD_URI > condor_lar_input.list
+    echo "Input xrootd uri: $XROOTD_URI"
   else
-    echo "Error fetching input file ${INFILE}."
-    exit 1
+    LOCAL_INFILE=`basename $INFILE`
+    echo "Copying $INFILE"
+    ifdh cp $INFILE $LOCAL_INFILE
+    stat=$?
+    if [ $stat -ne 0 ]; then
+      echo "ifdh cp failed with status ${stat}."
+      exit $stat
+    fi 
+    if [ -f $LOCAL_INFILE -a $stat -eq 0 ]; then
+      echo $INFILE > transferred_uris.list
+      echo $LOCAL_INFILE > condor_lar_input.list
+    else
+      echo "Error fetching input file ${INFILE}."
+      exit 1
+    fi
   fi
 
 elif [ $USE_SAM -eq 0 -a x$INLIST != x ]; then
@@ -1198,27 +1211,38 @@ elif [ $USE_SAM -eq 0 -a x$INLIST != x ]; then
       if [ ! -f condor_lar_input.list ]; then
         touch condor_lar_input.list
       fi
-      LOCAL_INFILE=`basename $infile`
-      if grep -q $LOCAL_INFILE condor_lar_input.list; then
-        LOCAL_INFILE=input${nfile}.root
-	if [ "$INMODE" = 'textfile' ]; then
-	  LOCAL_INFILE=input${nfile}.txt
-	fi
+
+      XROOTD_URI=$infile
+      if [ x$SAM_SCHEMA = xroot ]; then
+        XROOTD_URI=`file_to_url.sh $infile`
       fi
-      echo "Copying $infile"
-      ifdh cp $infile $LOCAL_INFILE
-      stat=$?
-      if [ $stat -ne 0 ]; then
-        echo "ifdh cp failed with status ${stat}."
-        exit $stat
-      fi 
-      if [ -f $LOCAL_INFILE -a $stat -eq 0 ]; then
-        echo $infile >> transferred_uris.list
-        echo $LOCAL_INFILE >> condor_lar_input.list
-	parent_files=("${parent_files[@]}" $LOCAL_INFILE)
+      if [ $XROOTD_URI != $infile ]; then
+        echo $infile > transferred_uris.list
+        echo $XROOTD_URI > condor_lar_input.list
+        echo "Input xrootd uri: $XROOTD_URI"
       else
-        echo "Error fetching input file ${infile}."
-        exit 1
+        LOCAL_INFILE=`basename $infile`
+        if grep -q $LOCAL_INFILE condor_lar_input.list; then
+          LOCAL_INFILE=input${nfile}.root
+	  if [ "$INMODE" = 'textfile' ]; then
+	    LOCAL_INFILE=input${nfile}.txt
+	  fi
+        fi
+        echo "Copying $infile"
+        ifdh cp $infile $LOCAL_INFILE
+        stat=$?
+        if [ $stat -ne 0 ]; then
+          echo "ifdh cp failed with status ${stat}."
+          exit $stat
+        fi
+        if [ -f $LOCAL_INFILE -a $stat -eq 0 ]; then
+          echo $infile >> transferred_uris.list
+          echo $LOCAL_INFILE >> condor_lar_input.list
+	  parent_files=("${parent_files[@]}" $LOCAL_INFILE)
+        else
+          echo "Error fetching input file ${infile}."
+          exit 1
+        fi
       fi
       nmax=$(( $nmax - 1 ))
       if [ $nmax -eq 0 ]; then
@@ -1230,7 +1254,7 @@ elif [ $USE_SAM -eq 0 -a x$INLIST != x ]; then
 fi
 
 NFILE_LOCAL=0
-if [ $USE_SAM -eq 0 ]; then
+if [ $USE_SAM -eq 0 -a x$SAM_SCHEMA != xroot ]; then
   if [ -f condor_lar_input.list ]; then
 
     # Sort input list by decreasing size so we don't get a file with
@@ -1631,7 +1655,7 @@ fi
 
 # Delete input files.
 
-if [ $USE_SAM -eq 0 -a -f condor_lar_input.list ]; then
+if [ $USE_SAM -eq 0 -a x$SAM_SCHEMA != xroot -a -f condor_lar_input.list ]; then
   while read file; do
     rm -f $file
   done < condor_lar_input.list
