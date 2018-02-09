@@ -687,6 +687,12 @@ if [ x$SAM_STATION = x ]; then
   SAM_STATION=$GRP
 fi
 
+# Standardize sam_schema (xrootd -> root).
+
+if [ x$SAM_SCHEMA = xxrootd ]; then
+  SAM_SCHEMA=root
+fi
+
 # Fix for sites with newer linux kernels:
 
 case `uname -r` in
