@@ -16,6 +16,7 @@
 # -g, --grid          - Be grid-friendly.
 # --recur             - Recursive input dataset (force snapshot).
 # --init <path>       - Absolute path of environment initialization script (optional).
+# --max_files <n>     - Specify the maximum number of files to include in this project.
 #
 # End options.
 #
@@ -34,6 +35,7 @@ LOGDIR=""
 GRID=0
 RECUR=0
 INIT=""
+MAX_FILES=0
 IFDH_OPT=""
 
 while [ $# -gt 0 ]; do
@@ -107,6 +109,14 @@ while [ $# -gt 0 ]; do
     --init )
       if [ $# -gt 1 ]; then
         INIT=$2
+        shift
+      fi
+      ;;
+
+    # Specify the maximum number of files for this project.
+    --max_files )
+      if [ $# -gt 1 ]; then
+        MAX_FILES=$2
         shift
       fi
       ;;
@@ -230,6 +240,39 @@ fi
 # Save the project name in a file.
 
 echo $SAM_PROJECT > sam_project.txt
+
+# Do some preliminary tests on the input dataset definition.
+# If dataset definition returns zero files at this point, abort the job.
+# If dataset definition returns too many files compared to --max_files, create
+# a new dataset definition by adding a "with limit" clause.
+
+nf=`ifdh translateConstraints "defname: $SAM_DEFNAME" | wc -l`
+if [ $nf -eq 0 ]; then
+  echo "Input dataset $SAM_DEFNAME is empty."
+  exit 1
+fi
+if [ $MAX_FILES -ne 0 -a $nf -gt $MAX_FILES ]; then 
+  limitdef=${SAM_DEFNAME}_limit_$MAX_FILES
+
+  # Check whether limit def already exists.
+  # Have to parse commd output because ifdh returns wrong status.
+
+  existdef=`ifdh describeDefinition $limitdef 2>/dev/null | grep 'Definition Name:' | wc -l`
+  if [ $existdef -gt 0 ]; then
+    echo "Using already created limited dataset definition ${limitdef}."
+  else
+    ifdh createDefinition $limitdef "defname: $SAM_DEFNAME with limit $MAX_FILES" $SAM_USER $SAM_GROUP
+
+    # Assume command worked, because it returns the wrong status.
+
+    echo "Created limited dataset definition ${limitdef}."
+  fi
+
+  # If we get to here, we know that we want to user $limitdef instead of $SAM_DEFNAME
+  # as the input sam dataset definition.
+
+  SAM_DEFNAME=$limitdef
+fi
 
 # If recursive flag, take snapshot of input dataset.
 
