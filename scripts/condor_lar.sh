@@ -1944,11 +1944,14 @@ statout=0
 export IFDH_CP_MAXRETRIES=3
 echo "ls log"
 ls log
-echo "ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR"
+#echo "ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR"
+echo "ifdh cp -D $IFDH_OPT log/log*.tar ${LOGDIR}/$OUTPUT_SUBDIR"
 if [ "$( ls -A log )" ]; then
   date
-  echo "ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR"
-  ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR
+  #echo "ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR"
+  echo "ifdh cp -D $IFDH_OPT log/log*.tar ${LOGDIR}/$OUTPUT_SUBDIR"
+  #ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR
+  ifdh cp -D $IFDH_OPT log/log*.tar ${LOGDIR}/$OUTPUT_SUBDIR
   date
   stat=$?
   if [ $stat -ne 0 ]; then
@@ -1961,8 +1964,10 @@ do
   echo "ls log$subrun"
   ls log$subrun
   date
-  echo "ifdh cp -D $IFDH_OPT log${subrun}/* ${logdirs[$subrun]}/$OUTPUT_SUBDIR"
-  ifdh cp -D $IFDH_OPT log${subrun}/* ${logdirs[$subrun]}/$OUTPUT_SUBDIR
+  #echo "ifdh cp -D $IFDH_OPT log${subrun}/* ${logdirs[$subrun]}/$OUTPUT_SUBDIR"
+  echo "ifdh cp -D $IFDH_OPT log${subrun}/log*.tar ${logdirs[$subrun]}/$OUTPUT_SUBDIR"
+  #ifdh cp -D $IFDH_OPT log${subrun}/* ${logdirs[$subrun]}/$OUTPUT_SUBDIR
+  ifdh cp -D $IFDH_OPT log${subrun}/log*.tar ${logdirs[$subrun]}/$OUTPUT_SUBDIR
   date
   stat=$?
   if [ $stat -ne 0 ]; then

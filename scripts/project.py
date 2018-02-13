@@ -890,11 +890,6 @@ def doshorten(stage):
 
 def untarlog(stage):
 
-    # If bookdir is the same as logdir, don't do anything.
-
-    if stage.bookdir == stage.logdir:
-        return
-
     # Walk over logdir to look for log files.
 
     for log_subpath, subdirs, files in larbatch_posix.walk(stage.logdir):
@@ -911,24 +906,54 @@ def untarlog(stage):
             if file.startswith('log') and file.endswith('.tar'):
                 src = '%s/%s' % (log_subpath, file)
                 dst = '%s/%s' % (book_subpath, file)
-                if not larbatch_posix.exists(dst):
+                flag = '%s.done' % dst
+
+                # Decide if we need to copy this tarball to bookdir.
+
+                if dst != src and not larbatch_posix.exists(flag):
 
                     # Copy tarball to bookdir.
 
-                    print 'Untar %s into %s' % (src, book_subpath)
+                    print 'Copying tarball %s into %s' % (src, book_subpath)
                     if not larbatch_posix.isdir(book_subpath):
                         larbatch_posix.makedirs(book_subpath)
                     larbatch_posix.copy(src, dst)
 
+                # Decide if we need to extract this tarball into bookdir.
+
+                if not larbatch_posix.exists(flag):
+
                     # Extract tarball.
 
-                    jobinfo = subprocess.Popen(['tar','-xf', dst, '-C', book_subpath],
+                    print 'Extracting tarball %s' % dst
+                    jobinfo = subprocess.Popen(['tar','-xf', dst, '-C', book_subpath,
+                                                '--exclude=*.txt',
+                                                '--exclude=*.fcl',
+                                                '--exclude=*.sh',
+                                                '--exclude=*.py*',
+                                                '--exclude=*.tar',
+                                                '--exclude=*.out',
+                                                '--exclude=*.err'],
                                                stdout=subprocess.PIPE,
                                                stderr=subprocess.PIPE)
                     jobout, joberr = jobinfo.communicate()
                     rc = jobinfo.poll()
                     if rc != 0:
+                        print jobout
+                        print joberr
                         raise RuntimeError, 'Failed to extract log tarball in %s' % dst
+                    else:
+
+                        # Create flag file.
+
+                        f = larbatch_posix.open(flag, 'w')
+                        f.write('\n')         # Don't want zero size file.
+                        f.close()
+
+                        # Delete copy of tarball.
+
+                        if dst != src:
+                            larbatch_posix.remove(dst)
 
     return
 
