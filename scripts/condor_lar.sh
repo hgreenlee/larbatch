@@ -1375,6 +1375,39 @@ EOF
     if [ $SAM_START -ne 0 ]; then
       if [ x$SAM_DEFNAME != x ]; then
 
+        # Do some preliminary tests on the input dataset definition.
+        # If dataset definition returns zero files at this point, abort the job.
+        # If dataset definition returns too many files compared to --nfile, create
+        # a new dataset definition by adding a "with limit" clause.
+
+        nf=`ifdh translateConstraints "defname: $SAM_DEFNAME" | wc -l`
+        if [ $nf -eq 0 ]; then
+          echo "Input dataset $SAM_DEFNAME is empty."
+          exit 1
+        fi
+        if [ $NFILE -ne 0 -a $nf -gt $NFILE ]; then 
+          limitdef=${SAM_DEFNAME}_limit_$NFILE
+
+          # Check whether limit def already exists.
+          # Have to parse commd output because ifdh returns wrong status.
+
+          existdef=`ifdh describeDefinition $limitdef 2>/dev/null | grep 'Definition Name:' | wc -l`
+          if [ $existdef -gt 0 ]; then
+            echo "Using already created limited dataset definition ${limitdef}."
+          else
+            ifdh createDefinition $limitdef "defname: $SAM_DEFNAME with limit $NFILE" $SAM_USER $SAM_GROUP
+
+            # Assume command worked, because it returns the wrong status.
+
+            echo "Created limited dataset definition ${limitdef}."
+          fi
+
+          # If we get to here, we know that we want to user $limitdef instead of $SAM_DEFNAME
+          # as the input sam dataset definition.
+
+          SAM_DEFNAME=$limitdef
+        fi
+
         # If recursive flag, take snapshot of input dataset.
 
           if [ $RECUR -ne 0 ]; then
