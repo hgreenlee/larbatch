@@ -1974,7 +1974,7 @@ else
 fi
 
 statout=0
-export IFDH_CP_MAXRETRIES=3
+export IFDH_CP_MAXRETRIES=5
 echo "ls log"
 ls log
 #echo "ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR"
