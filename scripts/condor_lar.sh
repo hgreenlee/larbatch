@@ -1223,8 +1223,8 @@ elif [ $USE_SAM -eq 0 -a x$INLIST != x ]; then
         XROOTD_URI=`file_to_url.sh $infile`
       fi
       if [ $XROOTD_URI != $infile ]; then
-        echo $infile > transferred_uris.list
-        echo $XROOTD_URI > condor_lar_input.list
+        echo $infile >> transferred_uris.list
+        echo $XROOTD_URI >> condor_lar_input.list
         echo "Input xrootd uri: $XROOTD_URI"
       else
         LOCAL_INFILE=`basename $infile`
