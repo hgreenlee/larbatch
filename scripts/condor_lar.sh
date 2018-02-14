@@ -1910,13 +1910,14 @@ done
 
 # Make a tarball of each log directory, and save the tarball in its own log directory.
 
-rm -f log0.tar
-tar -cjf log0.tar -C log .
-mv log0.tar log
+#rm -f log0.tar
+#tar -cjf log0.tar -C log .
+#mv log0.tar log
 for subrun in ${subruns[*]}
 do
   rm -f log.tar
-  tar -cjf log.tar -C log$subrun .
+  tar -cf log.tar -C log$subrun .
+  tar -rf log.tar -C log .
   mv log.tar log$subrun/log_s${subrun}.tar
 done
 
@@ -1980,15 +1981,17 @@ ls log
 #echo "ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR"
 echo "ifdh cp -D $IFDH_OPT log/log*.tar ${LOGDIR}/$OUTPUT_SUBDIR"
 if [ "$( ls -A log )" ]; then
-  date
-  #echo "ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR"
-  echo "ifdh cp -D $IFDH_OPT log/log*.tar ${LOGDIR}/$OUTPUT_SUBDIR"
-  #ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR
-  ifdh cp -D $IFDH_OPT log/log*.tar ${LOGDIR}/$OUTPUT_SUBDIR
-  date
-  stat=$?
-  if [ $stat -ne 0 ]; then
-    echo "ifdh cp failed with status ${stat}."
+  if [ -f log/log*.tar ]; then
+    date
+    #echo "ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR"
+    echo "ifdh cp -D $IFDH_OPT log/log*.tar ${LOGDIR}/$OUTPUT_SUBDIR"
+    #ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR
+    ifdh cp -D $IFDH_OPT log/log*.tar ${LOGDIR}/$OUTPUT_SUBDIR
+    date
+    stat=$?
+    if [ $stat -ne 0 ]; then
+      echo "ifdh cp failed with status ${stat}."
+    fi
   fi
 fi
 
