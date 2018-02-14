@@ -942,7 +942,8 @@ def untarlog(stage):
                     if rc != 0:
                         print jobout
                         print joberr
-                        raise RuntimeError, 'Failed to extract log tarball in %s' % dst
+                        print 'Failed to extract log tarball in %s' % dst
+
                     else:
 
                         # Create flag file.
