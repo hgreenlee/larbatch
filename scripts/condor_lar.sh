@@ -1817,6 +1817,11 @@ fi
 
 for root in *.root; do
   subrun=`./subruns.py $root | awk 'NR==1{print $2}'`
+  
+  if [ x$subrun = x ]; then
+    subrun=0
+  fi
+  
   mv $root out$subrun
   mv ${root}.json log$subrun
 done
