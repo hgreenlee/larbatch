@@ -1727,14 +1727,16 @@ if [ $USE_SAM -eq 0 -a x$INFILE = x -a x$INLIST = x ]; then
 fi
 
 for root in *.root; do
-  nc=`echo $root | wc -c`
-  if [ -f ${root}.json -o $ran != 0 -o $nc -ge 200 ]; then
-    echo "Move file 1 $root"
-    base=`basename $root .root | cut -c1-150`_`uuidgen`
-    echo "Move file 2 $base"
-    mv $root ${base}.root
-    if [ -f ${root}.json ]; then
-      mv ${root}.json ${base}.root.json
+  if [ -f $root ]; then
+    nc=`echo $root | wc -c`
+    if [ -f ${root}.json -o $ran != 0 -o $nc -ge 200 ]; then
+      echo "Move file 1 $root"
+      base=`basename $root .root | cut -c1-150`_`uuidgen`
+      echo "Move file 2 $base"
+      mv $root ${base}.root
+      if [ -f ${root}.json ]; then
+        mv ${root}.json ${base}.root.json
+      fi
     fi
   fi
 done
@@ -1749,28 +1751,28 @@ declare -a outdirs
 declare -a logdirs
 declare -a subruns
 for root in *.root; do
-  json=${root}.json
-  if [ -f $json ]; then
-    ./root_metadata.py $root > ${json}2
-    ./merge_json.py $json ${json}2 > ${json}3
-    mv -f ${json}3 $json
-    rm ${json}2
-  else
-    ./root_metadata.py $root > $json
+  if [ -f $root ]; then
+    json=${root}.json
+    if [ -f $json ]; then
+      ./root_metadata.py $root > ${json}2
+      ./merge_json.py $json ${json}2 > ${json}3
+      mv -f ${json}3 $json
+      rm ${json}2
+    else
+      ./root_metadata.py $root > $json
+    fi
+    subrun=`./subruns.py $root | awk 'NR==1{print $2}'`
+    if [ x$subrun = x ]; then
+      subrun=0
+    fi
+    subruns[$subrun]=$subrun
+    outdirs[$subrun]=`echo $OUTDIR | sed "s/@s/$subrun/"`
+    echo "Output directory for subrun $subrun is ${outdirs[$subrun]}"
+    mkdir out$subrun
+    logdirs[$subrun]=`echo $LOGDIR | sed "s/@s/$subrun/"`    
+    echo "Log directory for subrun $subrun is ${logdirs[$subrun]}"
+    mkdir log$subrun
   fi
-  subrun=`./subruns.py $root | awk 'NR==1{print $2}'`
-  if [ x$subrun = x ]; then
-    subrun=0
-  fi
-  subruns[$subrun]=$subrun
-  outdirs[$subrun]=`echo $OUTDIR | sed "s/@s/$subrun/"`
-  echo "Output directory for subrun $subrun is ${outdirs[$subrun]}"
-  mkdir out$subrun
-  logdirs[$subrun]=`echo $LOGDIR | sed "s/@s/$subrun/"`    
-  echo "Log directory for subrun $subrun is ${logdirs[$subrun]}"
-  mkdir log$subrun
-  
-  
 done
 
 #create a master lar.stat file which contains the overall exit code of all stages
@@ -1778,14 +1780,6 @@ stageStat=0
 overallStat=0
 while [ $stageStat -lt $nfcls ]; do
   stat=`cat larStage$stageStat.stat`
-  if [[ "$stat" = 65 && $ART_VERSION < v2_01 ]]; then
-   # Workaround TimeTracker crash bug for input files with zero events. 
-    for json in *.json; do  
-        if grep -q '"events": *"0"' $json; then
-         stat=0
-        fi
-    done
-  fi    
   overallStat=$[$stat+$overallStat]
   
   #do some cleanup of intermediate files
@@ -1816,14 +1810,16 @@ fi
 # Note that .root files never get replicated.
 
 for root in *.root; do
-  subrun=`./subruns.py $root | awk 'NR==1{print $2}'`
+  if [ -f $root ]; then
+    subrun=`./subruns.py $root | awk 'NR==1{print $2}'`
   
-  if [ x$subrun = x ]; then
-    subrun=0
+    if [ x$subrun = x ]; then
+      subrun=0
+    fi
+  
+    mv $root out$subrun
+    mv ${root}.json log$subrun
   fi
-  
-  mv $root out$subrun
-  mv ${root}.json log$subrun
 done
 
 # Copy any remaining files into all log subdirectories.
