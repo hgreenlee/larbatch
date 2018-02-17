@@ -927,7 +927,6 @@ def untarlog(stage):
 
                     print 'Extracting tarball %s' % dst
                     jobinfo = subprocess.Popen(['tar','-xf', dst, '-C', book_subpath,
-                                                '--exclude=*.txt',
                                                 '--exclude=*.db',
                                                 '--exclude=*.fcl',
                                                 '--exclude=*.sh',
