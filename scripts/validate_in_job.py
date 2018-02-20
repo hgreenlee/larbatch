@@ -362,6 +362,7 @@ def main():
 	     
             for histpath in hists:
 
+                declare_ok = False
                 fn   = os.path.basename(histpath)
                 print 'Declaring %s' % fn
                 json_file = os.path.join(logdir, fn + '.json')
@@ -399,19 +400,20 @@ def main():
       
                     try:
                         samweb.declareFile(md=md)
+                        declare_ok = True
              
                     except:
                         #if md.has_key('parents'):         	     
                         #    del md['parents']
                         #    samweb.declareFile(md=md)
                         print 'SAM declare failed.'
-                        return 1
+                        declare_ok = False
 	    	     
                 else:
                     print 'No sam metadata found for %s.' % fn
-                    status = 1
+                    declare_ok = False
 	     
-                if copy_to_dropbox == 1:
+                if copy_to_dropbox == 1 and declare_ok:
                     print "Copying to Dropbox"
                     dropbox_dir = project_utilities.get_dropbox(fn)
                     rootPath = dropbox_dir + "/" + fn
