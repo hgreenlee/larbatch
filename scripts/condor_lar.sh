@@ -1780,6 +1780,14 @@ stageStat=0
 overallStat=0
 while [ $stageStat -lt $nfcls ]; do
   stat=`cat larStage$stageStat.stat`
+  if [[ "$stat" = 65 && $ART_VERSION < v2_01 ]]; then
+   # Workaround TimeTracker crash bug for input files with zero events. 
+    for json in *.json; do  
+        if grep -q '"events": *"0"' $json; then
+         stat=0
+        fi
+    done
+  fi    
   overallStat=$[$stat+$overallStat]
   
   #do some cleanup of intermediate files
