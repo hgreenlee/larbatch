@@ -312,6 +312,13 @@ def addLayerTwo(path, recreate=True):
         for var in save_vars.keys():
             os.environ[var] = save_vars[var]
 
+# This function returns jobsub_submit options that should be included for 
+# all batch submissions.
+
+def default_jobsub_submit_options():
+    opt = '--append_condor_requirements=\'(TARGET.HAS_CVMFS_%s_opensciencegrid_org==true)\'' % get_experiment()
+    return opt
+
 # Check the health status of the batch system and any other resources that 
 # are required to submit batch jobs successfully.  The idea is that this 
 # function may be called before submitting batch jobs.  If this function 

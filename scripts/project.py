@@ -2818,6 +2818,10 @@ def dojobsub(project, stage, makeup, recur):
     if stage.jobsub != '':
         for word in stage.jobsub.split():
             command.append(word)
+    opt = project_utilities.default_jobsub_submit_options()
+    if opt != '':
+        for word in opt.split():
+            command.append(word)
 
     # Batch script.
 
@@ -2968,6 +2972,10 @@ def dojobsub(project, stage, makeup, recur):
         if stage.jobsub_start != '':
             for word in stage.jobsub_start.split():
                 start_command.append(word)
+        opt = project_utilities.default_jobsub_submit_options()
+        if opt != '':
+            for word in opt.split():
+                start_command.append(word)
 
         # Start project script.
 
@@ -3024,6 +3032,10 @@ def dojobsub(project, stage, makeup, recur):
             stop_command.append('--OS=%s' % project.os)
         if stage.jobsub_start != '':
             for word in stage.jobsub_start.split():
+                stop_command.append(word)
+        opt = project_utilities.default_jobsub_submit_options()
+        if opt != '':
+            for word in opt.split():
                 stop_command.append(word)
 
         # Stop project script.
