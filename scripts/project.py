@@ -2996,7 +2996,7 @@ def dojobsub(project, stage, makeup, recur):
             start_command.extend([' --init', abssetupscript])
 
         if stage.num_jobs > 0 and stage.max_files_per_job > 0:
-            start_command.extend([' --max_files', '%d' % stage.num_jobs * stage.max_files_per_job])
+            start_command.extend([' --max_files', '%d' % (stage.num_jobs * stage.max_files_per_job)])
 
         # Output directory.
 

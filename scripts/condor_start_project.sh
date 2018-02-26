@@ -250,6 +250,8 @@ nf=`ifdh translateConstraints "defname: $SAM_DEFNAME" | wc -l`
 if [ $nf -eq 0 ]; then
   echo "Input dataset $SAM_DEFNAME is empty."
   exit 1
+else
+  echo "Input dataset contains $nf files."
 fi
 if [ $MAX_FILES -ne 0 -a $nf -gt $MAX_FILES ]; then 
   limitdef=${SAM_DEFNAME}_limit_$MAX_FILES
