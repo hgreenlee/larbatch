@@ -590,7 +590,8 @@ class ProjectApp(tk.Frame):
         try:
             top['cursor'] = 'watch'
             top.update_idletasks()
-            project.dosubmit(self.current_project_def, self.current_stage_def, makeup=False)
+            project.dosubmit(self.current_project_def, self.current_stage_def, makeup=False,
+                             recur=self.current_stage_def.recur)
             top['cursor'] = old_cursor
         except:
             top['cursor'] = old_cursor
@@ -615,7 +616,8 @@ class ProjectApp(tk.Frame):
         try:
             top['cursor'] = 'watch'
             top.update_idletasks()
-            project.dosubmit(self.current_project_def, self.current_stage_def, makeup=True)
+            project.dosubmit(self.current_project_def, self.current_stage_def, makeup=True,
+                             recur=self.current_stage_def.recur)
             top['cursor'] = old_cursor
         except:
             top['cursor'] = old_cursor
