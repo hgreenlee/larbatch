@@ -3875,6 +3875,7 @@ def main(argv):
                 # Create definition.
 
                 print 'Creating recursive dataset definition %s' % stage.inputdef
+                project_utilities.test_kca()
                 samweb.createDefinition(defname=stage.inputdef, dims=dim)
 
 
