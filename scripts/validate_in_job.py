@@ -322,8 +322,6 @@ def main():
                 jobs_aunts   = os.getenv('JOBS_AUNTS', '').split(" ")
                 if(jobs_parents[0] != '' ):
                     md['parents'] = [{'file_name': parent} for parent in jobs_parents]
-                else:
-                    del md['parents']
                 if(jobs_aunts[0] != '' ):
                     for aunt in jobs_aunts:
                         mixparent_dict = {'file_name': aunt}
