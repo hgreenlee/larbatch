@@ -1053,7 +1053,7 @@ for prd in `echo $UPS_PRDS | tr , ' '`
 do
   if ! ups active | grep -q $prd; then
     echo "Setting up $prd $REL -q ${QUAL}."
-    if [ x$IFDHC_DIR != x ]; then
+    if [ x$IFDHC_DIR != x -a x$IFBEAM_DIR = x ]; then
       unsetup ifdhc
     fi
     setup $prd $REL -q $QUAL
