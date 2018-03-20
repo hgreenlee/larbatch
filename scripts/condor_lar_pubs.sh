@@ -36,6 +36,10 @@
 # --sam_schema <arg>      - Use this option with argument "root" to stream files using
 #                           xrootd.  Leave this option out for standard file copy.
 # --njobs <arg>           - Parallel project with specified number of jobs (default one).
+# --single                - Specify that the output and log directories will be emptied
+#                           by the batch worker, and therefore the output and log
+#                           directories will only ever contain output from a single
+#                           worker.
 #
 # Mix input options (second input stream).
 #
@@ -56,9 +60,9 @@
 #
 # -h, --help              - Print help.
 # -i, --interactive       - For interactive use.
-# -g, --grid              - No effect (allowed for compatibility).
+# -g, --grid              - Be grid-friendly.
 # --group <arg>           - Group or experiment (required).
-# --workdir <arg>         - No effect (allowed for compatibility).
+# --workdir <arg>         - Work directory (required).
 # --outdir <arg>          - Output directory (required).
 # --logdir <arg>          - Log directory (required).
 # --scratch <arg>         - Scratch directory (only for interactive).
@@ -106,12 +110,17 @@
 #     work directory are copied to the batch worker scratch directory at
 #     the start of the job.
 #
-# 3.  A local test release may be specified as an absolute path using
+# 3.  The job configuration file (-c option), initialization and end-of-job
+#     scripts (optins --init-script, --init-source, --end-script) may
+#     be stored in the work directory specified by option --workdir, or they
+#     may be specified as absolute paths visible on the worker node.
+#
+# 4.  A local test release may be specified as an absolute path using
 #     --localdir, or a tarball using --localtar.  The location of the tarball
 #     may be specified as an absolute path visible on the worker, or a 
 #     relative path relative to the work directory.
 #
-# 4.  The output directory must exist and be writable by the batch
+# 5.  The output directory must exist and be writable by the batch
 #     worker (i.e. be group-writable for grid jobs).  The worker
 #     makes a new subdirectory called ${CLUSTER}_${PROCESS} in the output
 #     directory and copies all files in the batch scratch directory there 
@@ -119,7 +128,7 @@
 #     default is /grid/data/<group>/outstage/<user> (user is defined as 
 #     owner of work directory).
 #
-# 5.  Parallel projects are specified whenever --njobs is specified to
+# 6.  Parallel projects are specified whenever --njobs is specified to
 #     be greater than one.  Parallel projects are supported for single file,
 #     file list, and sam project input.
 #
@@ -147,7 +156,7 @@
 #     scratch directory and deletes processed input files during job execution.
 #
 #
-# 6.  Using option -n or --nevts to limit number of events processed: 
+# 7.  Using option -n or --nevts to limit number of events processed: 
 #
 #     a) If no input files are specified (e.g. mc generation), --nevts
 #        specifies total number of events among all workers.
@@ -156,28 +165,35 @@
 #        events processed by each worker or from each input file, whichever
 #        is less.
 #
-# 7.  The interactive option (-i or --interactive) allows this script
+# 8.  The interactive option (-i or --interactive) allows this script
 #     to be run interactively by overriding some settings that are normally
 #     obtained from the batch system, including $CLUSTER, $PROCESS, and
 #     the scratch directory.  Interactive jobs always set PROCESS=0 (unless
 #     overridden by --process).
 #
-# 8. Mix options (--mix_defname, --mix_project) are only partially handled
-#    in this script.  These options are parsed and their values are stored
-#    in shell variables.  It is assumed that the sam project specified
-#    by --mix_project has been started externally, unless --sam_start is
-#    also specified, in which case this script will start the project.  
-#    This script does not include any provision for joining the project.
-#    Further processing of these options (joining sam project, generating
-#    command line options or fcl wrappers) should be handled by user
-#    provided initialization scripts (--init-script, --init-source).
+# 9.  The grid option (-g or --grid) instructs this script to use grid-
+#     friendly tools.  This means that there must be no direct access to
+#     bluearc disks.  File transfers are done using gridftp or other
+#     grid-friendly protocol.  Local test releases are not allowed to 
+#     be specified as directories (--localdir), but may be specified as
+#     tarballs (--localtar).
 #
-# 9. Option --init <path> is optional.  If specified, it should point to
-#    the absolute path of the experiment environment initialization script,
-#    which path must be visible from the batch worker (e.g. /cvmfs/...).
-#    If this option is not specified, this script will look for and source
-#    a script with hardwired name "setup_experiment.sh" in directory
-#    ${CONDIR_DIR_INPUT}.
+# 10. Mix options (--mix_defname, --mix_project) are only partially handled
+#     in this script.  These options are parsed and their values are stored
+#     in shell variables.  It is assumed that the sam project specified
+#     by --mix_project has been started externally, unless --sam_start is
+#     also specified, in which case this script will start the project.  
+#     This script does not include any provision for joining the project.
+#     Further processing of these options (joining sam project, generating
+#     command line options or fcl wrappers) should be handled by user
+#     provided initialization scripts (--init-script, --init-source).
+#
+# 11. Option --init <path> is optional.  If specified, it should point to
+#     the absolute path of the experiment environment initialization script,
+#     which path must be visible from the batch worker (e.g. /cvmfs/...).
+#     If this option is not specified, this script will look for and source
+#     a script with hardwired name "setup_experiment.sh" in directory
+#     ${CONDIR_DIR_INPUT}.
 #
 #
 # Created: H. Greenlee, 29-Aug-2012
@@ -201,6 +217,7 @@ SUBRUN=1
 NFILE=0
 NFILE_SKIP=0
 NJOBS=1
+SINGLE=0
 ARGS=""
 UPS_PRDS=""
 REL=""
@@ -209,6 +226,7 @@ LOCALDIR=""
 LOCALTAR=""
 INTERACTIVE=0
 GRP=""
+WORKDIR=""
 OUTDIR=""
 LOGDIR=""
 SCRATCH=""
@@ -230,6 +248,7 @@ USE_SAM=0
 MIX_DEFNAME=""
 MIX_PROJECT=""
 MIX_SAM=0
+GRID=0
 IFDH_OPT=""
 DECLARE_IN_JOB=0
 VALIDATE_IN_JOB=0
@@ -333,6 +352,11 @@ while [ $# -gt 0 ]; do
         NJOBS=$2
         shift
       fi
+      ;;
+
+    # Single worker mode.
+    --single )
+      SINGLE=1
       ;;
 
     # Sam user.
@@ -459,8 +483,9 @@ while [ $# -gt 0 ]; do
       INTERACTIVE=1
       ;;
 
-    # Grid flag (no effect).
+    # Grid flag.
     -g|--grid )
+      GRID=1
       ;;
 
     # Group.
@@ -474,6 +499,7 @@ while [ $# -gt 0 ]; do
     # Work directory.
     --workdir )
       if [ $# -gt 1 ]; then
+        WORKDIR=$2
         shift
       fi
       ;;
@@ -629,6 +655,7 @@ done
 #echo "LOCALTAR=$LOCALTAR"
 #echo "INTERACTIVE=$INTERACTIVE"
 #echo "GRP=$GRP"
+#echo "WORKDIR=$WORKDIR"
 #echo "OUTDIR=$OUTDIR"
 #echo "LOGDIR=$LOGDIR"
 #echo "SCRATCH=$SCRATCH"
@@ -660,12 +687,9 @@ if [ x$SAM_STATION = x ]; then
   SAM_STATION=$GRP
 fi
 
-# Standardize sam_schema (xrootd -> root, xroot -> root).
+# Standardize sam_schema (xrootd -> root).
 
 if [ x$SAM_SCHEMA = xxrootd ]; then
-  SAM_SCHEMA=root
-fi
-if [ x$SAM_SCHEMA = xxroot ]; then
   SAM_SCHEMA=root
 fi
 
@@ -677,6 +701,20 @@ case `uname -r` in
 esac
 echo "uname -r: `uname -r`"
 echo "UPS_OVERRIDE: $UPS_OVERRIDE"
+
+# Make sure work directory is defined and exists.
+
+if [ x$WORKDIR = x ]; then
+  echo "Work directory not specified."
+  exit 1
+fi
+if [ $GRID -eq 0 -a ! -d $WORKDIR ]; then
+  echo "Work directory $WORKDIR does not exist."
+  exit 1
+fi
+echo "Work directory: $WORKDIR"
+
+
 
 echo "Condor dir input: $CONDOR_DIR_INPUT"
 
@@ -698,6 +736,16 @@ fi
 
 echo PRODUCTS=$PRODUCTS
 
+# Ifdh may already be setup by jobsub wrapper.
+# If not, set it up here.
+
+echo "IFDHC_DIR=$IFDHC_DIR"
+if [ x$IFDHC_DIR = x ]; then
+  echo "Setting up ifdhc, because jobsub did not set it up."
+  setup ifdhc
+fi
+echo "IFDHC_DIR=$IFDHC_DIR"
+
 # Set GROUP environment variable.
 
 unset GROUP
@@ -712,7 +760,21 @@ echo "Group: $GROUP"
 
 # Set options for ifdh.
 
-echo "X509_USER_PROXY = $X509_USER_PROXY"
+if [ $GRID -ne 0 ]; then
+
+  # Figure out if this is a production job.
+  # This option is only used when copying back output.
+  # It affects the ownership of copied back files.
+
+  echo "X509_USER_PROXY = $X509_USER_PROXY"
+  #if ! echo $X509_USER_PROXY | grep -q Production; then
+  #  FORCE=expgridftp
+  #  IFDH_OPT="--force=$FORCE"
+  #else
+  #  FORCE=gridftp
+  #  IFDH_OPT="--force=$FORCE"
+  #fi
+fi
 echo "IFDH_OPT=$IFDH_OPT"
 
 # Make sure fcl file argument was specified.
@@ -728,6 +790,10 @@ if [ x$OUTDIR = x ]; then
   echo "Output directory not specified."
   exit 1
 fi
+if [ $GRID -eq 0 -a \( ! -d $OUTDIR -o ! -w $OUTDIR \) ]; then
+  echo "Output directory $OUTDIR does not exist or is not writable."
+  exit 1
+fi
 echo "Output directory: $OUTDIR"
 
 # Make sure log directory exists and is writable.
@@ -736,7 +802,23 @@ if [ x$LOGDIR = x ]; then
   echo "Log directory not specified."
   exit 1
 fi
+if [ $GRID -eq 0 -a \( ! -d $LOGDIR -o ! -w $LOGDIR \) ]; then
+  echo "Log directory $LOGDIR does not exist or is not writable."
+  exit 1
+fi
 echo "Log directory: $LOGDIR"
+
+# See if we need to set umask for group write.
+
+if [ $GRID -eq 0 ]; then
+  OUTUSER=`stat -c %U $OUTDIR`
+  LOGUSER=`stat -c %U $LOGDIR`
+  CURUSER=`whoami`
+  if [ $OUTUSER != $CURUSER -o $LOGUSER != $CURUSER ]; then
+    echo "Setting umask for group write."
+    umask 002
+  fi
+fi
 
 # Make sure scratch directory is defined.
 # For batch, the scratch directory is always $_CONDOR_SCRATCH_DIR
@@ -1586,7 +1668,7 @@ EOF
 
 done
 
-# Done looping over stages.
+
 
 # Setup up current version of ifdhc (may be different than version setup by larsoft).
 
@@ -1661,7 +1743,13 @@ done
 
 # Calculate root metadata for all root files and save as json file.
 # If json metadata already exists, merge with newly geneated root metadata.
+# Extract a subrun number, if one exists.  Make remote (not necessarily unique) 
+# and local directories for root files with identifiable subrun numbers.
 
+subrun=''
+declare -a outdirs
+declare -a logdirs
+declare -a subruns
 for root in *.root; do
   if [ -f $root ]; then
     json=${root}.json
@@ -1673,6 +1761,17 @@ for root in *.root; do
     else
       ./root_metadata.py $root > $json
     fi
+    subrun=`./subruns.py $root | awk 'NR==1{print $2}'`
+    if [ x$subrun = x ]; then
+      subrun=0
+    fi
+    subruns[$subrun]=$subrun
+    outdirs[$subrun]=`echo $OUTDIR | sed "s/@s/$subrun/"`
+    echo "Output directory for subrun $subrun is ${outdirs[$subrun]}"
+    mkdir out$subrun
+    logdirs[$subrun]=`echo $LOGDIR | sed "s/@s/$subrun/"`    
+    echo "Log directory for subrun $subrun is ${logdirs[$subrun]}"
+    mkdir log$subrun
   fi
 done
 
@@ -1698,27 +1797,49 @@ done
 echo $overallStat > lar.stat
 valstat=0
 
-# Make local output directories for files that we have to save.
+# Make local output directories for files that don't have a subrun.
 
 mkdir out
 mkdir log
 
-# Stash all of the files we want to save in the local directories that we just created.
+# Make local files group write, if appropriate.
 
-# First move .root and corresponding .json files into the out and log subdirectories.
+if [ $GRID -eq 0 -a $OUTUSER != $CURUSER ]; then
+  chmod -R g+rw .
+fi
+
+
+
+# Stash all of the files we want to save in a local
+# directories with a unique name.  Then copy these directories
+# and their contents recursively.
+
+# First move .root and corresponding .json files into one subdirectory.
+# Note that .root files never get replicated.
 
 for root in *.root; do
   if [ -f $root ]; then
-    mv $root out
-    mv ${root}.json log
+    subrun=`./subruns.py $root | awk 'NR==1{print $2}'`
+  
+    if [ x$subrun = x ]; then
+      subrun=0
+    fi
+  
+    mv $root out$subrun
+    mv ${root}.json log$subrun
   fi
 done
 
-# Move any remaining files into the log subdirectory.
+# Copy any remaining files into all log subdirectories.
+# These small files may get replicated.
 
 for outfile in *; do
   if [ -f $outfile ]; then
-    mv $outfile log
+    cp $outfile log
+    for subrun in ${subruns[*]}
+    do
+      cp $outfile log$subrun
+    done
   fi
 done
 
@@ -1762,46 +1883,143 @@ if [ $VALIDATE_IN_JOB -eq 1 ]; then
 
     valstat=0
     curdir=`pwd`
-    cd $curdir/log
-    ./validate_in_job.py --dir $curdir/out --logfiledir $curdir/log --outdir $OUTDIR/$OUTPUT_SUBDIR --declare $DECLARE_IN_JOB --copy $COPY_TO_FTS
-    valstat=$?
-    cd $curdir
+    #cd $curdir/log
+    #./validate_in_job.py --dir $curdir/out --logfiledir $curdir/log --outdir $OUTDIR/$OUTPUT_SUBDIR --declare $DECLARE_IN_JOB --copy $COPY_TO_FTS
+    #valstat=$?
+    #cd $curdir
 
+    # Do validation for each subrun.
+
+    for subrun in ${subruns[*]}
+    do
+      cd $curdir/log$subrun
+      
+      ./validate_in_job.py --dir $curdir/out$subrun --logfiledir $curdir/log$subrun --outdir ${outdirs[$subrun]}/$OUTPUT_SUBDIR --declare $DECLARE_IN_JOB --copy $COPY_TO_FTS
+      subvalstat=$?
+      valstat=$(( $valstat + $subvalstat ))
+    done
+    cd $curdir
+    
 fi
 
-# Make a tarball of the log directory contents, and save the tarball in the log directory.
+# Remove duplicate files in log subdirectories, because they will cause ifdh to hang.
 
-rm -f log.tar
-tar -cjf log.tar -C log .
-mv log.tar log
+for outfile in log/*; do
+  for subrun in ${subruns[*]}
+  do
+    if [ ${logdirs[$subrun]} = $LOGDIR ]; then
+      dupfile=log$subrun/`basename $outfile`
+      if [ -f $dupfile ]; then
+        echo "Removing duplicate file ${dupfile}."
+        rm -f $dupfile
+      fi
+    fi
+  done
+done
 
-# Create remote output and log directories.
+# Make a tarball of each log directory, and save the tarball in its own log directory.
 
-export IFDH_CP_MAXRETRIES=5
+#rm -f log0.tar
+#tar -cjf log0.tar -C log .
+#mv log0.tar log
+for subrun in ${subruns[*]}
+do
+  rm -f log.tar
+  tar -cf log.tar -C log$subrun .
+  tar -rf log.tar -C log .
+  mv log.tar log$subrun/log_s${subrun}.tar
+done
+
+# Clean remote output and log directories.
+
+#if [  1 -eq 0 ]; then
+#  export IFDH_FORCE=$FORCE #this isn't set when running interactive, causing problems...
+#fi
 
 for dir in ${LOGDIR} ${OUTDIR}
 do
-  echo "Make directory ${dir}/${OUTPUT_SUBDIR}."
+  #echo $dir
+  echo "Make sure directory0 ${dir}/$OUTPUT_SUBDIR exists."
+  
+  #mkdir ${dir}/$OUTPUT_SUBDIR 
   date
-  ifdh mkdir $IFDH_OPT ${dir}/$OUTPUT_SUBDIR
-  echo "Done making directory ${dir}/${OUTPUT_SUBDIR}."
+  ./mkdir.py -v ${dir}/$OUTPUT_SUBDIR
+  echo "Make sure directory0 ${dir}/$OUTPUT_SUBDIR is empty."
+  date
+  ./emptydir.py -v ${dir}/$OUTPUT_SUBDIR
+  date
+  ./mkdir.py -v ${dir}/$OUTPUT_SUBDIR
+  echo "Directory0 ${dir}/$OUTPUT_SUBDIR clean ok."
   date
 done
 
-# Transfer tarbal in log subdirectory.
-
-statout=0
-echo "ls log"
-ls log
-echo "ifdh cp -D $IFDH_OPT log/log.tar ${LOGDIR}/$OUTPUT_SUBDIR"
-ifdh cp -D $IFDH_OPT log/log.tar ${LOGDIR}/$OUTPUT_SUBDIR
-date
-stat=$?
-if [ $stat -ne 0 ]; then
-  echo "ifdh cp failed with status ${stat}."
+if [ $SINGLE != 0 ]; then
+  for dir in ${logdirs[*]} ${outdirs[*]}
+  do
+    echo "Make sure directory1 $dir exists."
+    date
+    ./mkdir.py -v $dir
+    echo "Make sure directory1 $dir is empty."
+    date
+    ./emptydir.py -v $dir
+    date
+    ./mkdir.py -v $dir/$OUTPUT_SUBDIR
+    echo "Directory1 $dir/$OUTPUT_SUBDIR clean ok."
+    date
+  done
+else
+  for dir in ${logdirs[*]} ${outdirs[*]}
+  do
+    echo "Make sure directory2 ${dir}/$OUTPUT_SUBDIR exists."
+    date
+    ./mkdir.py -v ${dir}/$OUTPUT_SUBDIR
+    echo "Make sure directory2 ${dir}/$OUTPUT_SUBDIR is empty."
+    date
+    ./emptydir.py -v ${dir}/$OUTPUT_SUBDIR
+    date
+    ./mkdir.py -v ${dir}/$OUTPUT_SUBDIR
+    echo "Directory2 ${dir}/$OUTPUT_SUBDIR clean ok."
+    date
+  done
 fi
 
-# Transfer root files in out subdirectory.
+statout=0
+export IFDH_CP_MAXRETRIES=5
+echo "ls log"
+ls log
+#echo "ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR"
+echo "ifdh cp -D $IFDH_OPT log/log*.tar ${LOGDIR}/$OUTPUT_SUBDIR"
+if [ "$( ls -A log )" ]; then
+  if [ -f log/log*.tar ]; then
+    date
+    #echo "ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR"
+    echo "ifdh cp -D $IFDH_OPT log/log*.tar ${LOGDIR}/$OUTPUT_SUBDIR"
+    #ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR
+    ifdh cp -D $IFDH_OPT log/log*.tar ${LOGDIR}/$OUTPUT_SUBDIR
+    date
+    stat=$?
+    if [ $stat -ne 0 ]; then
+      echo "ifdh cp failed with status ${stat}."
+    fi
+  fi
+fi
+
+for subrun in ${subruns[*]}
+do
+  echo "ls log$subrun"
+  ls log$subrun
+  date
+  #echo "ifdh cp -D $IFDH_OPT log${subrun}/* ${logdirs[$subrun]}/$OUTPUT_SUBDIR"
+  echo "ifdh cp -D $IFDH_OPT log${subrun}/log*.tar ${logdirs[$subrun]}/$OUTPUT_SUBDIR"
+  #ifdh cp -D $IFDH_OPT log${subrun}/* ${logdirs[$subrun]}/$OUTPUT_SUBDIR
+  ifdh cp -D $IFDH_OPT log${subrun}/log*.tar ${logdirs[$subrun]}/$OUTPUT_SUBDIR
+  date
+  stat=$?
+  if [ $stat -ne 0 ]; then
+    echo "ifdh cp failed with status ${stat}."
+    statout=$stat
+  fi
+done
 
 if [ $COPY_TO_FTS -eq 0 ]; then
 
@@ -1814,6 +2032,17 @@ if [ $COPY_TO_FTS -eq 0 ]; then
     fi
   fi
 
+  for subrun in ${subruns[*]}
+  do
+    echo "ifdh cp -D $IFDH_OPT out${subrun}/* ${outdirs[$subrun]}/$OUTPUT_SUBDIR"
+    ifdh cp -D $IFDH_OPT out${subrun}/* ${outdirs[$subrun]}/$OUTPUT_SUBDIR
+    stat=$?
+    if [ $stat -ne 0 ]; then
+      echo "ifdh cp failed with status ${stat}."
+    fi
+      statout=$stat 
+
+  done   
 fi  
 
 if [ $statout -eq 0 ]; then
