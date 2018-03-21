@@ -13,10 +13,12 @@
 # --sam_defname <arg> - Sam dataset definition name (required).
 # --sam_project <arg> - Sam project name (required).
 # --logdir <arg>      - Specify log directory (optional). 
-# -g, --grid          - Be grid-friendly.
+# -g, --grid          - No effect (allowed for compatibility).
 # --recur             - Recursive input dataset (force snapshot).
 # --init <path>       - Absolute path of environment initialization script (optional).
 # --max_files <n>     - Specify the maximum number of files to include in this project.
+# --prestage_fraction - Fraction of files that should be prestaged.
+#                       Specify as floating point number between 0 and 1.
 #
 # End options.
 #
@@ -32,10 +34,10 @@ SAM_STATION=""
 SAM_DEFNAME=""
 SAM_PROJECT=""
 LOGDIR=""
-GRID=0
 RECUR=0
 INIT=""
 MAX_FILES=0
+PRESTAGE_FRACTION=0
 IFDH_OPT=""
 
 while [ $# -gt 0 ]; do
@@ -97,7 +99,6 @@ while [ $# -gt 0 ]; do
 
     # Grid flag.
     -g|--grid )
-      GRID=1
       ;;
 
     # Recursive flag.
@@ -121,6 +122,14 @@ while [ $# -gt 0 ]; do
       fi
       ;;
 
+    # Specify fraction of files that should be prestaged.
+    --prestage_fraction )
+      if [ $# -gt 1 ]; then
+        PRESTAGE_FRACTION=$2
+        shift
+      fi
+      ;;
+
     # Other.
     * )
       echo "Unknown option $1"
@@ -140,6 +149,8 @@ echo "Sam group: $SAM_GROUP"
 echo "Sam station: $SAM_STATION"
 echo "Sam dataset definition: $SAM_DEFNAME"
 echo "Sam project name: $SAM_PROJECT"
+echo "Recursive flag: $RECUR"
+echo "Prestage fraction: $PRESTAGE_FRACTION"
 
 # Complain if SAM_STATION is not defined.
 
@@ -199,12 +210,6 @@ echo "IFDHC_DIR=$IFDHC_DIR"
 
 # Set options for ifdh.
 
-#if [ $GRID -ne 0 ]; then
-#  echo "X509_USER_PROXY = $X509_USER_PROXY"
-#  if ! echo $X509_USER_PROXY | grep -q Production; then
-#    IFDH_OPT="--force=expgridftp"
-#  fi
-#fi
 echo "IFDH_OPT=$IFDH_OPT"
 
 # Create the scratch directory in the condor scratch diretory.
@@ -226,17 +231,6 @@ cd $TMP
 
 echo "Scratch directory: $TMP"
 
-# See if we need to set umask for group write.
-
-if [ $GRID -eq 0 -a x$LOGDIR != x ]; then
-  LOGUSER=`stat -c %U $LOGDIR`
-  CURUSER=`whoami`
-  if [ $LOGUSER != $CURUSER ]; then
-    echo "Setting umask for group write."
-    umask 002
-  fi
-fi
-
 # Save the project name in a file.
 
 echo $SAM_PROJECT > sam_project.txt
@@ -257,7 +251,7 @@ if [ $MAX_FILES -ne 0 -a $nf -gt $MAX_FILES ]; then
   limitdef=${SAM_DEFNAME}_limit_$MAX_FILES
 
   # Check whether limit def already exists.
-  # Have to parse commd output because ifdh returns wrong status.
+  # Have to parse command output because ifdh returns wrong status.
 
   existdef=`ifdh describeDefinition $limitdef 2>/dev/null | grep 'Definition Name:' | wc -l`
   if [ $existdef -gt 0 ]; then
@@ -274,9 +268,92 @@ if [ $MAX_FILES -ne 0 -a $nf -gt $MAX_FILES ]; then
   # as the input sam dataset definition.
 
   SAM_DEFNAME=$limitdef
+  nf=$MAX_FILES
 fi
 
-# If recursive flag, take snapshot of input dataset.
+# Calculate the number of files to prestage.
+
+npre=`echo "$PRESTAGE_FRACTION * $nf / 1" | bc`
+echo "Will attempt to prestage $npre files."
+
+# If number of prestage files is greater than zero, do prestage here.
+
+if [ $npre -gt 0 ]; then
+
+  # Generate name of prestage project.
+  # Here we use a safe name that won't drain recursive datasets (unlike "samweb prestage-dataset").
+
+  prjname=prestage_${SAM_DEFNAME}_`date +%Y%m%d_%H%M%S`
+  echo "Prestage project: $prjname"
+
+  # Start prestage project.
+
+  ifdh startProject $prjname $SAM_STATION $SAM_DEFNAME $SAM_USER $SAM_GROUP
+  if [ $? -ne 0 ]; then
+    echo "Failed to start prestage project."
+    exit 1
+  fi
+  echo "Prestage project started."
+
+  # Get prestage project url.
+
+  prjurl=`ifdh findProject $prjname $SAM_STATION`
+  if [ x$prjurl = x ]; then
+    echo "Unable to find url for project ${prjname}."
+    exit 1
+  fi
+
+  # Start consumer process.
+
+  node=`hostname`
+  appfamily=prestage
+  appname=prestage
+
+  echo "Starting consumer process."
+  cpid=`ifdh establishProcess $prjurl $appname 1 $node $SAM_USER $appfamily Prestage $npre`
+  if [ x$cpid = x ]; then
+    echo "Unable to start consumer process for project ${prjname}."
+    exit 1
+  fi
+  echo "Prestage consumer process ${cpid} started."
+
+  # Loop over files.
+
+  n=0
+  while true; do
+
+    # Get next file.
+    # When this command returns, the file is prestaged.
+
+    fileurl=`ifdh getNextFile $prjurl $cpid`
+    if [ $? -ne 0 -o x$fileurl = x ]; then
+      echo "No more files."
+      echo "$n files prestaged."
+      break
+    fi
+    filename=`basename $fileurl`
+    echo "$filename is prestaged."
+    n=$(( $n + 1 ))
+
+    # Release file.
+
+    ifdh updateFileStatus $prjurl $cpid $filename consumed
+
+  done
+
+  # End consumer process.
+
+  ifdh endProcess $prjurl $cpid
+  echo "Prestage consumer process stopped."
+
+  # End prestage project.
+
+  ifdh endProject $prjurl
+  echo "Prestage project stopped."
+
+fi
+
+# If recursive flag, force snapshot of input dataset.
 
 if [ $RECUR -ne 0 ]; then
   echo "Forcing snapshot"
@@ -333,8 +410,7 @@ if [ x$LOGDIR != x ]; then
   done
   echo "ifdh cp -r $IFDH_OPT $OUTPUT_SUBDIR ${LOGDIR}/$OUTPUT_SUBDIR"
   ifdh cp -r $IFDH_OPT $OUTPUT_SUBDIR ${LOGDIR}/$OUTPUT_SUBDIR
-  stat=$?
-  if [ $stat -ne 0 ]; then
+  if [ $? -ne 0 ]; then
     echo "ifdh cp failed with status ${stat}."
     exit $stat
   fi 

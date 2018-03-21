@@ -59,6 +59,7 @@ class StageDef:
             self.recur = base_stage.recur
             self.recurtype = base_stage.recurtype
             self.recurlimit = base_stage.recurlimit
+            self.prestagefraction = base_stage.prestagefraction
             self.maxfluxfilemb = base_stage.maxfluxfilemb
             self.num_jobs = base_stage.num_jobs
             self.num_events = base_stage.num_events
@@ -117,6 +118,7 @@ class StageDef:
             self.recur = 0         # Recursive flag.
             self.recurtype = ''    # Recursive type.
             self.recurlimit = 0    # Recursive limit.
+            self.prestagefraction = 0.  # Prestage fraction.
             self.maxfluxfilemb = 0 # MaxFluxFileMB (size of genie flux files to fetch).
             self.num_jobs = default_num_jobs # Number of jobs.
             self.num_events = default_num_events # Number of events.
@@ -253,6 +255,12 @@ class StageDef:
             self.basedef = self.inputdef
             self.inputdef = str(recurdef_elements[0].firstChild.data)
             self.recur = 1
+
+        # Prestage fraction (subelement).
+
+        prestagefraction_elements = stage_element.getElementsByTagName('prestagefraction')
+        if prestagefraction_elements:
+            self.prestagefraction = float(prestagefraction_elements[0].firstChild.data)
 
         # Input stream (subelement).
 
@@ -619,6 +627,7 @@ class StageDef:
         result += 'Recursive flag = %d\n' % self.recur
         result += 'Recursive type = %s\n' % self.recurtype
         result += 'Recursive limit = %d\n' % self.recurlimit
+        result += 'Prestage fraction = %f\n' % self.prestagefraction
         result += 'Input stream = %s\n' % self.inputstream
         result += 'Previous stage name = %s\n' % self.previousstage
         result += 'Mix input sam dataset = %s\n' % self.mixinputdef

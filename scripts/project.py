@@ -265,6 +265,12 @@
 #                       element is missing or the value is zero, the generated dataset
 #                       definition will not include a "with limit" clause.
 #
+# <stage><prestagefraction> - This parameter should be a floating point number between
+#                       0 and 1 (default 0).  If nonzero, the separate batch job that
+#                       starts the sam project (if any) will prestage at least the
+#                       specified fraction of files from the input sam project before
+#                       exiting.
+#
 # <stage><ana>        - Analysis flag (0 or 1, default 0).  Setting this flag to 1
 #                       informs project.py that this stage does not contain a RootOutput
 #                       module, and not to expect any artroot output file.  This flag
@@ -2997,6 +3003,9 @@ def dojobsub(project, stage, makeup, recur):
 
         if stage.num_jobs > 0 and stage.max_files_per_job > 0:
             start_command.extend([' --max_files', '%d' % (stage.num_jobs * stage.max_files_per_job)])
+
+        if stage.prestagefraction > 0.:
+            start_command.extend([' --prestage_fraction', '%f' % stage.prestagefraction])
 
         # Output directory.
 
