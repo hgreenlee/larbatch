@@ -184,8 +184,6 @@
 #
 #------------------------------------------------------------------
 
-cd
-
 # Parse arguments.
 
 FCL=""
@@ -1779,14 +1777,19 @@ mv log.tar log
 
 export IFDH_CP_MAXRETRIES=5
 
-for dir in ${LOGDIR} ${OUTDIR}
-do
-  echo "Make directory ${dir}/${OUTPUT_SUBDIR}."
+echo "Make directory ${LOGDIR}/${OUTPUT_SUBDIR}."
+date
+ifdh mkdir $IFDH_OPT ${LOGDIR}/$OUTPUT_SUBDIR
+echo "Done making directory ${LOGDIR}/${OUTPUT_SUBDIR}."
+date
+
+if [ ${OUTDIR} != ${LOGDIR} ]; then
+  echo "Make directory ${OUTDIR}/${OUTPUT_SUBDIR}."
   date
-  ifdh mkdir $IFDH_OPT ${dir}/$OUTPUT_SUBDIR
-  echo "Done making directory ${dir}/${OUTPUT_SUBDIR}."
+  ifdh mkdir $IFDH_OPT ${OUTDIR}/$OUTPUT_SUBDIR
+  echo "Done making directory ${OUTDIR}/${OUTPUT_SUBDIR}."
   date
-done
+fi
 
 # Transfer tarbal in log subdirectory.
 
