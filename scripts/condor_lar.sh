@@ -1725,7 +1725,7 @@ done
 if [ $VALIDATE_IN_JOB -eq 1 ]; then
     #If SAM was used, get the parent files based on the cpid
     if [ $USE_SAM -ne 0 ]; then
-      id=`cat cpid.txt`
+      id=`cat log/cpid.txt`
       parent_files=($(ifdh translateConstraints "consumer_process_id=$id and consumed_status consumed"))
       stat=$?
       if [ $stat -ne 0 ]; then
