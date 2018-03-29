@@ -13,6 +13,7 @@ import os, string, stat, math, subprocess
 import project_utilities
 import larbatch_posix
 import uuid
+import math
 from project_modules.xmlerror import XMLError
 from project_modules.pubsinputerror import PubsInputError
 from project_modules.pubsdeadenderror import PubsDeadEndError
@@ -989,6 +990,49 @@ class StageDef:
             if new_num_jobs != self.num_jobs:
                 print "Updating number of jobs from %d to %d." % (self.num_jobs, new_num_jobs)
                 self.num_jobs = new_num_jobs
+
+        # If target size is nonzero, and input is from a sam dataset definition,
+        # calculate the ideal number of jobs and maxfilesperjob.
+
+        if self.target_size != 0 and self.inputdef != '':
+
+            # Query sam to determine size and number of files in input
+            # dataset.
+
+            samweb = project_utilities.samweb()
+            dim = 'defname: %s' % self.inputdef
+            sum = samweb.listFilesSummary(dimensions=dim)
+            size_tot = sum['total_file_size']
+            nfiles = sum['file_count']
+            if nfiles > 0:
+                max_files = self.max_files_per_job * self.num_jobs
+                if max_files > 0 and max_files < nfiles:
+                    dim += ' with limit %d' % max_files
+                    sum = samweb.listFilesSummary(dimensions=dim)
+                    size_tot = sum['total_file_size']
+                    nfiles = sum['file_count']
+
+                # Calculate updated job parameters.
+
+                new_num_jobs = int(math.ceil(float(size_tot) / float(self.target_size)))
+                if new_num_jobs < 1:
+                    new_num_jobs = 1
+                if new_num_jobs > self.num_jobs:
+                    new_num_jobs = self.num_jobs
+
+                new_max_files_per_job = int(math.ceil(float(self.target_size) * float(nfiles) / float(size_tot)))
+                if self.max_files_per_job > 0 and new_max_files_per_job > self.max_files_per_job:
+                    new_max_files_per_job = self.max_files_per_job
+
+                print "Ideal number of jobs based on target file size is %d." % new_num_jobs
+                if new_num_jobs != self.num_jobs:
+                    print "Updating number of jobs from %d to %d." % (self.num_jobs, new_num_jobs)
+                    self.num_jobs = new_num_jobs
+                print "Ideal number of files per job is %d." % new_max_files_per_job
+                if new_max_files_per_job != self.max_files_per_job:
+                    print "Updating maximum files per job from %d to %d." % (
+                        self.max_files_per_job, new_max_files_per_job)
+                    self.max_files_per_job = new_max_files_per_job
 
 
     # Raise an exception if output directory or log directory doesn't exist.

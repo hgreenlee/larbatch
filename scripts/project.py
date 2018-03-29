@@ -282,7 +282,7 @@
 # <stage><maxfilesperjob> - Maximum number of files to deliver to a single job
 #             Useful in case you want to limit output file size or keep
 #             1 -> 1 correlation between input and output
-# <stage><targetsize> - Specify target size for output files.  If specified,
+# <stage><targetsize> - Specify target size for input files.  If specified,
 #                       this attribute may override <numjobs> in the downward
 #                       direction (i.e. <numjobs> is the maximum number of jobs).
 # <stage><defname> - Sam output dataset defition name (default none).
