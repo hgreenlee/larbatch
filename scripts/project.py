@@ -368,7 +368,7 @@
 #
 ######################################################################
 
-import sys, os, stat, string, subprocess, shutil, urllib, json, getpass, uuid, tempfile
+import sys, os, stat, string, subprocess, shutil, urllib, json, getpass, uuid, tempfile, hashlib
 import larbatch_posix
 import threading, Queue
 from xml.dom.minidom import parse
@@ -2731,7 +2731,8 @@ def dojobsub(project, stage, makeup, recur):
 
     # Make a tarball out of all of the files in tmpworkdir in stage.workdir
 
-    jobinfo = subprocess.Popen(['tar','-cf', '%s/work.tar' % tmpworkdir, '-C', tmpworkdir,
+    tmptar = '%s/work.tar' % tmpworkdir
+    jobinfo = subprocess.Popen(['tar','-cf', tmptar, '-C', tmpworkdir,
                                 '--exclude=work.tar', '.'],
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE)
@@ -2740,10 +2741,25 @@ def dojobsub(project, stage, makeup, recur):
     if rc != 0:
         raise RuntimeError, 'Failed to create work tarball in %s' % tmpworkdir
 
-    # Transfer tarball to work directory.
+    # Calculate the checksum of the tarball.
 
-    larbatch_posix.copy('%s/work.tar' % tmpworkdir, '%s/work.tar' % stage.workdir)
-    jobsub_workdir_files_args.extend(['-f', '%s/work.tar' % stage.workdir])
+    hasher = hashlib.md5()
+    f = open(tmptar, 'rb')
+    buf = f.read(1024)
+    while len(buf) > 0:
+        hasher.update(buf)
+        buf = f.read(1024)
+    hash = hasher.hexdigest()
+    f.close()
+
+    # Transfer tarball to work directory.
+    # Give the tarball a unique name based on its checksum.
+    # Don't replace the tarball if it already exists.
+
+    hashtar = '%s/work%s.tar' % (stage.workdir, hash)
+    if not larbatch_posix.exists(hashtar):
+        larbatch_posix.copy(tmptar, hashtar)
+    jobsub_workdir_files_args.extend(['-f', hashtar])
 
     # Sam stuff.
 
