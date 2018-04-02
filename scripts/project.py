@@ -3886,10 +3886,11 @@ def main(argv):
 
                 # Add minus clause.
 
+                project_wildcard = '%s_%%' % samweb.makeProjectName(stage.inputdef).rsplit('_',1)[0]
                 if stage.recurtype == 'snapshot':
-                    dim += ' minus snapshot_for_project_name %s_%%' % stage.inputdef
+                    dim += ' minus snapshot_for_project_name %s' % project_wildcard
                 elif stage.recurtype == 'consumed':
-                    dim += ' minus (project_name %s_%% and consumed_status consumed)' % stage.inputdef
+                    dim += ' minus (project_name %s and consumed_status consumed)' % project_wildcard
                 elif stage.recurtype != '' and stage.recurtype != 'none':
                     raise RuntimeError, 'Unknown recursive type %s.' % stage.recurtype
 
