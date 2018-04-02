@@ -257,9 +257,13 @@
 #
 #                       Allowed values are:
 #
-#                       none     - Don't generate a minus clause.
-#                       snapshot - "minus snapshot_for_project_name ...".
-#                       consumed - "minus (project_name ... and consumed_status consumed)"
+#                       none      - Don't generate a minus clause.
+#                       snapshot  - "minus snapshot_for_project_name ...".
+#                       consumed  - "minus (project_name ... and consumed_status consumed)"
+#                       artchild  - "minus isparentof: ( ... )"
+#                       vartchild - "minus isparentof: ( ... and availability: anylocation )"
+#                       anachild  - "minus isparentof: ( ... )"
+#                       vanachild - "minus isparentof: ( ... and availability: anylocation )"
 #
 # <stage><recurlimit> - Specify an integer value for "with limit" clause.  If this 
 #                       element is missing or the value is zero, the generated dataset
@@ -3891,6 +3895,18 @@ def main(argv):
                     dim += ' minus snapshot_for_project_name %s' % project_wildcard
                 elif stage.recurtype == 'consumed':
                     dim += ' minus (project_name %s and consumed_status consumed)' % project_wildcard
+                elif stage.recurtype == 'artchild':
+                    dim += ' minus (isparentof: ( %s ) )' % \
+                        project_utilities.dimensions(project, stage, ana=False)
+                elif stage.recurtype == 'vartchild':
+                    dim += ' minus (isparentof: ( %s and availability: anylocation ) )' % \
+                        project_utilities.dimensions(project, stage, ana=False)
+                elif stage.recurtype == 'anachild':
+                    dim += ' minus (isparentof: ( %s ) )' % \
+                        project_utilities.dimensions(project, stage, ana=True)
+                elif stage.recurtype == 'vanachild':
+                    dim += ' minus (isparentof: ( %s and availability: anylocation ) )' % \
+                        project_utilities.dimensions(project, stage, ana=True)
                 elif stage.recurtype != '' and stage.recurtype != 'none':
                     raise RuntimeError, 'Unknown recursive type %s.' % stage.recurtype
 
