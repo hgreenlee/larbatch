@@ -3282,7 +3282,10 @@ def dosubmit(project, stage, makeup=False, recur=False):
 
     # Check input files.
 
-    stage.checkinput()
+    ok = stage.checkinput(checkdef=True)
+    if ok != 0:
+        print 'No jobs submitted.'
+        return
 
     # Make sure output and log directories are empty (submit only).
 

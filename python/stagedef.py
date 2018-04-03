@@ -964,11 +964,18 @@ class StageDef:
     # Raise an exception if any specified input file/list doesn't exist.
     # (We don't currently check sam input datasets).
 
-    def checkinput(self):
+    def checkinput(self, checkdef=False):
         if self.inputfile != '' and not larbatch_posix.exists(self.inputfile):
             raise IOError, 'Input file %s does not exist.' % self.inputfile
         if self.inputlist != '' and not larbatch_posix.exists(self.inputlist):
             raise IOError, 'Input list %s does not exist.' % self.inputlist
+        if self.inputdef != '' and checkdef:
+            samweb = project_utilities.samweb()
+            sum = samweb.listFilesSummary(defname=self.inputdef)
+            n = sum['file_count']
+            print 'Input dataset contains %d files.' % n
+            if n == 0:
+                return 1
 
         # If target size is nonzero, and input is from a file list, calculate
         # the ideal number of output jobs and override the current number 
@@ -1033,6 +1040,10 @@ class StageDef:
                     print "Updating maximum files per job from %d to %d." % (
                         self.max_files_per_job, new_max_files_per_job)
                     self.max_files_per_job = new_max_files_per_job
+
+        # Done (all good).
+
+        return 0
 
 
     # Raise an exception if output directory or log directory doesn't exist.
