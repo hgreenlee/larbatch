@@ -42,6 +42,15 @@
 # --mix_defname <arg>     - Specify mix input sam dataset definition.
 # --mix_project <arg>     - Specify mix input sam project.
 #
+# Validation options.
+#
+# --declare               - Do sam declaration.
+# --validate              - Do validation checks.
+# --copy                  - Copy output files directly to FTS dropbox instead of
+#                           output directory.
+# --maintain_parentage    - Recalculate sam parentage metadata for multistage jobs.
+#                           (Use with --validate and --declare).
+#
 # Larsoft options.
 #
 # --ups <arg>             - Comma-separated list of top level run-time ups products.
