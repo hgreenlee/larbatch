@@ -999,9 +999,10 @@ class StageDef:
                 self.num_jobs = new_num_jobs
 
         # If target size is nonzero, and input is from a sam dataset definition,
-        # calculate the ideal number of jobs and maxfilesperjob.
+        # and maxfilesperjob is not one, calculate the ideal number of jobs and
+        # maxfilesperjob.
 
-        if self.target_size != 0 and self.inputdef != '':
+        if self.target_size != 0 and self.max_files_per_job != 1 and and self.inputdef != '':
 
             # Query sam to determine size and number of files in input
             # dataset.
