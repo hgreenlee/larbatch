@@ -89,6 +89,7 @@
 # --fcl        - Print the fcl file name and version for stage.
 # --defname    - Print sam dataset definition name for stage.
 # --input_files        - Print all input files.
+# --check_input        - Do all standard input file checks.
 #
 # --check_declarations - Check whether data files are declared to sam.
 # --test_declarations  - Print a summary of files returned by sam query.
@@ -3566,6 +3567,7 @@ def main(argv):
     fcl = 0
     defname = 0
     do_input_files = 0
+    do_check_input = 0
     declare = 0
     declare_ana = 0
     define = 0
@@ -3706,6 +3708,9 @@ def main(argv):
             del args[0]
         elif args[0] == '--input_files':
             do_input_files = 1
+            del args[0]
+        elif args[0] == '--check_input':
+            do_check_input = 1
             del args[0]
         elif args[0] == '--declare':
             declare = 1
@@ -3982,6 +3987,14 @@ def main(argv):
             input_files = get_input_files(stage)
             for input_file in input_files:
                 print input_file
+
+    # Do check_input action now.
+
+    if do_check_input:
+        for stagename in stagenames:
+            print 'Stage %s:' % stagename
+            stage = stages[stagename]
+            stage.checkinput(checkdef=True)
 
     # Do shorten action now.
 
