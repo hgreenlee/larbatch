@@ -12,6 +12,8 @@
 # --outdir <dir>  - Final output directory (e.g. dCache) where .root files will be copied.
 # --declare <0/1> - Flag for declaring files to sam.
 # --copy <0/1>    - Flag for copyoing files directly to dropbox.
+# --maintain_parentage <0/1> - If true, override default parentage according to
+#                              env variables JOBS_PARENTS and JOBS_AUNTS.
 #
 # Environment variables:
 #
@@ -162,6 +164,7 @@ def main():
     outdir=''
     declare_file = 0
     copy_to_dropbox = 0
+    maintain_parentage = 0
     args = sys.argv[1:]
     while len(args) > 0:
 
@@ -179,6 +182,9 @@ def main():
             del args[0:2]    
 	elif args[0] == '--copy' and len(args) > 1:
             copy_to_dropbox = int(args[1])
+            del args[0:2]        
+	elif args[0] == '--maintain_parentage' and len(args) > 1:
+            maintain_parentage = int(args[1])
             del args[0:2]        
         else:
             print 'Unknown option %s' % args[0]
@@ -316,18 +322,27 @@ def main():
                 expSpecificMetaData = expMetaData(project_utilities.get_experiment(), rootpath)
                 md = expSpecificMetaData.getmetadata()
 
-                # change the parentage of the file based on it's parents and aunts from condor_lar
+                # Decide if we want to override the internal parentage metadata.
 
-                jobs_parents = os.getenv('JOBS_PARENTS', '').split(" ")
-                jobs_aunts   = os.getenv('JOBS_AUNTS', '').split(" ")
-                if(jobs_parents[0] != '' ):
-                    md['parents'] = [{'file_name': parent} for parent in jobs_parents]
-                if(jobs_aunts[0] != '' ):
-                    for aunt in jobs_aunts:
-                        mixparent_dict = {'file_name': aunt}
-                        if not md.has_key('parents'):
-                            md['parents'] = []
-                        md['parents'].append(mixparent_dict)
+                if maintain_parentage == 1:
+
+                    # Delete the old parents, if any.
+
+                    if md.has_key('parents'):         	     
+                        del md['parents']
+
+                    # change the parentage of the file based on it's parents and aunts from condor_lar
+
+                    jobs_parents = os.getenv('JOBS_PARENTS', '').split(" ")
+                    jobs_aunts   = os.getenv('JOBS_AUNTS', '').split(" ")
+                    if(jobs_parents[0] != '' ):
+                        md['parents'] = [{'file_name': parent} for parent in jobs_parents]
+                    if(jobs_aunts[0] != '' ):
+                        for aunt in jobs_aunts:
+                            mixparent_dict = {'file_name': aunt}
+                            if not md.has_key('parents'):
+                                md['parents'] = []
+                            md['parents'].append(mixparent_dict)
 	        	         	     
                 if len(md) > 0:
                     project_utilities.test_kca()
