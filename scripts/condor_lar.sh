@@ -1739,7 +1739,7 @@ if [ $VALIDATE_IN_JOB -eq 1 ]; then
       stat=$?
       if [ $stat -ne 0 ]; then
         echo "Failed to determine parentage."
-        exit 1
+        #exit 1
       fi
     fi
     
