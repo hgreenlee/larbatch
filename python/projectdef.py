@@ -242,11 +242,14 @@ class ProjectDef:
 	if worker_copy:
 	    self.copy_to_fts = int(worker_copy[0].firstChild.data)    
 
-        # Also convert start and stop project scripts into full path.
-        # It is not treated as an error here if these aren't found.
-
-        # Start project script.
+        # Start project batch script (subelement).
         
+        start_script_elements = project_element.getElementsByTagName('startscript')
+        if start_script_elements:
+            self.start_script = str(start_script_elements[0].firstChild.data)
+
+        # Make sure start project batch script exists, and convert into a full path.
+
         script_path = ''
         try:
             jobinfo = subprocess.Popen(['which', self.start_script],
@@ -259,8 +262,14 @@ class ProjectDef:
             pass
         self.start_script = script_path
 
-        # Stop project script.
+        # Stop project batch script (subelement).
         
+        stop_script_elements = project_element.getElementsByTagName('stopscript')
+        if stop_script_elements:
+            self.stop_script = str(stop_script_elements[0].firstChild.data)
+
+        # Make sure stop project batch script exists, and convert into a full path.
+
         script_path = ''
         try:
             jobinfo = subprocess.Popen(['which', self.stop_script],

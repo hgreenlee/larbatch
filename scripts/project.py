@@ -156,6 +156,11 @@
 #
 # <script>  - Name of batch worker script (default condor_lar.sh).
 #             The batch script must be on the execution path.
+# <startscript> - Name of batch worker start project script (default condor_start_project.sh)
+#             Must be on execution path.
+# <stopscript> - Name of batch worker stop project script (default condor_start_project.sh)
+#             Must be on execution path.
+#
 #
 # <larsoft> - Information about larsoft release.
 # <larsoft><tag> - Frozen release tag (default "development").
