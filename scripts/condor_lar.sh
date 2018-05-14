@@ -1703,7 +1703,7 @@ while [ $stageStat -lt $nfcls ]; do
   stageStat=$[$stageStat +1] 
 done
 echo $overallStat > lar.stat
-valstat=0
+valstat=$overallStat
 
 # Make local output directories for files that we have to save.
 
@@ -1767,13 +1767,15 @@ if [ $VALIDATE_IN_JOB -eq 1 ]; then
     
     # Do validation function for the whole job.
 
-    valstat=0
-    curdir=`pwd`
-    cd $curdir/log
-    echo "./validate_in_job.py --dir $curdir/out --logfiledir $curdir/log --outdir $OUTDIR/$OUTPUT_SUBDIR --declare $DECLARE_IN_JOB --copy $COPY_TO_FTS --maintain_parentage $MAINTAIN_PARENTAGE"
-    ./validate_in_job.py --dir $curdir/out --logfiledir $curdir/log --outdir $OUTDIR/$OUTPUT_SUBDIR --declare $DECLARE_IN_JOB --copy $COPY_TO_FTS --maintain_parentage $MAINTAIN_PARENTAGE
-    valstat=$?
-    cd $curdir
+    valstat=$overallStat
+    if [ $valstat -eq 0 ]; then
+      curdir=`pwd`
+      cd $curdir/log
+      echo "./validate_in_job.py --dir $curdir/out --logfiledir $curdir/log --outdir $OUTDIR/$OUTPUT_SUBDIR --declare $DECLARE_IN_JOB --copy $COPY_TO_FTS --maintain_parentage $MAINTAIN_PARENTAGE"
+      ./validate_in_job.py --dir $curdir/out --logfiledir $curdir/log --outdir $OUTDIR/$OUTPUT_SUBDIR --declare $DECLARE_IN_JOB --copy $COPY_TO_FTS --maintain_parentage $MAINTAIN_PARENTAGE
+      valstat=$?
+      cd $curdir
+    fi
 
 fi
 

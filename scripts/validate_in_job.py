@@ -352,11 +352,13 @@ def main():
       
                     try:
                         samweb.declareFile(md=md)
+
+                    except samweb_cli.exceptions.SAMWebHTTPError as e:
+                        print e
+                        print 'SAM declare failed.'
+                        return 1
              
                     except:
-                        #if md.has_key('parents'):         	     
-                        #    del md['parents']
-                        #    samweb.declareFile(md=md)
                         print 'SAM declare failed.'
                         return 1
 	    	     
@@ -405,7 +407,7 @@ def main():
                         mixparent_dict = {'file_name': aunt}
                         md['parents'].append(mixparent_dict)
 	        	         	     
-                if len(md) > 0:
+                if len(md) > 0 and md.has_key('file_type'):
                     project_utilities.test_kca()
 
                     # Make lack of parent files a nonfatal error.
@@ -415,10 +417,12 @@ def main():
                         samweb.declareFile(md=md)
                         declare_ok = True
              
+                    except samweb_cli.exceptions.SAMWebHTTPError as e:
+                        print e
+                        print 'SAM declare failed.'
+                        declare_ok = False
+             
                     except:
-                        #if md.has_key('parents'):         	     
-                        #    del md['parents']
-                        #    samweb.declareFile(md=md)
                         print 'SAM declare failed.'
                         declare_ok = False
 	    	     
