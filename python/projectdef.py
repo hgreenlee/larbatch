@@ -52,6 +52,7 @@ class ProjectDef:
 	self.copy_to_fts = 0          # Copy a copy of the file to a dropbox scanned by fts. Note that a copy is still sent to <outdir>
         self.start_script = 'condor_start_project.sh'  # Sam start project script.
         self.stop_script = 'condor_stop_project.sh'    # Sam stop project script.
+        self.force_dag = 0                # Force dag for sam input jobs.
         self.fclpath = []                 # Fcl search path.
         self.stages = []                  # List of stages (StageDef objects).
         self.parameters = {}              # Dictionary of metadata parameters.
@@ -247,6 +248,7 @@ class ProjectDef:
         start_script_elements = project_element.getElementsByTagName('startscript')
         if start_script_elements:
             self.start_script = str(start_script_elements[0].firstChild.data)
+            self.force_dag = 1
 
         # Make sure start project batch script exists, and convert into a full path.
 
@@ -267,6 +269,7 @@ class ProjectDef:
         stop_script_elements = project_element.getElementsByTagName('stopscript')
         if stop_script_elements:
             self.stop_script = str(stop_script_elements[0].firstChild.data)
+            self.force_dag = 1
 
         # Make sure stop project batch script exists, and convert into a full path.
 
@@ -379,6 +382,7 @@ class ProjectDef:
         result += 'Batch script = %s\n' % self.script
         result += 'Start sam project script = %s\n' % self.start_script
         result += 'Stop sam project script = %s\n' % self.stop_script
+        result += 'Force dag = %d\n' % self.force_dag
         result += 'Fcl search path:\n'
         for fcldir in self.fclpath:
             result += '    %s\n' % fcldir
