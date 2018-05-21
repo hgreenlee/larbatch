@@ -2741,7 +2741,7 @@ def dojobsub(project, stage, makeup, recur):
 
     tmptar = '%s/work.tar' % tmpworkdir
     jobinfo = subprocess.Popen(['tar','-cf', tmptar, '-C', tmpworkdir,
-                                '--mtime=\'2018-01-01\'',
+                                '--mtime=2018-01-01',
                                 '--exclude=work.tar', '.'],
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE)
@@ -2950,7 +2950,7 @@ def dojobsub(project, stage, makeup, recur):
 
     # If input is from sam, also construct a dag file, or add --sam_start option.
 
-    if (prjname != '' or mixprjname != '') and command_njobs == 1:
+    if (prjname != '' or mixprjname != '') and command_njobs == 1 and not project.force_dag:
         command.extend([' --sam_start',
                         ' --sam_station', project_utilities.get_experiment(),
                         ' --sam_group', project_utilities.get_experiment()])
@@ -2962,7 +2962,7 @@ def dojobsub(project, stage, makeup, recur):
     start_commands = []
     stop_commands = []
     dag_prjs = []
-    if command_njobs > 1:
+    if command_njobs > 1 or project.force_dag:
         if inputdef != '':
             dag_prjs.append([inputdef, prjname])
         if stage.mixinputdef != '':

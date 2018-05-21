@@ -1831,8 +1831,8 @@ if [ $COPY_TO_FTS -eq 0 ]; then
 
 fi  
 
-if [ $statout -eq 0 ]; then
-  statout=`cat lar.stat`
+if [ $statout -eq 0 -a -f log/lar.stat ]; then
+  statout=`cat log/lar.stat`
 fi
 
 if [ $statout -eq 0 ]; then
