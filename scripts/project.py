@@ -2741,7 +2741,7 @@ def dojobsub(project, stage, makeup, recur):
 
     tmptar = '%s/work.tar' % tmpworkdir
     jobinfo = subprocess.Popen(['tar','-cf', tmptar, '-C', tmpworkdir,
-                                '--mtime=\'2018-01-01\'',
+                                '--mtime=2018-01-01',
                                 '--exclude=work.tar', '.'],
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE)
