@@ -3443,7 +3443,7 @@ def doaudit(stage):
                     missingfilelist.write("%s\n" %item)
         elif item in outparentlist:
             me = me+1
-            childcmd = 'samweb list-files "ischildof: (file_name=%s) and availability: anylocation"' %(item)
+            childcmd = 'samweb list-files "ischildof: (file_name=%s) and availability: physical"' %(item)
             children = subprocess.check_output(childcmd, shell=True).splitlines()
             rmfile = list(set(children) & set(outputlist))[0]
             if me ==1:
