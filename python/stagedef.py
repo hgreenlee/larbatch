@@ -9,7 +9,8 @@
 #
 ######################################################################
 
-import os, string, stat, math, subprocess
+import sys, os, string, stat, math, subprocess, random
+import samweb_cli
 import project_utilities
 import larbatch_posix
 import uuid
@@ -60,6 +61,7 @@ class StageDef:
             self.recur = base_stage.recur
             self.recurtype = base_stage.recurtype
             self.recurlimit = base_stage.recurlimit
+            self.singlerun = base.singlerun
             self.prestagefraction = base_stage.prestagefraction
             self.maxfluxfilemb = base_stage.maxfluxfilemb
             self.num_jobs = base_stage.num_jobs
@@ -119,6 +121,7 @@ class StageDef:
             self.recur = 0         # Recursive flag.
             self.recurtype = ''    # Recursive type.
             self.recurlimit = 0    # Recursive limit.
+            self.singlerun=0       # Single run mode.
             self.prestagefraction = 0.  # Prestage fraction.
             self.maxfluxfilemb = 0 # MaxFluxFileMB (size of genie flux files to fetch).
             self.num_jobs = default_num_jobs # Number of jobs.
@@ -249,13 +252,19 @@ class StageDef:
         if recurlimit_elements:
             self.recurlimit = int(recurlimit_elements[0].firstChild.data)
 
-        # Recursive input sam dataset dfeinition (subelement).
+        # Recursive input sam dataset definition (subelement).
 
         recurdef_elements = stage_element.getElementsByTagName('recurdef')
         if recurdef_elements:
             self.basedef = self.inputdef
             self.inputdef = str(recurdef_elements[0].firstChild.data)
             self.recur = 1
+
+        # Single run flag (subelement).
+
+        singlerun_elements = stage_element.getElementsByTagName('singlerun')
+        if singlerun_elements:
+            self.singlerun = int(singlerun_elements[0].firstChild.data)
 
         # Prestage fraction (subelement).
 
@@ -628,6 +637,7 @@ class StageDef:
         result += 'Recursive flag = %d\n' % self.recur
         result += 'Recursive type = %s\n' % self.recurtype
         result += 'Recursive limit = %d\n' % self.recurlimit
+        result += 'Single run flag = %d\n' % self.singlerun
         result += 'Prestage fraction = %f\n' % self.prestagefraction
         result += 'Input stream = %s\n' % self.inputstream
         result += 'Previous stage name = %s\n' % self.previousstage
@@ -991,6 +1001,47 @@ class StageDef:
                 print "Updating number of jobs from %d to %d." % (self.num_jobs, new_num_jobs)
                 self.num_jobs = new_num_jobs
 
+        # If singlerun mode is requested, pick a random file from the input
+        # dataset and create (if necessary) a new dataset definition which
+        # limits files to be only from that run.  Don't do anything here if 
+        # the input dataset is empty.
+
+        if self.singlerun and checkdef:
+
+            samweb = project_utilities.samweb()
+            print "Doing single run processing."
+
+            # First find an input file.
+
+            dim = 'defname: %s' % self.inputdef
+            input_files = samweb.listFiles(dimensions=dim)
+            if len(input_files) > 0:
+                random_file = random.choice(input_files)
+
+                # Extract run number.
+
+                md = samweb.getMetadata(random_file)
+                run_tuples = md['runs']
+                if len(run_tuples) > 0:
+                    run = run_tuples[0][0]
+                    print 'Input files will be limited to run %d.' % run
+
+                    # Make a new dataset definition.
+                    # If this definition already exists, assume it is correct.
+
+                    newdef = '%s_run_%d' % (self.inputdef, run)
+                    def_exists = False
+                    try:
+                        desc = samweb.descDefinition(defname=newdef)
+                        def_exists = True
+                    except samweb_cli.exceptions.DefinitionNotFound:
+                        pass
+                    if not def_exists:
+                        print 'Creating dataset definition %s' % newdef
+                        newdim = 'defname: %s and run_number %d' % (self.inputdef, run)
+                        samweb.createDefinition(defname=newdef, dims=newdim)
+                    self.inputdef = newdef
+
         # If target size is nonzero, and input is from a sam dataset definition,
         # and maxfilesperjob is not one, calculate the ideal number of jobs and
         # maxfilesperjob.
@@ -1024,6 +1075,11 @@ class StageDef:
                 new_max_files_per_job = int(math.ceil(float(self.target_size) * float(nfiles) / float(size_tot)))
                 if self.max_files_per_job > 0 and new_max_files_per_job > self.max_files_per_job:
                     new_max_files_per_job = self.max_files_per_job
+                    new_num_jobs = (nfiles + self.max_files_per_job - 1) / self.max_files_per_job
+                    if new_num_jobs < 1:
+                        new_num_jobs = 1
+                    if new_num_jobs > self.num_jobs:
+                        new_num_jobs = self.num_jobs
 
                 print "Ideal number of jobs based on target file size is %d." % new_num_jobs
                 if new_num_jobs != self.num_jobs:

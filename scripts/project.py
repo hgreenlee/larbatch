@@ -272,6 +272,8 @@
 # <stage><recurlimit> - Specify an integer value for "with limit" clause.  If this 
 #                       element is missing or the value is zero, the generated dataset
 #                       definition will not include a "with limit" clause.
+# <stage><singlerun>  - Single run flag.  If nonzero, limit input to come from a single
+#                       run.  The run is based on a randomly selected file.
 #
 # <stage><prestagefraction> - This parameter should be a floating point number between
 #                       0 and 1 (default 0).  If nonzero, the separate batch job that
