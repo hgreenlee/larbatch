@@ -273,6 +273,9 @@
 #                       element is missing or the value is zero, the generated dataset
 #                       definition will not include a "with limit" clause.
 #
+# <stage><prestart>   - Prestart flag.  If specified and nonzero, start the sam project
+#                       in this script, instead of in a batch job.
+#
 # <stage><prestagefraction> - This parameter should be a floating point number between
 #                       0 and 1 (default 0).  If nonzero, the separate batch job that
 #                       starts the sam project (if any) will prestage at least the
@@ -2795,6 +2798,26 @@ def dojobsub(project, stage, makeup, recur):
         project_utilities.test_kca()
         mixprjname = 'mix_%s' % samweb.makeProjectName(stage.mixinputdef)
 
+    # If the prestart flag is specified, start the sam project now.
+
+    prj_started = False
+    if prjname != '' and stage.prestart != 0:
+        ok = project_utilities.start_project(inputdef, prjname, 
+                                             stage.num_jobs * stage.max_files_per_job, 
+                                             stage.recur)
+        if ok != 0:
+            print 'Failed to start project.'
+            sys.exit(1)
+        prj_started = True
+
+    # Also start mix project, if any.
+
+    if mixprjname != '' and prj_started:
+        ok = project_utilities.start_project(stage.mixinputdef, mixprjname, 0, 0)
+        if ok != 0:
+            print 'Failed to start mix project.'
+            sys.exit(1)
+
     # Get role
 
     role = project_utilities.get_role()
@@ -3038,7 +3061,8 @@ def dojobsub(project, stage, makeup, recur):
 
         # Done with start command.
 
-        start_commands.append(start_command)
+        if not prj_started:
+            start_commands.append(start_command)
 
         # Stop project jobsub command.
 

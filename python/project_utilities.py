@@ -252,6 +252,72 @@ def samweb():
 
     return samweb_obj
 
+# Start sam project.
+
+def start_project(defname, default_prjname, max_files, force_snapshot):
+
+    # Check project name.
+
+    s = samweb()
+    prjname = default_prjname
+    if prjname == '':
+        prjname = s.makeProjectName(defname)
+    print 'Starting project %s' % prjname
+
+    # Make sure we have a certificate.
+
+    test_kca()
+
+    # Figure out how many files are in the input dataset.
+
+    nf = s.countFiles('defname: %s' % defname)
+    print 'Input dataset has %d files.' % nf
+    if nf == 0:
+        return 1
+
+    # Make limited dataset?
+
+    if max_files > 0 and nf > max_files:
+        limitdef = '%s_limit_%d' % (defname, max_files)
+
+        # Figure out whether limitdef already exists.
+
+        def_exists = False
+        try:
+            s.descDefinition(limitdef)
+            def_exists = True
+        except:
+            def_exists = False
+
+        if def_exists:
+            print 'Using already created limited dataset definition %s.' % limitdef
+        else:
+            print 'Creating limited dataset definition %s.' % limitdef
+            dim = 'defname: %s with limit %d' % (defname, max_files)
+            s.createDefinition(limitdef, dim, user=get_user(), group=get_experiment())
+
+        defname = limitdef
+        nf = max_files
+
+    # Force snapshot?
+
+    if force_snapshot:
+        print 'Forcing snapthot.'
+        defname = '%s:force' % defname
+
+    # Start the project.
+
+    print 'Starting project %s.' % prjname
+    s.startProject(prjname,
+                   defname=defname, 
+                   station=get_experiment(),
+                   group=get_experiment(),
+                   user=get_user())
+
+    # Done.
+
+    return 0
+
 
 # Function to ensure that files in dCache have layer two.
 # This function is included here as a workaround for bugs in the dCache nfs interface.
