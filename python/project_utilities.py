@@ -359,6 +359,46 @@ def active_projects(defname = ''):
 
     return result
 
+# Make active projects dataset definition.
+# 
+# defname        - Dataset definition associated with active projects.
+# active_defname - Name of dataset definition to create.
+
+def make_active_project_dataset(defname, active_defname):
+
+    s = samweb()
+    test_kca()
+
+    # Get list of active projects.
+
+    prjs = active_projects(defname)
+
+    # Make sam dimension.
+
+    dim = ''
+    for prj in prjs:
+        if dim == '':
+            dim = 'snapshot_for_project_name %s' % prj
+        else:
+            dim += ',%s' % prj
+
+    # Create or update active_defname.
+
+    def_exists = False
+    try:
+        s.descDefinition(active_defname)
+        def_exists = True
+    except:
+        def_exists = False
+
+    if def_exists:
+        print 'Updating dataset definition %s' % active_defname
+        s.deleteDefinition(active_defname)
+    else:
+        print 'Creating dataset definition %s' % active_defname
+
+    s.createDefinition(active_defname, dim, user=get_user(), group=get_experiment())
+
 
 # Function to ensure that files in dCache have layer two.
 # This function is included here as a workaround for bugs in the dCache nfs interface.
