@@ -11,6 +11,7 @@
 #----------------------------------------------------------------------
 
 import sys, os, stat, time, types
+import pycurl, StringIO
 import socket
 import subprocess
 import shutil
@@ -317,6 +318,46 @@ def start_project(defname, default_prjname, max_files, force_snapshot):
     # Done.
 
     return 0
+
+# Return a list of active projects associated with a particular dataset definition.
+# If the definition argument is the empty string, return all active projects.
+
+def active_projects(defname = ''):
+
+    result = []
+
+    # Get project name stem.
+
+    s = samweb()
+    prjstem = ''
+    if defname != '':
+        prjstem = '%s_' % s.makeProjectName(defname).rsplit('_',1)[0]
+
+    # Dump station
+
+    url = '%s/dumpStation?station=%s' % (s.get_baseurl(), get_experiment())
+    buffer = StringIO.StringIO()
+    c = pycurl.Curl()
+    c.setopt(c.URL, url)
+    c.setopt(c.USERPWD, 'uboone:argon!')
+    c.setopt(c.FOLLOWLOCATION, True)
+    c.setopt(c.WRITEFUNCTION, buffer.write)
+    c.perform()
+    c.close()
+
+    # Parse response.
+
+    buffer.seek(0)
+    for line in buffer.readlines():
+        words = line.split()
+        if len(words) > 0 and words[0] == 'project':
+            prjname = words[1].split('(')[0]
+            if prjstem == '' or prjname.startswith(prjstem):
+                result.append(prjname)
+
+    # Done.
+
+    return result
 
 
 # Function to ensure that files in dCache have layer two.
