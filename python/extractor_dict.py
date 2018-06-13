@@ -157,7 +157,7 @@ class expMetaData(MetaData):
             elif mdkey == 'parents':
                 md['parents'] = [{'file_name': parent} for parent in mdval]
 	    
-	    elif mdkey == 'mixparent':	       
+	    elif mdkey.startswith('mixparent'):
 		mixparents.append(mdval.strip(' ,"') )	
 		
             # Other fields where the key or value requires minor conversion.
