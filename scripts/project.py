@@ -272,11 +272,18 @@
 # <stage><recurlimit> - Specify an integer value for "with limit" clause.  If this 
 #                       element is missing or the value is zero, the generated dataset
 #                       definition will not include a "with limit" clause.
+#
 # <stage><singlerun>  - Single run flag.  If nonzero, limit input to come from a single
 #                       run.  The run is based on a randomly selected file.
 #
 # <stage><prestart>   - Prestart flag.  If specified and nonzero, start the sam project
 #                       in this script, instead of in a batch job.
+#
+# <stage><activebase> - If this element is present and nonempty, define or update an
+#                       active projects dataset "<activebase>_active,"
+#                       where <activebase> is the value of this element.
+#                       Do this in the input checking phase (e.g. prior to job submission)
+#                       in function stagedef.checkinput.
 #
 # <stage><prestagefraction> - This parameter should be a floating point number between
 #                       0 and 1 (default 0).  If nonzero, the separate batch job that

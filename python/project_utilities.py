@@ -382,6 +382,12 @@ def make_active_project_dataset(defname, active_defname):
         else:
             dim += ',%s' % prj
 
+    # If there were no matching projects, make up some legal dimension that won't
+    # match any files.
+
+    if dim == '':
+        dim = 'file_id 0'
+
     # Create or update active_defname.
 
     def_exists = False
