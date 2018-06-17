@@ -1041,6 +1041,7 @@ class StageDef:
             input_files = samweb.listFiles(dimensions=dim)
             if len(input_files) > 0:
                 random_file = random.choice(input_files)
+                print 'Example file: %s' % random_file
 
                 # Extract run number.
 
@@ -1065,6 +1066,14 @@ class StageDef:
                         newdim = 'defname: %s and run_number %d' % (self.inputdef, run)
                         samweb.createDefinition(defname=newdef, dims=newdim)
                     self.inputdef = newdef
+
+                else:
+                    print 'Problem extracting run number from example file.'
+                    return 1
+
+            else:
+                print 'Input dataset is empty.'
+                return 1
 
         # If target size is nonzero, and input is from a sam dataset definition,
         # and maxfilesperjob is not one, calculate the ideal number of jobs and
