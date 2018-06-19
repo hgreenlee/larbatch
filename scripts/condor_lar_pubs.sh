@@ -1608,6 +1608,17 @@ EOF
   stat=$?
   echo $stat > larStage$stage.stat
   echo "$EXE completed with exit status ${stat}."
+  if [ $stat -ne 0 ]; then
+    echo
+    echo "tail -100 larStage$stage.out"
+    echo
+    tail -100 larStage$stage.out
+    echo
+    echo "tail -100 larStage$stage.err"
+    echo
+    tail -100 larStage$stage.err
+    echo
+  fi
 
   # Sam cleanups.
 
