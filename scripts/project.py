@@ -285,6 +285,9 @@
 #                       Do this in the input checking phase (e.g. prior to job submission)
 #                       in function stagedef.checkinput.
 #
+# <stage><dropboxwait> - If this element is present as well as <activebase>, specify a
+#                        dropbox waiting interval.  Specify as floating point days.
+#
 # <stage><prestagefraction> - This parameter should be a floating point number between
 #                       0 and 1 (default 0).  If nonzero, the separate batch job that
 #                       starts the sam project (if any) will prestage at least the

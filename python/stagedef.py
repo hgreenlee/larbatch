@@ -64,6 +64,7 @@ class StageDef:
             self.singlerun = base.singlerun
             self.prestart = base.prestart
             self.activebase = base.activebase
+            self.dropboxwait = base.dropboxwait
             self.prestagefraction = base_stage.prestagefraction
             self.maxfluxfilemb = base_stage.maxfluxfilemb
             self.num_jobs = base_stage.num_jobs
@@ -126,6 +127,7 @@ class StageDef:
             self.singlerun=0       # Single run mode.
             self.prestart = 0      # Prestart flag.
             self.activebase = ''   # Active projects base name.
+            self.dropboxwait = ''  # Dropbox waiting interval.
             self.prestagefraction = 0.  # Prestage fraction.
             self.maxfluxfilemb = 0 # MaxFluxFileMB (size of genie flux files to fetch).
             self.num_jobs = default_num_jobs # Number of jobs.
@@ -281,6 +283,12 @@ class StageDef:
         activebase_elements = stage_element.getElementsByTagName('activebase')
         if activebase_elements:
             self.activebase = str(activebase_elements[0].firstChild.data)
+
+        # Dropbox wait interval.
+
+        dropboxwait_elements = stage_element.getElementsByTagName('dropboxwait')
+        if dropboxwait_elements:
+            self.dropboxwait = float(dropboxwait_elements[0].firstChild.data)
 
         # Prestage fraction (subelement).
 
@@ -656,6 +664,7 @@ class StageDef:
         result += 'Single run flag = %d\n' % self.singlerun
         result += 'Prestart flag = %d\n' % self.prestart
         result += 'Active projects base name = %s\n' % self.activebase
+        result += 'Dropbox waiting interval = %f\n' % self.dropboxwait
         result += 'Prestage fraction = %f\n' % self.prestagefraction
         result += 'Input stream = %s\n' % self.inputstream
         result += 'Previous stage name = %s\n' % self.previousstage
@@ -1002,7 +1011,9 @@ class StageDef:
 
         if self.activebase != '':
             activedef = '%s_active' % self.activebase
-            project_utilities.make_active_project_dataset(self.activebase, activedef)
+            project_utilities.make_active_project_dataset(self.activebase,
+                                                          self.dropboxwait,
+                                                          activedef)
 
         # If target size is nonzero, and input is from a file list, calculate
         # the ideal number of output jobs and override the current number 

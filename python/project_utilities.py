@@ -12,6 +12,7 @@
 
 import sys, os, stat, time, types
 import pycurl, StringIO
+import datetime
 import socket
 import subprocess
 import shutil
@@ -362,9 +363,10 @@ def active_projects(defname = ''):
 # Make active projects dataset definition.
 # 
 # defname        - Dataset definition associated with active projects.
+# dropbixwait    - Dropbox wait interval (float days).
 # active_defname - Name of dataset definition to create.
 
-def make_active_project_dataset(defname, active_defname):
+def make_active_project_dataset(defname, dropboxwait, active_defname):
 
     s = samweb()
     test_kca()
@@ -387,6 +389,27 @@ def make_active_project_dataset(defname, active_defname):
 
     if dim == '':
         dim = 'file_id 0'
+
+    # If the dropbox waiting interval is nonzero, add an "or" clause for virtual
+    # files that might get locations.
+
+    if dropboxwait > 0.:
+
+        # Convert the waiting interval to a datetime.timedelta object.
+
+        dt = datetime.timedelta(int(dropboxwait), int(dropboxwait % 1 * 86400))
+
+        # Get the earliest allowed time.
+
+        tmin = datetime.datetime.utcnow() - dt
+
+        # Format time in a form acceptable to sam.
+
+        tminstr = tmin.strftime('%Y-%m-%dT%H:%M:%S')
+
+        # Append sam dimension.
+
+        dim += " or isparentof: (create_date > '%s' and availability: virtual)" % tminstr
 
     # Create or update active_defname.
 
