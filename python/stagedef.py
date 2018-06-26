@@ -1146,7 +1146,7 @@ class StageDef:
             samweb = project_utilities.samweb()
             sum = samweb.listFilesSummary(defname=self.inputdef)
             n = sum['file_count']
-            print 'Input dataset contains %d files.' % n
+            print 'Input dataset %s contains %d files.' % (self.inputdef, n)
             if n < self.num_jobs:
                 self.num_jobs = n
             if n == 0:
