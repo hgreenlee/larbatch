@@ -127,7 +127,7 @@ class StageDef:
             self.singlerun=0       # Single run mode.
             self.prestart = 0      # Prestart flag.
             self.activebase = ''   # Active projects base name.
-            self.dropboxwait = ''  # Dropbox waiting interval.
+            self.dropboxwait = 0.  # Dropbox waiting interval.
             self.prestagefraction = 0.  # Prestage fraction.
             self.maxfluxfilemb = 0 # MaxFluxFileMB (size of genie flux files to fetch).
             self.num_jobs = default_num_jobs # Number of jobs.
@@ -1011,9 +1011,11 @@ class StageDef:
 
         if self.activebase != '':
             activedef = '%s_active' % self.activebase
+            waitdef = '%s_wait' % self.activebase
             project_utilities.make_active_project_dataset(self.activebase,
                                                           self.dropboxwait,
-                                                          activedef)
+                                                          activedef,
+                                                          waitdef)
 
         # If target size is nonzero, and input is from a file list, calculate
         # the ideal number of output jobs and override the current number 

@@ -366,7 +366,7 @@ def active_projects(defname = ''):
 # dropbixwait    - Dropbox wait interval (float days).
 # active_defname - Name of dataset definition to create.
 
-def make_active_project_dataset(defname, dropboxwait, active_defname):
+def make_active_project_dataset(defname, dropboxwait, active_defname, wait_defname):
 
     s = samweb()
     test_kca()
@@ -390,27 +390,6 @@ def make_active_project_dataset(defname, dropboxwait, active_defname):
     if dim == '':
         dim = 'file_id 0'
 
-    # If the dropbox waiting interval is nonzero, add an "or" clause for virtual
-    # files that might get locations.
-
-    if dropboxwait > 0.:
-
-        # Convert the waiting interval to a datetime.timedelta object.
-
-        dt = datetime.timedelta(int(dropboxwait), int(dropboxwait % 1 * 86400))
-
-        # Get the earliest allowed time.
-
-        tmin = datetime.datetime.utcnow() - dt
-
-        # Format time in a form acceptable to sam.
-
-        tminstr = tmin.strftime('%Y-%m-%dT%H:%M:%S')
-
-        # Append sam dimension.
-
-        dim += " or isparentof: (create_date > '%s' and availability: virtual)" % tminstr
-
     # Create or update active_defname.
 
     def_exists = False
@@ -427,6 +406,51 @@ def make_active_project_dataset(defname, dropboxwait, active_defname):
         print 'Creating dataset definition %s' % active_defname
 
     s.createDefinition(active_defname, dim, user=get_user(), group=get_experiment())
+
+    # If the dropbox waiting interval is nonzero, create a dataset for 
+    # dropbox waiting files.
+
+    dim = ''
+    if dropboxwait > 0.:
+
+        # Convert the waiting interval to a datetime.timedelta object.
+
+        dt = datetime.timedelta(int(dropboxwait), int(dropboxwait % 1 * 86400))
+
+        # Get the earliest allowed time.
+
+        tmin = datetime.datetime.utcnow() - dt
+
+        # Format time in a form acceptable to sam.
+
+        tminstr = tmin.strftime('%Y-%m-%dT%H:%M:%S')
+
+        # Append sam dimension.
+
+        dim = "isparentof: (create_date > '%s' and availability: virtual)" % tminstr
+
+    else:
+
+        # Otherwise make dummy dataset.
+
+        dim = 'file_id 0'
+
+    # Create or update active_defname.
+
+    def_exists = False
+    try:
+        s.descDefinition(wait_defname)
+        def_exists = True
+    except:
+        def_exists = False
+
+    if def_exists:
+        print 'Updating dataset definition %s' % wait_defname
+        s.deleteDefinition(wait_defname)
+    else:
+        print 'Creating dataset definition %s' % wait_defname
+
+    s.createDefinition(wait_defname, dim, user=get_user(), group=get_experiment())
 
 
 # Function to ensure that files in dCache have layer two.
