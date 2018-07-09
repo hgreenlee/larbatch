@@ -498,14 +498,14 @@ if [ $GRID -ne 0 ]; then
   # This option is only used when copying back output.
   # It affects the ownership of copied back files.
 
-  echo "X509_USER_PROXY = $X509_USER_PROXY"
-  if ! echo $X509_USER_PROXY | grep -q Production; then
-    FORCE=expgridftp
-    IFDH_OPT="--force=$FORCE"
-  else
-    FORCE=gridftp
-    IFDH_OPT="--force=$FORCE"
-  fi
+  #echo "X509_USER_PROXY = $X509_USER_PROXY"
+  #if ! echo $X509_USER_PROXY | grep -q Production; then
+  #  FORCE=expgridftp
+  #  IFDH_OPT="--force=$FORCE"
+  #else
+  #  FORCE=gridftp
+  #  IFDH_OPT="--force=$FORCE"
+  #fi
 fi
 echo "IFDH_OPT=$IFDH_OPT"
 
@@ -1074,7 +1074,7 @@ done
 
 # Clean remote output and log directories.
 
-export IFDH_FORCE=$FORCE
+#export IFDH_FORCE=$FORCE
 for dir in ${LOGDIR} ${OUTDIR}
 do
   echo "Make sure directory ${dir}/$OUTPUT_SUBDIR exists."
