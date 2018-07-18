@@ -25,6 +25,7 @@
 # --sam_project <arg>     - Sam project name.
 # --sam_start             - Specify that this worker should be responsible for
 #                           starting and stopping the sam project.
+# --recur                 - Recursive input dataset (force snapshot).
 # --sam_schema <arg>      - Use this option with argument "root" to stream files using
 #
 # Larsoft options.
@@ -148,6 +149,7 @@ SAM_STATION=""
 SAM_DEFNAME=""
 SAM_PROJECT=""
 SAM_START=0
+RECUR=0
 SAM_SCHEMA=""
 IFDH_OPT=""
 INIT=""
@@ -234,6 +236,11 @@ while [ $# -gt 0 ]; do
     # Sam start/stop project flag.
     --sam_start )
       SAM_START=1
+      ;;
+
+    # Recursive flag.
+    --recur )
+      RECUR=1
       ;;
 
     # Sam schema.
@@ -790,6 +797,16 @@ echo "Sam project: $SAM_PROJECT"
 # Start project (if requested).
 
 if [ $SAM_START -ne 0 ]; then
+
+  # If recursive flag, take snapshot of input dataset.
+
+  if [ $RECUR -ne 0 ]; then
+    echo "Forcing snapshot"
+    SAM_DEFNAME=${SAM_DEFNAME}:force
+  fi
+
+  # Start the project.
+
   if [ x$SAM_DEFNAME != x ]; then
 
     echo "Starting project $SAM_PROJECT using sam dataset definition $SAM_DEFNAME"
@@ -940,6 +957,7 @@ done
 hadd $TFILE @condor_hadd_input.list
 stat=$?
 echo $stat > hadd.stat
+echo $stat > lar.stat
 echo "hadd completed with exit status ${stat}."
 
 # Setup up current version of ifdhc (may be different than version setup by larsoft).
@@ -969,7 +987,7 @@ fi
 
 # Delete input files.
 
-if [ -f condor_hadd_input.list ]; then
+if [ -f condor_hadd_input.list -a x$SAM_SCHEMA != xroot ]; then
   while read file; do
     rm -f $file
   done < condor_hadd_input.list
@@ -990,37 +1008,25 @@ fi
 for root in *.root; do
   base=`basename $root .root`_`uuidgen`
   mv $root ${base}.root
-  #mv ${root}.json ${base}.root.json
+  if [ -f ${root}.json ]; then
+    mv ${root}.json ${base}.root.json
+  fi
 done
 
 # Calculate root metadata for all root files and save as json file.
 # If json metadata already exists, merge with newly geneated root metadata.
-# Extract a subrun number, if one exists.  Make remote (not necessarily unique) 
-# and local directories for root files with identifiable subrun numbers.
 
-subrun=''
-declare -a outdirs
-declare -a logdirs
-declare -a subruns
 for root in *.root; do
-  json=${root}.json
-  if [ -f $json ]; then
-    root_metadata.py $root > ${json}2
-    merge_json.py $json ${json}2 > ${json}3
-    mv -f ${json}3 $json
-    rm ${json}2
-  else
-    root_metadata.py $root > $json
-  fi
-  subrun=`subruns.py $root | awk 'NR==1{print $2}'`
-  if [ x$subrun != x ]; then
-    subruns[$subrun]=$subrun
-    outdirs[$subrun]=`echo $OUTDIR | sed "s/@s/$subrun/"`
-    echo "Output directory for subrun $subrun is ${outdirs[$subrun]}"
-    mkdir out$subrun
-    logdirs[$subrun]=`echo $LOGDIR | sed "s/@s/$subrun/"`    
-    echo "Log directory for subrun $subrun is ${logdirs[$subrun]}"
-    mkdir log$subrun
+  if [ -f $root ]; then
+    json=${root}.json
+    if [ -f $json ]; then
+      ./root_metadata.py $root > ${json}2
+      ./merge_json.py $json ${json}2 > ${json}3
+      mv -f ${json}3 $json
+      rm ${json}2
+    else
+      root_metadata.py $root > $json
+    fi
   fi
 done
 
@@ -1029,17 +1035,17 @@ done
 mkdir out
 mkdir log
 
-# Stash all of the files we want to save in a local
-# directories with a unique name.  Then copy these directories
-# and their contents recursively.
+# Stash all of the files we want to save in a local directories that we just created.
 
-# First move .root and corresponding .json files into one subdirectory.
-# Note that .root files never get replicated.
+# First move .root and corresponding .json files into the out and log subdirectories.
 
 for root in *.root; do
-  subrun=`subruns.py $root | awk 'NR==1{print $2}'`
-  mv $root out$subrun
-  mv ${root}.json log$subrun
+  if [ -f $root ]; then
+    mv $root out
+    if [ -f ${root}.json ]; then
+      mv ${root}.json log
+    fi
+  fi
 done
 
 # Copy any remaining files into all log subdirectories.
@@ -1047,76 +1053,62 @@ done
 
 for outfile in *; do
   if [ -f $outfile ]; then
-    cp $outfile log
-    for subrun in ${subruns[*]}
-    do
-      cp $outfile log$subrun
-    done
+    mv $outfile log
   fi
 done
 
-# Clean remote output and log directories.
+# Make a tarball of the log directory contents, and save the tarball in the log directory.
 
-#export IFDH_FORCE=$FORCE
-for dir in ${LOGDIR} ${OUTDIR}
-do
-  echo "Make sure directory ${dir}/$OUTPUT_SUBDIR exists."
-  mkdir.py -v ${dir}/$OUTPUT_SUBDIR
-  echo "Make sure directory ${dir}/$OUTPUT_SUBDIR is empty."
-  emptydir.py -v ${dir}/$OUTPUT_SUBDIR
-  mkdir.py -v ${dir}/$OUTPUT_SUBDIR
-  echo "Directory ${dir}/$OUTPUT_SUBDIR clean ok."
-done
-for dir in ${logdirs[*]} ${outdirs[*]}
-do
-  echo "Make sure directory ${dir}/$OUTPUT_SUBDIR exists."
-  mkdir.py -v ${dir}/$OUTPUT_SUBDIR
-  echo "Make sure directory ${dir}/$OUTPUT_SUBDIR is empty."
-  emptydir.py -v ${dir}/$OUTPUT_SUBDIR
-  mkdir.py -v ${dir}/$OUTPUT_SUBDIR
-  echo "Directory ${dir}/$OUTPUT_SUBDIR clean ok."
-done
+rm -f log.tar
+tar -cjf log.tar -C log .
+mv log.tar log
+
+# Create remote output and log directories.
+
+export IFDH_CP_MAXRETRIES=5
+
+echo "Make directory ${LOGDIR}/${OUTPUT_SUBDIR}."
+date
+ifdh mkdir $IFDH_OPT ${LOGDIR}/$OUTPUT_SUBDIR
+echo "Done making directory ${LOGDIR}/${OUTPUT_SUBDIR}."
+date
+
+if [ ${OUTDIR} != ${LOGDIR} ]; then
+  echo "Make directory ${OUTDIR}/${OUTPUT_SUBDIR}."
+  date
+  ifdh mkdir $IFDH_OPT ${OUTDIR}/$OUTPUT_SUBDIR
+  echo "Done making directory ${OUTDIR}/${OUTPUT_SUBDIR}."
+  date
+fi
+
+# Transfer tarball in log subdirectory.
 
 statout=0
-export IFDH_CP_MAXRETRIES=0
-echo "ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR"
-ifdh cp -D $IFDH_OPT log/* ${LOGDIR}/$OUTPUT_SUBDIR
+echo "ls log"
+ls log
+echo "ifdh cp -D $IFDH_OPT log/log.tar ${LOGDIR}/$OUTPUT_SUBDIR"
+ifdh cp -D $IFDH_OPT log/log.tar ${LOGDIR}/$OUTPUT_SUBDIR
+date
 stat=$?
 if [ $stat -ne 0 ]; then
+  statout=1
   echo "ifdh cp failed with status ${stat}."
 fi
 
-for subrun in ${subruns[*]}
-do
-  echo "ifdh cp -D $IFDH_OPT log${subrun}/* ${logdirs[$subrun]}/$OUTPUT_SUBDIR"
-  ifdh cp -D $IFDH_OPT log${subrun}/* ${logdirs[$subrun]}/$OUTPUT_SUBDIR
+# Transfer root files in out subdirectory.
+
+if [ "$( ls -A out )" ]; then
+  echo "ifdh cp -D $IFDH_OPT out/* ${OUTDIR}/$OUTPUT_SUBDIR"
+  ifdh cp -D $IFDH_OPT out/* ${OUTDIR}/$OUTPUT_SUBDIR
   stat=$?
   if [ $stat -ne 0 ]; then
+    statout=1
     echo "ifdh cp failed with status ${stat}."
-    statout=$stat
   fi
-done
-
-echo "ifdh cp -D $IFDH_OPT out/* ${OUTDIR}/$OUTPUT_SUBDIR"
-ifdh cp -D $IFDH_OPT out/* ${OUTDIR}/$OUTPUT_SUBDIR
-stat=$?
-if [ $stat -ne 0 ]; then
-  echo "ifdh cp failed with status ${stat}."
 fi
 
-for subrun in ${subruns[*]}
-do
-  echo "ifdh cp -D $IFDH_OPT out${subrun}/* ${outdirs[$subrun]}/$OUTPUT_SUBDIR"
-  ifdh cp -D $IFDH_OPT out${subrun}/* ${outdirs[$subrun]}/$OUTPUT_SUBDIR
-  stat=$?
-  if [ $stat -ne 0 ]; then
-    echo "ifdh cp failed with status ${stat}."
-    statout=$stat
-  fi
-done
-
-if [ $statout -eq 0 ]; then
-  statout=`cat hadd.stat`
+if [ $statout -eq 0 -a -f log/hadd.stat ]; then
+  statout=`cat log/hadd.stat`
 fi
 
 exit $statout

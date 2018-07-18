@@ -1728,7 +1728,9 @@ mkdir log
 for root in *.root; do
   if [ -f $root ]; then
     mv $root out
-    mv ${root}.json log
+    if [ -f ${root}.json ]; then
+      mv ${root}.json log
+    fi
   fi
 done
 
@@ -1814,7 +1816,7 @@ if [ ${OUTDIR} != ${LOGDIR} ]; then
   date
 fi
 
-# Transfer tarbal in log subdirectory.
+# Transfer tarball in log subdirectory.
 
 statout=0
 echo "ls log"
@@ -1824,6 +1826,7 @@ ifdh cp -D $IFDH_OPT log/log.tar ${LOGDIR}/$OUTPUT_SUBDIR
 date
 stat=$?
 if [ $stat -ne 0 ]; then
+  statout=1
   echo "ifdh cp failed with status ${stat}."
 fi
 
@@ -1836,6 +1839,7 @@ if [ $COPY_TO_FTS -eq 0 ]; then
     ifdh cp -D $IFDH_OPT out/* ${OUTDIR}/$OUTPUT_SUBDIR
     stat=$?
     if [ $stat -ne 0 ]; then
+      statout=1
       echo "ifdh cp failed with status ${stat}."
     fi
   fi
