@@ -12,6 +12,7 @@
 #
 # Options:
 #
+# -c, --config            - For compatibility (ignored).
 # -T, --TFileName  <arg>  - TFile output file name
 # --nfile <arg>           - Number of files to process per worker.
 #
@@ -24,10 +25,7 @@
 # --sam_project <arg>     - Sam project name.
 # --sam_start             - Specify that this worker should be responsible for
 #                           starting and stopping the sam project.
-# --single                - Specify that the output and log directories will be emptied
-#                           by the batch worker, and therefore the output and log
-#                           directories will only ever contain output from a single
-#                           worker.
+# --sam_schema <arg>      - Use this option with argument "root" to stream files using
 #
 # Larsoft options.
 #
@@ -55,6 +53,7 @@
 # --init-script <arg>     - User initialization script execute.
 # --init-source <arg>     - User initialization script to source (bash).
 # --end-script <arg>      - User end-of-job script to execute.
+# --init <path>           - Absolute path of environment initialization script.
 #
 # End options.
 #
@@ -125,7 +124,6 @@ cd
 
 TFILE=""
 NFILE=10000
-SINGLE=0
 ARGS=""
 UPS_PRDS=""
 REL=""
@@ -150,8 +148,9 @@ SAM_STATION=""
 SAM_DEFNAME=""
 SAM_PROJECT=""
 SAM_START=0
-GRID=0
+SAM_SCHEMA=""
 IFDH_OPT=""
+INIT=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -190,11 +189,6 @@ while [ $# -gt 0 ]; do
         NFILE=$2
         shift
       fi
-      ;;
-
-    # Single worker mode.
-    --single )
-      SINGLE=1
       ;;
 
     # Sam user.
@@ -240,6 +234,14 @@ while [ $# -gt 0 ]; do
     # Sam start/stop project flag.
     --sam_start )
       SAM_START=1
+      ;;
+
+    # Sam schema.
+    --sam_schema )
+      if [ $# -gt 1 ]; then
+        SAM_SCHEMA=$2
+        shift
+      fi
       ;;
 
     # General arguments for hadd command line.
@@ -306,9 +308,8 @@ while [ $# -gt 0 ]; do
       INTERACTIVE=1
       ;;
 
-    # Grid flag.
+    # Grid flag (no effect).
     -g|--grid )
-      GRID=1
       ;;
 
     # Group.
@@ -399,6 +400,14 @@ while [ $# -gt 0 ]; do
       fi
       ;;
 
+    # Specify environment initialization script path.
+    --init )
+      if [ $# -gt 1 ]; then
+        INIT=$2
+        shift
+      fi
+      ;;
+
     # Other.
     * )
       echo "Unknown option $1"
@@ -447,14 +456,19 @@ if [ x$SAM_STATION = x ]; then
   SAM_STATION=$GRP
 fi
 
+# Standardize sam_schema (xrootd -> root, xroot -> root).
+
+if [ x$SAM_SCHEMA = xxrootd ]; then
+  SAM_SCHEMA=root
+fi
+if [ x$SAM_SCHEMA = xxroot ]; then
+  SAM_SCHEMA=root
+fi
+
 # Make sure work directory is defined and exists.
 
 if [ x$WORKDIR = x ]; then
   echo "Work directory not specified."
-  exit 1
-fi
-if [ $GRID -eq 0 -a ! -d $WORKDIR ]; then
-  echo "Work directory $WORKDIR does not exist."
   exit 1
 fi
 echo "Work directory: $WORKDIR"
@@ -463,8 +477,17 @@ echo "Work directory: $WORKDIR"
 
 echo "Initializing ups and mrb."
 
-echo "Sourcing setup_experiment.sh"
-source ${CONDOR_DIR_INPUT}/setup_experiment.sh
+if [ x$INIT != x ]; then
+  if [ ! -f $INIT ]; then
+    echo "Environment initialization script $INIT not found."
+    exit 1
+  fi
+  echo "Sourcing $INIT"
+  source $INIT
+else
+  echo "Sourcing setup_experiment.sh"
+  source ${CONDOR_DIR_INPUT}/setup_experiment.sh
+fi
 
 echo PRODUCTS=$PRODUCTS
 
@@ -490,33 +513,12 @@ fi
 export GROUP
 echo "Group: $GROUP"
 
-# Set options for ifdh.
-
-if [ $GRID -ne 0 ]; then
-
-  # Figure out if this is a production job.
-  # This option is only used when copying back output.
-  # It affects the ownership of copied back files.
-
-  #echo "X509_USER_PROXY = $X509_USER_PROXY"
-  #if ! echo $X509_USER_PROXY | grep -q Production; then
-  #  FORCE=expgridftp
-  #  IFDH_OPT="--force=$FORCE"
-  #else
-  #  FORCE=gridftp
-  #  IFDH_OPT="--force=$FORCE"
-  #fi
-fi
 echo "IFDH_OPT=$IFDH_OPT"
 
 # Make sure output directory exists and is writable.
 
 if [ x$OUTDIR = x ]; then
   echo "Output directory not specified."
-  exit 1
-fi
-if [ $GRID -eq 0 -a \( ! -d $OUTDIR -o ! -w $OUTDIR \) ]; then
-  echo "Output directory $OUTDIR does not exist or is not writable."
   exit 1
 fi
 echo "Output directory: $OUTDIR"
@@ -527,23 +529,7 @@ if [ x$LOGDIR = x ]; then
   echo "Log directory not specified."
   exit 1
 fi
-if [ $GRID -eq 0 -a \( ! -d $LOGDIR -o ! -w $LOGDIR \) ]; then
-  echo "Log directory $LOGDIR does not exist or is not writable."
-  exit 1
-fi
 echo "Log directory: $LOGDIR"
-
-# See if we need to set umask for group write.
-
-if [ $GRID -eq 0 ]; then
-  OUTUSER=`stat -c %U $OUTDIR`
-  LOGUSER=`stat -c %U $LOGDIR`
-  CURUSER=`whoami`
-  if [ $OUTUSER != $CURUSER -o $LOGUSER != $CURUSER ]; then
-    echo "Setting umask for group write."
-    umask 002
-  fi
-fi
 
 # Make sure scratch directory is defined.
 # For batch, the scratch directory is always $_CONDOR_SCRATCH_DIR
@@ -839,8 +825,8 @@ APPFAMILY=root
 APPNAME=hadd
 
 echo "Starting consumer process."
-echo "ifdh establishProcess $PURL $APPNAME $REL $NODE $SAM_USER $APPFAMILY hadd $NFILE"
-CPID=`ifdh establishProcess $PURL $APPNAME $REL $NODE $SAM_USER $APPFAMILY hadd $NFILE`
+echo "ifdh establishProcess $PURL $APPNAME $REL $NODE $SAM_USER $APPFAMILY hadd $NFILE $SAM_SCHEMA"
+CPID=`ifdh establishProcess $PURL $APPNAME $REL $NODE $SAM_USER $APPFAMILY hadd $NFILE $SAM_SCHEMA`
 if [ x$CPID = x ]; then
   echo "Unable to start consumer process for project url ${PURL}."
   exit 1
@@ -909,34 +895,37 @@ do
 
   # Find the local path to which this uri will be fetched.
 
-  filepath=`ifdh localPath $fileuri`
-  stat=$?
-  if [ $stat != 0 ]; then
-    echo "ifdh localPath returned status $stat"
-    break
-  fi
-  if [ x$filepath = x ]; then
-    echo "ifdh localPath did not return anything."
-    break
-  fi
-  filename=`basename $filepath`
+  filepath=$fileuri
+  if [[ ! $fileuri =~ ^root: ]]; then
+    filepath=`ifdh localPath $fileuri`
+    stat=$?
+    if [ $stat != 0 ]; then
+      echo "ifdh localPath returned status $stat"
+      break
+    fi
+    if [ x$filepath = x ]; then
+      echo "ifdh localPath did not return anything."
+      break
+    fi
 
-  # Transfer the file.
+    # Transfer the file.
 
-  ifdh fetchInput $fileuri
-  stat=$?
-  if [ $stat != 0 ]; then
-    echo "ifdh fetchInput returned status $stat"
-    break
-  fi
-  if [ ! -f $filepath ]; then
-    echo "Transferred file $fileuri not found."
-    break
+    ifdh fetchInput $fileuri
+    stat=$?
+    if [ $stat != 0 ]; then
+      echo "ifdh fetchInput returned status $stat"
+      break
+    fi
+    if [ ! -f $filepath ]; then
+      echo "Transferred file $fileuri not found."
+      break
+    fi
   fi
 
   # If we get to here, file has been transferred successfully.
   # Update the file status to consumed.
 
+  filename=`basename $filepath`
   ifdh updateFileStatus $PURL $CPID $filename consumed
 
   # Update file lists.
@@ -1040,12 +1029,6 @@ done
 mkdir out
 mkdir log
 
-# Make local files group write, if appropriate.
-
-if [ $GRID -eq 0 -a $OUTUSER != $CURUSER ]; then
-  chmod -R g+rw .
-fi
-
 # Stash all of the files we want to save in a local
 # directories with a unique name.  Then copy these directories
 # and their contents recursively.
@@ -1084,27 +1067,15 @@ do
   mkdir.py -v ${dir}/$OUTPUT_SUBDIR
   echo "Directory ${dir}/$OUTPUT_SUBDIR clean ok."
 done
-if [ $SINGLE != 0 ]; then
-  for dir in ${logdirs[*]} ${outdirs[*]}
-  do
-    echo "Make sure directory $dir exists."
-    mkdir.py -v $dir
-    echo "Make sure directory $dir is empty."
-    emptydir.py -v $dir
-    mkdir.py -v $dir/$OUTPUT_SUBDIR
-    echo "Directory $dir/$OUTPUT_SUBDIR clean ok."
-  done
-else
-  for dir in ${logdirs[*]} ${outdirs[*]}
-  do
-    echo "Make sure directory ${dir}/$OUTPUT_SUBDIR exists."
-    mkdir.py -v ${dir}/$OUTPUT_SUBDIR
-    echo "Make sure directory ${dir}/$OUTPUT_SUBDIR is empty."
-    emptydir.py -v ${dir}/$OUTPUT_SUBDIR
-    mkdir.py -v ${dir}/$OUTPUT_SUBDIR
-    echo "Directory ${dir}/$OUTPUT_SUBDIR clean ok."
-  done
-fi
+for dir in ${logdirs[*]} ${outdirs[*]}
+do
+  echo "Make sure directory ${dir}/$OUTPUT_SUBDIR exists."
+  mkdir.py -v ${dir}/$OUTPUT_SUBDIR
+  echo "Make sure directory ${dir}/$OUTPUT_SUBDIR is empty."
+  emptydir.py -v ${dir}/$OUTPUT_SUBDIR
+  mkdir.py -v ${dir}/$OUTPUT_SUBDIR
+  echo "Directory ${dir}/$OUTPUT_SUBDIR clean ok."
+done
 
 statout=0
 export IFDH_CP_MAXRETRIES=0
