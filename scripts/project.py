@@ -3131,28 +3131,29 @@ def dojobsub(project, stage, makeup, recur):
 
         stop_commands.append(stop_command)
 
-    if len(start_commands) > 0:
+    if len(start_commands) > 0 or len(stop_commands) > 0:
 
         # Create dagNabbit.py configuration script in the work directory.
 
         dagfilepath = os.path.join(tmpdir, 'submit.dag')
         dag = safeopen(dagfilepath)
+        dag.write('<serial>\n')
 
         # Write start section.
 
-        dag.write('<serial>\n')
-        dag.write('\n<parallel>\n\n')
-        for start_command in start_commands:
-            first = True
-            for word in start_command:
-                if not first:
-                    dag.write(' ')
-                dag.write(word)
-                if word[:6] == 'jobsub':
-                    dag.write(' -n')
-                first = False
-            dag.write('\n\n')
-        dag.write('</parallel>\n')
+        if len(start_commands) > 0:
+            dag.write('\n<parallel>\n\n')
+            for start_command in start_commands:
+                first = True
+                for word in start_command:
+                    if not first:
+                        dag.write(' ')
+                    dag.write(word)
+                    if word[:6] == 'jobsub':
+                        dag.write(' -n')
+                    first = False
+                dag.write('\n\n')
+            dag.write('</parallel>\n')
 
         # Write main section.
 
@@ -3188,18 +3189,22 @@ def dojobsub(project, stage, makeup, recur):
 
         # Write stop section.
 
-        dag.write('\n<parallel>\n\n')
-        for stop_command in stop_commands:
-            first = True
-            for word in stop_command:
-                if not first:
-                    dag.write(' ')
-                dag.write(word)
-                if word[:6] == 'jobsub':
-                    dag.write(' -n')
-                first = False
-            dag.write('\n\n')
-        dag.write('</parallel>\n')
+        if len(stop_commands) > 0:
+            dag.write('\n<parallel>\n\n')
+            for stop_command in stop_commands:
+                first = True
+                for word in stop_command:
+                    if not first:
+                        dag.write(' ')
+                    dag.write(word)
+                    if word[:6] == 'jobsub':
+                        dag.write(' -n')
+                    first = False
+                dag.write('\n\n')
+            dag.write('</parallel>\n')
+
+        # Finish dag.
+
         dag.write('\n</serial>\n')
         dag.close()
 
