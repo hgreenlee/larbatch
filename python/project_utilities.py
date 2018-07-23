@@ -320,12 +320,67 @@ def start_project(defname, default_prjname, max_files, force_snapshot):
 
     return 0
 
-# Return a list of active projects associated with a particular dataset definition.
+# Return a list of active projects associated with a particular dataset definition stem
+# based on project start and end times.  The particular criteria used in this function
+# are:
+#
+# 1.  Project started within the last 72 hours.
+#
+# 2.  Project ended within the last 12 hours, or no end time.
+
+def active_projects2(defname = ''):
+
+    result = set()
+
+    # Get project name stem.
+
+    s = samweb()
+    prjstem = ''
+    if defname != '':
+        prjstem = '%s_' % s.makeProjectName(defname).rsplit('_',1)[0]
+
+    # Query a list of projects started within the last 72 hours.
+
+    dt = datetime.timedelta(3, 0)
+    tmin = datetime.datetime.utcnow() - dt
+    tminstr = tmin.strftime('%Y-%m-%dT%H:%M:%S')
+    prjnames = s.listProjects(started_after = tminstr)
+
+    # Loop over projects to check end times.
+
+    for prjname in prjnames:
+        if prjstem == '' or prjname.startswith(prjstem):
+
+            # This project is a candidate for inclusion in result.
+            # Check end time.
+
+            age = 0
+            prjurl = s.findProject(project=prjname, station=get_experiment())
+            if prjurl != '':
+                prjsum = s.projectSummary(prjurl)
+                if prjsum.has_key('project_end_time') and prjsum['project_end_time'] != '-':
+                    tendstr = prjsum['project_end_time'][:19]
+                    tend = datetime.datetime.strptime(tendstr, '%Y-%m-%dT%H:%M:%S')
+                    tage = datetime.datetime.utcnow() - tend
+                    age = tage.total_seconds()
+
+            # Keep this project if the end time is within 12 hourse of the current
+            # time, or if there is no end time.
+
+            if age < 12*3600:
+                result.add(prjname)
+
+    # Done.
+
+    return result
+
+
+# Return a list of active projects associated with a particular dataset definition stem.
 # If the definition argument is the empty string, return all active projects.
 
 def active_projects(defname = ''):
 
-    result = []
+    result = set()
 
     # Get project name stem.
 
@@ -354,7 +409,7 @@ def active_projects(defname = ''):
         if len(words) > 0 and words[0] == 'project':
             prjname = words[1].split('(')[0]
             if prjstem == '' or prjname.startswith(prjstem):
-                result.append(prjname)
+                result.add(prjname)
 
     # Done.
 
@@ -365,6 +420,7 @@ def active_projects(defname = ''):
 # defname        - Dataset definition associated with active projects.
 # dropbixwait    - Dropbox wait interval (float days).
 # active_defname - Name of dataset definition to create.
+# wait_defname   - Name of dropbox waiting dataset to create.
 
 def make_active_project_dataset(defname, dropboxwait, active_defname, wait_defname):
 
@@ -373,7 +429,7 @@ def make_active_project_dataset(defname, dropboxwait, active_defname, wait_defna
 
     # Get list of active projects.
 
-    prjs = active_projects(defname)
+    prjs = active_projects(defname) | active_projects2(defname)
 
     # Make sam dimension.
 
