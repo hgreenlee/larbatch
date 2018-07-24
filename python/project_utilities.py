@@ -358,11 +358,15 @@ def active_projects2(defname = ''):
             prjurl = s.findProject(project=prjname, station=get_experiment())
             if prjurl != '':
                 prjsum = s.projectSummary(prjurl)
-                if prjsum.has_key('project_end_time') and prjsum['project_end_time'] != '-':
-                    tendstr = prjsum['project_end_time'][:19]
-                    tend = datetime.datetime.strptime(tendstr, '%Y-%m-%dT%H:%M:%S')
-                    tage = datetime.datetime.utcnow() - tend
-                    age = tage.total_seconds()
+                if prjsum.has_key('project_end_time'):
+                    tendstr = prjsum['project_end_time']
+                    if len(tendstr) >= 19:
+                        try:
+                            tend = datetime.datetime.strptime(tendstr[:19], '%Y-%m-%dT%H:%M:%S')
+                            tage = datetime.datetime.utcnow() - tend
+                            age = tage.total_seconds()
+                        except:
+                            pass
 
             # Keep this project if the end time is within 12 hourse of the current
             # time, or if there is no end time.
