@@ -33,6 +33,7 @@ from larbatch_utilities import get_dropbox
 from larbatch_utilities import get_sam_metadata
 from larbatch_utilities import get_ups_products
 from larbatch_utilities import get_setup_script_path
+from larbatch_utilities import check_running
 
 # Prevent root from printing garbage on initialization.
 if os.environ.has_key('TERM'):

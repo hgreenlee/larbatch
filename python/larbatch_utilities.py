@@ -59,6 +59,7 @@
 # srm_uri - Convert dCache path to srm uri.
 # nfs_server - Node name of a computer in which /pnfs filesystem is nfs-mounted.
 # parse_mode - Parse the ten-character file mode string ("ls -l").
+# check_running - Check for running project.py submission process.
 #
 ######################################################################
 
@@ -1015,6 +1016,94 @@ def get_user():
     # Something went wrong...
 
     raise RuntimeError, 'Unable to determine authenticated user.'
+
+
+# Function to check whether there is a running project.py process on this node
+# with the specified xml file and stage.
+#
+# This function works by checking the contents of /proc.  Each process is checked
+# for the following properties.
+#
+# 1.  Owned by same uid as this process.
+# 2.  Command line.
+#     a) project.py
+#     b) Matching --xml option (exact match).
+#     c) Matching --stage option (exact match).
+#     d) --submit or --makeup option.
+#
+# Arguments xml and stage should be strings, and must match exactly command
+# line arguments.
+
+def check_running(xmlname, stagename):
+
+    result = 0
+
+    # Look over pids in /proc.
+
+    for pid in os.listdir('/proc'):
+        if pid.isdigit() and int(pid) != os.getpid():
+            procfile = os.path.join('/proc', pid)
+            try:
+                pstat = os.stat(procfile)
+
+                # Only look at processes that match this process uid.
+
+                if pstat.st_uid == os.getuid():
+
+                    # Get command line.
+
+                    cmdfile = os.path.join('/proc', pid, 'cmdline')
+                    cmd = open(cmdfile).read()
+                    words = cmd.split('\0')
+
+                    # Check options.
+
+                    project = 0
+                    xml = 0
+                    stage = 0
+                    xmlmatch = 0
+                    stagematch = 0
+                    submit = 0
+                    makeup = 0
+
+                    for word in words:
+
+                        # Check command.
+
+                        if word.endswith('project.py'):
+                            project = 1
+
+                        # Check arguments.
+
+                        if xml == 1 and word == xmlname:
+                            xmlmatch = 1
+                        elif stage == 1 and word == stagename:
+                            stagematch = 1
+
+                        xml = 0
+                        stage = 0
+
+                        # Check options.
+
+                        if word == '--xml':
+                            xml = 1
+                        elif word == '--stage':
+                            stage = 1
+                        elif word == '--submit':
+                            submit = 1
+                        elif word == '--makeup':
+                            makeup = 1
+
+                    if project != 0 and submit+makeup != 0 and xmlmatch != 0 and stagematch != 0:
+                        result = 1
+                        break
+
+            except:
+                pass
+
+    # Done.
+
+    return result
 
 
 # Import experiment-specific utilities.  In this imported module, one can 

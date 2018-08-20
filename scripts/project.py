@@ -4061,8 +4061,12 @@ def main(argv):
 
         for stagename in stagenames:
             print 'Stage %s:' % stagename
-            stage = stages[stagename]
-            dosubmit(project, stage, makeup, stage.recur)
+
+            if project_utilities.check_running(xmlfile, stagename):
+                print 'Skipping job submission because similar job submission process is running.'
+            else:
+                stage = stages[stagename]
+                dosubmit(project, stage, makeup, stage.recur)
 
     if check or checkana:
 
