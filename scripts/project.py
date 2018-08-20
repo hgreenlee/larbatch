@@ -2975,10 +2975,8 @@ def dojobsub(project, stage, makeup, recur):
       print 'Validation will be done on the worker node %d' % stage.validate_on_worker
       command.extend([' --validate'])
       command.extend([' --declare'])
-      #Maintain parentage will only work if you are running one file per job
-      #Likewise only run it if we have multiple fcl files and thus are running in multiple stages
-      if stage.max_files_per_job == 1 and type(stage.fclname) != type('') and \
-              type(stage.fclname) != type(u''):
+      # Maintain parentage only if we have multiple fcl files and thus are running in multiple stages
+      if type(stage.fclname) != type('') and type(stage.fclname) != type(u''):
         command.extend([' --maintain_parentage'])
 
     if stage.copy_to_fts == 1:
