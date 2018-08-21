@@ -285,14 +285,7 @@ def start_project(defname, default_prjname, max_files, force_snapshot):
 
         # Figure out whether limitdef already exists.
 
-        def_exists = False
-        try:
-            s.descDefinition(limitdef)
-            def_exists = True
-        except:
-            def_exists = False
-
-        if def_exists:
+        if defExists(limitdef):
             print 'Using already created limited dataset definition %s.' % limitdef
         else:
             print 'Creating limited dataset definition %s.' % limitdef
@@ -453,14 +446,7 @@ def make_active_project_dataset(defname, dropboxwait, active_defname, wait_defna
 
     # Create or update active_defname.
 
-    def_exists = False
-    try:
-        s.descDefinition(active_defname)
-        def_exists = True
-    except:
-        def_exists = False
-
-    if def_exists:
+    if defExists(active_defname):
         print 'Updating dataset definition %s' % active_defname
         s.deleteDefinition(active_defname)
     else:
@@ -498,20 +484,38 @@ def make_active_project_dataset(defname, dropboxwait, active_defname, wait_defna
 
     # Create or update active_defname.
 
-    def_exists = False
-    try:
-        s.descDefinition(wait_defname)
-        def_exists = True
-    except:
-        def_exists = False
-
-    if def_exists:
+    if defExists(wait_defname):
         print 'Updating dataset definition %s' % wait_defname
         s.deleteDefinition(wait_defname)
     else:
         print 'Creating dataset definition %s' % wait_defname
 
     s.createDefinition(wait_defname, dim, user=get_user(), group=get_experiment())
+
+
+# Function to check whether a sam dataset definition exists.
+
+def defExists(defname):
+    def_exists = False
+    try:
+        samweb().descDefinition(defname)
+        def_exists = True
+    except:
+        def_exists = False
+    return def_exists
+
+
+# Function to make a dummy sam dataset definition (doesn't match files) in case one doesn't exist.
+
+def makeDummyDef(defname):
+
+    if not defExists(defname):
+
+        # Make dummy definition.
+
+        print 'Making dummy dataset definition %s' % defname
+        test_kca()
+        samweb().createDefinition(defname, 'file_id 0', user=get_user(), group=get_experiment())
 
 
 # Function to ensure that files in dCache have layer two.

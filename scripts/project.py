@@ -3949,11 +3949,37 @@ def main(argv):
                     dim += ' minus (project_name %s and consumed_status consumed)' % \
                         project_wildcard
                 elif stage.recurtype == 'child':
-                    dim += ' minus (isparentof: ( %s ) )' % \
-                        project_utilities.dimensions(project, stage, ana=False)
+                    pdim = project_utilities.dimensions(project, stage, ana=False)
+                    n = pdim.find('and availability:')
+                    if n > 0:
+                        pdim = pdim[:n]
+                    n = pdim.find('with availability')
+                    if n > 0:
+                        pdim = pdim[:n]
+                    dim += ' minus (isparentof: ( %s with availability physical ) )' % pdim
+                    if stage.activebase != '':
+                        activedef = '%s_active' % stage.activebase
+                        waitdef = '%s_wait' % stage.activebase
+                        dim += ' minus defname: %s' % activedef
+                        dim += ' minus defname: %s' % waitdef
+                        project_utilities.makeDummyDef(activedef)
+                        project_utilities.makeDummyDef(waitdef)
                 elif stage.recurtype == 'anachild':
-                    dim += ' minus (isparentof: ( %s ) )' % \
-                        project_utilities.dimensions(project, stage, ana=True)
+                    pdim = project_utilities.dimensions(project, stage, ana=True)
+                    n = pdim.find('and availability:')
+                    if n > 0:
+                        pdim = pdim[:n]
+                    n = pdim.find('with availability')
+                    if n > 0:
+                        pdim = pdim[:n]
+                    dim += ' minus (isparentof: ( %s with availability physical ) )' % pdim
+                    if stage.activebase != '':
+                        activedef = '%s_active' % stage.activebase
+                        waitdef = '%s_wait' % stage.activebase
+                        dim += ' minus defname: %s' % activedef
+                        dim += ' minus defname: %s' % waitdef
+                        project_utilities.makeDummyDef(activedef)
+                        project_utilities.makeDummyDef(waitdef)
                 elif stage.recurtype != '' and stage.recurtype != 'none':
                     raise RuntimeError, 'Unknown recursive type %s.' % stage.recurtype
 
