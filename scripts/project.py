@@ -2984,7 +2984,7 @@ def dojobsub(project, stage, makeup, recur):
 
     # If input is from sam, also construct a dag file, or add --sam_start option.
 
-    if (prjname != '' or mixprjname != '') and command_njobs == 1 and not project.force_dag:
+    if (prjname != '' or mixprjname != '') and command_njobs == 1 and not project.force_dag and not prj_started:
         command.extend([' --sam_start',
                         ' --sam_station', project_utilities.get_experiment(),
                         ' --sam_group', project_utilities.get_experiment()])
