@@ -1050,7 +1050,7 @@ class StageDef:
 
             # First find an input file.
 
-            dim = 'defname: %s' % self.inputdef
+            dim = 'defname: %s with limit 1' % self.inputdef
             input_files = samweb.listFiles(dimensions=dim)
             if len(input_files) > 0:
                 random_file = random.choice(input_files)
