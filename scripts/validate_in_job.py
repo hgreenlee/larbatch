@@ -396,16 +396,25 @@ def main():
                         md = {}
                         pass
 
-                # change the parentage of the file based on it's parents and aunts from condor_lar
+                if maintain_parentage == 1:
 
-                jobs_parents = os.getenv('JOBS_PARENTS', '').split(" ")
-                jobs_aunts   = os.getenv('JOBS_AUNTS', '').split(" ")
-                if(jobs_parents[0] != '' ):
-                    md['parents'] = [{'file_name': parent} for parent in jobs_parents]
-                if(jobs_aunts[0] != '' ):
-                    for aunt in jobs_aunts:
-                        mixparent_dict = {'file_name': aunt}
-                        md['parents'].append(mixparent_dict)
+                    # Delete the old parents, if any.
+
+                    if md.has_key('parents'):         	     
+                        del md['parents']
+
+                    # change the parentage of the file based on it's parents and aunts from condor_lar
+
+                    jobs_parents = os.getenv('JOBS_PARENTS', '').split(" ")
+                    jobs_aunts   = os.getenv('JOBS_AUNTS', '').split(" ")
+                    if(jobs_parents[0] != '' ):
+                        md['parents'] = [{'file_name': parent} for parent in jobs_parents]
+                    if(jobs_aunts[0] != '' ):
+                        for aunt in jobs_aunts:
+                            mixparent_dict = {'file_name': aunt}
+                            if not md.has_key('parents'):
+                                md['parents'] = []
+                            md['parents'].append(mixparent_dict)
 	        	         	     
                 if len(md) > 0 and md.has_key('file_type'):
                     project_utilities.test_kca()
