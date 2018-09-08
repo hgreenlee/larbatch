@@ -1647,14 +1647,14 @@ fi
 
 # Do root file checks.
 
-# Randomize names of root files that have a corresponding json file.
+# Randomize names of data files that have a corresponding json file.
 # These are normally histogram files.  Art files do not have external
 # json metadata at this point.
 
-# Also randomize the names of root files if there is no input specified
+# Also randomize the names of data files if there is no input specified
 # for this job (i.e. generator jobs).
 
-# Also randomize and shorten names of root files that are longer than
+# Also randomize and shorten names of data files that are longer than
 # 200 characters.
 
 ran=0
@@ -1662,34 +1662,36 @@ if [ $USE_SAM -eq 0 -a x$INFILE = x -a x$INLIST = x ]; then
   ran=1
 fi
 
-for root in *.root; do
-  if [ -f $root ]; then
-    nc=`echo $root | wc -c`
-    if [ -f ${root}.json -o $ran != 0 -o $nc -ge 200 ]; then
-      echo "Move file 1 $root"
-      base=`basename $root .root | cut -c1-150`_`uuidgen`
-      echo "Move file 2 $base"
-      mv $root ${base}.root
-      if [ -f ${root}.json ]; then
-        mv ${root}.json ${base}.root.json
+for datafile in *.root *.pndr; do
+  if [ -f $datafile ]; then
+    nc=`echo $datafile | wc -c`
+    if [ -f ${datafile}.json -o $ran != 0 -o $nc -ge 200 ]; then
+      base=`basename $datafile`
+      ext=${base##*.}
+      stem=${base%.*}
+      newstem=`echo $stem | cut -c1-150`_`uuidgen`
+      echo "mv $datafile ${newstem}.${ext}"
+      mv $datafile ${newstem}.${ext}
+      if [ -f ${datafile}.json ]; then
+        mv ${datafile}.json ${newstem}.${ext}.json
       fi
     fi
   fi
 done
 
-# Calculate root metadata for all root files and save as json file.
+# Calculate root metadata for all data files and save as json file.
 # If json metadata already exists, merge with newly geneated root metadata.
 
-for root in *.root; do
-  if [ -f $root ]; then
-    json=${root}.json
+for datafile in *.root *.pndr; do
+  if [ -f $datafile ]; then
+    json=${datafile}.json
     if [ -f $json ]; then
-      ./root_metadata.py $root > ${json}2
+      ./root_metadata.py $datafile > ${json}2
       ./merge_json.py $json ${json}2 > ${json}3
       mv -f ${json}3 $json
       rm ${json}2
     else
-      ./root_metadata.py $root > $json
+      ./root_metadata.py $datafile > $json
     fi
   fi
 done
@@ -1723,13 +1725,13 @@ mkdir log
 
 # Stash all of the files we want to save in the local directories that we just created.
 
-# First move .root and corresponding .json files into the out and log subdirectories.
+# First move data files and corresponding .json files into the out and log subdirectories.
 
-for root in *.root; do
-  if [ -f $root ]; then
-    mv $root out
-    if [ -f ${root}.json ]; then
-      mv ${root}.json log
+for datafile in *.root *.pndr; do
+  if [ -f $datafile ]; then
+    mv $datafile out
+    if [ -f ${datafile}.json ]; then
+      mv ${datafile}.json log
     fi
   fi
 done
@@ -1830,7 +1832,7 @@ if [ $stat -ne 0 ]; then
   echo "ifdh cp failed with status ${stat}."
 fi
 
-# Transfer root files in out subdirectory.
+# Transfer data files in out subdirectory.
 
 if [ $COPY_TO_FTS -eq 0 ]; then
 

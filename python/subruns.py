@@ -47,7 +47,7 @@ def get_subruns(inputfile):
     result = []
 
     # Check whether this file exists.
-    if not os.path.exists(inputfile):
+    if not os.path.exists(inputfile) or not inputfile.endswith('.root'):
         return result
             
     # Root checks.

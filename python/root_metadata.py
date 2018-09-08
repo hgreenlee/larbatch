@@ -123,6 +123,11 @@ def get_external_metadata(inputfile):
     md['file_size'] =  str(os.path.getsize(inputfile))
     md['crc'] = fileEnstoreChecksum(inputfile)
 
+    # Quit here if file type is not ".root"
+
+    if not inputfile.endswith('.root'):
+        return md
+
     # Root checks.
 
     file = ROOT.TFile.Open(larbatch_posix.root_stream(inputfile))
@@ -167,12 +172,6 @@ def get_external_metadata(inputfile):
         except:
             pass
 
-    else:
-
-        # Root file could not be opened.
-
-        md = {}
-	
     return md
 
 if __name__ == "__main__":

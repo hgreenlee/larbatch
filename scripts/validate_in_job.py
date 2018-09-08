@@ -86,18 +86,18 @@ def check_root_file(path, logdir):
     return result
 
 
-# Check root files (*.root) in the specified directory.
+# Check data files (*.root and *.pndr) in the specified directory.
 
 def check_root(outdir, logdir):
 
-    # This method looks for files with names of the form *.root.
+    # This method looks for files with names of the form *.root or *.pndr.
     # If such files are found, it also checks for the existence of
     # an Events TTree.
     #
     # Returns a 3-tuple containing the following information.
     # 1.  Total number of events in art root files.
     # 2.  A list of 3-tuples with an entry for each art root file.
-    #     The 2-tuple contains the following information.
+    #     The 3-tuple contains the following information.
     #     a) Filename (full path).
     #     b) Number of events
     #     c) Stream name.
@@ -110,7 +110,7 @@ def check_root(outdir, logdir):
     print 'Checking root files in directory %s.' % outdir
     filenames = os.listdir(outdir)
     for filename in filenames:
-        if filename[-5:] == '.root':
+        if filename[-5:] == '.root' or filename[-5:] == '.pndr':
             path = os.path.join(outdir, filename)
             nevroot, stream = check_root_file(path, logdir)
             if nevroot >= 0:
@@ -121,7 +121,7 @@ def check_root(outdir, logdir):
 
             elif nevroot == -1:
 
-                # Valid root (histo/ntuple) file, not an art root file.
+                # Valid root (histo/ntuple) file or pndr file, not an art root file.
 
                 hists.append(os.path.join(outdir, filename))
 
