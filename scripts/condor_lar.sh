@@ -36,6 +36,7 @@
 # --sam_schema <arg>      - Use this option with argument "root" to stream files using
 #                           xrootd.  Leave this option out for standard file copy.
 # --njobs <arg>           - Parallel project with specified number of jobs (default one).
+# --data_file_type        - Specify data file type (default "root," repeatable).
 #
 # Mix input options (second input stream).
 #
@@ -244,6 +245,7 @@ COPY_TO_FTS=0
 MAINTAIN_PARENTAGE=0
 EXE="lar"
 INIT=""
+declare -a DATAFILETYPES
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -339,6 +341,15 @@ while [ $# -gt 0 ]; do
       if [ $# -gt 1 ]; then
         NJOBS=$2
         shift
+      fi
+      ;;
+
+    # Specify data file types (repeatable).
+    --data_file_type )
+      if [ $# -gt 1 ]; then
+        ntype=${#DATAFILETYPES[@]}
+        DATAFILETYPES[$ntype]=$2
+	shift
       fi
       ;;
 
@@ -645,6 +656,12 @@ done
 #echo "INITSOURCE=$INITSOURCE"
 #echo "ENDSCRIPT=$ENDSCRIPT"
 #echo "VALIDATE_IN_JOB=$VALIDATE_IN_JOB"
+
+# Set default data file types ("root").
+
+if [ ${#DATAFILETYPES[@]} -eq 0 ]; then
+  DATAFILETYPES[0]=root
+fi
 
 # Done with arguments.
 
@@ -1662,38 +1679,42 @@ if [ $USE_SAM -eq 0 -a x$INFILE = x -a x$INLIST = x ]; then
   ran=1
 fi
 
-for datafile in *.root *.pndr; do
-  if [ -f $datafile ]; then
-    nc=`echo $datafile | wc -c`
-    if [ -f ${datafile}.json -o $ran != 0 -o $nc -ge 200 ]; then
-      base=`basename $datafile`
-      ext=${base##*.}
-      stem=${base%.*}
-      newstem=`echo $stem | cut -c1-150`_`uuidgen`
-      echo "mv $datafile ${newstem}.${ext}"
-      mv $datafile ${newstem}.${ext}
-      if [ -f ${datafile}.json ]; then
-        mv ${datafile}.json ${newstem}.${ext}.json
+for ftype in ${DATAFILETYPES[*]}; do
+  for datafile in *.${ftype}; do
+    if [ -f $datafile ]; then
+      nc=`echo $datafile | wc -c`
+      if [ -f ${datafile}.json -o $ran != 0 -o $nc -ge 200 ]; then
+        base=`basename $datafile`
+        ext=${base##*.}
+        stem=${base%.*}
+        newstem=`echo $stem | cut -c1-150`_`uuidgen`
+        echo "mv $datafile ${newstem}.${ext}"
+        mv $datafile ${newstem}.${ext}
+        if [ -f ${datafile}.json ]; then
+          mv ${datafile}.json ${newstem}.${ext}.json
+        fi
       fi
     fi
-  fi
+  done
 done
 
 # Calculate root metadata for all data files and save as json file.
 # If json metadata already exists, merge with newly geneated root metadata.
 
-for datafile in *.root *.pndr; do
-  if [ -f $datafile ]; then
-    json=${datafile}.json
-    if [ -f $json ]; then
-      ./root_metadata.py $datafile > ${json}2
-      ./merge_json.py $json ${json}2 > ${json}3
-      mv -f ${json}3 $json
-      rm ${json}2
-    else
-      ./root_metadata.py $datafile > $json
+for ftype in ${DATAFILETYPES[*]}; do
+  for datafile in *.${ftype}; do
+    if [ -f $datafile ]; then
+      json=${datafile}.json
+      if [ -f $json ]; then
+        ./root_metadata.py $datafile > ${json}2
+        ./merge_json.py $json ${json}2 > ${json}3
+        mv -f ${json}3 $json
+        rm ${json}2
+      else
+        ./root_metadata.py $datafile > $json
+      fi
     fi
-  fi
+  done
 done
 
 #create a master lar.stat file which contains the overall exit code of all stages
@@ -1727,13 +1748,15 @@ mkdir log
 
 # First move data files and corresponding .json files into the out and log subdirectories.
 
-for datafile in *.root *.pndr; do
-  if [ -f $datafile ]; then
-    mv $datafile out
-    if [ -f ${datafile}.json ]; then
-      mv ${datafile}.json log
+for ftype in ${DATAFILETYPES[*]}; do
+  for datafile in *.${ftype}; do
+    if [ -f $datafile ]; then
+      mv $datafile out
+      if [ -f ${datafile}.json ]; then
+        mv ${datafile}.json log
+      fi
     fi
-  fi
+  done
 done
 
 # Move any remaining files into the log subdirectory.
@@ -1776,8 +1799,6 @@ if [ $VALIDATE_IN_JOB -eq 1 ]; then
     if [ $MAINTAIN_PARENTAGE -eq 1 ]; then
        export JOBS_PARENTS=`echo ${parent_files[*]}`
        export JOBS_AUNTS=`echo ${aunt_files[*]}`
-    
-    
     fi
     
     # Do validation function for the whole job.
@@ -1786,8 +1807,12 @@ if [ $VALIDATE_IN_JOB -eq 1 ]; then
     if [ $valstat -eq 0 ]; then
       curdir=`pwd`
       cd $curdir/log
-      echo "./validate_in_job.py --dir $curdir/out --logfiledir $curdir/log --outdir $OUTDIR/$OUTPUT_SUBDIR --declare $DECLARE_IN_JOB --copy $COPY_TO_FTS --maintain_parentage $MAINTAIN_PARENTAGE"
-      ./validate_in_job.py --dir $curdir/out --logfiledir $curdir/log --outdir $OUTDIR/$OUTPUT_SUBDIR --declare $DECLARE_IN_JOB --copy $COPY_TO_FTS --maintain_parentage $MAINTAIN_PARENTAGE
+      dataopt=''
+      for ftype in ${DATAFILETYPES[*]}; do
+        dataopt="$dataopt --data_file_type $ftype"
+      done
+      echo "./validate_in_job.py --dir $curdir/out --logfiledir $curdir/log --outdir $OUTDIR/$OUTPUT_SUBDIR --declare $DECLARE_IN_JOB --copy $COPY_TO_FTS --maintain_parentage $MAINTAIN_PARENTAGE $dataopt"
+      ./validate_in_job.py --dir $curdir/out --logfiledir $curdir/log --outdir $OUTDIR/$OUTPUT_SUBDIR --declare $DECLARE_IN_JOB --copy $COPY_TO_FTS --maintain_parentage $MAINTAIN_PARENTAGE $dataopt
       valstat=$?
       cd $curdir
     fi

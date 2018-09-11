@@ -84,6 +84,7 @@ class StageDef:
             self.site = base_stage.site
             self.cpu = base_stage.cpu
             self.disk = base_stage.disk
+            self.datafiletypes = base_stage.datafiletypes
             self.memory = base_stage.memory
             self.parameters = base_stage.parameters
             self.output = base_stage.output
@@ -147,6 +148,7 @@ class StageDef:
             self.site = ''         # Site.
             self.cpu = default_cpu # Number of cpus.
             self.disk = default_disk     # Disk space (string value+unit).
+            self.datafiletypes = ["root"] # Data file types.
             self.memory = default_memory # Amount of memory (integer MB).
             self.parameters = {}   # Dictionary of metadata parameters.
             self.output = ''       # Art output file name.
@@ -563,6 +565,14 @@ class StageDef:
             self.disk = str(disk_elements[0].firstChild.data)
             self.disk = ''.join(self.disk.split())
 
+        # Data file types (subelement).
+
+        datafiletypes_elements = stage_element.getElementsByTagName('datafiletypes')
+        if datafiletypes_elements:
+            data_file_types_str = str(datafiletypes_elements[0].firstChild.data)
+            data_file_types_str = ''.join(data_file_types_str.split())
+            self.datafiletypes = data_file_types_str.split(',')
+
         # Memory (subelement).
 
         memory_elements = stage_element.getElementsByTagName('memory')
@@ -700,6 +710,7 @@ class StageDef:
         result += 'Site = %s\n' % self.site
         result += 'Cpu = %d\n' % self.cpu
         result += 'Disk = %s\n' % self.disk
+        result += 'Datafiletypes = %s\n' % self.datafiletypes
         result += 'Memory = %d MB\n' % self.memory
         result += 'Metadata parameters:\n'
         for key in self.parameters:

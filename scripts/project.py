@@ -152,6 +152,8 @@
 # <cpu>     - Number of cpus (jobsub_submit --cpu=...).
 # <disk>    - Amount of scratch disk space (jobsub_submit --disk=...).
 #             Specify value and unit (e.g. 50GB).
+# <datafiletypes> - Specify file types that should be considered as data and
+#                   saved in batch jobs (comma-separated list).  Default "root".
 # <memory>  - Specify amount of memory in MB (jobsub_submit --memory=...).
 #
 # <script>  - Name of batch worker script (default condor_lar.sh).
@@ -793,11 +795,11 @@ def check_root_file(path, logdir):
     return result
 
 
-# Check data files (*.root and *.pndr) in the specified directory.
+# Check data files in the specified directory.
 
-def check_root(outdir, logdir):
+def check_root(outdir, logdir, data_file_types):
 
-    # This method looks for files with names of the form *.root or *.pndr.
+    # This method looks for files with file types matching data_file_types.
     # If such files are found, it also checks for the existence of
     # an Events TTree.
     #
@@ -817,7 +819,8 @@ def check_root(outdir, logdir):
     print 'Checking root files in directory %s.' % outdir
     filenames = larbatch_posix.listdir(outdir)
     for filename in filenames:
-        if filename[-5:] == '.root' or filename[-5:] == '.pndr':
+        name, ext = os.path.splitext(filename)
+        if len(ext) > 0 and ext[1:] in data_file_types:
             path = os.path.join(outdir, filename)
             nevroot, stream = check_root_file(path, logdir)
             if nevroot >= 0:
@@ -828,7 +831,7 @@ def check_root(outdir, logdir):
 
             elif nevroot == -1:
 
-                # Valid root (histo/ntuple) or pndr file, not an art root file.
+                # Valid data file, not an art root file.
 
                 hists.append(os.path.join(outdir, filename))
 
@@ -1136,7 +1139,7 @@ def docheck(project, stage, ana, quick=False):
             if not bad:
                 nev = 0
                 roots = []
-                nev, roots, subhists = check_root(out_subpath, log_subpath)
+                nev, roots, subhists = check_root(out_subpath, log_subpath, stage.datafiletypes)
                 if not ana:
                     if len(roots) == 0 or nev < 0:
                         print 'Problem with root file(s) in subdirectory %s.' % subdir
@@ -2951,6 +2954,8 @@ def dojobsub(project, stage, makeup, recur):
     command.extend([' -n', '%d' % stage.num_events])
     if stage.inputdef == '':
         command.extend([' --njobs', '%d' % stage.num_jobs ])
+    for ftype in stage.datafiletypes:
+        command.extend(['--data_file_type', ftype])
     if procmap != '':
         command.extend([' --procmap', procmap])
     if stage.output != '':

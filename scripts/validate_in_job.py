@@ -14,6 +14,7 @@
 # --copy <0/1>    - Flag for copyoing files directly to dropbox.
 # --maintain_parentage <0/1> - If true, override default parentage according to
 #                              env variables JOBS_PARENTS and JOBS_AUNTS.
+# --data_file_type - Specify data file type (repeatable, default "root").
 #
 # Environment variables:
 #
@@ -86,11 +87,11 @@ def check_root_file(path, logdir):
     return result
 
 
-# Check data files (*.root and *.pndr) in the specified directory.
+# Check data files in the specified directory.
 
-def check_root(outdir, logdir):
+def check_root(outdir, logdir, data_file_types):
 
-    # This method looks for files with names of the form *.root or *.pndr.
+    # This method looks for files with file types matching data_file_types.
     # If such files are found, it also checks for the existence of
     # an Events TTree.
     #
@@ -110,7 +111,8 @@ def check_root(outdir, logdir):
     print 'Checking root files in directory %s.' % outdir
     filenames = os.listdir(outdir)
     for filename in filenames:
-        if filename[-5:] == '.root' or filename[-5:] == '.pndr':
+        name, ext = os.path.splitext(filename)
+        if len(ext) > 0 and ext[1:] in data_file_types:
             path = os.path.join(outdir, filename)
             nevroot, stream = check_root_file(path, logdir)
             if nevroot >= 0:
@@ -121,7 +123,7 @@ def check_root(outdir, logdir):
 
             elif nevroot == -1:
 
-                # Valid root (histo/ntuple) file or pndr file, not an art root file.
+                # Valid data file, not an art root file.
 
                 hists.append(os.path.join(outdir, filename))
 
@@ -165,6 +167,7 @@ def main():
     declare_file = 0
     copy_to_dropbox = 0
     maintain_parentage = 0
+    data_file_types = []
     args = sys.argv[1:]
     while len(args) > 0:
 
@@ -186,9 +189,17 @@ def main():
 	elif args[0] == '--maintain_parentage' and len(args) > 1:
             maintain_parentage = int(args[1])
             del args[0:2]        
+	elif args[0] == '--data_file_type' and len(args) > 1:
+            data_file_types.append(args[1])
+            del args[0:2]        
         else:
             print 'Unknown option %s' % args[0]
             return 1
+
+    # Add default data_file_types.
+
+    if len(data_file_types) == 0:
+        data_file_types.append('root')
 
     status = 0 #global status code to tell us everything is ok.
     
@@ -214,7 +225,7 @@ def main():
         print 'No log file directory specified (use the --logfiledir option.) Exiting.'
         return 1  
     
-    nevts,rootfiles,hists = check_root(checkdir, logdir)
+    nevts,rootfiles,hists = check_root(checkdir, logdir, data_file_types)
 
     # Set flag to do analysis-style validation if all of the following are true:
     #
