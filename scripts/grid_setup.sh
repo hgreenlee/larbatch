@@ -63,9 +63,9 @@ source `${UPS_DIR}/bin/ups setup ${SETUP_UPS}`
 
 localP=$MRB_INSTALL
 
-echo
-ups active
-echo
+##echo
+##ups active
+##echo
 
 tmpfl=/tmp/`basename $localP`_setup_$$$$
 rm -f $tmpfl
@@ -85,18 +85,15 @@ echo "export UPS_OVERRIDE=\"${new_override}\""  >> $tmpfl
 
 ups list -aK+ -z $localP | while read line
 do
-  echo "got line: $line"
+  ##echo "got line: $line"
   words=($(echo $line | tr " " "\n"))
   ##echo "split into ${#words[@]} pieces"
   product=$(echo ${words[0]} | tr "\"" " ")
   version=$(echo ${words[1]} | tr "\"" " ")
   quals=$(echo ${words[3]} | tr "\"" " ")
   product_uc=$(echo ${product} | tr '[a-z]' '[A-z]')
-  product_setup=$(printenv | grep SETUP_${product_uc} | cut -f2 -d"=")
-  echo "product_setup=\$(printenv | grep SETUP_${product_uc} | cut -f2 -d\"=\")" >> $tmpfl
-  echo "if [ -z \"\${product_setup}\" ]; then"  >> $tmpfl
-  echo "echo \"INFO: $product is not setup\""  >> $tmpfl
-  echo "else"  >> $tmpfl
+  echo "product_setup=\$(printenv | grep SETUP_${product_uc} | wc -l)" >> $tmpfl
+  echo "if [[ \"\${product_setup}\" > 0 ]]; then"  >> $tmpfl
   echo "unsetup -j $product"  >> $tmpfl
   echo "fi"  >> $tmpfl
   if [ -z $quals ]
