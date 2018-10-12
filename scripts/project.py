@@ -152,8 +152,6 @@
 # <cpu>     - Number of cpus (jobsub_submit --cpu=...).
 # <disk>    - Amount of scratch disk space (jobsub_submit --disk=...).
 #             Specify value and unit (e.g. 50GB).
-# <datafiletypes> - Specify file types that should be considered as data and
-#                   saved in batch jobs (comma-separated list).  Default "root".
 # <memory>  - Specify amount of memory in MB (jobsub_submit --memory=...).
 #
 # <script>  - Name of batch worker script (default condor_lar.sh).
@@ -332,6 +330,8 @@
 #                    Specify value and unit (e.g. 50GB).
 # <stage><memory>  - Specify amount of memory in MB (jobsub_submit --memory=...).
 # <stage><output>  - Specify output file name.
+# <stage><datafiletypes>  - Specify file types that should be considered as data and
+#                           saved in batch jobs (comma-separated list).  Default "root".
 # <stage><TFileName>   - Ability to specify unique output TFile Name
 #                        (Required when generating Metadata for TFiles)
 # <stage><jobsub>  - Arbitrary jobsub_submit option(s).  Space-separated list.
