@@ -61,10 +61,10 @@ class StageDef:
             self.recur = base_stage.recur
             self.recurtype = base_stage.recurtype
             self.recurlimit = base_stage.recurlimit
-            self.singlerun = base.singlerun
-            self.prestart = base.prestart
-            self.activebase = base.activebase
-            self.dropboxwait = base.dropboxwait
+            self.singlerun = base_stage.singlerun
+            self.prestart = base_stage.prestart
+            self.activebase = base_stage.activebase
+            self.dropboxwait = base_stage.dropboxwait
             self.prestagefraction = base_stage.prestagefraction
             self.maxfluxfilemb = base_stage.maxfluxfilemb
             self.num_jobs = base_stage.num_jobs
