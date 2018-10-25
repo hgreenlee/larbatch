@@ -2981,7 +2981,7 @@ def dojobsub(project, stage, makeup, recur):
       command.extend([' --validate'])
       command.extend([' --declare'])
       # Maintain parentage only if we have multiple fcl files and thus are running in multiple stages
-      if type(stage.fclname) != type('') and type(stage.fclname) != type(u''):
+      if type(stage.fclname) == type([]) and len(stage.fclname) > 1:
         command.extend([' --maintain_parentage'])
 
     if stage.copy_to_fts == 1:
