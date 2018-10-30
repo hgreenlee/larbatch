@@ -271,6 +271,48 @@ if [ $MAX_FILES -ne 0 -a $nf -gt $MAX_FILES ]; then
   nf=$MAX_FILES
 fi
 
+# If recursive flag, force snapshot of input dataset.
+
+if [ $RECUR -ne 0 ]; then
+  echo "Forcing snapshot"
+  SAM_DEFNAME=${SAM_DEFNAME}:force
+fi
+
+# Start the project.
+
+nostart=1
+echo "Starting project ${SAM_PROJECT}."
+ifdh startProject $SAM_PROJECT $SAM_STATION $SAM_DEFNAME $SAM_USER $SAM_GROUP
+if [ $? -eq 0 ]; then
+  echo "Project successfully started."
+  nostart=0
+else
+  echo "Start project error status $?"
+fi
+
+# Check the project snapshot.
+
+nf=0
+if [ $nostart -eq 0 ]; then
+  nf=`ifdh translateConstraints "snapshot_for_project_name $SAM_PROJECT" | wc -l`
+  echo "Project snapshot contains $nf files."
+fi
+
+# Abort if snapshot contains zero files.  Stop project and eventually exit with error status.
+
+if [ $nostart -eq 0 -a $nf -eq 0 ]; then
+  echo "Stopping project."
+  nostart=1
+  PURL=`ifdh findProject $SAM_PROJECT $SAM_STATION`
+  if [ x$PURL != x ]; then
+    echo "Project url: $PURL"
+    ifdh endProject $PURL
+    if [ $? -eq 0 ]; then
+      echo "Project successfully stopped."
+    fi
+  fi
+fi
+
 # Calculate the number of files to prestage.
 
 npre=`echo "$PRESTAGE_FRACTION * $nf / 1" | bc`
@@ -280,15 +322,17 @@ echo "Will attempt to prestage $npre files."
 
 if [ $npre -gt 0 ]; then
 
+  def=`echo $SAM_DEFNAME | sed 's/:force//'`
+
   # Generate name of prestage project.
   # Here we use a safe name that won't drain recursive datasets (unlike "samweb prestage-dataset").
 
-  prjname=prestage_${SAM_DEFNAME}_`date +%Y%m%d_%H%M%S`
+  prjname=prestage_${def}_`date +%Y%m%d_%H%M%S`
   echo "Prestage project: $prjname"
 
   # Start prestage project.
 
-  ifdh startProject $prjname $SAM_STATION $SAM_DEFNAME $SAM_USER $SAM_GROUP
+  ifdh startProject $prjname $SAM_STATION ${def}:latest $SAM_USER $SAM_GROUP
   if [ $? -ne 0 ]; then
     echo "Failed to start prestage project."
     exit 1
@@ -351,48 +395,6 @@ if [ $npre -gt 0 ]; then
   ifdh endProject $prjurl
   echo "Prestage project stopped."
 
-fi
-
-# If recursive flag, force snapshot of input dataset.
-
-if [ $RECUR -ne 0 ]; then
-  echo "Forcing snapshot"
-  SAM_DEFNAME=${SAM_DEFNAME}:force
-fi
-
-# Start the project.
-
-nostart=1
-echo "Starting project ${SAM_PROJECT}."
-ifdh startProject $SAM_PROJECT $SAM_STATION $SAM_DEFNAME $SAM_USER $SAM_GROUP
-if [ $? -eq 0 ]; then
-  echo "Project successfully started."
-  nostart=0
-else
-  echo "Start project error status $?"
-fi
-
-# Check the project snapshot.
-
-nf=0
-if [ $nostart -eq 0 ]; then
-  nf=`ifdh translateConstraints "snapshot_for_project_name $SAM_PROJECT" | wc -l`
-  echo "Project snapshot contains $nf files."
-fi
-
-# Abort if snapshot contains zero files.  Stop project and eventually exit with error status.
-
-if [ $nostart -eq 0 -a $nf -eq 0 ]; then
-  echo "Stopping project."
-  nostart=1
-  PURL=`ifdh findProject $SAM_PROJECT $SAM_STATION`
-  if [ x$PURL != x ]; then
-    echo "Project url: $PURL"
-    ifdh endProject $PURL
-    if [ $? -eq 0 ]; then
-      echo "Project successfully stopped."
-    fi
-  fi
 fi
 
 # Stash all of the files we want to save in a local
