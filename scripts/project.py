@@ -89,6 +89,7 @@
 # --fcl        - Print the fcl file name and version for stage.
 # --defname    - Print sam dataset definition name for stage.
 # --input_files        - Print all input files.
+# --check_submit       - Run presubmission check script, if any.
 # --check_input        - Do all standard input file checks.
 #
 # --check_declarations - Check whether data files are declared to sam.
@@ -313,6 +314,9 @@
 # <stage><anadefname> - Sam analysis output dataset defition name (default none).
 # <stage><datatier> - Sam data tier (default none).
 # <stage><anadatatier> - Sam analysis data tier (default none).
+# <stage><submitscript> - Presubmission check script.  Must be on execution path.
+#                         If this script exits with nonzero exit status, job submission 
+#                         is aborted.
 # <stage><initscript> - Worker initialization script (condor_lar.sh --init-script).
 # <stage><initsource> - Worker initialization bash source script (condor_lar.sh --init-source).
 # <stage><endscript>  - Worker end-of-job script (condor_lar.sh --end-script).
@@ -3310,6 +3314,13 @@ def dosubmit(project, stage, makeup=False, recur=False):
 
     project_utilities.test_kca()
 
+    # Run presubmission check script.
+
+    ok = stage.checksubmit()
+    if ok != 0:
+        print 'No jobs submitted.'
+        return
+
     # In pubs mode, delete any existing work, log, or output
     # directories, since there is no separate makeup action for pubs
     # mode.
@@ -3617,6 +3628,7 @@ def main(argv):
     fcl = 0
     defname = 0
     do_input_files = 0
+    do_check_submit = 0
     do_check_input = 0
     declare = 0
     declare_ana = 0
@@ -3758,6 +3770,9 @@ def main(argv):
             del args[0]
         elif args[0] == '--input_files':
             do_input_files = 1
+            del args[0]
+        elif args[0] == '--check_submit':
+            do_check_submit = 1
             del args[0]
         elif args[0] == '--check_input':
             do_check_input = 1
@@ -4063,6 +4078,14 @@ def main(argv):
             input_files = get_input_files(stage)
             for input_file in input_files:
                 print input_file
+
+    # Do check_submit action now.
+
+    if do_check_submit:
+        for stagename in stagenames:
+            print 'Stage %s:' % stagename
+            stage = stages[stagename]
+            stage.checksubmit()
 
     # Do check_input action now.
 

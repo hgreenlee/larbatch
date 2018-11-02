@@ -10,8 +10,11 @@
 ######################################################################
 
 import sys, os, string, stat, math, subprocess, random
+import threading
+import Queue
 import samweb_cli
 import project_utilities
+import larbatch_utilities
 import larbatch_posix
 import uuid
 import math
@@ -75,6 +78,7 @@ class StageDef:
             self.ana_defname = base_stage.ana_defname
             self.data_tier = base_stage.data_tier
             self.ana_data_tier = base_stage.ana_data_tier
+            self.submit_script = base_stage.submit_script
             self.init_script = base_stage.init_script
             self.init_source = base_stage.init_source
             self.end_script = base_stage.end_script
@@ -139,6 +143,7 @@ class StageDef:
             self.ana_defname = ''  # Sam dataset definition name.
             self.data_tier = ''    # Sam data tier.
             self.ana_data_tier = '' # Sam data tier.
+            self.submit_script = '' # Submit script.
             self.init_script = ''  # Worker initialization script.
             self.init_source = ''  # Worker initialization bash source script.
             self.end_script = ''   # Worker end-of-job script.
@@ -445,6 +450,33 @@ class StageDef:
         if ana_data_tier_elements:
             self.ana_data_tier = str(ana_data_tier_elements[0].firstChild.data)
 
+        # Submit script (subelement).
+
+        submit_script_elements = stage_element.getElementsByTagName('submitscript')
+        if submit_script_elements:
+            self.submit_script = str(submit_script_elements[0].firstChild.data).split()
+
+        # Make sure submit script exists, and convert into a full path.
+
+        if len(self.submit_script) > 0:
+            if larbatch_posix.exists(self.submit_script[0]):
+                self.submit_script[0] = os.path.realpath(self.submit_script[0])
+            else:
+
+                # Look for script on execution path.
+
+                try:
+                    jobinfo = subprocess.Popen(['which', self.submit_script[0]],
+                                               stdout=subprocess.PIPE,
+                                               stderr=subprocess.PIPE)
+                    jobout, joberr = jobinfo.communicate()
+                    rc = jobinfo.poll()
+                    self.submit_script[0] = jobout.splitlines()[0].strip()
+                except:
+                    pass
+            if not larbatch_posix.exists(self.submit_script[0]):
+                raise IOError, 'Submit script %s not found.' % self.submit_script[0]
+
         # Worker initialization script (subelement).
 
         init_script_elements = stage_element.getElementsByTagName('initscript')
@@ -701,6 +733,7 @@ class StageDef:
         result += 'Analysis dataset definition name = %s\n' % self.ana_defname
         result += 'Data tier = %s\n' % self.data_tier
         result += 'Analysis data tier = %s\n' % self.ana_data_tier
+        result += 'Submit script = %s\n' % self.submit_script
         result += 'Worker initialization script = %s\n' % self.init_script
         result += 'Worker initialization source script = %s\n' % self.init_source
         result += 'Worker end-of-job script = %s\n' % self.end_script
@@ -1007,6 +1040,44 @@ class StageDef:
         self.outdir = os.path.join(self.outdir, pubs_path)
         self.logdir = os.path.join(self.logdir, pubs_path)
         self.bookdir = os.path.join(self.bookdir, pubs_path)
+
+    # Run presubmission check script, if any.
+    # Dump output and return exit status.
+    # A nonzero exit status generally means that jobs shouldn't be submitted.
+
+    def checksubmit(self):
+
+        rc = 0
+        if len(self.submit_script) > 0:
+            print 'Running presubmission check script',
+            for word in self.submit_script:
+                print word,
+            print
+            jobinfo = subprocess.Popen(self.submit_script,
+                                       stdout=subprocess.PIPE,
+                                       stderr=subprocess.PIPE)
+            q = Queue.Queue()
+            thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess,
+                                      args=[jobinfo, q])
+            thread.start()
+            thread.join(timeout=60)
+            if thread.is_alive():
+                print 'Submit script timed out, terminating.'
+                jobinfo.terminate()
+                thread.join()
+            rc = q.get()
+            jobout = q.get()
+            joberr = q.get()
+            print 'Script exit status = %d' % rc
+            print 'Script standard output:'
+            print jobout
+            print 'Script diagnostic output:'
+            print joberr
+
+        # Done.
+        # Return exit status.
+
+        return rc
 
 
     # Raise an exception if any specified input file/list doesn't exist.
