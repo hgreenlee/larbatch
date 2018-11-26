@@ -1150,7 +1150,7 @@ class StageDef:
                     # Make a new dataset definition.
                     # If this definition already exists, assume it is correct.
 
-                    newdef = '%s_run_%d' % (self.inputdef, run)
+                    newdef = '%s_run_%d' % (samweb.makeProjectName(self.inputdef), run)
                     def_exists = False
                     try:
                         desc = samweb.descDefinition(defname=newdef)

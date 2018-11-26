@@ -281,7 +281,7 @@ def start_project(defname, default_prjname, max_files, force_snapshot):
     # Make limited dataset?
 
     if max_files > 0 and nf > max_files:
-        limitdef = '%s_limit_%d' % (defname, max_files)
+        limitdef = '%s_limit_%d' % (prjname, max_files)
 
         # Figure out whether limitdef already exists.
 
