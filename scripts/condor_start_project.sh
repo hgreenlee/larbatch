@@ -248,7 +248,7 @@ else
   echo "Input dataset contains $nf files."
 fi
 if [ $MAX_FILES -ne 0 -a $nf -gt $MAX_FILES ]; then 
-  limitdef=${SAM_DEFNAME}_limit_$MAX_FILES
+  limitdef=${SAM_PROJECT}_limit_$MAX_FILES
 
   # Check whether limit def already exists.
   # Have to parse command output because ifdh returns wrong status.
@@ -273,16 +273,17 @@ fi
 
 # If recursive flag, force snapshot of input dataset.
 
+forcedef=$SAM_DEFNAME
 if [ $RECUR -ne 0 ]; then
   echo "Forcing snapshot"
-  SAM_DEFNAME=${SAM_DEFNAME}:force
+  forcedef=${SAM_DEFNAME}:force
 fi
 
 # Start the project.
 
 nostart=1
 echo "Starting project ${SAM_PROJECT}."
-ifdh startProject $SAM_PROJECT $SAM_STATION $SAM_DEFNAME $SAM_USER $SAM_GROUP
+ifdh startProject $SAM_PROJECT $SAM_STATION $forcedef $SAM_USER $SAM_GROUP
 if [ $? -eq 0 ]; then
   echo "Project successfully started."
   nostart=0
@@ -322,17 +323,15 @@ echo "Will attempt to prestage $npre files."
 
 if [ $npre -gt 0 ]; then
 
-  def=`echo $SAM_DEFNAME | sed 's/:force//'`
-
   # Generate name of prestage project.
   # Here we use a safe name that won't drain recursive datasets (unlike "samweb prestage-dataset").
 
-  prjname=prestage_${def}_`date +%Y%m%d_%H%M%S`
+  prjname=prestage_${SAM_DEFNAME}_`date +%Y%m%d_%H%M%S`
   echo "Prestage project: $prjname"
 
   # Start prestage project.
 
-  ifdh startProject $prjname $SAM_STATION ${def}:latest $SAM_USER $SAM_GROUP
+  ifdh startProject $prjname $SAM_STATION ${SAM_DEFNAME}:latest $SAM_USER $SAM_GROUP
   if [ $? -ne 0 ]; then
     echo "Failed to start prestage project."
     exit 1

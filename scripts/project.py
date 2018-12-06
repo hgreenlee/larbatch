@@ -3081,7 +3081,7 @@ def dojobsub(project, stage, makeup, recur):
 
         # Done with start command.
 
-        if not prj_started:
+        if not prj_started or stage.prestagefraction > 0.:
             start_commands.append(start_command)
 
         # Stop project jobsub command.
