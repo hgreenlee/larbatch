@@ -320,7 +320,7 @@ def start_project(defname, default_prjname, max_files, force_snapshot):
 #
 # 1.  Project started within the last 72 hours.
 #
-# 2.  Project ended within the last 12 hours, or no end time.
+# 2.  Project no end time.
 
 def active_projects2(defname = ''):
 
@@ -362,10 +362,9 @@ def active_projects2(defname = ''):
                         except:
                             pass
 
-            # Keep this project if the end time is within 12 hourse of the current
-            # time, or if there is no end time.
+            # Keep this project if there is no end time.
 
-            if age < 12*3600:
+            if age == 0:
                 result.add(prjname)
 
     # Done.
