@@ -3134,7 +3134,7 @@ def dojobsub(project, stage, makeup, recur):
         if abssetupscript != '':
             stop_command.extend([' --init', abssetupscript])
 
-        # Done with start command.
+        # Done with stop command.
 
         stop_commands.append(stop_command)
 

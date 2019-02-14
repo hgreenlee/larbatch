@@ -1579,7 +1579,11 @@ EOF
 
     # Stop project (if appropriate).
 
-    if [ $SAM_START -ne 0 ]; then
+    nprj=`ifdh translateConstraints "snapshot_for_project_name $SAM_PROJECT" | wc -l`
+    nconsumed=`ifdh translateConstraints "project_name $SAM_PROJECT and consumed_status consumed" | wc -l`
+    echo "$nprj files in project, $nconsumed files consumed so far."
+
+    if [ $SAM_START -ne 0 -o \( $nprj -gt 0 -a $nconsumed -eq $nprj \) ]; then
       echo "Stopping project."
       ifdh endProject $PURL
     fi

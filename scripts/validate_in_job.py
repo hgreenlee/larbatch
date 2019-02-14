@@ -329,55 +329,72 @@ def main():
 
                 rootpath = rootfile[0]
                 fn   = os.path.basename(rootpath)
-                print 'Declaring %s' % fn
-                expSpecificMetaData = expMetaData(project_utilities.get_experiment(), rootpath)
-                md = expSpecificMetaData.getmetadata()
+                declare_ok = False
 
-                # Decide if we want to override the internal parentage metadata.
+                # Decide if we need to declare this file.
+                # It is OK if the file is already declared.
+                # In that case, do not try to declare it again.
 
-                if maintain_parentage == 1:
+                try:
+                    md = samweb.getMetadata(fn)
+                    if len(md) > 0:
+                        declare_ok = True
+                        print 'File %s is already declared.' % fn
+                except:
+                    declare_ok = False
 
-                    # Delete the old parents, if any.
+                if not declare_ok:
+                    print 'Declaring %s' % fn
+                    expSpecificMetaData = expMetaData(project_utilities.get_experiment(), rootpath)
+                    md = expSpecificMetaData.getmetadata()
 
-                    if md.has_key('parents'):         	     
-                        del md['parents']
+                    # Decide if we want to override the internal parentage metadata.
 
-                    # change the parentage of the file based on it's parents and aunts from condor_lar
+                    if maintain_parentage == 1:
 
-                    jobs_parents = os.getenv('JOBS_PARENTS', '').split(" ")
-                    jobs_aunts   = os.getenv('JOBS_AUNTS', '').split(" ")
-                    if(jobs_parents[0] != '' ):
-                        md['parents'] = [{'file_name': parent} for parent in jobs_parents]
-                    if(jobs_aunts[0] != '' ):
-                        for aunt in jobs_aunts:
-                            mixparent_dict = {'file_name': aunt}
-                            if not md.has_key('parents'):
-                                md['parents'] = []
-                            md['parents'].append(mixparent_dict)
+                        # Delete the old parents, if any.
+
+                        if md.has_key('parents'):         	     
+                            del md['parents']
+
+                        # change the parentage of the file based on it's parents and aunts from condor_lar
+
+                        jobs_parents = os.getenv('JOBS_PARENTS', '').split(" ")
+                        jobs_aunts   = os.getenv('JOBS_AUNTS', '').split(" ")
+                        if(jobs_parents[0] != '' ):
+                            md['parents'] = [{'file_name': parent} for parent in jobs_parents]
+                        if(jobs_aunts[0] != '' ):
+                            for aunt in jobs_aunts:
+                                mixparent_dict = {'file_name': aunt}
+                                if not md.has_key('parents'):
+                                    md['parents'] = []
+                                md['parents'].append(mixparent_dict)
 	        	         	     
-                if len(md) > 0:
-                    project_utilities.test_kca()
+                    if len(md) > 0:
+                        project_utilities.test_kca()
 
-                    # Make lack of parent files a nonfatal error.
-                    # This should probably be removed at some point.
+                        # Make lack of parent files a nonfatal error.
+                        # This should probably be removed at some point.
       
-                    try:
-                        samweb.declareFile(md=md)
+                        try:
+                            samweb.declareFile(md=md)
+                            declare_ok = True
 
-                    except samweb_cli.exceptions.SAMWebHTTPError as e:
-                        print e
-                        print 'SAM declare failed.'
-                        return 1
+                        except samweb_cli.exceptions.SAMWebHTTPError as e:
+                            print e
+                            print 'SAM declare failed.'
+                            return 1
              
-                    except:
-                        print 'SAM declare failed.'
-                        return 1
+                        except:
+                            print 'SAM declare failed.'
+                            return 1
 	    	     
-                else:
-                    print 'No sam metadata found for %s.' % fn
-                    status = 1
+                    else:
+                        print 'No sam metadata found for %s.' % fn
+                        declare_ok = False
+                        status = 1
 	     
-                if copy_to_dropbox == 1:
+                if copy_to_dropbox == 1 and declare_ok:
                     print "Copying to Dropbox"
                     dropbox_dir = project_utilities.get_dropbox(fn)
                     rootPath = os.path.join(dropbox_dir, fn)
@@ -390,65 +407,79 @@ def main():
 
                 declare_ok = False
                 fn   = os.path.basename(histpath)
-                print 'Declaring %s' % fn
-                json_file = os.path.join(logdir, fn + '.json')
 
-                # Get metadata from json
+                # Decide if we need to declare this file.
+                # It is OK if the file is already declared.
+                # In that case, do not try to declare it again.
 
-                md = {}
-                if project_utilities.safeexist(json_file):
-                    mdlines = project_utilities.saferead(json_file)
-                    mdtext = ''
-                    for line in mdlines:
-                        mdtext = mdtext + line
-                    try:
-                        md = json.loads(mdtext)
-                    except:
-                        md = {}
-                        pass
-
-                if maintain_parentage == 1:
-
-                    # Delete the old parents, if any.
-
-                    if md.has_key('parents'):         	     
-                        del md['parents']
-
-                    # change the parentage of the file based on it's parents and aunts from condor_lar
-
-                    jobs_parents = os.getenv('JOBS_PARENTS', '').split(" ")
-                    jobs_aunts   = os.getenv('JOBS_AUNTS', '').split(" ")
-                    if(jobs_parents[0] != '' ):
-                        md['parents'] = [{'file_name': parent} for parent in jobs_parents]
-                    if(jobs_aunts[0] != '' ):
-                        for aunt in jobs_aunts:
-                            mixparent_dict = {'file_name': aunt}
-                            if not md.has_key('parents'):
-                                md['parents'] = []
-                            md['parents'].append(mixparent_dict)
-	        	         	     
-                if len(md) > 0 and md.has_key('file_type'):
-                    project_utilities.test_kca()
-
-                    # Make lack of parent files a nonfatal error.
-                    # This should probably be removed at some point.
-      
-                    try:
-                        samweb.declareFile(md=md)
+                try:
+                    md = samweb.getMetadata(fn)
+                    if len(md) > 0:
                         declare_ok = True
-             
-                    except samweb_cli.exceptions.SAMWebHTTPError as e:
-                        print e
-                        print 'SAM declare failed.'
-                        declare_ok = False
-             
-                    except:
-                        print 'SAM declare failed.'
-                        declare_ok = False
-	    	     
-                else:
-                    print 'No sam metadata found for %s.' % fn
+                        print 'File %s is already declared.' % fn
+                except:
                     declare_ok = False
+
+                if not declare_ok:
+                    print 'Declaring %s' % fn
+                    json_file = os.path.join(logdir, fn + '.json')
+
+                    # Get metadata from json
+
+                    md = {}
+                    if project_utilities.safeexist(json_file):
+                        mdlines = project_utilities.saferead(json_file)
+                        mdtext = ''
+                        for line in mdlines:
+                            mdtext = mdtext + line
+                        try:
+                            md = json.loads(mdtext)
+                        except:
+                            md = {}
+                            pass
+
+                    if maintain_parentage == 1:
+
+                        # Delete the old parents, if any.
+
+                        if md.has_key('parents'):         	     
+                            del md['parents']
+
+                        # change the parentage of the file based on it's parents and aunts from condor_lar
+
+                        jobs_parents = os.getenv('JOBS_PARENTS', '').split(" ")
+                        jobs_aunts   = os.getenv('JOBS_AUNTS', '').split(" ")
+                        if(jobs_parents[0] != '' ):
+                            md['parents'] = [{'file_name': parent} for parent in jobs_parents]
+                        if(jobs_aunts[0] != '' ):
+                            for aunt in jobs_aunts:
+                                mixparent_dict = {'file_name': aunt}
+                                if not md.has_key('parents'):
+                                    md['parents'] = []
+                                md['parents'].append(mixparent_dict)
+	        	         	     
+                    if len(md) > 0 and md.has_key('file_type'):
+                        project_utilities.test_kca()
+
+                        # Make lack of parent files a nonfatal error.
+                        # This should probably be removed at some point.
+      
+                        try:
+                            samweb.declareFile(md=md)
+                            declare_ok = True
+             
+                        except samweb_cli.exceptions.SAMWebHTTPError as e:
+                            print e
+                            print 'SAM declare failed.'
+                            declare_ok = False
+             
+                        except:
+                            print 'SAM declare failed.'
+                            declare_ok = False
+	    	     
+                    else:
+                        print 'No sam metadata found for %s.' % fn
+                        declare_ok = False
 	     
                 if copy_to_dropbox == 1 and declare_ok:
                     print "Copying to Dropbox"
