@@ -2930,6 +2930,8 @@ def dojobsub(project, stage, makeup, recur):
         command.extend([' --exe', stage.exe])
     if stage.schema != '':
         command.extend([' --sam_schema', stage.schema])
+    if project.os != '':
+        command.extend([' --os', project.os])
 
     # Set the process number for pubs jobs that are the first in the chain.
 

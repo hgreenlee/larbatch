@@ -35,6 +35,8 @@
 # --recur                 - Recursive input dataset (force snapshot).
 # --sam_schema <arg>      - Use this option with argument "root" to stream files using
 #                           xrootd.  Leave this option out for standard file copy.
+# --os <arg>              - A copy of the os argument passed to jobsub.  May be used
+#                           to affect definition of UPS_OVERRIDE.
 # --njobs <arg>           - Parallel project with specified number of jobs (default one).
 # --data_file_type        - Specify data file type (default "root," repeatable).
 #
@@ -234,6 +236,7 @@ SAM_PROJECT=""
 SAM_START=0
 RECUR=0
 SAM_SCHEMA=""
+OS=""
 USE_SAM=0
 MIX_DEFNAME=""
 MIX_PROJECT=""
@@ -409,6 +412,14 @@ while [ $# -gt 0 ]; do
     --sam_schema )
       if [ $# -gt 1 ]; then
         SAM_SCHEMA=$2
+        shift
+      fi
+      ;;
+
+    # OS.
+    --os )
+      if [ $# -gt 1 ]; then
+        OS=$2
         shift
       fi
       ;;
@@ -694,11 +705,14 @@ if [ x$SAM_SCHEMA = xxroot ]; then
 fi
 
 # Fix for sites with newer linux kernels:
+# Do this only if OS is exclusively requested as SL6.
 
-case `uname -r` in
+if [ x$OS = xSL6 ]; then
+  case `uname -r` in
     3.*) export UPS_OVERRIDE="-H Linux64bit+2.6-2.12";;
     4.*) export UPS_OVERRIDE="-H Linux64bit+2.6-2.12";;
-esac
+  esac
+fi
 echo "uname -r: `uname -r`"
 echo "UPS_OVERRIDE: $UPS_OVERRIDE"
 
