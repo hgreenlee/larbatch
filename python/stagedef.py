@@ -1185,6 +1185,7 @@ class StageDef:
             sum = samweb.listFilesSummary(dimensions=dim)
             size_tot = sum['total_file_size']
             nfiles = sum['file_count']
+            print 'Input dataset %s has %d files.' % (self.inputdef, nfiles)
             if nfiles > 0:
                 max_files = self.max_files_per_job * self.num_jobs
                 if max_files > 0 and max_files < nfiles:
