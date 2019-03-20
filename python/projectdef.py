@@ -69,89 +69,102 @@ class ProjectDef:
         # Total events (subelement).
 
         num_events_elements = project_element.getElementsByTagName('numevents')
-        if num_events_elements:
-            self.num_events = int(num_events_elements[0].firstChild.data)
+        for num_events_element in num_events_elements:
+            if num_events_element.parentNode == project_element:
+                self.num_events = int(num_events_element.firstChild.data)
         if self.num_events == 0:
             raise XMLError, 'Number of events not specified.'
 
         # Number of jobs (subelement).
 
         num_jobs_elements = project_element.getElementsByTagName('numjobs')
-        if num_jobs_elements and num_jobs_elements[0].parentNode == project_element:
-            self.num_jobs = int(num_jobs_elements[0].firstChild.data)
+        for num_jobs_element in num_jobs_elements:
+            if num_jobs_element.parentNode == project_element:
+                self.num_jobs = int(num_jobs_element.firstChild.data)
 
         # Max Number of files per jobs.
 
         max_files_per_job_elements = project_element.getElementsByTagName('maxfilesperjob')
-        if max_files_per_job_elements and max_files_per_job_elements[0].parentNode == project_element:
-            self.max_files_per_job = int(max_files_per_job_elements[0].firstChild.data)
+        for max_files_per_job_element in max_files_per_job_elements:
+            if max_files_per_job_element.parentNode == project_element:
+                self.max_files_per_job = int(max_files_per_job_element.firstChild.data)
 
         # OS (subelement).
 
         os_elements = project_element.getElementsByTagName('os')
-        if os_elements:
-            self.os = str(os_elements[0].firstChild.data)
-            self.os = ''.join(self.os.split())
+        for os_element in os_elements:
+            if os_element.parentNode == project_element:
+                self.os = str(os_element.firstChild.data)
+                self.os = ''.join(self.os.split())
 
         # Resource (subelement).
 
         resource_elements = project_element.getElementsByTagName('resource')
-        if resource_elements:
-            self.resource = str(resource_elements[0].firstChild.data)
-            self.resource = ''.join(self.resource.split())
+        for resource_element in resource_elements:
+            if resource_element.parentNode == project_element:
+                self.resource = str(resource_element.firstChild.data)
+                self.resource = ''.join(self.resource.split())
 
         # Role (subelement).
 
         role_elements = project_element.getElementsByTagName('role')
-        if role_elements:
-            self.role = str(role_elements[0].firstChild.data)
+        for role_element in role_elements:
+            if role_element.parentNode == project_element:
+                self.role = str(role_element.firstChild.data)
 
         # Lines (subelement).
 
         lines_elements = project_element.getElementsByTagName('lines')
-        if lines_elements:
-            self.lines = str(lines_elements[0].firstChild.data)
+        for lines_element in lines_elements:
+            if lines_element.parentNode == project_element:
+                self.lines = str(lines_element.firstChild.data)
 
         # Server (subelement).
 
         server_elements = project_element.getElementsByTagName('server')
-        if server_elements:
-            self.server = str(server_elements[0].firstChild.data)
+        for server_element in server_elements:
+            if server_element.parentNode == project_element:
+                self.server = str(server_element.firstChild.data)
 
         # Site (subelement).
 
         site_elements = project_element.getElementsByTagName('site')
-        if site_elements:
-            self.site = str(site_elements[0].firstChild.data)
-            self.site = ''.join(self.site.split())
+        for site_element in site_elements:
+            if site_element.parentNode == project_element:
+                self.site = str(site_element.firstChild.data)
+                self.site = ''.join(self.site.split())
 
         # Cpu (subelement).
 
         cpu_elements = project_element.getElementsByTagName('cpu')
-        if cpu_elements and cpu_elements[0].parentNode == project_element:
-            self.cpu = int(cpu_elements[0].firstChild.data)
+        for cpu_element in cpu_elements:
+            if cpu_element.parentNode == project_element:
+                self.cpu = int(cpu_element.firstChild.data)
 
         # Disk (subelement).
 
         disk_elements = project_element.getElementsByTagName('disk')
-        if disk_elements and disk_elements[0].parentNode == project_element:
-            self.disk = str(disk_elements[0].firstChild.data)
-            self.disk = ''.join(self.disk.split())
+        for disk_element in disk_elements:
+            if disk_element.parentNode == project_element:
+                self.disk = str(disk_element.firstChild.data)
+                self.disk = ''.join(self.disk.split())
 
         # Memory (subelement).
 
         memory_elements = project_element.getElementsByTagName('memory')
-        if memory_elements and memory_elements[0].parentNode == project_element:
-            self.memory = int(memory_elements[0].firstChild.data)
+        for memory_element in memory_elements:
+            if memory_element.parentNode == project_element:
+                self.memory = int(memory_element.firstChild.data)
 
         # merge (subelement).
  	
         merge_elements = project_element.getElementsByTagName('merge')
-        if merge_elements and merge_elements[0].parentNode == project_element:
-            if merge_elements[0].firstChild:
-                self.merge = str(merge_elements[0].firstChild.data)
-            else:
-                self.merge = ''
+        for merge_element in merge_elements:
+            if merge_element.parentNode == project_element:
+                if merge_element.firstChild:
+                    self.merge = str(merge_element.firstChild.data)
+                else:
+                    self.merge = ''
 	    
         # Larsoft (subelement).
 
@@ -216,8 +229,9 @@ class ProjectDef:
         # Batch script (subelement).
 
         script_elements = project_element.getElementsByTagName('script')
-        if script_elements:
-            self.script = str(script_elements[0].firstChild.data)
+        for script_element in script_elements:
+            if script_element.parentNode == project_element:
+                self.script = str(script_elements.firstChild.data)
 
         # Make sure batch script exists, and convert into a full path.
 
@@ -235,20 +249,23 @@ class ProjectDef:
             raise IOError, 'Script %s not found.' % self.script
         self.script = script_path
 	
-	worker_validation = project_element.getElementsByTagName('check')
-	if worker_validation:
-	    self.validate_on_worker = int(worker_validation[0].firstChild.data)
+	worker_validations = project_element.getElementsByTagName('check')
+        for worker_validation in worker_validations:
+            if worker_validation.parentNode == project_element:
+                self.validate_on_worker = int(worker_validation.firstChild.data)
 	
-	worker_copy = project_element.getElementsByTagName('copy')
-	if worker_copy:
-	    self.copy_to_fts = int(worker_copy[0].firstChild.data)    
+	worker_copys = project_element.getElementsByTagName('copy')
+        for worker_copy in worker_copys:
+            if worker_copy.parentNode == project_element:
+                self.copy_to_fts = int(worker_copy.firstChild.data)    
 
         # Start project batch script (subelement).
         
         start_script_elements = project_element.getElementsByTagName('startscript')
-        if start_script_elements:
-            self.start_script = str(start_script_elements[0].firstChild.data)
-            self.force_dag = 1
+        for start_script_element in start_script_elements:
+            if start_script_element.parentNode == project_element:
+                self.start_script = str(start_script_element.firstChild.data)
+                self.force_dag = 1
 
         # Make sure start project batch script exists, and convert into a full path.
 
@@ -267,9 +284,10 @@ class ProjectDef:
         # Stop project batch script (subelement).
         
         stop_script_elements = project_element.getElementsByTagName('stopscript')
-        if stop_script_elements:
-            self.stop_script = str(stop_script_elements[0].firstChild.data)
-            self.force_dag = 1
+        for stop_script_element in stop_script_elements:
+            if stop_script_element.parentNode == project_element:
+                self.stop_script = str(stop_script_element.firstChild.data)
+                self.force_dag = 1
 
         # Make sure stop project batch script exists, and convert into a full path.
 

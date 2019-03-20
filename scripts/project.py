@@ -233,6 +233,8 @@
 #             than the immediate predecessor stage specified in the xml file.
 #             This parameter only affects the default input file list.  This
 #             parameter has no effect if any non-default input is specified.
+#             Specify as "none" (or any nonexistent stage) to prevent generation 
+#             of any default input (i.e. for noninitial generator stages).
 # <stage><mixinputdef> - Specify mix input from a sam dataset.
 # <stage><pubsinput> - 0 (false) or 1 (true).  If true, modify input file list
 #                      for specific (run, subrun, version) in pubs mode.  Default is true.
