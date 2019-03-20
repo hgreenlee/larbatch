@@ -102,9 +102,9 @@ class ProjectDef:
 
         # Role (subelement).
 
-        resource_elements = project_element.getElementsByTagName('role')
-        if resource_elements:
-            self.role = str(resource_elements[0].firstChild.data)
+        role_elements = project_element.getElementsByTagName('role')
+        if role_elements:
+            self.role = str(role_elements[0].firstChild.data)
 
         # Lines (subelement).
 

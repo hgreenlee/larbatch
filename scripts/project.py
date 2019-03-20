@@ -347,6 +347,8 @@
 # <stage><maxfilesperjob> - Maximum number of files to be processed in a single worker.
 # <stage><exe>     - Executable (default "lar").
 # <stage><schema>  - Sam schema (default none).  Use "root" to stream using xrootd.
+# <stage><check>   - Do on-node validation and sam declaration (0 or 1, default 0).
+# <stage><copy>    - Copy validated root files to FTS (0 or 1, default 0).
 #
 #
 # <fcldir>  - Directory in which to search for fcl files (optional, repeatable).
