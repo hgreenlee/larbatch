@@ -707,13 +707,14 @@ fi
 # Fix for sites with newer linux kernels:
 # Do this only if OS is exclusively requested as SL6.
 
-if [ x$OS = xSL6 ]; then
-  case `uname -r` in
-    3.*) export UPS_OVERRIDE="-H Linux64bit+2.6-2.12";;
-    4.*) export UPS_OVERRIDE="-H Linux64bit+2.6-2.12";;
-  esac
-fi
+#if [ x$OS = xSL6 ]; then
+#  case `uname -r` in
+#    3.*) export UPS_OVERRIDE="-H Linux64bit+2.6-2.12";;
+#    4.*) export UPS_OVERRIDE="-H Linux64bit+2.6-2.12";;
+#  esac
+#fi
 echo "uname -r: `uname -r`"
+echo "ups flavor: `ups flavor`"
 echo "UPS_OVERRIDE: $UPS_OVERRIDE"
 
 echo "Condor dir input: $CONDOR_DIR_INPUT"
