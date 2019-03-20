@@ -714,7 +714,6 @@ fi
 #  esac
 #fi
 echo "uname -r: `uname -r`"
-echo "ups flavor: `ups flavor`"
 echo "UPS_OVERRIDE: $UPS_OVERRIDE"
 
 echo "Condor dir input: $CONDOR_DIR_INPUT"
@@ -736,6 +735,7 @@ else
 fi
 
 echo PRODUCTS=$PRODUCTS
+echo "ups flavor: `ups flavor`"
 
 # Set GROUP environment variable.
 
