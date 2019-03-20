@@ -3570,6 +3570,53 @@ def help():
             else:
                 print
 
+# Normalize xml path.
+#
+# Don't modify xml file path for any of the following cases.
+#
+# 1.  xmlfile contains character ':'.  In this case xmlfile may be a url.
+# 2.  xmlfile starts with '/', './' or '../'.
+# 3.  xmlfile is '-'.  Stands for standard input.
+#
+# Otherwise, assume that xmlfile is a relative path.  In this case, convert it to 
+# an absolute path relative to the current working directory, or directory contained
+# in environment variable XMLPATH (colon-separated list of directories).
+
+def normxmlpath(xmlfile):
+
+    # Default result = input.
+
+    normxmlfile = xmlfile
+
+    # Does this look like a relative path?
+
+    if xmlfile.find(':') < 0 and \
+       not xmlfile.startswith('/') and \
+       not xmlfile.startswith('./') and \
+       not xmlfile.startswith('../') and \
+       xmlfile != '-':
+
+        # Yes, try to normalize path.
+        # Construct a list of directories to search, starting with current working directory.
+
+        dirs = [os.getcwd()]
+
+        # Add directories in environment variable XMLPATH, if defined.
+
+        if os.environ.has_key('XMLPATH'):
+            dirs.extend(os.environ['XMLPATH'].split(':'))
+
+        # Loop over directories.
+
+        for dir in dirs:
+            xmlpath = os.path.join(dir, xmlfile)
+            if os.path.exists(xmlpath):
+                normxmlfile = xmlpath
+                break
+
+    # Done.
+
+    return normxmlfile
 
 # Print xml help.
 
@@ -3861,6 +3908,10 @@ def main(argv):
         else:
             print 'Unknown option %s' % args[0]
             return 1
+
+    # Normalize xml file path.
+
+    xmlfile = normxmlpath(xmlfile)
 
     # Make sure xmlfile was specified.
 
