@@ -355,7 +355,10 @@ class ProjectDef:
                                         self.disk,
                                         self.memory,
                                         self.validate_on_worker,
-                                        self.copy_to_fts))
+                                        self.copy_to_fts,
+                                        self.script,
+                                        self.start_script,
+                                        self.stop_script))
             default_previous_stage = self.stages[-1].name
             default_input_lists[default_previous_stage] = os.path.join(self.stages[-1].bookdir,
                                                                        'files.list')

@@ -2522,33 +2522,33 @@ def dojobsub(project, stage, makeup, recur):
     # Copy and rename batch script to the work directory.
 
     workname = '%s-%s-%s' % (stage.name, project.name, project.release_tag)
-    workname = workname + os.path.splitext(project.script)[1]
+    workname = workname + os.path.splitext(stage.script)[1]
     #workscript = os.path.join(tmpworkdir, workname)
     workscript = os.path.join(tmpdir, workname)
-    if project.script != workscript:
-        larbatch_posix.copy(project.script, workscript)
+    if stage.script != workscript:
+        larbatch_posix.copy(stage.script, workscript)
 
     # Copy and rename sam start project script to work directory.
 
     workstartscript = ''
     workstartname = ''
-    if project.start_script != '':
+    if stage.start_script != '':
         workstartname = 'start-%s' % workname
         #workstartscript = os.path.join(tmpworkdir, workstartname)
         workstartscript = os.path.join(tmpdir, workstartname)
-        if project.start_script != workstartscript:
-            larbatch_posix.copy(project.start_script, workstartscript)
+        if stage.start_script != workstartscript:
+            larbatch_posix.copy(stage.start_script, workstartscript)
 
     # Copy and rename sam stop project script to work directory.
 
     workstopscript = ''
     workstopname = ''
-    if project.stop_script != '':
+    if stage.stop_script != '':
         workstopname = 'stop-%s' % workname
         #workstopscript = os.path.join(tmpworkdir, workstopname)
         workstopscript = os.path.join(tmpdir, workstopname)
-        if project.stop_script != workstopscript:
-            larbatch_posix.copy(project.stop_script, workstopscript)
+        if stage.stop_script != workstopscript:
+            larbatch_posix.copy(stage.stop_script, workstopscript)
 
     # Copy worker initialization script to work directory.
 

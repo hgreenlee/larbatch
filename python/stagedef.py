@@ -31,7 +31,7 @@ class StageDef:
     def __init__(self, stage_element, base_stage, default_input_lists, default_previous_stage, 
                  default_num_jobs, default_num_events, default_max_files_per_job, default_merge,
                  default_cpu, default_disk, default_memory, default_validate_on_worker,
-                 default_copy_to_fts):
+                 default_copy_to_fts, default_script, default_start_script, default_stop_script):
 
         # Assign default values.
 
@@ -100,6 +100,9 @@ class StageDef:
             self.schema = base_stage.schema
             self.validate_on_worker = base_stage. validate_on_worker
             self.copy_to_fts = base_stage.copy_to_fts
+            self.script = base_stage.script
+            self.start_script = base_stage.start_script
+            self.stop_script = base_stage.stop_script
         else:
             self.name = ''         # Stage name.
             self.fclname = []
@@ -165,6 +168,9 @@ class StageDef:
             self.schema = ''       # Sam schema.
             self.validate_on_worker = default_validate_on_worker # Validate-on-worker flag.
             self.copy_to_fts = default_copy_to_fts   # Upload-on-worker flag.
+            self.script = default_script             # Upload-on-worker flag.
+            self.start_script = default_start_script # Upload-on-worker flag.
+            self.stop_script = default_stop_script   # Upload-on-worker flag.
 	
         # Extract values from xml.
 
@@ -675,6 +681,24 @@ class StageDef:
         if copy_to_fts_elements:
             self.copy_to_fts = copy_to_fts_elements[0].firstChild.data
 
+	# Batch script
+
+        script_elements = stage_element.getElementsByTagName('copy')
+        if script_elements:
+            self.script = script_elements[0].firstChild.data
+
+	# Start script
+
+        start_script_elements = stage_element.getElementsByTagName('copy')
+        if start_script_elements:
+            self.start_script = start_script_elements[0].firstChild.data
+
+	# Stop script
+
+        stop_script_elements = stage_element.getElementsByTagName('copy')
+        if stop_script_elements:
+            self.stop_script = stop_script_elements[0].firstChild.data
+
         # Done.
 
         return
@@ -757,6 +781,9 @@ class StageDef:
         result += 'Schema = %s\n' % self.schema
         result += 'Validate-on-worker = %d\n' % self.validate_on_worker
         result += 'Upload-on-worker = %d\n' % self.copy_to_fts
+        result += 'Batch script = %s\n' % self.script
+        result += 'Start script = %s\n' % self.start_script
+        result += 'Stop script = %s\n' % self.stop_script
         return result
 
     # The purpose of this method is to limit input to the specified run
