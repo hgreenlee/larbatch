@@ -148,7 +148,8 @@
 # <role>    - Role (normally Analysis or Production).  This element overrides the
 #             default role-determining algorithm in larbatch_utilities.get_role().
 # <lines>   - Arbitrary condor commands (expert option, jobsub_submit --lines=...).
-# <site>    - Specify site (comma-separated list, default jobsub decides).
+# <site>    - Specify sites (comma-separated list, default jobsub decides).
+# <blacklist> - Blacklist sites (comma-separated list, default jobsub decides).
 #
 # <cpu>     - Number of cpus (jobsub_submit --cpu=...).
 # <disk>    - Amount of scratch disk space (jobsub_submit --disk=...).
@@ -330,7 +331,8 @@
 #                     OFFSITE,FERMICLOUD,PAID_CLOUD,FERMICLOUD8G).
 #                     Default: DEDICATED,OPPORTUNISTIC.
 # <stage><lines>   - Arbitrary condor commands (expert option, jobsub_submit --lines=...).
-# <stage><site>    - Specify site (default jobsub decides).
+# <stage><site>    - Specify sites (default jobsub decides).
+# <stage><blacklist> - Blacklist sites (default jobsub decides).
 # <stage><cpu>     - Number of cpus (jobsub_submit --cpu=...).
 # <stage><disk>    - Amount of scratch disk space (jobsub_submit --disk=...).
 #                    Specify value and unit (e.g. 50GB).
@@ -2870,8 +2872,8 @@ def dojobsub(project, stage, makeup, recur):
         command.append('--lines=%s' % project.lines)
     if stage.site != '':
         command.append('--site=%s' % stage.site)
-    elif project.site != '':
-        command.append('--site=%s' % project.site)
+    if stage.blacklist != '':
+        command.append('--blacklist=%s' % stage.blacklist)
     if stage.cpu != 0:
         command.append('--cpu=%d' % stage.cpu)
     if stage.disk != '':
@@ -3045,8 +3047,8 @@ def dojobsub(project, stage, makeup, recur):
             start_command.append('--lines=%s' % project.lines)
         if stage.site != '':
             start_command.append('--site=%s' % stage.site)
-        elif project.site != '':
-            start_command.append('--site=%s' % project.site)
+        if stage.blacklist != '':
+            start_command.append('--blacklist=%s' % stage.blacklist)
         if project.os != '':
             start_command.append('--OS=%s' % project.os)
         if stage.jobsub_start != '':
@@ -3110,8 +3112,8 @@ def dojobsub(project, stage, makeup, recur):
             stop_command.append('--lines=%s' % project.lines)
         if stage.site != '':
             stop_command.append('--site=%s' % stage.site)
-        elif project.site != '':
-            stop_command.append('--site=%s' % project.site)
+        if stage.blacklist != '':
+            stop_command.append('--blacklist=%s' % stage.blacklist)
         if project.os != '':
             stop_command.append('--OS=%s' % project.os)
         if stage.jobsub_start != '':

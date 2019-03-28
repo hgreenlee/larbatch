@@ -35,6 +35,7 @@ class ProjectDef:
         self.lines = ''                   # Arbitrary condor commands.
         self.server = '-'                 # Jobsub server.
         self.site = ''                    # Site.
+        self.blacklist = ''               # Blacklist.
         self.cpu = 0                      # Number of cpus.
         self.disk = ''                    # Disk space (string value+unit).
         self.memory = 0                   # Amount of memory (integer MB).
@@ -133,6 +134,14 @@ class ProjectDef:
             if site_element.parentNode == project_element:
                 self.site = str(site_element.firstChild.data)
                 self.site = ''.join(self.site.split())
+
+        # Blacklist (subelement).
+
+        blacklist_elements = project_element.getElementsByTagName('blacklist')
+        for blacklist_element in blacklist_elements:
+            if blacklist_element.parentNode == project_element:
+                self.blacklist = str(blacklist_element.firstChild.data)
+                self.blacklist = ''.join(self.blacklist.split())
 
         # Cpu (subelement).
 
@@ -358,7 +367,9 @@ class ProjectDef:
                                         self.copy_to_fts,
                                         self.script,
                                         self.start_script,
-                                        self.stop_script))
+                                        self.stop_script,
+                                        self.site,
+                                        self.blacklist))
             default_previous_stage = self.stages[-1].name
             default_input_lists[default_previous_stage] = os.path.join(self.stages[-1].bookdir,
                                                                        'files.list')
@@ -388,6 +399,7 @@ class ProjectDef:
         result += 'Lines = %s\n' % self.lines
         result += 'Jobsub server = %s\n' % self.server
         result += 'Site = %s\n' % self.site
+        result += 'Blacklist = %s\n' % self.blacklist
         result += 'Cpu = %d\n' % self.cpu
         result += 'Disk = %s\n' % self.disk
         result += 'Memory = %d MB\n' % self.memory

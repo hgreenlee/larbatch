@@ -31,7 +31,8 @@ class StageDef:
     def __init__(self, stage_element, base_stage, default_input_lists, default_previous_stage, 
                  default_num_jobs, default_num_events, default_max_files_per_job, default_merge,
                  default_cpu, default_disk, default_memory, default_validate_on_worker,
-                 default_copy_to_fts, default_script, default_start_script, default_stop_script):
+                 default_copy_to_fts, default_script, default_start_script, default_stop_script,
+                 default_site, default_blacklist):
 
         # Assign default values.
 
@@ -86,6 +87,7 @@ class StageDef:
             self.resource = base_stage.resource
             self.lines = base_stage.lines
             self.site = base_stage.site
+            self.blacklist = base_stage.blacklist
             self.cpu = base_stage.cpu
             self.disk = base_stage.disk
             self.datafiletypes = base_stage.datafiletypes
@@ -153,7 +155,8 @@ class StageDef:
             self.merge = default_merge    # Histogram merging program
             self.resource = ''     # Jobsub resources.
             self.lines = ''        # Arbitrary condor commands.
-            self.site = ''         # Site.
+            self.site = default_site # Site.
+            self.blacklist = default_blacklist # Blacklist site.
             self.cpu = default_cpu # Number of cpus.
             self.disk = default_disk     # Disk space (string value+unit).
             self.datafiletypes = ["root"] # Data file types.
@@ -590,6 +593,13 @@ class StageDef:
             self.site = str(site_elements[0].firstChild.data)
             self.site = ''.join(self.site.split())
 
+        # Blacklist (subelement).
+
+        blacklist_elements = stage_element.getElementsByTagName('blacklist')
+        if blacklist_elements:
+            self.blacklist = str(blacklist_elements[0].firstChild.data)
+            self.blacklist = ''.join(self.blacklist.split())
+
         # Cpu (subelement).
 
         cpu_elements = stage_element.getElementsByTagName('cpu')
@@ -765,6 +775,7 @@ class StageDef:
         result += 'Resource = %s\n' % self.resource
         result += 'Lines = %s\n' % self.lines
         result += 'Site = %s\n' % self.site
+        result += 'Blacklist = %s\n' % self.blacklist
         result += 'Cpu = %d\n' % self.cpu
         result += 'Disk = %s\n' % self.disk
         result += 'Datafiletypes = %s\n' % self.datafiletypes
