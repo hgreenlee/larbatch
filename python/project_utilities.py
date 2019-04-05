@@ -303,6 +303,11 @@ def start_project(defname, default_prjname, max_files, force_snapshot, filelistd
         defname = limitdef
         nf = max_files
 
+    elif filelistdef:
+
+        dim = 'defname: %s' % defname
+        defname = makeFileListDefinition(dim)
+
     # Force snapshot?
 
     if force_snapshot:
