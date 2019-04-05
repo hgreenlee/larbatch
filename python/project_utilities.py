@@ -257,7 +257,7 @@ def samweb():
 
 # Start sam project.
 
-def start_project(defname, default_prjname, max_files, force_snapshot):
+def start_project(defname, default_prjname, max_files, force_snapshot, filelistdef):
 
     # Check project name.
 
@@ -273,7 +273,12 @@ def start_project(defname, default_prjname, max_files, force_snapshot):
 
     # Figure out how many files are in the input dataset.
 
-    nf = s.countFiles('defname: %s' % defname)
+    nf = 0
+    if filelistdef:
+        files = listFiles('defname: %s' % defname)
+        nf = len(files)
+    else:
+        nf = s.countFiles('defname: %s' % defname)
     print 'Input dataset has %d files.' % nf
     if nf == 0:
         return 1
@@ -285,12 +290,15 @@ def start_project(defname, default_prjname, max_files, force_snapshot):
 
         # Figure out whether limitdef already exists.
 
-        if defExists(limitdef):
+        if defExists(limitdef) and not filelistdef:
             print 'Using already created limited dataset definition %s.' % limitdef
         else:
-            print 'Creating limited dataset definition %s.' % limitdef
             dim = 'defname: %s with limit %d' % (defname, max_files)
-            s.createDefinition(limitdef, dim, user=get_user(), group=get_experiment())
+            if filelistdef:
+                limitdef = makeFileListDefinition(dim)
+            else:
+                print 'Creating limited dataset definition %s.' % limitdef
+                s.createDefinition(limitdef, dim, user=get_user(), group=get_experiment())
 
         defname = limitdef
         nf = max_files
@@ -628,3 +636,243 @@ def path_to_local(path):
 
 def SafeTFile(path):
     return ROOT.TFile.Open(path)
+
+# Expand "defname:" clauses in a sam dimension.
+
+def expandDefnames(dim):
+
+    result = ''
+    isdefname = False
+    words = dim.split()
+
+    for word in words:
+        if isdefname:
+            isdefname = False
+            desc = samweb().descDefinitionDict(word)
+            descdim = desc['dimensions']
+
+            # If this definition doesn't contain a top level or" or "minus" clause, 
+            # leave it unexpanded.
+
+            if descdim.find(' or ') < 0 and descdim.find(' minus ') < 0:
+                result += ' defname: %s' % word
+            else:
+                result += ' ( %s )' % desc['dimensions']
+             
+        else:
+            if word == 'defname:':
+                isdefname = True
+            else:
+                result += ' %s' % word
+
+    return result
+
+# This function converts a sam dimension into a tokenized rpn list.
+#
+# The following kinds of tokens are recognized.
+#
+# 1.  Grouping symbols "(", ")", "isparentof:(", "ischildof:("
+#
+# 2.  Operators "or", "minus".  Operators have equal precedence and 
+#     associate from left to right.
+#
+# 3.  "with limit N" clause (must come at end).
+#
+# 4.  Any string expression that does not fall in above categories.
+#
+# The returned value of this function is a list consisting of sam dimensions,
+# "or" and "minus" operators, and possibly a final "with limit" clause.
+
+def tokenizeRPN(dim):
+
+    temp = []
+    result = []
+    exp = ''
+
+    # Split of final "with limit" clause, if any.
+
+    head = dim
+    tail = ''
+    n = dim.find('with limit')
+    if n >= 0:
+        head = dim[:n]
+        tail = dim[n:]
+
+    for word in head.split():
+
+        if word == '(' or word  == 'isparentof:(' or word == 'ischildof:(':
+            if len(exp) > 0:
+                result.append(exp)
+                exp = ''
+            temp.append(word)
+
+        elif word == 'or' or word == 'minus':
+
+            if len(exp) > 0:
+                result.append(exp)
+                exp = ''
+
+            done = False
+            while len(temp) > 0 and not done:
+                last = temp.pop()
+                if last == '(' or last == 'isparentof:(' or last == 'ischildof:':
+                    temp.append(last)
+                    done = True
+                else:
+                    result.append(last)
+            temp.append(word)
+
+        elif word == ')':
+
+            if len(exp) > 0:
+                result.append(exp)
+                exp = ''
+
+            done = False
+            while not done:
+                last = temp.pop()
+                if last == '(':
+                    done = True
+                elif last == 'isparentof:(':
+                    if len(result) == 0 or result[-1] == 'or' or result[-1] == 'minus':
+                        raise RuntimeError, 'isparentof: parse error'
+                    last = result.pop()
+                    result.append('isparentof:( %s )' % last)
+                    done = True
+                elif last == 'ischildof:(':
+                    if len(result) == 0 or result[-1] == 'or' or result[-1] == 'minus':
+                        raise RuntimeError, 'ischildof: parse error'
+                    last = result.pop()
+                    result.append('ischildof:( %s )' % last)
+                    done = True
+                else:
+                    result.append(last)
+
+        else:
+            if len(exp) == 0:
+                exp = word
+            else:
+                exp += ' %s' % word
+
+    # Clear remaining items.
+
+    if len(exp) > 0:
+        result.append(exp)
+    while len(temp) > 0:
+        result.append(temp.pop())
+
+    # Add final "with limit" clause, if any.
+
+    if len(tail) > 0:
+        result.append(tail)
+
+    return result
+
+
+# This function mostly mimics the samweb listFiles function.  It evaluates a sam dimension
+# and returns a completed list of files in the form of a python set.
+#
+# This function exists to work around inefficiencies in the default sam implementation
+# of listFiles by performing various set operations (set unions and set differences, as 
+# indicated sam "or" and "minus" clauses) on completed python sets, rather than as database
+# queries.
+
+def listFiles(dim):
+
+    print 'Generating completed set of files.'
+
+    # As a first step, expand out "defname:" clauses containing top level "or" or "minus"
+    # clauses.
+
+    done = False
+    while not done:
+        newdim = expandDefnames(dim)
+        if newdim == dim:
+            done = True
+        else:
+            dim = newdim
+
+    # Parse dimension into rpn list of sam dimensions and set operations.
+
+    rpn = tokenizeRPN(dim)
+
+    # Evaluate rpn.
+
+    stack = []
+    for item in rpn:
+
+        if item == 'or':
+
+            # Take the set union of the top two items on the stack.
+
+            set1 = stack.pop()
+            set2 = stack.pop()
+            union = set1 | set2
+            print 'Set union %d files' % len(union)
+            stack.append(union)
+
+        elif item == 'minus':
+
+            # Take the set difference of the top two items on the stack.
+
+            set1 = stack.pop()
+            set2 = stack.pop()
+            diff = set2 - set1
+            print 'Set difference %d files' % len(diff)
+            stack.append(diff)
+
+        elif item.startswith('with limit'):
+
+            # Truncate set on top of stack.
+
+            n = int(item[10:])
+            while len(stack[-1]) > n:
+                stack[-1].pop()
+            print 'Truncated to %d files' % len(stack[-1])
+
+        else:
+
+            # Treat this item as a sam dimension.
+            # Evaluate this dimension as a completed set, and push this set
+            # onto the stack.
+
+            print 'Evaluating "%s"' % item
+            files = samweb().listFiles(item)
+            print 'Result %d files' % len(files)
+            stack.append(set(files))
+
+    # Done.
+
+    print 'Final result %d files' % len(stack[-1])
+    return stack[-1]
+
+# Make a sam dataset definition consisting of a list of files, as evaluated by
+# function listFiles.  The name of the newly created dataset definition
+# is returned as the return value of the function.
+
+def makeFileListDefinition(dim):
+
+    # Make sure we have a kca certificate.
+
+    test_kca()
+
+    # Make file list dimension.
+
+    listdim = ''
+    for filename in listFiles(dim):
+        if listdim == '':
+            listdim = 'file_name %s' % filename
+        else:
+            listdim += ', %s' % filename
+
+    # Maybe construct a new unique definition name.
+
+    defname = get_user() + '_filelist_' + str(uuid.uuid4())
+
+    # Create definition.
+
+    samweb().createDefinition(defname, listdim, user=get_user(), group=get_experiment())
+
+    # Done.
+
+    return defname

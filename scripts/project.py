@@ -2830,7 +2830,7 @@ def dojobsub(project, stage, makeup, recur):
     if prjname != '' and stage.prestart != 0:
         ok = project_utilities.start_project(inputdef, prjname, 
                                              stage.num_jobs * stage.max_files_per_job, 
-                                             stage.recur)
+                                             stage.recur, stage.filelistdef)
         if ok != 0:
             print 'Failed to start project.'
             sys.exit(1)
@@ -2839,7 +2839,7 @@ def dojobsub(project, stage, makeup, recur):
     # Also start mix project, if any.
 
     if mixprjname != '' and prj_started:
-        ok = project_utilities.start_project(stage.mixinputdef, mixprjname, 0, 0)
+        ok = project_utilities.start_project(stage.mixinputdef, mixprjname, 0, 0, stage.filelistdef)
         if ok != 0:
             print 'Failed to start mix project.'
             sys.exit(1)

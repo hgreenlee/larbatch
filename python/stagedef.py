@@ -66,6 +66,7 @@ class StageDef:
             self.recurtype = base_stage.recurtype
             self.recurlimit = base_stage.recurlimit
             self.singlerun = base_stage.singlerun
+            self.filelistdef = base_stage.filelistdef
             self.prestart = base_stage.prestart
             self.activebase = base_stage.activebase
             self.dropboxwait = base_stage.dropboxwait
@@ -135,6 +136,7 @@ class StageDef:
             self.recurtype = ''    # Recursive type.
             self.recurlimit = 0    # Recursive limit.
             self.singlerun=0       # Single run mode.
+            self.filelistdef=0     # Convert sam input def to file list.
             self.prestart = 0      # Prestart flag.
             self.activebase = ''   # Active projects base name.
             self.dropboxwait = 0.  # Dropbox waiting interval.
@@ -287,6 +289,12 @@ class StageDef:
         singlerun_elements = stage_element.getElementsByTagName('singlerun')
         if singlerun_elements:
             self.singlerun = int(singlerun_elements[0].firstChild.data)
+
+        # File list definition flag (subelement).
+
+        filelistdef_elements = stage_element.getElementsByTagName('filelistdef')
+        if filelistdef_elements:
+            self.filelistdef = int(filelistdef_elements[0].firstChild.data)
 
         # Prestart flag.
 
@@ -738,6 +746,7 @@ class StageDef:
         result += 'Recursive type = %s\n' % self.recurtype
         result += 'Recursive limit = %d\n' % self.recurlimit
         result += 'Single run flag = %d\n' % self.singlerun
+        result += 'File list definition flag = %d\n' % self.filelistdef
         result += 'Prestart flag = %d\n' % self.prestart
         result += 'Active projects base name = %s\n' % self.activebase
         result += 'Dropbox waiting interval = %f\n' % self.dropboxwait
@@ -1172,7 +1181,10 @@ class StageDef:
 
             #dim = 'defname: %s with limit 1' % self.inputdef
             dim = 'defname: %s' % self.inputdef
-            input_files = samweb.listFiles(dimensions=dim)
+            if self.filelistdef:
+                input_files = list(project_utilities.listFiles(dim))
+            else:
+                input_files = samweb.listFiles(dimensions=dim)
             if len(input_files) > 0:
                 random_file = random.choice(input_files)
                 print 'Example file: %s' % random_file
@@ -1220,6 +1232,8 @@ class StageDef:
 
             samweb = project_utilities.samweb()
             dim = 'defname: %s' % self.inputdef
+            if self.filelistdef:
+                dim = 'defname: %s' % project_utilities.makeFileListDefinition(dim)
             sum = samweb.listFilesSummary(dimensions=dim)
             size_tot = sum['total_file_size']
             nfiles = sum['file_count']
@@ -1266,8 +1280,13 @@ class StageDef:
 
         if self.inputdef != '' and checkdef:
             samweb = project_utilities.samweb()
-            sum = samweb.listFilesSummary(defname=self.inputdef)
-            n = sum['file_count']
+            n = 0
+            if self.filelistdef:
+                files = project_utilities.listFiles('defname: %s' % self.inputdef)
+                n = len(files)
+            else:
+                sum = samweb.listFilesSummary(defname=self.inputdef)
+                n = sum['file_count']
             print 'Input dataset %s contains %d files.' % (self.inputdef, n)
             if n < self.num_jobs:
                 self.num_jobs = n
