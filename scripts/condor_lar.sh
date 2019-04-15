@@ -1425,9 +1425,23 @@ EOF
       exit 1
     fi
 
+    # Make sure release version is not empty, or ifdh command line will be messed up.
+
+    if [ x$REL = x ]; then
+      REL=1
+    fi
+
+    # Make description, which is conventionally the jobsub job id.
+    # This can not be empty.
+
+    DESC=$JOBSUBJOBID
+    if [ x$DESC = x ]; then
+      DESC=$FCL
+    fi
+
     echo "Starting consumer process."
-    echo "ifdh establishProcess $PURL $APPNAME $REL $NODE $SAM_USER $APPFAMILY $FCL $NFILE $SAM_SCHEMA"
-    CPID=`ifdh establishProcess $PURL $APPNAME $REL $NODE $SAM_USER $APPFAMILY $FCL $NFILE $SAM_SCHEMA`
+    echo "ifdh establishProcess $PURL $APPNAME $REL $NODE $SAM_USER $APPFAMILY $DESC $NFILE $SAM_SCHEMA"
+    CPID=`ifdh establishProcess $PURL $APPNAME $REL $NODE $SAM_USER $APPFAMILY $DESC $NFILE $SAM_SCHEMA`
     if [ x$CPID = x ]; then
       echo "Unable to start consumer process for project url ${PURL}."
       exit 1
