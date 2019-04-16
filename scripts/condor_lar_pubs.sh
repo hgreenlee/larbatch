@@ -200,8 +200,6 @@
 #
 #------------------------------------------------------------------
 
-cd
-
 # Parse arguments.
 
 FCL=""
@@ -850,7 +848,7 @@ TMP=${TMP:-${SCRATCH}/working_dir.$$}
 
 { [[ -n "$TMP" ]] && mkdir -p "$TMP"; } || \
   { echo "ERROR: unable to create temporary directory!" 1>&2; exit 1; }
-trap "[[ -n \"$TMP\" ]] && { cd ; rm -rf \"$TMP\"; }" 0
+trap "[[ -n \"$TMP\" ]] && { rm -rf \"$TMP\"; }" 0
 chmod 755 $TMP
 cd $TMP
 # End of the section you should not change.
