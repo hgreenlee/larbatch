@@ -240,7 +240,7 @@ class ProjectDef:
         script_elements = project_element.getElementsByTagName('script')
         for script_element in script_elements:
             if script_element.parentNode == project_element:
-                self.script = str(script_elements.firstChild.data)
+                self.script = str(script_element.firstChild.data)
 
         # Make sure batch script exists, and convert into a full path.
 

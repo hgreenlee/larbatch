@@ -27,6 +27,9 @@
 #                           starting and stopping the sam project.
 # --recur                 - Recursive input dataset (force snapshot).
 # --sam_schema <arg>      - Use this option with argument "root" to stream files using
+# --os <arg>              - A copy of the os argument passed to jobsub.  May be used
+#                           to affect definition of UPS_OVERRIDE.
+# --data_file_type        - Specify data file type (default "root," repeatable).
 #
 # Larsoft options.
 #
@@ -149,8 +152,10 @@ SAM_PROJECT=""
 SAM_START=0
 RECUR=0
 SAM_SCHEMA=""
+OS=""
 IFDH_OPT=""
 INIT=""
+declare -a DATAFILETYPES
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -188,6 +193,15 @@ while [ $# -gt 0 ]; do
       if [ $# -gt 1 ]; then
         NFILE=$2
         shift
+      fi
+      ;;
+
+    # Specify data file types (repeatable).
+    --data_file_type )
+      if [ $# -gt 1 ]; then
+        ntype=${#DATAFILETYPES[@]}
+        DATAFILETYPES[$ntype]=$2
+	shift
       fi
       ;;
 
@@ -245,6 +259,14 @@ while [ $# -gt 0 ]; do
     --sam_schema )
       if [ $# -gt 1 ]; then
         SAM_SCHEMA=$2
+        shift
+      fi
+      ;;
+
+    # OS.
+    --os )
+      if [ $# -gt 1 ]; then
+        OS=$2
         shift
       fi
       ;;
@@ -439,6 +461,12 @@ done
 #echo "INITSCRIPT=$INITSCRIPT"
 #echo "INITSOURCE=$INITSOURCE"
 #echo "ENDSCRIPT=$ENDSCRIPT"
+
+# Set default data file types ("root").
+
+if [ ${#DATAFILETYPES[@]} -eq 0 ]; then
+  DATAFILETYPES[0]=root
+fi
 
 # Done with arguments.
 
