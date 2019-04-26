@@ -869,6 +869,8 @@ def makeFileListDefinition(dim):
             listdim = 'file_name %s' % filename
         else:
             listdim += ', %s' % filename
+    if listdim == '':
+        listdim = 'file_id 0'
 
     # Maybe construct a new unique definition name.
 
