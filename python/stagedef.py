@@ -705,17 +705,61 @@ class StageDef:
         if script_elements:
             self.script = script_elements[0].firstChild.data
 
+        # Make sure batch script exists, and convert into a full path.
+
+        script_path = ''
+        try:
+            jobinfo = subprocess.Popen(['which', self.script],
+                                       stdout=subprocess.PIPE,
+                                       stderr=subprocess.PIPE)
+            jobout, joberr = jobinfo.communicate()
+            rc = jobinfo.poll()
+            script_path = jobout.splitlines()[0].strip()
+        except:
+            pass
+        if script_path == '' or not larbatch_posix.access(script_path, os.X_OK):
+            raise IOError, 'Script %s not found.' % self.script
+        self.script = script_path
+	
 	# Start script
 
         start_script_elements = stage_element.getElementsByTagName('startscript')
         if start_script_elements:
             self.start_script = start_script_elements[0].firstChild.data
 
+        # Make sure start project batch script exists, and convert into a full path.
+
+        script_path = ''
+        try:
+            jobinfo = subprocess.Popen(['which', self.start_script],
+                                       stdout=subprocess.PIPE,
+                                       stderr=subprocess.PIPE)
+            jobout, joberr = jobinfo.communicate()
+            rc = jobinfo.poll()
+            script_path = jobout.splitlines()[0].strip()
+        except:
+            pass
+        self.start_script = script_path
+
 	# Stop script
 
         stop_script_elements = stage_element.getElementsByTagName('stopscript')
         if stop_script_elements:
             self.stop_script = stop_script_elements[0].firstChild.data
+
+        # Make sure stop project batch script exists, and convert into a full path.
+
+        script_path = ''
+        try:
+            jobinfo = subprocess.Popen(['which', self.stop_script],
+                                       stdout=subprocess.PIPE,
+                                       stderr=subprocess.PIPE)
+            jobout, joberr = jobinfo.communicate()
+            rc = jobinfo.poll()
+            script_path = jobout.splitlines()[0].strip()
+        except:
+            pass
+        self.stop_script = script_path
 
         # Done.
 
