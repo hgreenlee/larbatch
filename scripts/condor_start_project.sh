@@ -308,11 +308,21 @@ if [ $started -ne 0 ]; then
   fi
 fi
 
+# Create a dataset definition corresponding to the project snapshot.
+
+snapshotdefname=snapshot_${SAM_PROJECT}
+ifdh createDefinition $snapshotdefname "snapshot_for_project_name $SAM_PROJECT" $SAM_USER $SAM_GROUP
+if [ $? -ne 0 ]; then
+  echo "Failed to create snapshot dataset definition ${snapshotdefname}."
+  exit 1
+fi
+echo "Created snapshot dataset definition ${snapshotdefname}."
+
 # Check the project snapshot.
 
 nf=0
 if [ $started -eq 0 ]; then
-  nf=`ifdh translateConstraints "snapshot_for_project_name $SAM_PROJECT" | wc -l`
+  nf=`ifdh translateConstraints "defname: $snapshotdefname" | wc -l`
   echo "Project snapshot contains $nf files."
 fi
 
@@ -343,12 +353,12 @@ if [ $npre -gt 0 ]; then
   # Generate name of prestage project.
   # Here we use a safe name that won't drain recursive datasets (unlike "samweb prestage-dataset").
 
-  prjname=prestage_${SAM_DEFNAME}_`date +%Y%m%d_%H%M%S`
+  prjname=prestage_${SAM_PROJECT}
   echo "Prestage project: $prjname"
 
   # Start prestage project.
 
-  ifdh startProject $prjname $SAM_STATION ${SAM_DEFNAME}:latest $SAM_USER $SAM_GROUP
+  ifdh startProject $prjname $SAM_STATION ${snapshotdefname}:latest $SAM_USER $SAM_GROUP
   if [ $? -ne 0 ]; then
     echo "Failed to start prestage project."
     exit 1

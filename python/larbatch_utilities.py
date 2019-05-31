@@ -220,9 +220,7 @@ def ifdh_ll(path, depth):
     return jobout.splitlines()
 
 
-# Ifdh rmdir, with timeout.
-
-# Ifdh rmdir, with timeout.
+# Ifdh mkdir, with timeout.
 
 def ifdh_mkdir(path):
 
@@ -269,6 +267,8 @@ def ifdh_mkdir(path):
 
     return
 
+
+# Ifdh rmdir, with timeout.
 
 def ifdh_rmdir(path):
 

@@ -701,19 +701,19 @@ class StageDef:
 
 	# Batch script
 
-        script_elements = stage_element.getElementsByTagName('copy')
+        script_elements = stage_element.getElementsByTagName('script')
         if script_elements:
             self.script = script_elements[0].firstChild.data
 
 	# Start script
 
-        start_script_elements = stage_element.getElementsByTagName('copy')
+        start_script_elements = stage_element.getElementsByTagName('startscript')
         if start_script_elements:
             self.start_script = start_script_elements[0].firstChild.data
 
 	# Stop script
 
-        stop_script_elements = stage_element.getElementsByTagName('copy')
+        stop_script_elements = stage_element.getElementsByTagName('stopscript')
         if stop_script_elements:
             self.stop_script = stop_script_elements[0].firstChild.data
 
