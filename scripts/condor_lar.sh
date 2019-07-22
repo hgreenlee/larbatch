@@ -1343,7 +1343,7 @@ EOF
           exit 1
         fi
         if [ $NFILE -ne 0 -a $nf -gt $NFILE ]; then 
-          limitdef=${SAM_DEFNAME}_limit_$NFILE
+          limitdef=${SAM_PROJECT}_limit_$NFILE
 
           # Check whether limit def already exists.
           # Have to parse commd output because ifdh returns wrong status.
