@@ -1175,10 +1175,13 @@ class StageDef:
     # (We don't currently check sam input datasets).
 
     def checkinput(self, checkdef=False):
+
         if self.inputfile != '' and not larbatch_posix.exists(self.inputfile):
             raise IOError, 'Input file %s does not exist.' % self.inputfile
         if self.inputlist != '' and not larbatch_posix.exists(self.inputlist):
             raise IOError, 'Input list %s does not exist.' % self.inputlist
+
+        checkok = False
 
         # Define or update the active projects dataset, if requested.
 
@@ -1283,6 +1286,7 @@ class StageDef:
             nfiles = sum['file_count']
             print 'Input dataset %s has %d files.' % (self.inputdef, nfiles)
             if nfiles > 0:
+                checkok = True
                 max_files = self.max_files_per_job * self.num_jobs
                 if max_files > 0 and max_files < nfiles:
                     dim += ' with limit %d' % max_files
@@ -1316,13 +1320,16 @@ class StageDef:
                     print "Updating maximum files per job from %d to %d." % (
                         self.max_files_per_job, new_max_files_per_job)
                     self.max_files_per_job = new_max_files_per_job
+            else:
+                print 'Input dataset is empty.'
+                return 1
 
         # If requested, do a final check in the input dataset.
         # Limit the number of jobs to be not more than the number of files, since
         # it never makes sense to have more jobs than that.
         # If the number of input files is zero, return an error.
 
-        if self.inputdef != '' and checkdef:
+        if self.inputdef != '' and checkdef and not checkok:
             samweb = project_utilities.samweb()
             n = 0
             if self.filelistdef:
