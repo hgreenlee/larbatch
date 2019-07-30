@@ -2975,14 +2975,11 @@ def dojobsub(project, stage, makeup, recur):
     if stage.TFileName != '':
         command.extend([' --TFileName', stage.TFileName])
     if stage.init_script != '':
-        command.extend([' --init-script',
-                        os.path.join('.', os.path.basename(stage.init_script))])
+        command.extend([' --init-script', os.path.basename(stage.init_script)])
     if stage.init_source != '':
-        command.extend([' --init-source',
-                        os.path.join('.', os.path.basename(stage.init_source))])
+        command.extend([' --init-source', os.path.basename(stage.init_source)])
     if stage.end_script != '':
-        command.extend([' --end-script',
-                        os.path.join('.', os.path.basename(stage.end_script))])
+        command.extend([' --end-script', os.path.basename(stage.end_script)])
     if abssetupscript != '':
         command.extend([' --init', abssetupscript])
 
