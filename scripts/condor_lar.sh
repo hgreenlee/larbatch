@@ -1634,10 +1634,10 @@ EOF
 
   next_stage_input=`ls -t1 *.root | egrep -v 'celltree|hist|larlite|larcv|TGraphs' | head -n1`
 
-  mixed_file=`sam_metadata_dumper $next_stage_input | grep mixparent | awk -F ":" '{gsub("\"" ,""); gsub(",",""); gsub(" ",""); print $2}'`
+  mixed_files=`sam_metadata_dumper $next_stage_input | grep mixparent | awk -F ":" '{gsub("\"" ,""); gsub(",",""); gsub(" ",""); print $2}' | sort -u`
  
-  if [ x$mixed_file != x ]; then
-    aunt_files=("${aunt_files[@]}" $mixed_file)
+  if [ x"$mixed_files" != x ]; then
+    aunt_files=("${aunt_files[@]}" $mixed_files)
   fi
 
   stage=$[$stage +1]
