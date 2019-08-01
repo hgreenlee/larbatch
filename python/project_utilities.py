@@ -784,7 +784,7 @@ def tokenizeRPN(dim):
 
 def listFiles(dim):
 
-    print 'Generating completed set of files.'
+    print 'Generating completed set of files using dimension "%s".' % dim
 
     # As a first step, expand out "defname:" clauses containing top level "or" or "minus"
     # clauses.
@@ -851,11 +851,12 @@ def listFiles(dim):
     print 'Final result %d files' % len(stack[-1])
     return stack[-1]
 
-# Make a sam dataset definition consisting of a list of files, as evaluated by
-# function listFiles.  The name of the newly created dataset definition
+# Make a sam dataset definition consisting of a list of files.  The file
+# list can be passed directly as an argument, or be evaluated by function
+# listFiles.  The name of the newly created dataset definition
 # is returned as the return value of the function.
 
-def makeFileListDefinition(dim):
+def makeFileListDefinition(list_or_dim):
 
     # Make sure we have a kca certificate.
 
@@ -863,8 +864,17 @@ def makeFileListDefinition(dim):
 
     # Make file list dimension.
 
-    listdim = ''
-    for filename in listFiles(dim):
+    flist = []
+    if type(list_or_dim) == type([]) or type(list_or_dim) == type(set()):
+        flist = list_or_dim
+        print 'Making file list definition from %s with %d elements.' % (type(list_or_dim),
+                                                                         len(list_or_dim))
+    else:
+        flist = listFiles(list_or_dim)
+        print 'Making file list definition using dimension "%s"' % list_or_dim
+
+    listdim=''
+    for filename in flist:
         if listdim == '':
             listdim = 'file_name %s' % filename
         else:

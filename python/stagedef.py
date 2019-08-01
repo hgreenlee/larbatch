@@ -1279,17 +1279,32 @@ class StageDef:
 
             samweb = project_utilities.samweb()
             dim = 'defname: %s' % self.inputdef
+            nfiles = 0
+            files = []
             if self.filelistdef:
-                dim = 'defname: %s' % project_utilities.makeFileListDefinition(dim)
-            sum = samweb.listFilesSummary(dimensions=dim)
-            size_tot = sum['total_file_size']
-            nfiles = sum['file_count']
+                files = project_utilities.listFiles(dim)
+                nfiles = len(files)
+            else:
+                sum = samweb.listFilesSummary(dimensions=dim)
+                nfiles = sum['file_count']
             print 'Input dataset %s has %d files.' % (self.inputdef, nfiles)
             if nfiles > 0:
                 checkok = True
                 max_files = self.max_files_per_job * self.num_jobs
+                size_tot = 0
                 if max_files > 0 and max_files < nfiles:
-                    dim += ' with limit %d' % max_files
+                    if self.filelistdef:
+                        while len(files) > max_files:
+                            files.pop()
+                        dim = 'defname: %s' % project_utilities.makeFileListDefinition(files)
+                    else:
+                        dim += ' with limit %d' % max_files
+                    sum = samweb.listFilesSummary(dimensions=dim)
+                    size_tot = sum['total_file_size']
+                    nfiles = sum['file_count']
+                else:
+                    if self.filelistdef:
+                        dim = 'defname: %s' % project_utilities.makeFileListDefinition(files)
                     sum = samweb.listFilesSummary(dimensions=dim)
                     size_tot = sum['total_file_size']
                     nfiles = sum['file_count']
