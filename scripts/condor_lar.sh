@@ -1571,6 +1571,13 @@ EOF
 
   fhicl-dump $FCL > cfgStage$stage.fcl
 
+  # Dump proxy information.
+
+  echo
+  echo "Proxy:"
+  echo
+  voms-proxy-info -all
+
   # Run lar.
   pwd
   echo "$EXE $LAROPT"
@@ -1581,13 +1588,17 @@ EOF
   echo "$EXE completed with exit status ${stat}."
   if [ $stat -ne 0 ]; then
     echo
-    echo "tail -100 larStage$stage.out"
+    echo "Proxy:"
     echo
-    tail -100 larStage$stage.out
+    voms-proxy-info -all
     echo
-    echo "tail -100 larStage$stage.err"
+    echo "tail -1000 larStage$stage.out"
     echo
-    tail -100 larStage$stage.err
+    tail -1000 larStage$stage.out
+    echo
+    echo "tail -1000 larStage$stage.err"
+    echo
+    tail -1000 larStage$stage.err
     echo
   fi
 
