@@ -186,6 +186,7 @@
 #             only one project stage.  The base attribute is also optional.
 #             If present, it specifies a "base stage" which supplies default
 #             values for all unspecified xml tags.
+# <stage><batchname> - If present and not empty, override default batch job name.
 # <stage><fcl> - Name of fcl file (required).  Specify just the filename,
 #             not the full path.
 # <stage><outdir> - Output directory (required).  A subdirectory with the
@@ -2523,7 +2524,10 @@ def dojobsub(project, stage, makeup, recur):
 
     # Copy and rename batch script to the work directory.
 
-    workname = '%s-%s-%s' % (stage.name, project.name, project.release_tag)
+    if stage.batchname != '':
+        workname = stage.batchname
+    else:
+        workname = '%s-%s-%s' % (stage.name, project.name, project.release_tag)
     workname = workname + os.path.splitext(stage.script)[1]
     #workscript = os.path.join(tmpworkdir, workname)
     workscript = os.path.join(tmpdir, workname)

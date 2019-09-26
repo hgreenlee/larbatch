@@ -38,6 +38,7 @@ class StageDef:
 
         if base_stage != None:
             self.name = base_stage.name
+            self.batchname = base_stage.batchname
             self.fclname = base_stage.fclname
             self.outdir = base_stage.outdir
             self.logdir = base_stage.logdir
@@ -108,6 +109,7 @@ class StageDef:
             self.stop_script = base_stage.stop_script
         else:
             self.name = ''         # Stage name.
+            self.batchname = ''    # Batch job name
             self.fclname = []
             self.outdir = ''       # Output directory.
             self.logdir = ''       # Log directory.
@@ -185,6 +187,12 @@ class StageDef:
             self.name = str(stage_element.attributes['name'].firstChild.data)
         if self.name == '':
             raise XMLError, "Stage name not specified."
+
+        # Batch job name (subelement).
+
+        batchname_elements = stage_element.getElementsByTagName('batchname')
+        if batchname_elements:
+            self.batchname = str(batchname_elements[0].firstChild.data)
 
         # Fcl file name (repeatable subelement).
 
@@ -769,6 +777,7 @@ class StageDef:
 
     def __str__(self):
         result = 'Stage name = %s\n' % self.name
+        result = 'Batch job name = %s\n' % self.batchname
         #result += 'Fcl filename = %s\n' % self.fclname
         for fcl in self.fclname:
 	  result += 'Fcl filename = %s\n' % fcl 
