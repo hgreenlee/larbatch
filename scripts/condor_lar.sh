@@ -1645,6 +1645,19 @@ EOF
 
   next_stage_input=`ls -t1 *.root | egrep -v 'celltree|hist|larlite|larcv|Supplemental|TGraphs' | head -n1`
 
+  # Don't let file name get too long.
+
+  nc=`echo $next_stage_input | wc -c`
+  if [ $nc -ge 200 ]; then
+    base=`basename $next_stage_input`
+    ext=${base##*.}
+    stem=${base%.*}
+    newstem=`echo $stem | cut -c1-150`_`uuidgen`
+    echo "mv $next_stage_input ${newstem}.${ext}"
+    mv $next_stage_input ${newstem}.${ext}
+    next_stage_input=${newstem}.${ext}
+  fi
+
   mixed_files=`sam_metadata_dumper $next_stage_input | grep mixparent | awk -F ":" '{gsub("\"" ,""); gsub(",",""); gsub(" ",""); print $2}' | sort -u`
  
   if [ x"$mixed_files" != x ]; then
