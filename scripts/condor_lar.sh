@@ -1643,7 +1643,7 @@ EOF
   #echo "Outfile is $OUTFILE"
    
 
-  next_stage_input=`ls -t1 *.root | egrep -v 'celltree|hist|larlite|larcv|TGraphs' | head -n1`
+  next_stage_input=`ls -t1 *.root | egrep -v 'celltree|hist|larlite|larcv|Supplemental|TGraphs' | head -n1`
 
   mixed_files=`sam_metadata_dumper $next_stage_input | grep mixparent | awk -F ":" '{gsub("\"" ,""); gsub(",",""); gsub(" ",""); print $2}' | sort -u`
  
