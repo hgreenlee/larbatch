@@ -206,7 +206,6 @@ OUTFILE=""
 TFILE=""
 NEVT=0
 NSKIP=0
-FIRST_EVENT=0
 SUBRUN=1
 NFILE=0
 NFILE_SKIP=0
@@ -1263,8 +1262,8 @@ while [ $stage -lt $nfcls ]; do
   FCL="Stage$stage.fcl"
  
   # In case no input files were specified, and we are not getting input
-  # from sam (i.e. mc generation), recalculate the first event number,
-  # the subrun number, and the number of events to generate in this worker.
+  # from sam (i.e. mc generation), recalculate the subrun number, and the 
+  # number of events to generate in this worker.
   # This also applies to the textfile inputmode.
   # Note this only applies to the first stage by definition
  
@@ -1282,7 +1281,6 @@ while [ $stage -lt $nfcls ]; do
 
     NSKIP=$(( $PROCESS * $NEVT / $NJOBS ))
     NEV=$(( ( $PROCESS + 1 ) * $NEVT / $NJOBS - $NSKIP ))
-    FIRST_EVENT=$(( $NSKIP + 1 ))
     NSKIP=0
     NEVT=$NEV
 
@@ -1306,7 +1304,6 @@ EOF
   
     FCL=subrun_wrapper.fcl
   
-    echo "First MC event: $FIRST_EVENT"
     echo "MC subrun: $SUBRUN"
     echo "Number of MC events: $NEVT"
  
@@ -1525,10 +1522,6 @@ EOF
     LAROPT="$LAROPT --nskip $NSKIP"
   fi
 
-  if [ $FIRST_EVENT -ne 0 ]; then
-    LAROPT="$LAROPT -e $FIRST_EVENT"
-  fi
-
   if [ x$PURL != x -a $stage -eq 0 ]; then
     LAROPT="$LAROPT --sam-web-uri $PURL"
   fi
@@ -1665,7 +1658,6 @@ EOF
   fi
 
   stage=$[$stage +1]
-  FIRST_EVENT=0 #I don't think this does anything
  
   #rename the mem and time profile DBs by stage
   
