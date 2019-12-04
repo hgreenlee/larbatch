@@ -49,6 +49,7 @@ sys.argv = myargv
 # Global variables.
 
 samweb_obj = None       # Initialized SAMWebClient object
+samcache = {}           # Sam query cache (samcache[dimension] = set(...)).
 
 
 # Like os.path.isdir, but faster by avoiding unnecessary i/o.
@@ -781,10 +782,20 @@ def tokenizeRPN(dim):
 # of listFiles by performing various set operations (set unions and set differences, as 
 # indicated sam "or" and "minus" clauses) on completed python sets, rather than as database
 # queries.
+#
+# Additionally, this function caches the results of queries.
 
 def listFiles(dim):
 
+    global samcache
+
     print 'Generating completed set of files using dimension "%s".' % dim
+
+    # Check cache.
+
+    if samcache.has_key(dim):
+        print 'Fetching result from sam cache.'
+        return samcache[dim]
 
     # As a first step, expand out "defname:" clauses containing top level "or" or "minus"
     # clauses.
@@ -842,13 +853,19 @@ def listFiles(dim):
             # onto the stack.
 
             print 'Evaluating "%s"' % item
-            files = samweb().listFiles(item)
+            if samcache.has_key(item):
+                print 'Fetching result from cache.'
+                files = samcache[item]
+            else:
+                files = set(samweb().listFiles(item))
+                samcache[item] = files
             print 'Result %d files' % len(files)
-            stack.append(set(files))
+            stack.append(files)
 
     # Done.
 
     print 'Final result %d files' % len(stack[-1])
+    samcache[dim] = stack[-1]
     return stack[-1]
 
 # Make a sam dataset definition consisting of a list of files.  The file
