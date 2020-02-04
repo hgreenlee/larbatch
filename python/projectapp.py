@@ -15,7 +15,6 @@ from __future__ import print_function
 # Standard imports
 
 import sys, os, subprocess, traceback
-from sets import Set
 from project_modules.jobsuberror import JobsubError
 
 # Import project.py as a module.
@@ -661,7 +660,7 @@ class ProjectApp(tk.Frame):
 
         # Figure out which clusters to kill.
         
-        cluster_ids = Set()
+        cluster_ids = set()
         for job in jobs:
             words = job.split()
             if len(words) >= 2:
