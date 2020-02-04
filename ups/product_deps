@@ -25,7 +25,7 @@ table_fragment_end
 
 product          version
 sam_web_client	-		-       optional
-jobsub_client	-		-       optional
+#jobsub_client	-		-       optional
 
 cetbuildtools	v7_13_02	-	only_for_build
 end_product_list
