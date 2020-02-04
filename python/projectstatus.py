@@ -36,7 +36,7 @@ class ProjectStatus:
 
         # Update all stages.
 
-        for stagename in self.stats.keys():
+        for stagename in list(self.stats.keys()):
             self.stats[stagename].update()
 
     # Get stage status for specified stage.

@@ -82,10 +82,10 @@ class MetaData(object):
         """Take Jobout and Joberr (in jobtuple) and return mdart object from that"""
         mdtext = ''.join(line.replace(", ,", ",") for line in jobtuple[0].split('\n') if line[-3:-1] != ' ,')
         mdtop = json.JSONDecoder().decode(mdtext)
-        if len(mdtop.keys()) == 0:
+        if len(list(mdtop.keys())) == 0:
             print('No top-level key in extracted metadata.')
             sys.exit(1)
-        file_name = mdtop.keys()[0]
+        file_name = list(mdtop.keys())[0]
         return mdtop[file_name]
 
     @staticmethod
@@ -128,7 +128,7 @@ class expMetaData(MetaData):
 
         # Loop over art metadata.
         mixparents = []
-        for mdkey, mdval in mdart.iteritems():
+        for mdkey, mdval in mdart.items():
             # mdval = mdart[mdkey]
             
             # Skip some art-specific fields.

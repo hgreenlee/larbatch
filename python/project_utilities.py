@@ -578,13 +578,13 @@ def addLayerTwo(path, recreate=True):
         jobout = q.get()
         joberr = q.get()
         if rc != 0:
-            for var in save_vars.keys():
+            for var in list(save_vars.keys()):
                 os.environ[var] = save_vars[var]
             raise IFDHError(command, rc, jobout, joberr)
 
         # Restore environment variables.
 
-        for var in save_vars.keys():
+        for var in list(save_vars.keys()):
             os.environ[var] = save_vars[var]
 
 # This function returns jobsub_submit options that should be included for 

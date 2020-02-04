@@ -75,7 +75,7 @@ def check_root_file(path, logdir):
 
             # Extract number of events and stream name from metadata.
 
-            if len(md.keys()) > 0:
+            if len(list(md.keys())) > 0:
                 nevroot = -1
                 stream = ''
                 if 'events' in md:
@@ -311,7 +311,7 @@ def main():
     validate_list.close()
     file_list.close()
     ana_file_list.close()
-    for streamname in file_list_stream.keys():
+    for streamname in list(file_list_stream.keys()):
         file_list_stream[streamname].close()
     events_list.close()
     

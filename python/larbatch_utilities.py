@@ -117,13 +117,13 @@ def ifdh_cp(source, destination):
     jobout = q.get()
     joberr = q.get()
     if rc != 0:
-        for var in save_vars.keys():
+        for var in list(save_vars.keys()):
             os.environ[var] = save_vars[var]
         raise IFDHError(cmd, rc, jobout, joberr)
 
     # Restore environment variables.
 
-    for var in save_vars.keys():
+    for var in list(save_vars.keys()):
         os.environ[var] = save_vars[var]
 
 
@@ -162,13 +162,13 @@ def ifdh_ls(path, depth):
     jobout = q.get()
     joberr = q.get()
     if rc != 0:
-        for var in save_vars.keys():
+        for var in list(save_vars.keys()):
             os.environ[var] = save_vars[var]
         raise IFDHError(cmd, rc, jobout, joberr)
 
     # Restore environment variables.
 
-    for var in save_vars.keys():
+    for var in list(save_vars.keys()):
         os.environ[var] = save_vars[var]
 
     # Done.
@@ -211,13 +211,13 @@ def ifdh_ll(path, depth):
     jobout = q.get()
     joberr = q.get()
     if rc != 0:
-        for var in save_vars.keys():
+        for var in list(save_vars.keys()):
             os.environ[var] = save_vars[var]
         raise IFDHError(cmd, rc, jobout, joberr)
 
     # Restore environment variables.
 
-    for var in save_vars.keys():
+    for var in list(save_vars.keys()):
         os.environ[var] = save_vars[var]
 
     # Done.
@@ -259,13 +259,13 @@ def ifdh_mkdir(path):
     jobout = q.get()
     joberr = q.get()
     if rc != 0:
-        for var in save_vars.keys():
+        for var in list(save_vars.keys()):
             os.environ[var] = save_vars[var]
         raise IFDHError(cmd, rc, jobout, joberr)
 
     # Restore environment variables.
 
-    for var in save_vars.keys():
+    for var in list(save_vars.keys()):
         os.environ[var] = save_vars[var]
 
     # Done.
@@ -307,13 +307,13 @@ def ifdh_rmdir(path):
     jobout = q.get()
     joberr = q.get()
     if rc != 0:
-        for var in save_vars.keys():
+        for var in list(save_vars.keys()):
             os.environ[var] = save_vars[var]
         raise IFDHError(cmd, rc, jobout, joberr)
 
     # Restore environment variables.
 
-    for var in save_vars.keys():
+    for var in list(save_vars.keys()):
         os.environ[var] = save_vars[var]
 
     # Done.
@@ -355,13 +355,13 @@ def ifdh_chmod(path, mode):
     jobout = q.get()
     joberr = q.get()
     if rc != 0:
-        for var in save_vars.keys():
+        for var in list(save_vars.keys()):
             os.environ[var] = save_vars[var]
         raise IFDHError(cmd, rc, jobout, joberr)
 
     # Restore environment variables.
 
-    for var in save_vars.keys():
+    for var in list(save_vars.keys()):
         os.environ[var] = save_vars[var]
 
     # Done.
@@ -403,13 +403,13 @@ def ifdh_mv(src, dest):
     jobout = q.get()
     joberr = q.get()
     if rc != 0:
-        for var in save_vars.keys():
+        for var in list(save_vars.keys()):
             os.environ[var] = save_vars[var]
         raise IFDHError(cmd, rc, jobout, joberr)
 
     # Restore environment variables.
 
-    for var in save_vars.keys():
+    for var in list(save_vars.keys()):
         os.environ[var] = save_vars[var]
 
     # Done.
@@ -451,13 +451,13 @@ def ifdh_rm(path):
     jobout = q.get()
     joberr = q.get()
     if rc != 0:
-        for var in save_vars.keys():
+        for var in list(save_vars.keys()):
             os.environ[var] = save_vars[var]
         raise IFDHError(cmd, rc, jobout, joberr)
 
     # Restore environment variables.
 
-    for var in save_vars.keys():
+    for var in list(save_vars.keys()):
         os.environ[var] = save_vars[var]
 
     # Done.

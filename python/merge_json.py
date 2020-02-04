@@ -32,8 +32,8 @@ def merge_json_objects(json_objects):
     # are identical.
 
     for json_object in json_objects:
-        for key in json_object.keys():
-            if key in merged.keys():
+        for key in list(json_object.keys()):
+            if key in list(merged.keys()):
                 if json_object[key] != merged[key]:
                     raise RuntimeError('Duplicate nonmatching key %s.' % key)
             else:

@@ -187,27 +187,27 @@ class ProjectStatusView(tk.Frame):
 
         # Update label widgets.
 
-        for key in self.stage_name_labels.keys():
+        for key in list(self.stage_name_labels.keys()):
             self.stage_name_labels[key].grid_forget()
-        for key in self.exists_labels.keys():
+        for key in list(self.exists_labels.keys()):
             self.exists_labels[key].grid_forget()
-        for key in self.nfile_labels.keys():
+        for key in list(self.nfile_labels.keys()):
             self.nfile_labels[key].grid_forget()
-        for key in self.nev_labels.keys():
+        for key in list(self.nev_labels.keys()):
             self.nev_labels[key].grid_forget()
-        for key in self.nana_labels.keys():
+        for key in list(self.nana_labels.keys()):
             self.nana_labels[key].grid_forget()
-        for key in self.nerror_labels.keys():
+        for key in list(self.nerror_labels.keys()):
             self.nerror_labels[key].grid_forget()
-        for key in self.nmiss_labels.keys():
+        for key in list(self.nmiss_labels.keys()):
             self.nmiss_labels[key].grid_forget()
-        for key in self.nidle_labels.keys():
+        for key in list(self.nidle_labels.keys()):
             self.nidle_labels[key].grid_forget()
-        for key in self.nrunning_labels.keys():
+        for key in list(self.nrunning_labels.keys()):
             self.nrunning_labels[key].grid_forget()
-        for key in self.nheld_labels.keys():
+        for key in list(self.nheld_labels.keys()):
             self.nheld_labels[key].grid_forget()
-        for key in self.nother_labels.keys():
+        for key in list(self.nother_labels.keys()):
             self.nother_labels[key].grid_forget()
 
         row = 1
@@ -324,7 +324,7 @@ class ProjectStatusView(tk.Frame):
     # Highlight stage.
 
     def highlight_stage(self, stagename):
-        for key in self.stage_name_labels.keys():
+        for key in list(self.stage_name_labels.keys()):
             self.stage_name_labels[key]['bg'] = 'powderblue'
             self.exists_labels[key]['bg'] = 'aliceblue'
             self.nfile_labels[key]['bg'] = 'aliceblue'

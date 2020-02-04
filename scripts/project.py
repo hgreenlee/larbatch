@@ -800,7 +800,7 @@ def check_root_file(path, logdir):
 
             # Extract number of events and stream name from metadata.
 
-            if len(md.keys()) > 0:
+            if len(list(md.keys())) > 0:
                 nevroot = -1
                 stream = ''
                 if 'events' in md:
@@ -1173,7 +1173,7 @@ def docheck(project, stage, ana, quick=False):
             if not bad and has_metadata:
                 for root in roots:
                     rootname = os.path.basename(root[0])
-                    for s in procmap.keys():
+                    for s in list(procmap.keys()):
                         oldroots = procmap[s]
                         for oldroot in oldroots:
                             oldrootname = os.path.basename(oldroot[0])
@@ -1307,7 +1307,7 @@ def docheck(project, stage, ana, quick=False):
     nproc = 0
     streams = {}    # {stream: file}
     nfile = 0
-    for s in procmap.keys():
+    for s in list(procmap.keys()):
         nproc = nproc + 1
         for root in procmap[s]:
             nfile = nfile + 1
@@ -1383,7 +1383,7 @@ def docheck(project, stage, ana, quick=False):
     if len(uris) == 0:
         urislist.write('\n')
     urislist.close()
-    for stream in streams.keys():
+    for stream in list(streams.keys()):
         streams[stream].close()
 
     # Make sam files.
@@ -2090,7 +2090,7 @@ def dotest_declarations(dim):
     # Do query
 
     result = samweb.listFilesSummary(dimensions=dim)
-    for key in result.keys():
+    for key in list(result.keys()):
         print('%s: %s' % (key, result[key]))
 
     return 0
@@ -2149,7 +2149,7 @@ def dotest_definition(defname):
     # Do query
 
     result = samweb.listFilesSummary(defname=defname)
-    for key in result.keys():
+    for key in list(result.keys()):
         print('%s: %s' % (key, result[key]))
 
     return 0
@@ -2315,7 +2315,7 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
             elif not upload:
                 print('Should remove location: %s.' % loc)
 
-        for loc in locs_to_upload.keys():
+        for loc in list(locs_to_upload.keys()):
             dropbox = locs_to_upload[loc]
 
             # Make sure dropbox directory exists.
