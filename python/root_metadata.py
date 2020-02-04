@@ -49,7 +49,7 @@ def enstoreChecksum(fileobj):
     while 1:
         try:
             s = fileobj.read(readblocksize)
-        except (OSError, IOError), ex:
+        except (OSError, IOError) as ex:
             raise Error(str(ex))
         if not s: break
         crc = zlib.adler32(s,crc)
@@ -69,7 +69,7 @@ def fileEnstoreChecksum(path):
         try:
             f = larbatch_posix.open(path,'rb')
             crc = enstoreChecksum(f)
-        except (IOError, OSError), ex:
+        except (IOError, OSError) as ex:
             raise Error(str(ex))
         finally:
             f.close()
