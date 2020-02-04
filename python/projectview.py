@@ -17,8 +17,8 @@ from __future__ import print_function
 
 import tkinter as tk
 import tkinter.messagebox
-from statusview import ProjectStatusView
-from textwindow import TextWindow
+from project_gui_modules.statusview import ProjectStatusView
+from project_gui_modules.textwindow import TextWindow
 
 # Project widget class
 
