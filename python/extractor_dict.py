@@ -5,7 +5,10 @@ import sys, getopt
 import os
 from subprocess import Popen, PIPE
 import threading
-import queue
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 import project_utilities, root_metadata
 import json
 import abc

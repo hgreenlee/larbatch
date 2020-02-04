@@ -127,7 +127,10 @@ import os, shutil
 import stat as statmod
 import subprocess
 import threading
-import queue
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 import uuid
 import larbatch_utilities
 from project_modules.ifdherror import IFDHError

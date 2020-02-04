@@ -411,7 +411,11 @@ from __future__ import absolute_import
 from __future__ import print_function
 import sys, os, stat, string, subprocess, shutil, urllib, json, getpass, uuid, tempfile, hashlib
 import larbatch_posix
-import threading, queue
+import threading
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 from xml.dom.minidom import parse
 import project_utilities, root_metadata
 from project_modules.projectdef import ProjectDef

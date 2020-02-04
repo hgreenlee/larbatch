@@ -70,7 +70,10 @@ import stat
 import subprocess
 import getpass
 import threading
-import queue
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 from project_modules.ifdherror import IFDHError
 
 # Global variables.

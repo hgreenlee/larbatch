@@ -19,7 +19,10 @@ import socket
 import subprocess
 import shutil
 import threading
-import queue
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 import uuid
 import samweb_cli
 from project_modules.ifdherror import IFDHError

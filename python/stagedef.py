@@ -13,7 +13,10 @@ from __future__ import absolute_import
 from __future__ import print_function
 import sys, os, string, stat, math, subprocess, random
 import threading
-import queue
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 import samweb_cli
 import project_utilities
 import larbatch_utilities
