@@ -128,7 +128,7 @@ class expMetaData(MetaData):
 
         # Loop over art metadata.
         mixparents = []
-        for mdkey, mdval in mdart.items():
+        for mdkey, mdval in list(mdart.items()):
             # mdval = mdart[mdkey]
             
             # Skip some art-specific fields.
