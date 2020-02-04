@@ -30,8 +30,8 @@ warnings.filterwarnings('ignore', category = RuntimeWarning, message = 'creating
 # Convert adler32-1 (used by dcache) to adler32-0 (used by sam).
 
 def convert_1_adler32_to_0_adler32(crc, filesize):
-    crc = long(crc)
-    filesize = long(filesize)
+    crc = int(crc)
+    filesize = int(filesize)
     size = int(filesize % 65521)
     s1 = (crc & 0xffff)
     s2 = ((crc >> 16) &  0xffff)
@@ -53,7 +53,7 @@ def enstoreChecksum(fileobj):
             raise Error(str(ex))
         if not s: break
         crc = zlib.adler32(s,crc)
-    crc = long(crc)
+    crc = int(crc)
     if crc < 0:
         # Return 32 bit unsigned value
         crc  = (crc & 0x7FFFFFFF) | 0x80000000
@@ -93,12 +93,12 @@ def fileEnstoreChecksum(path):
             crc0 = 0
             for line in string.split(srmout, '\n'):
                 if first:
-                    size = long(line[2:line.find('/')-1])
+                    size = int(line[2:line.find('/')-1])
                     first = False
                     continue
                 if line.find("Checksum value:") > 0:
                     ssum = line[line.find(':') + 2:]
-                    crc1 = long( ssum , base = 16 )
+                    crc1 = int( ssum , base = 16 )
                     crc0 = convert_1_adler32_to_0_adler32(crc1, size)
                     break
 
