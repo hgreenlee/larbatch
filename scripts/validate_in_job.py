@@ -78,9 +78,9 @@ def check_root_file(path, logdir):
 	    if len(md.keys()) > 0:
       		nevroot = -1
                 stream = ''
-            	if md.has_key('events'):
+            	if 'events' in md:
                     nevroot = int(md['events'])
-                if md.has_key('data_stream'):
+                if 'data_stream' in md:
                     stream = md['data_stream']
                 result = (nevroot, stream)
             json_ok = True
@@ -291,7 +291,7 @@ def main():
         	rootname, outdir))
             status = 1
 
-        if not file_list_stream.has_key(streamname):
+        if streamname not in file_list_stream:
             file_list_stream[streamname] = open('files_%s.list' % streamname, 'w')
 	validate_list.write(rootpath + '\n')
 	file_on_scratch = os.path.join(outdir, os.path.basename(rootpath))
@@ -356,7 +356,7 @@ def main():
 
                         # Delete the old parents, if any.
 
-                        if md.has_key('parents'):         	     
+                        if 'parents' in md:         	     
                             del md['parents']
 
                         # change the parentage of the file based on it's parents and aunts from condor_lar
@@ -368,7 +368,7 @@ def main():
                         if(jobs_aunts[0] != '' ):
                             for aunt in jobs_aunts:
                                 mixparent_dict = {'file_name': aunt}
-                                if not md.has_key('parents'):
+                                if 'parents' not in md:
                                     md['parents'] = []
                                 md['parents'].append(mixparent_dict)
 	        	         	     
@@ -444,7 +444,7 @@ def main():
 
                         # Delete the old parents, if any.
 
-                        if md.has_key('parents'):         	     
+                        if 'parents' in md:         	     
                             del md['parents']
 
                         # change the parentage of the file based on it's parents and aunts from condor_lar
@@ -456,11 +456,11 @@ def main():
                         if(jobs_aunts[0] != '' ):
                             for aunt in jobs_aunts:
                                 mixparent_dict = {'file_name': aunt}
-                                if not md.has_key('parents'):
+                                if 'parents' not in md:
                                     md['parents'] = []
                                 md['parents'].append(mixparent_dict)
 	        	         	     
-                    if len(md) > 0 and md.has_key('file_type'):
+                    if len(md) > 0 and 'file_type' in md:
                         project_utilities.test_kca()
 
                         # Make lack of parent files a nonfatal error.

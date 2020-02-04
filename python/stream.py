@@ -59,7 +59,7 @@ def get_stream(inputfile):
 
     # Extract stream from json dictionary.
 
-    if md.has_key('data_stream'):
+    if 'data_stream' in md:
         result = md['data_stream']
     else:
         raise RuntimeError('Sam metadata does not contain stream.')

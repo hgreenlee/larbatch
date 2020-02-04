@@ -64,7 +64,7 @@ class ProjectDef:
 
         # Project name (attribute)
 
-        if project_element.attributes.has_key('name'):
+        if 'name' in project_element.attributes:
             self.name = str(project_element.attributes['name'].firstChild.data)
         if self.name == '':
             raise XMLError('Project name not specified.')
@@ -322,7 +322,7 @@ class ProjectDef:
 
         # Add $FHICL_FILE_PATH.
 
-        if os.environ.has_key('FHICL_FILE_PATH'):
+        if 'FHICL_FILE_PATH' in os.environ:
             for fcldir in string.split(os.environ['FHICL_FILE_PATH'], ':'):
                 if larbatch_posix.exists(fcldir):
                     self.fclpath.append(fcldir)
@@ -343,7 +343,7 @@ class ProjectDef:
             # Get base stage, if any.
 
             base_stage = None
-            if stage_element.attributes.has_key('base'):
+            if 'base' in stage_element.attributes:
                 base_name = str(stage_element.attributes['base'].firstChild.data)
                 if base_name != '':
                     for stage in self.stages:

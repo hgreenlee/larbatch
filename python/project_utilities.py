@@ -38,7 +38,7 @@ from larbatch_utilities import get_setup_script_path
 from larbatch_utilities import check_running
 
 # Prevent root from printing garbage on initialization.
-if os.environ.has_key('TERM'):
+if 'TERM' in os.environ:
     del os.environ['TERM']
 
 # Hide command line arguments from ROOT module.
@@ -109,10 +109,10 @@ def get_scratch_dir():
 
     # Get scratch directory path.
 
-    if os.environ.has_key('TMPDIR'):
+    if 'TMPDIR' in os.environ:
         scratch = os.environ['TMPDIR']
 
-    elif os.environ.has_key('SCRATCH'):
+    elif 'SCRATCH' in os.environ:
         scratch = os.environ['SCRATCH']
 
     else:
@@ -368,7 +368,7 @@ def active_projects2(defname = ''):
             prjurl = s.findProject(project=prjname, station=get_experiment())
             if prjurl != '':
                 prjsum = s.projectSummary(prjurl)
-                if prjsum.has_key('project_end_time'):
+                if 'project_end_time' in prjsum:
                     tendstr = prjsum['project_end_time']
                     if len(tendstr) >= 19:
                         try:
@@ -554,7 +554,7 @@ def addLayerTwo(path, recreate=True):
 
         save_vars = {}
         for var in ('X509_USER_CERT', 'X509_USER_KEY'):
-            if os.environ.has_key(var):
+            if var in os.environ:
                 save_vars[var] = os.environ[var]
                 del os.environ[var]
 
@@ -787,7 +787,7 @@ def listFiles(dim):
 
     # Check cache.
 
-    if samcache.has_key(dim):
+    if dim in samcache:
         print('Fetching result from sam cache.')
         return samcache[dim]
 
@@ -847,7 +847,7 @@ def listFiles(dim):
             # onto the stack.
 
             print('Evaluating "%s"' % item)
-            if samcache.has_key(item):
+            if item in samcache:
                 print('Fetching result from cache.')
                 files = samcache[item]
             else:

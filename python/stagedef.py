@@ -185,7 +185,7 @@ class StageDef:
 
         # Stage name (attribute).
 
-        if stage_element.attributes.has_key('name'):
+        if 'name' in stage_element.attributes:
             self.name = str(stage_element.attributes['name'].firstChild.data)
         if self.name == '':
             raise XMLError("Stage name not specified.")
@@ -387,7 +387,7 @@ class StageDef:
             previous_stage_name = default_previous_stage
             if self.previousstage != '':
                 previous_stage_name = self.previousstage
-            if default_input_lists.has_key(previous_stage_name):
+            if previous_stage_name in default_input_lists:
                 default_input_list = default_input_lists[previous_stage_name]
 
             # Modify default input list according to input stream, if any.

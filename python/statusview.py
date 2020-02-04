@@ -217,7 +217,7 @@ class ProjectStatusView(tk.Frame):
                 ss = ps.get_stage_status(stage.name)
                 bss = bs.get_stage_status(stage.name)
 
-                if not self.stage_name_labels.has_key(stage.name):
+                if stage.name not in self.stage_name_labels:
                     self.stage_name_labels[stage.name] = tk.Label(self, bg='powderblue',
                                                                   relief=tk.RIDGE,
                                                                   padx=10, pady=5,
@@ -228,7 +228,7 @@ class ProjectStatusView(tk.Frame):
                                                         sticky=tk.N+tk.E+tk.W+tk.S)
                 self.rowconfigure(row, weight=1)
 
-                if not self.exists_labels.has_key(stage.name):
+                if stage.name not in self.exists_labels:
                     self.exists_labels[stage.name] = tk.Label(self, bg='aliceblue', relief=tk.RIDGE,
                                                               font=tkinter.font.Font(size=12))
                 if ss.exists:
@@ -241,7 +241,7 @@ class ProjectStatusView(tk.Frame):
                                                     sticky=tk.N+tk.E+tk.W+tk.S)
                 self.rowconfigure(row, weight=1)
 
-                if not self.nfile_labels.has_key(stage.name):
+                if stage.name not in self.nfile_labels:
                     self.nfile_labels[stage.name] = tk.Label(self, bg='aliceblue', relief=tk.RIDGE,
                                                              font=tkinter.font.Font(size=12))
                 self.nfile_labels[stage.name]['text'] = str(ss.nfile)
@@ -249,21 +249,21 @@ class ProjectStatusView(tk.Frame):
                                                    sticky=tk.N+tk.E+tk.W+tk.S)
                 self.rowconfigure(row, weight=1)
 
-                if not self.nev_labels.has_key(stage.name):
+                if stage.name not in self.nev_labels:
                     self.nev_labels[stage.name] = tk.Label(self, bg='aliceblue', relief=tk.RIDGE,
                                                            font=tkinter.font.Font(size=12))
                 self.nev_labels[stage.name]['text'] = str(ss.nev)
                 self.nev_labels[stage.name].grid(row=row, column=kNEV, sticky=tk.N+tk.E+tk.W+tk.S)
                 self.rowconfigure(row, weight=1)
 
-                if not self.nana_labels.has_key(stage.name):
+                if stage.name not in self.nana_labels:
                     self.nana_labels[stage.name] = tk.Label(self, bg='aliceblue', relief=tk.RIDGE,
                                                             font=tkinter.font.Font(size=12))
                 self.nana_labels[stage.name]['text'] = str(ss.nana)
                 self.nana_labels[stage.name].grid(row=row, column=kNANA, sticky=tk.N+tk.E+tk.W+tk.S)
                 self.rowconfigure(row, weight=1)
 
-                if not self.nerror_labels.has_key(stage.name):
+                if stage.name not in self.nerror_labels:
                     self.nerror_labels[stage.name] = tk.Label(self, bg='aliceblue', relief=tk.RIDGE,
                                                               font=tkinter.font.Font(size=12))
                 self.nerror_labels[stage.name]['text'] = str(ss.nerror)
@@ -275,7 +275,7 @@ class ProjectStatusView(tk.Frame):
                                                     sticky=tk.N+tk.E+tk.W+tk.S)
                 self.rowconfigure(row, weight=1)
 
-                if not self.nmiss_labels.has_key(stage.name):
+                if stage.name not in self.nmiss_labels:
                     self.nmiss_labels[stage.name] = tk.Label(self, bg='aliceblue', relief=tk.RIDGE,
                                                              font=tkinter.font.Font(size=12))
                 self.nmiss_labels[stage.name]['text'] = str(ss.nmiss)
@@ -287,7 +287,7 @@ class ProjectStatusView(tk.Frame):
                                                    sticky=tk.N+tk.E+tk.W+tk.S)
                 self.rowconfigure(row, weight=1)
 
-                if not self.nidle_labels.has_key(stage.name):
+                if stage.name not in self.nidle_labels:
                     self.nidle_labels[stage.name] = tk.Label(self, bg='lightcyan', relief=tk.RIDGE,
                                                              font=tkinter.font.Font(size=12))
                 self.nidle_labels[stage.name]['text'] = bss[0]
@@ -295,7 +295,7 @@ class ProjectStatusView(tk.Frame):
                                                    sticky=tk.N+tk.E+tk.W+tk.S)
                 self.rowconfigure(row, weight=1)
 
-                if not self.nrunning_labels.has_key(stage.name):
+                if stage.name not in self.nrunning_labels:
                     self.nrunning_labels[stage.name] = tk.Label(self, bg='lightcyan',
                                                                 relief=tk.RIDGE,
                                                                 font=tkinter.font.Font(size=12))
@@ -304,7 +304,7 @@ class ProjectStatusView(tk.Frame):
                                                       column=kRUNNING, sticky=tk.N+tk.E+tk.W+tk.S)
                 self.rowconfigure(row, weight=1)
 
-                if not self.nheld_labels.has_key(stage.name):
+                if stage.name not in self.nheld_labels:
                     self.nheld_labels[stage.name] = tk.Label(self, bg='lightcyan', relief=tk.RIDGE,
                                                              font=tkinter.font.Font(size=12))
                 self.nheld_labels[stage.name]['text'] = bss[2]
@@ -312,7 +312,7 @@ class ProjectStatusView(tk.Frame):
                                                    sticky=tk.N+tk.E+tk.W+tk.S)
                 self.rowconfigure(row, weight=1)
 
-                if not self.nother_labels.has_key(stage.name):
+                if stage.name not in self.nother_labels:
                     self.nother_labels[stage.name] = tk.Label(self, bg='lightcyan', relief=tk.RIDGE,
                                                               font=tkinter.font.Font(size=12))
                 self.nother_labels[stage.name]['text'] = bss[3]
@@ -336,7 +336,7 @@ class ProjectStatusView(tk.Frame):
             self.nrunning_labels[key]['bg'] = 'lightcyan'
             self.nheld_labels[key]['bg'] = 'lightcyan'
             self.nother_labels[key]['bg'] = 'lightcyan'
-        if self.stage_name_labels.has_key(stagename):
+        if stagename in self.stage_name_labels:
             self.stage_name_labels[stagename]['bg'] = 'white'
             self.exists_labels[stagename]['bg'] = 'white'
             self.nfile_labels[stagename]['bg'] = 'white'

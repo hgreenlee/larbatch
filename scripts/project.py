@@ -629,7 +629,7 @@ def get_projects(xmlfile):
 
     # Cache results.
 
-    if get_projects.cache.has_key(xmlfile):
+    if xmlfile in get_projects.cache:
         return get_projects.cache[xmlfile]
 
     # Parse xml (returns xml document).
@@ -799,9 +799,9 @@ def check_root_file(path, logdir):
             if len(md.keys()) > 0:
                 nevroot = -1
                 stream = ''
-                if md.has_key('events'):
+                if 'events' in md:
                     nevroot = int(md['events'])
-                if md.has_key('data_stream'):
+                if 'data_stream' in md:
                     stream = md['data_stream']
                 result = (nevroot, stream)
             json_ok = True
@@ -1311,7 +1311,7 @@ def docheck(project, stage, ana, quick=False):
             eventslist.write('%s %d\n' % root[:2])
             stream = root[2]
             if stream != '':
-                if not streams.has_key(stream):
+                if stream not in streams:
                     streamlistname = os.path.join(stage.bookdir, 'files_%s.list' % stream)
                     streams[stream] = safeopen(streamlistname)
                 streams[stream].write('%s\n' % root[0])
@@ -1449,20 +1449,20 @@ def docheck(project, stage, ana, quick=False):
                 nf = 0
                 nproc = 0
                 nact = 0
-                if result.has_key('processes'):
+                if 'processes' in result:
                     processes = result['processes']
                     for process in processes:
                         nproc = nproc + 1
-                        if process.has_key('status'):
+                        if 'status' in process:
                             if process['status'] == 'active':
                                 nact = nact + 1
-                        if process.has_key('counts'):
+                        if 'counts' in process:
                             counts = process['counts']
-                            if counts.has_key('delivered'):
+                            if 'delivered' in counts:
                                 nd = nd + counts['delivered']
-                            if counts.has_key('consumed'):
+                            if 'consumed' in counts:
                                 nc = nc + counts['consumed']
-                            if counts.has_key('failed'):
+                            if 'failed' in counts:
                                 nf = nf + counts['failed']
                 print('Status: %s' % result['project_status'])
                 print('%d total processes' % nproc)
@@ -3610,7 +3610,7 @@ def normxmlpath(xmlfile):
 
         # Add directories in environment variable XMLPATH, if defined.
 
-        if os.environ.has_key('XMLPATH'):
+        if 'XMLPATH' in os.environ:
             dirs.extend(os.environ['XMLPATH'].split(':'))
 
         # Loop over directories.

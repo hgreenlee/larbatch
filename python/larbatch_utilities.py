@@ -93,7 +93,7 @@ def ifdh_cp(source, destination):
 
     save_vars = {}
     for var in ('X509_USER_CERT', 'X509_USER_KEY'):
-        if os.environ.has_key(var):
+        if var in os.environ:
             save_vars[var] = os.environ[var]
             del os.environ[var]
 
@@ -138,7 +138,7 @@ def ifdh_ls(path, depth):
 
     save_vars = {}
     for var in ('X509_USER_CERT', 'X509_USER_KEY'):
-        if os.environ.has_key(var):
+        if var in os.environ:
             save_vars[var] = os.environ[var]
             del os.environ[var]
 
@@ -187,7 +187,7 @@ def ifdh_ll(path, depth):
 
     save_vars = {}
     for var in ('X509_USER_CERT', 'X509_USER_KEY'):
-        if os.environ.has_key(var):
+        if var in os.environ:
             save_vars[var] = os.environ[var]
             del os.environ[var]
 
@@ -235,7 +235,7 @@ def ifdh_mkdir(path):
 
     save_vars = {}
     for var in ('X509_USER_CERT', 'X509_USER_KEY'):
-        if os.environ.has_key(var):
+        if var in os.environ:
             save_vars[var] = os.environ[var]
             del os.environ[var]
 
@@ -283,7 +283,7 @@ def ifdh_rmdir(path):
 
     save_vars = {}
     for var in ('X509_USER_CERT', 'X509_USER_KEY'):
-        if os.environ.has_key(var):
+        if var in os.environ:
             save_vars[var] = os.environ[var]
             del os.environ[var]
 
@@ -331,7 +331,7 @@ def ifdh_chmod(path, mode):
 
     save_vars = {}
     for var in ('X509_USER_CERT', 'X509_USER_KEY'):
-        if os.environ.has_key(var):
+        if var in os.environ:
             save_vars[var] = os.environ[var]
             del os.environ[var]
 
@@ -379,7 +379,7 @@ def ifdh_mv(src, dest):
 
     save_vars = {}
     for var in ('X509_USER_CERT', 'X509_USER_KEY'):
-        if os.environ.has_key(var):
+        if var in os.environ:
             save_vars[var] = os.environ[var]
             del os.environ[var]
 
@@ -427,7 +427,7 @@ def ifdh_rm(path):
 
     save_vars = {}
     for var in ('X509_USER_CERT', 'X509_USER_KEY'):
-        if os.environ.has_key(var):
+        if var in os.environ:
             save_vars[var] = os.environ[var]
             del os.environ[var]
 
@@ -591,7 +591,7 @@ def get_proxy():
 
     # Get proxy using either specified cert+key or default cert.
 
-    if os.environ.has_key('X509_USER_CERT') and os.environ.has_key('X509_USER_KEY'):
+    if 'X509_USER_CERT' in os.environ and 'X509_USER_KEY' in os.environ:
         cmd=['voms-proxy-init',
              '-rfc',
              '-cert', os.environ['X509_USER_CERT'],
@@ -626,11 +626,11 @@ def test_kca():
     global kca_ok
     if not kca_ok:
         try:
-            if os.environ.has_key('X509_USER_PROXY'):
+            if 'X509_USER_PROXY' in os.environ:
                 subprocess.check_call(['voms-proxy-info',
                                        '-file', os.environ['X509_USER_PROXY'],
                                        '-exists'], stdout=-1, stderr=-1)
-            elif os.environ.has_key('X509_USER_CERT') and os.environ.has_key('X509_USER_KEY'):
+            elif 'X509_USER_CERT' in os.environ and 'X509_USER_KEY' in os.environ:
                 subprocess.check_call(['voms-proxy-info',
                                        '-file', os.environ['X509_USER_CERT'],
                                        '-exists'], stdout=-1, stderr=-1)
@@ -656,11 +656,11 @@ def test_kca():
 
     if not kca_ok:
         try:
-            if os.environ.has_key('X509_USER_PROXY'):
+            if 'X509_USER_PROXY' in os.environ:
                 subprocess.check_call(['voms-proxy-info',
                                        '-file', os.environ['X509_USER_PROXY'],
                                        '-exists'], stdout=-1, stderr=-1)
-            elif os.environ.has_key('X509_USER_CERT') and os.environ.has_key('X509_USER_KEY'):
+            elif 'X509_USER_CERT' in os.environ and 'X509_USER_KEY' in os.environ:
                 subprocess.check_call(['voms-proxy-info',
                                        '-file', os.environ['X509_USER_CERT'],
                                        '-exists'], stdout=-1, stderr=-1)
@@ -845,7 +845,7 @@ def get_experiment():
 
     exp = ''
     for ev in ('EXPERIMENT', 'SAM_EXPERIMENT'):
-        if os.environ.has_key(ev):
+        if ev in os.environ:
             exp = os.environ[ev]
             break
 
@@ -872,7 +872,7 @@ def get_role():
 
     # Check environment variable $ROLE.
 
-    if os.environ.has_key('ROLE'):
+    if 'ROLE' in os.environ:
         result = os.environ['ROLE']
 
     # Otherwise, check user.
@@ -968,11 +968,11 @@ def get_user():
         # Return user name from certificate if Role is Analysis
 
         subject = ''
-        if os.environ.has_key('X509_USER_PROXY'):
+        if 'X509_USER_PROXY' in os.environ:
             subject = subprocess.check_output(['voms-proxy-info',
                                                '-file', os.environ['X509_USER_PROXY'],
                                                '-subject'], stderr=-1)
-        elif os.environ.has_key('X509_USER_CERT') and os.environ.has_key('X509_USER_KEY'):
+        elif 'X509_USER_CERT' in os.environ and 'X509_USER_KEY' in os.environ:
             subject = subprocess.check_output(['voms-proxy-info',
                                                '-file', os.environ['X509_USER_CERT'],
                                                '-subject'], stderr=-1)

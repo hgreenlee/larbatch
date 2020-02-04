@@ -38,7 +38,7 @@ import larbatch_posix
 
 myargv = sys.argv
 sys.argv = myargv[0:1]
-if os.environ.has_key('TERM'):
+if 'TERM' in os.environ:
     del os.environ['TERM']
 import ROOT
 ROOT.gErrorIgnoreLevel = ROOT.kError
@@ -73,7 +73,7 @@ def analyze(root, level, gtrees, gbranches, doprint):
     keys = root.GetListOfKeys()
     for key in keys:
         objname = key.GetName()
-        if not trees.has_key(objname):
+        if objname not in trees:
             obj = root.Get(objname)
             if obj and obj.InheritsFrom('TTree'):
                 trees[objname] = obj
@@ -92,7 +92,7 @@ def analyze(root, level, gtrees, gbranches, doprint):
 
         # Remember information about trees.
 
-        if gtrees.has_key(key):
+        if key in gtrees:
             gtrees[key] = gtrees[key] + nentry
         else:
             gtrees[key] = nentry
@@ -148,7 +148,7 @@ def analyze(root, level, gtrees, gbranches, doprint):
 
                         # Remember information about branches.
                         
-                        if gbranches.has_key(name):
+                        if name in gbranches:
                             gbranches[name][0] = gbranches[name][0] + ntot
                             gbranches[name][1] = gbranches[name][1] + nzip
                         else:
@@ -172,7 +172,7 @@ def analyze(root, level, gtrees, gbranches, doprint):
 
                                 # Remember information about branches.
                         
-                                if gbranches.has_key(name):
+                                if name in gbranches:
                                     gbranches[name][0] = gbranches[name][0] + ntot
                                     gbranches[name][1] = gbranches[name][1] + nzip
                                 else:
@@ -202,7 +202,7 @@ def analyze(root, level, gtrees, gbranches, doprint):
             print('%7.2f Mb average size per event.' % nevtot)
             print('%7.2f Mb average zipped size per event.' % nevzip)
 
-        if gbranches.has_key(name):
+        if name in gbranches:
             gbranches[name][0] = gbranches[name][0] + ntotall
             gbranches[name][1] = gbranches[name][1] + nzipall
         else:
@@ -333,7 +333,7 @@ def main(argv):
             else:
                 comp = 0.
             print('%14d%14d%8.2f  %s' % (ntot, nzip, comp, key))
-    if gbranches.has_key(allname):
+    if allname in gbranches:
         ntot = gbranches[allname][0]
         nzip = gbranches[allname][1]
         if nzip != 0:
@@ -344,7 +344,7 @@ def main(argv):
 
     # Print average event size.
 
-    if gtrees.has_key('Events'):
+    if 'Events' in gtrees:
         nev = gtrees['Events']
         if nev != 0:
             nevtot = 1.e-6 * float(ntot) / float(nev)

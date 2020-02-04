@@ -135,8 +135,8 @@ from project_modules.ifdherror import IFDHError
 # Global flags.
 
 pnfs_is_mounted = os.path.isdir('/pnfs')
-prefer_grid = os.environ.has_key('LARBATCH_GRID')
-debug = os.environ.has_key('LARBATCH_DEBUG')
+prefer_grid = 'LARBATCH_GRID' in os.environ
+debug = 'LARBATCH_DEBUG' in os.environ
 if debug:
     print('*** Larbatch_posix: Debugging enabled.')
     
