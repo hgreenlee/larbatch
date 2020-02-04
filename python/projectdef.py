@@ -51,8 +51,8 @@ class ProjectDef:
         self.run_type = ''                # Sam run type.
         self.run_number = 0               # Sam run number.
         self.script = 'condor_lar.sh'     # Batch script.
-	self.validate_on_worker = 0   # Run post-job validation on the worker node
-	self.copy_to_fts = 0          # Copy a copy of the file to a dropbox scanned by fts. Note that a copy is still sent to <outdir>
+        self.validate_on_worker = 0   # Run post-job validation on the worker node
+        self.copy_to_fts = 0          # Copy a copy of the file to a dropbox scanned by fts. Note that a copy is still sent to <outdir>
         self.start_script = 'condor_start_project.sh'  # Sam start project script.
         self.stop_script = 'condor_stop_project.sh'    # Sam stop project script.
         self.force_dag = 0                # Force dag for sam input jobs.
@@ -168,7 +168,7 @@ class ProjectDef:
                 self.memory = int(memory_element.firstChild.data)
 
         # merge (subelement).
- 	
+        
         merge_elements = project_element.getElementsByTagName('merge')
         for merge_element in merge_elements:
             if merge_element.parentNode == project_element:
@@ -176,7 +176,7 @@ class ProjectDef:
                     self.merge = str(merge_element.firstChild.data)
                 else:
                     self.merge = ''
-	    
+            
         # Larsoft (subelement).
 
         larsoft_elements = project_element.getElementsByTagName('larsoft')
@@ -259,13 +259,13 @@ class ProjectDef:
         if script_path == '' or not larbatch_posix.access(script_path, os.X_OK):
             raise IOError('Script %s not found.' % self.script)
         self.script = script_path
-	
-	worker_validations = project_element.getElementsByTagName('check')
+        
+        worker_validations = project_element.getElementsByTagName('check')
         for worker_validation in worker_validations:
             if worker_validation.parentNode == project_element:
                 self.validate_on_worker = int(worker_validation.firstChild.data)
-	
-	worker_copys = project_element.getElementsByTagName('copy')
+        
+        worker_copys = project_element.getElementsByTagName('copy')
         for worker_copy in worker_copys:
             if worker_copy.parentNode == project_element:
                 self.copy_to_fts = int(worker_copy.firstChild.data)    
@@ -452,16 +452,16 @@ class ProjectDef:
 
     def get_fcl(self, fclname):
         
-	fcl_list = []
+        fcl_list = []
         for name in fclname:
-	 fcl = ''
-	 for fcldir in self.fclpath:
+         fcl = ''
+         for fcldir in self.fclpath:
             fcl = os.path.join(fcldir, name)
             #print fcl
-	    if larbatch_posix.exists(fcl):
+            if larbatch_posix.exists(fcl):
                 break
          
-	 if fcl == '' or not larbatch_posix.exists(fcl):
+         if fcl == '' or not larbatch_posix.exists(fcl):
              raise IOError('Could not find fcl file %s.' % name)
-	 fcl_list.append(fcl)      
+         fcl_list.append(fcl)      
         return fcl_list

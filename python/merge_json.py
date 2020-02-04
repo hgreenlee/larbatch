@@ -66,4 +66,4 @@ if __name__ == "__main__":
 
     json_filenames = sys.argv[1:]
     merge_json_files(json_filenames)
-    sys.exit(0)	
+    sys.exit(0) 

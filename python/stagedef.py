@@ -180,7 +180,7 @@ class StageDef:
             self.script = default_script             # Upload-on-worker flag.
             self.start_script = default_start_script # Upload-on-worker flag.
             self.stop_script = default_stop_script   # Upload-on-worker flag.
-	
+        
         # Extract values from xml.
 
         # Stage name (attribute).
@@ -438,9 +438,9 @@ class StageDef:
         max_files_per_job_elements = stage_element.getElementsByTagName('maxfilesperjob')
         if max_files_per_job_elements:
             self.max_files_per_job = int(max_files_per_job_elements[0].firstChild.data)
-	
-	# Run number of events (MC Gen only).
-	#overriden by --pubs <run> is running in pubs mode
+        
+        # Run number of events (MC Gen only).
+        #overriden by --pubs <run> is running in pubs mode
 
         run_number = stage_element.getElementsByTagName('runnumber')
         if run_number:
@@ -451,7 +451,7 @@ class StageDef:
         target_size_elements = stage_element.getElementsByTagName('targetsize')
         if target_size_elements:
             self.target_size = int(target_size_elements[0].firstChild.data)
-	
+        
 
         # Sam dataset definition name (subelement).
 
@@ -590,7 +590,7 @@ class StageDef:
         merge_elements = stage_element.getElementsByTagName('merge')
         if merge_elements:
             self.merge = str(merge_elements[0].firstChild.data)
-	
+        
         # Resource (subelement).
 
         resource_elements = stage_element.getElementsByTagName('resource')
@@ -660,56 +660,56 @@ class StageDef:
         output_elements = stage_element.getElementsByTagName('output')
         if output_elements:
             self.output = str(output_elements[0].firstChild.data)
-	    
-	# TFileName (subelement).
+            
+        # TFileName (subelement).
 
         TFileName_elements = stage_element.getElementsByTagName('TFileName')
         if TFileName_elements:
             self.TFileName = str(TFileName_elements[0].firstChild.data)
 
-	# Jobsub.
+        # Jobsub.
 
         jobsub_elements = stage_element.getElementsByTagName('jobsub')
         if jobsub_elements:
             self.jobsub = str(jobsub_elements[0].firstChild.data)
 
-	# Jobsub start/stop.
+        # Jobsub start/stop.
 
         jobsub_start_elements = stage_element.getElementsByTagName('jobsub_start')
         if jobsub_start_elements:
             self.jobsub_start = str(jobsub_start_elements[0].firstChild.data)
 
-	# Jobsub submit timeout.
+        # Jobsub submit timeout.
 
         jobsub_timeout_elements = stage_element.getElementsByTagName('jobsub_timeout')
         if jobsub_timeout_elements:
             self.jobsub_timeout = int(jobsub_timeout_elements[0].firstChild.data)
 
-	# Name of art-like executable.
+        # Name of art-like executable.
 
         exe_elements = stage_element.getElementsByTagName('exe')
         if exe_elements:
             self.exe = str(exe_elements[0].firstChild.data)
 
-	# Sam schema.
+        # Sam schema.
 
         schema_elements = stage_element.getElementsByTagName('schema')
         if schema_elements:
             self.schema = str(schema_elements[0].firstChild.data)
 
-	# Validate-on-worker.
+        # Validate-on-worker.
 
         validate_on_worker_elements = stage_element.getElementsByTagName('check')
         if validate_on_worker_elements:
             self.validate_on_worker = int(validate_on_worker_elements[0].firstChild.data)
 
-	# Upload-on-worker.
+        # Upload-on-worker.
 
         copy_to_fts_elements = stage_element.getElementsByTagName('copy')
         if copy_to_fts_elements:
             self.copy_to_fts = copy_to_fts_elements[0].firstChild.data
 
-	# Batch script
+        # Batch script
 
         script_elements = stage_element.getElementsByTagName('script')
         if script_elements:
@@ -730,8 +730,8 @@ class StageDef:
         if script_path == '' or not larbatch_posix.access(script_path, os.X_OK):
             raise IOError('Script %s not found.' % self.script)
         self.script = script_path
-	
-	# Start script
+        
+        # Start script
 
         start_script_elements = stage_element.getElementsByTagName('startscript')
         if start_script_elements:
@@ -751,7 +751,7 @@ class StageDef:
             pass
         self.start_script = script_path
 
-	# Stop script
+        # Stop script
 
         stop_script_elements = stage_element.getElementsByTagName('stopscript')
         if stop_script_elements:
@@ -782,8 +782,8 @@ class StageDef:
         result = 'Batch job name = %s\n' % self.batchname
         #result += 'Fcl filename = %s\n' % self.fclname
         for fcl in self.fclname:
-	  result += 'Fcl filename = %s\n' % fcl 
-	result += 'Output directory = %s\n' % self.outdir
+          result += 'Fcl filename = %s\n' % fcl 
+        result += 'Output directory = %s\n' % self.outdir
         result += 'Log directory = %s\n' % self.logdir
         result += 'Work directory = %s\n' % self.workdir
         result += 'Bookkeeping directory = %s\n' % self.bookdir
@@ -821,7 +821,7 @@ class StageDef:
             result += 'Pubs output subrun number = %d\n' % subrun
         result += 'Pubs output version number = %d\n' % self.output_version
         result += 'Output file name = %s\n' % self.output
-        result += 'TFileName = %s\n' % self.TFileName	
+        result += 'TFileName = %s\n' % self.TFileName   
         result += 'Number of jobs = %d\n' % self.num_jobs
         result += 'Number of events = %d\n' % self.num_events
         result += 'Max flux MB = %d\n' % self.maxfluxfilemb

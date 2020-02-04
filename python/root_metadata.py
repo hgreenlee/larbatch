@@ -121,7 +121,7 @@ def get_external_metadata(inputfile):
     if not os.path.exists(inputfile):
         return md
             
-    # Get the other meta data field parameters						
+    # Get the other meta data field parameters                                          
     md['file_name'] =  os.path.basename(inputfile)
     md['file_size'] =  str(os.path.getsize(inputfile))
     md['crc'] = fileEnstoreChecksum(inputfile)
@@ -181,4 +181,4 @@ if __name__ == "__main__":
     md = get_external_metadata(str(sys.argv[1]))
     mdtext = json.dumps(md, indent=2, sort_keys=True)
     print(mdtext)
-    sys.exit(0)	
+    sys.exit(0) 

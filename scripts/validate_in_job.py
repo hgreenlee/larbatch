@@ -60,8 +60,8 @@ def check_root_file(path, logdir):
         # Get number of events from precalculated metadata.
 
         try:
-	    lines = project_utilities.saferead(json_path)
-     	    s = ''
+            lines = project_utilities.saferead(json_path)
+            s = ''
             for line in lines:
                s = s + line
 
@@ -75,10 +75,10 @@ def check_root_file(path, logdir):
 
             # Extract number of events and stream name from metadata.
 
-	    if len(md.keys()) > 0:
-      		nevroot = -1
+            if len(md.keys()) > 0:
+                nevroot = -1
                 stream = ''
-            	if 'events' in md:
+                if 'events' in md:
                     nevroot = int(md['events'])
                 if 'data_stream' in md:
                     stream = md['data_stream']
@@ -179,19 +179,19 @@ def main():
         elif args[0] == '--logfiledir' and len(args) > 1:
             logdir = args[1]
             del args[0:2]
-	elif args[0] == '--outdir' and len(args) > 1:
+        elif args[0] == '--outdir' and len(args) > 1:
             outdir = args[1]
             del args[0:2]
-	elif args[0] == '--declare' and len(args) > 1:
+        elif args[0] == '--declare' and len(args) > 1:
             declare_file = int(args[1])
             del args[0:2]    
-	elif args[0] == '--copy' and len(args) > 1:
+        elif args[0] == '--copy' and len(args) > 1:
             copy_to_dropbox = int(args[1])
             del args[0:2]        
-	elif args[0] == '--maintain_parentage' and len(args) > 1:
+        elif args[0] == '--maintain_parentage' and len(args) > 1:
             maintain_parentage = int(args[1])
             del args[0:2]        
-	elif args[0] == '--data_file_type' and len(args) > 1:
+        elif args[0] == '--data_file_type' and len(args) > 1:
             data_file_types.append(args[1])
             del args[0:2]        
         else:
@@ -209,16 +209,16 @@ def main():
     
     # Check lar exit status (if any).
     stat_filename = os.path.join(logdir, 'lar.stat')
-    if project_utilities.safeexist(stat_filename):    	
-	try:
+    if project_utilities.safeexist(stat_filename):      
+        try:
             status = int(project_utilities.saferead(stat_filename)[0].strip())
             if status != 0:
                 print('Job in subdirectory %s ended with non-zero exit status %d.' % (checkdir, status))
                 status = 1
-    	
-	except:
-    	    print('Bad file lar.stat in subdirectory %s.' % checkdir)
-    	    status = 1
+        
+        except:
+            print('Bad file lar.stat in subdirectory %s.' % checkdir)
+            status = 1
     
     if checkdir == '':
         print('No directory specified (use the --dir option.) Exiting.')
@@ -239,8 +239,8 @@ def main():
     
     if not ana:
         if len(rootfiles) == 0 or nevts < 0:
-    	    print('Problem with root file(s) in  %s.' % checkdir)
-    	    status = 1
+            print('Problem with root file(s) in  %s.' % checkdir)
+            status = 1
       
     
     elif nevts < -1 or len(hists) == 0:
@@ -284,20 +284,20 @@ def main():
         nev = rootfile[1]
         streamname = rootfile[2]
         
-	# Make sure root file names do not exceed 200 characters.	
-	rootname = os.path.basename(rootpath)
+        # Make sure root file names do not exceed 200 characters.       
+        rootname = os.path.basename(rootpath)
         if len(rootname) >= 200:
             print('Filename %s in subdirectory %s is longer than 200 characters.' % (
-        	rootname, outdir))
+                rootname, outdir))
             status = 1
 
         if streamname not in file_list_stream:
             file_list_stream[streamname] = open('files_%s.list' % streamname, 'w')
-	validate_list.write(rootpath + '\n')
-	file_on_scratch = os.path.join(outdir, os.path.basename(rootpath))
-	file_list.write(file_on_scratch + '\n')
-	file_list_stream[streamname].write(file_on_scratch + '\n')
-	events_list.write('%s %d \n' % (file_on_scratch, nev) )
+        validate_list.write(rootpath + '\n')
+        file_on_scratch = os.path.join(outdir, os.path.basename(rootpath))
+        file_list.write(file_on_scratch + '\n')
+        file_list_stream[streamname].write(file_on_scratch + '\n')
+        events_list.write('%s %d \n' % (file_on_scratch, nev) )
 
     # Generate bookkeeping files pertaining to analysis files.
         
@@ -306,7 +306,7 @@ def main():
         file_on_scratch = os.path.join(outdir, os.path.basename(histfile))
         ana_file_list.write(file_on_scratch + '\n')
     
-    	
+        
     
     validate_list.close()
     file_list.close()
@@ -356,7 +356,7 @@ def main():
 
                         # Delete the old parents, if any.
 
-                        if 'parents' in md:         	     
+                        if 'parents' in md:                  
                             del md['parents']
 
                         # change the parentage of the file based on it's parents and aunts from condor_lar
@@ -371,7 +371,7 @@ def main():
                                 if 'parents' not in md:
                                     md['parents'] = []
                                 md['parents'].append(mixparent_dict)
-	        	         	     
+                                             
                     if len(md) > 0:
                         project_utilities.test_kca()
 
@@ -390,12 +390,12 @@ def main():
                         except:
                             print('SAM declare failed.')
                             return 1
-	    	     
+                     
                     else:
                         print('No sam metadata found for %s.' % fn)
                         declare_ok = False
                         status = 1
-	     
+             
                 if copy_to_dropbox == 1 and declare_ok:
                     print("Copying to Dropbox")
                     dropbox_dir = project_utilities.get_dropbox(fn)
@@ -404,7 +404,7 @@ def main():
                     ifdh_cp(rootpath, rootPath)
 
             # Declare histogram files.
-	     
+             
             for histpath in hists:
 
                 declare_ok = False
@@ -444,7 +444,7 @@ def main():
 
                         # Delete the old parents, if any.
 
-                        if 'parents' in md:         	     
+                        if 'parents' in md:                  
                             del md['parents']
 
                         # change the parentage of the file based on it's parents and aunts from condor_lar
@@ -459,7 +459,7 @@ def main():
                                 if 'parents' not in md:
                                     md['parents'] = []
                                 md['parents'].append(mixparent_dict)
-	        	         	     
+                                             
                     if len(md) > 0 and 'file_type' in md:
                         project_utilities.test_kca()
 
@@ -478,18 +478,18 @@ def main():
                         except:
                             print('SAM declare failed.')
                             declare_ok = False
-	    	     
+                     
                     else:
                         print('No sam metadata found for %s.' % fn)
                         declare_ok = False
-	     
+             
                 if copy_to_dropbox == 1 and declare_ok:
                     print("Copying to Dropbox")
                     dropbox_dir = project_utilities.get_dropbox(fn)
                     rootPath = dropbox_dir + "/" + fn
                     jsonPath = rootPath + ".json"
                     ifdh_cp(histpath, rootPath)
-	     
+             
         return status
     
     # something went wrong, so make a list of bad directories and potentially missing files

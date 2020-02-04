@@ -78,7 +78,7 @@ class MetaData(object):
     def mdart_gen(jobtuple):
         """Take Jobout and Joberr (in jobtuple) and return mdart object from that"""
         mdtext = ''.join(line.replace(", ,", ",") for line in jobtuple[0].split('\n') if line[-3:-1] != ' ,')
-	mdtop = json.JSONDecoder().decode(mdtext)
+        mdtop = json.JSONDecoder().decode(mdtext)
         if len(mdtop.keys()) == 0:
             print('No top-level key in extracted metadata.')
             sys.exit(1)
@@ -102,13 +102,13 @@ class expMetaData(MetaData):
         #self.exp_md_keyfile = expname + '_metadata_key'
         try:
             #translateMetaData = __import__("experiment_utilities", "MetaDataKey")
-	    from experiment_utilities import MetaDataKey
+            from experiment_utilities import MetaDataKey
         except ImportError:
             print("You have not defined an experiment-specific metadata and key-translating module in experiment_utilities. Exiting")
             raise
-	    
+            
         metaDataModule = MetaDataKey()
-	self.metadataList, self.translateKeyf = metaDataModule.metadataList(), metaDataModule.translateKey
+        self.metadataList, self.translateKeyf = metaDataModule.metadataList(), metaDataModule.translateKey
 
     def translateKey(self, key):
         """Returns the output of the imported translateKey function (as translateKeyf) called on key"""
@@ -119,14 +119,14 @@ class expMetaData(MetaData):
         # define an empty python dictionary which will hold sam metadata.
         # Some fields can be copied directly from art metadata to sam metadata.
         # Other fields require conversion.
-	md = {}
-	
-	
+        md = {}
+        
+        
 
         # Loop over art metadata.
-	mixparents = []
+        mixparents = []
         for mdkey, mdval in mdart.iteritems():
-	    # mdval = mdart[mdkey]
+            # mdval = mdart[mdkey]
             
             # Skip some art-specific fields.
             # Ignore primary run_type field (if any).
@@ -143,10 +143,10 @@ class expMetaData(MetaData):
             elif mdkey == 'data_stream' and mdval == 'out':
                 pass
 
-	    elif mdkey == 'data_stream' and mdval[:3] == 'out' and \
+            elif mdkey == 'data_stream' and mdval[:3] == 'out' and \
                     mdval[3] >= '0' and mdval[3] <= '9':
                 pass
-	    
+            
             # Application family/name/version.
             elif mdkey == 'applicationFamily':
                 md['application'], md['application']['family'] = self.md_handle_application(md), mdval
@@ -158,10 +158,10 @@ class expMetaData(MetaData):
             # Parents.
             elif mdkey == 'parents':
                 md['parents'] = [{'file_name': parent} for parent in mdval]
-	    
-	    elif mdkey.startswith('mixparent'):
-		mixparents.append(mdval.strip(' ,"') )	
-		
+            
+            elif mdkey.startswith('mixparent'):
+                mixparents.append(mdval.strip(' ,"') )  
+                
             # Other fields where the key or value requires minor conversion.
             elif mdkey in ['first_event', 'last_event']:
                 md[mdkey] = mdval[2]
@@ -175,12 +175,12 @@ class expMetaData(MetaData):
             elif mdkey == 'fclVersion':
                 md['fcl.version'] = mdval
             
-	    #For all other keys, copy art metadata directly to sam metadata.
+            #For all other keys, copy art metadata directly to sam metadata.
             #This works for run-tuple (run, subrun, runtype) and time stamps.
             else:
                 md[mdkey] = mdval
                         
-	# Merge mix parents into normal parents.
+        # Merge mix parents into normal parents.
         
         for mixparent in mixparents:
            mixparent_dict = {'file_name': mixparent}
@@ -208,7 +208,7 @@ class expMetaData(MetaData):
         proc = self.extract_metadata_to_pipe()
         jobt = self.get_job(proc)
         mdart = self.mdart_gen(jobt)
-        return self.md_gen(mdart, md0)	
+        return self.md_gen(mdart, md0)  
 
 def main():
     try:

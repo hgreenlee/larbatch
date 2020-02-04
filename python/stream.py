@@ -73,4 +73,4 @@ def get_stream(inputfile):
 if __name__ == "__main__":
     stream = get_stream(str(sys.argv[1]))
     print(stream)
-    sys.exit(0)	
+    sys.exit(0) 
