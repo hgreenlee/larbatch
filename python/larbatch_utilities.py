@@ -60,6 +60,7 @@
 # nfs_server - Node name of a computer in which /pnfs filesystem is nfs-mounted.
 # parse_mode - Parse the ten-character file mode string ("ls -l").
 # check_running - Check for running project.py submission process.
+# convert_str - Accepting unicode or bytes as input, convert to default python str.
 #
 ######################################################################
 
@@ -1107,6 +1108,43 @@ def check_running(xmlname, stagename):
                 pass
 
     # Done.
+
+    return result
+
+
+# Convert bytes or unicode string to default python str type.
+# Works on python 2 and python 3.
+
+def convert_str(s):
+
+    result = ''
+
+    if type(s) == type(''):
+
+        # Already a string type?
+        # Just return the original.
+
+        result = s
+
+    else:
+
+        if type(s) == type(u''):
+
+            # Unicode to bytes (python 2).
+
+            result = s.encode()
+
+        elif type(s) == type(b''):
+
+            # Bytes to unicode (python 3).
+
+            result = s.decode('utf-8')
+
+        else:
+
+            # Last resort, use standard str conversion.
+
+            result = str(s)
 
     return result
 
