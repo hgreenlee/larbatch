@@ -22,6 +22,8 @@
 # JOBS_AUNTS   - Override aunt files (space-separated list).
 #
 #=================================================================================
+from __future__ import absolute_import
+from __future__ import print_function
 import sys, os, string, json
 from larbatch_utilities import ifdh_cp
 import project_utilities
@@ -108,7 +110,7 @@ def check_root(outdir, logdir, data_file_types):
     roots = []
     hists = []
 
-    print 'Checking root files in directory %s.' % outdir
+    print('Checking root files in directory %s.' % outdir)
     filenames = os.listdir(outdir)
     for filename in filenames:
         name, ext = os.path.splitext(filename)
@@ -132,7 +134,7 @@ def check_root(outdir, logdir, data_file_types):
                 # Found a .root file that is not openable.
                 # Print a warning, but don't trigger any other error.
 
-                print 'Warning: File %s in directory %s is not a valid root file.' % (filename, outdir)
+                print('Warning: File %s in directory %s is not a valid root file.' % (filename, outdir))
 
     # Done.
 
@@ -193,7 +195,7 @@ def main():
             data_file_types.append(args[1])
             del args[0:2]        
         else:
-            print 'Unknown option %s' % args[0]
+            print('Unknown option %s' % args[0])
             return 1
 
     # Add default data_file_types.
@@ -203,7 +205,7 @@ def main():
 
     status = 0 #global status code to tell us everything is ok.
     
-    print "Do decleration in job: %d" % declare_file 
+    print("Do decleration in job: %d" % declare_file) 
     
     # Check lar exit status (if any).
     stat_filename = os.path.join(logdir, 'lar.stat')
@@ -211,18 +213,18 @@ def main():
 	try:
             status = int(project_utilities.saferead(stat_filename)[0].strip())
             if status != 0:
-                print 'Job in subdirectory %s ended with non-zero exit status %d.' % (checkdir, status)
+                print('Job in subdirectory %s ended with non-zero exit status %d.' % (checkdir, status))
                 status = 1
     	
 	except:
-    	    print 'Bad file lar.stat in subdirectory %s.' % checkdir
+    	    print('Bad file lar.stat in subdirectory %s.' % checkdir)
     	    status = 1
     
     if checkdir == '':
-        print 'No directory specified (use the --dir option.) Exiting.'
+        print('No directory specified (use the --dir option.) Exiting.')
         return 1
     if logdir == '':
-        print 'No log file directory specified (use the --logfiledir option.) Exiting.'
+        print('No log file directory specified (use the --logfiledir option.) Exiting.')
         return 1  
     
     nevts,rootfiles,hists = check_root(checkdir, logdir, data_file_types)
@@ -237,12 +239,12 @@ def main():
     
     if not ana:
         if len(rootfiles) == 0 or nevts < 0:
-    	    print 'Problem with root file(s) in  %s.' % checkdir
+    	    print('Problem with root file(s) in  %s.' % checkdir)
     	    status = 1
       
     
     elif nevts < -1 or len(hists) == 0:
-        print 'Problem with analysis root file(s) in  %s.' % checkdir
+        print('Problem with analysis root file(s) in  %s.' % checkdir)
         status = 1
     
     
@@ -264,13 +266,13 @@ def main():
     # Print summary.
 
     if ana:
-        print "%d processes completed successfully." % nproc
-        print "%d total good histogram files." % len(hists)
+        print("%d processes completed successfully." % nproc)
+        print("%d total good histogram files." % len(hists))
     
     else:
-        print "%d total good events." % nevts
-        print "%d total good root files." % len(rootfiles)
-        print "%d total good histogram files." % len(hists)
+        print("%d total good events." % nevts)
+        print("%d total good root files." % len(rootfiles))
+        print("%d total good histogram files." % len(hists))
     
     file_list_stream = {}
 
@@ -285,8 +287,8 @@ def main():
 	# Make sure root file names do not exceed 200 characters.	
 	rootname = os.path.basename(rootpath)
         if len(rootname) >= 200:
-            print 'Filename %s in subdirectory %s is longer than 200 characters.' % (
-        	rootname, outdir)
+            print('Filename %s in subdirectory %s is longer than 200 characters.' % (
+        	rootname, outdir))
             status = 1
 
         if not file_list_stream.has_key(streamname):
@@ -339,12 +341,12 @@ def main():
                     md = samweb.getMetadata(fn)
                     if len(md) > 0:
                         declare_ok = True
-                        print 'File %s is already declared.' % fn
+                        print('File %s is already declared.' % fn)
                 except:
                     declare_ok = False
 
                 if not declare_ok:
-                    print 'Declaring %s' % fn
+                    print('Declaring %s' % fn)
                     expSpecificMetaData = expMetaData(project_utilities.get_experiment(), rootpath)
                     md = expSpecificMetaData.getmetadata()
 
@@ -381,21 +383,21 @@ def main():
                             declare_ok = True
 
                         except samweb_cli.exceptions.SAMWebHTTPError as e:
-                            print e
-                            print 'SAM declare failed.'
+                            print(e)
+                            print('SAM declare failed.')
                             return 1
              
                         except:
-                            print 'SAM declare failed.'
+                            print('SAM declare failed.')
                             return 1
 	    	     
                     else:
-                        print 'No sam metadata found for %s.' % fn
+                        print('No sam metadata found for %s.' % fn)
                         declare_ok = False
                         status = 1
 	     
                 if copy_to_dropbox == 1 and declare_ok:
-                    print "Copying to Dropbox"
+                    print("Copying to Dropbox")
                     dropbox_dir = project_utilities.get_dropbox(fn)
                     rootPath = os.path.join(dropbox_dir, fn)
                     jsonPath = rootPath + ".json"
@@ -416,12 +418,12 @@ def main():
                     md = samweb.getMetadata(fn)
                     if len(md) > 0:
                         declare_ok = True
-                        print 'File %s is already declared.' % fn
+                        print('File %s is already declared.' % fn)
                 except:
                     declare_ok = False
 
                 if not declare_ok:
-                    print 'Declaring %s' % fn
+                    print('Declaring %s' % fn)
                     json_file = os.path.join(logdir, fn + '.json')
 
                     # Get metadata from json
@@ -469,20 +471,20 @@ def main():
                             declare_ok = True
              
                         except samweb_cli.exceptions.SAMWebHTTPError as e:
-                            print e
-                            print 'SAM declare failed.'
+                            print(e)
+                            print('SAM declare failed.')
                             declare_ok = False
              
                         except:
-                            print 'SAM declare failed.'
+                            print('SAM declare failed.')
                             declare_ok = False
 	    	     
                     else:
-                        print 'No sam metadata found for %s.' % fn
+                        print('No sam metadata found for %s.' % fn)
                         declare_ok = False
 	     
                 if copy_to_dropbox == 1 and declare_ok:
-                    print "Copying to Dropbox"
+                    print("Copying to Dropbox")
                     dropbox_dir = project_utilities.get_dropbox(fn)
                     rootPath = dropbox_dir + "/" + fn
                     jsonPath = rootPath + ".json"
@@ -494,7 +496,7 @@ def main():
     else:      
         # first get the subdir name on pnfs. this contains the job id
         dir_on_scratch = os.path.basename(outdir)
-        print 'Dir on scratch ' + dir_on_scratch
+        print('Dir on scratch ' + dir_on_scratch)
         bad_list.write('%s \n' % dir_on_scratch)
         bad_list.close()
         return status  

@@ -10,6 +10,8 @@
 #
 ######################################################################
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys, traceback
 from project_modules.projectstatus import ProjectStatus
 from project_modules.batchstatus import BatchStatus

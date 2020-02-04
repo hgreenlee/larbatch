@@ -63,6 +63,8 @@
 #
 ######################################################################
 
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 import stat
 import subprocess
@@ -105,7 +107,7 @@ def ifdh_cp(source, destination):
     thread.start()
     thread.join(timeout=31000000)
     if thread.is_alive():
-        print 'Terminating subprocess.'
+        print('Terminating subprocess.')
         jobinfo.terminate()
         thread.join()
     rc = q.get()
@@ -150,7 +152,7 @@ def ifdh_ls(path, depth):
     thread.start()
     thread.join(timeout=600)
     if thread.is_alive():
-        print 'Terminating subprocess.'
+        print('Terminating subprocess.')
         jobinfo.terminate()
         thread.join()
     rc = q.get()
@@ -199,7 +201,7 @@ def ifdh_ll(path, depth):
     thread.start()
     thread.join(timeout=60)
     if thread.is_alive():
-        print 'Terminating subprocess.'
+        print('Terminating subprocess.')
         jobinfo.terminate()
         thread.join()
     rc = q.get()
@@ -247,7 +249,7 @@ def ifdh_mkdir(path):
     thread.start()
     thread.join(timeout=60)
     if thread.is_alive():
-        print 'Terminating subprocess.'
+        print('Terminating subprocess.')
         jobinfo.terminate()
         thread.join()
     rc = q.get()
@@ -295,7 +297,7 @@ def ifdh_rmdir(path):
     thread.start()
     thread.join(timeout=60)
     if thread.is_alive():
-        print 'Terminating subprocess.'
+        print('Terminating subprocess.')
         jobinfo.terminate()
         thread.join()
     rc = q.get()
@@ -343,7 +345,7 @@ def ifdh_chmod(path, mode):
     thread.start()
     thread.join(timeout=60)
     if thread.is_alive():
-        print 'Terminating subprocess.'
+        print('Terminating subprocess.')
         jobinfo.terminate()
         thread.join()
     rc = q.get()
@@ -391,7 +393,7 @@ def ifdh_mv(src, dest):
     thread.start()
     thread.join(timeout=60)
     if thread.is_alive():
-        print 'Terminating subprocess.'
+        print('Terminating subprocess.')
         jobinfo.terminate()
         thread.join()
     rc = q.get()
@@ -439,7 +441,7 @@ def ifdh_rm(path):
     thread.start()
     thread.join(timeout=60)
     if thread.is_alive():
-        print 'Terminating subprocess.'
+        print('Terminating subprocess.')
         jobinfo.terminate()
         thread.join()
     rc = q.get()
@@ -486,7 +488,7 @@ def posix_cp(source, destination):
             # Try to kill the subprocess and exit process.
             # Unkillable process will become detached.
 
-            print 'Terminating subprocess.'
+            print('Terminating subprocess.')
             jobinfo.kill()
             os._exit(1)
 

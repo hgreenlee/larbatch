@@ -121,6 +121,8 @@
 #
 ######################################################################
 
+from __future__ import absolute_import
+from __future__ import print_function
 import os, shutil
 import stat as statmod
 import subprocess
@@ -137,7 +139,7 @@ pnfs_is_mounted = os.path.isdir('/pnfs')
 prefer_grid = os.environ.has_key('LARBATCH_GRID')
 debug = os.environ.has_key('LARBATCH_DEBUG')
 if debug:
-    print '*** Larbatch_posix: Debugging enabled.'
+    print('*** Larbatch_posix: Debugging enabled.')
     
 
 
@@ -276,11 +278,11 @@ class dcache_file:
 def open(path, mode='r', buf=-1):
     if path.startswith('/pnfs/') and (prefer_grid or not pnfs_is_mounted):
         if debug:
-            print '*** Larbatch_posix: Opening dcache_file %s using mode %s.' % (path, mode)
+            print('*** Larbatch_posix: Opening dcache_file %s using mode %s.' % (path, mode))
         return dcache_file(path, mode, buf)
     else:
         if debug:
-            print '*** Larbatch_posix: Opening normal file %s using mode %s.' % (path, mode)
+            print('*** Larbatch_posix: Opening normal file %s using mode %s.' % (path, mode))
         return __builtins__['open'](path, mode, buf)
 
 
@@ -298,15 +300,15 @@ def copy(src, dest):
     if (src.startswith('/pnfs/') or dest.startswith('/pnfs/')):
         if prefer_grid or not pnfs_is_mounted:
             if debug:
-                print '*** Larbatch_posix: Copy %s to %s using ifdh.' % (src, dest)
+                print('*** Larbatch_posix: Copy %s to %s using ifdh.' % (src, dest))
             larbatch_utilities.ifdh_cp(src, dest)
         else:
             if debug:
-                print '*** Larbatch_posix: Copy %s to %s using posix with timeout.' % (src, dest)
+                print('*** Larbatch_posix: Copy %s to %s using posix with timeout.' % (src, dest))
             larbatch_utilities.posix_cp(src, dest)
     else:
         if debug:
-            print '*** Larbatch_posix: Copy %s to %s using posix.' % (src, dest)
+            print('*** Larbatch_posix: Copy %s to %s using posix.' % (src, dest))
         shutil.copy(src, dest)
 
     # Done
@@ -323,7 +325,7 @@ def listdir(path):
     result = []
     if path.startswith('/pnfs/') and (prefer_grid or not pnfs_is_mounted):
         if debug:
-            print '*** Larbatch_posix: Listdir %s using ifdh.' % path
+            print('*** Larbatch_posix: Listdir %s using ifdh.' % path)
 
         # Get normalized tail.
 
@@ -345,7 +347,7 @@ def listdir(path):
 
     else:
         if debug:
-            print '*** Larbatch_posix: Listdir %s using posix.' % path
+            print('*** Larbatch_posix: Listdir %s using posix.' % path)
         #result = os.listdir(path)
 
         # To reduce hang risk, read contents of directory in a subprocess with
@@ -360,7 +362,7 @@ def listdir(path):
         thread.join(timeout=60)
         if thread.is_alive():
             if debug:
-                print '*** Larbatch_posix: Terminating subprocess.'
+                print('*** Larbatch_posix: Terminating subprocess.')
             jobinfo.terminate()
             thread.join()
         rc = q.get()
@@ -382,7 +384,7 @@ def exists(path):
     result = False
     if path.startswith('/pnfs/') and (prefer_grid or not pnfs_is_mounted):
         if debug:
-            print '*** Larbatch_posix: Check existence of %s using ifdh.' % path
+            print('*** Larbatch_posix: Check existence of %s using ifdh.' % path)
 
         # Do "ifdh ls."
 
@@ -394,7 +396,7 @@ def exists(path):
 
     else:
         if debug:
-            print '*** Larbatch_posix: Check existence of %s using posix.' % path
+            print('*** Larbatch_posix: Check existence of %s using posix.' % path)
         #result = os.path.exists(path)
 
         # In order to reduce hang risk from stat'ing file,
@@ -437,7 +439,7 @@ def isdir(path):
 
     if path.startswith('/pnfs/') and (prefer_grid or not pnfs_is_mounted):
         if debug:
-            print '*** Larbatch_posix: Check existence of directory %s using ifdh.' % path
+            print('*** Larbatch_posix: Check existence of directory %s using ifdh.' % path)
 
         # Make sure path exists before trying to determine if it is a directory.
 
@@ -459,7 +461,7 @@ def isdir(path):
 
     else:
         if debug:
-            print '*** Larbatch_posix: Check existence of directory %s using posix.' % path
+            print('*** Larbatch_posix: Check existence of directory %s using posix.' % path)
         result = os.path.isdir(path)
 
     # Done.
@@ -485,7 +487,7 @@ def stat(path):
     result = None
     if path.startswith('/pnfs/') and (prefer_grid or not pnfs_is_mounted):
         if debug:
-            print '*** Larbatch_posix: Stat %s using ifdh.' % path
+            print('*** Larbatch_posix: Stat %s using ifdh.' % path)
 
         # The only reliable way to get information about a directory is 
         # to get a listing of the parent directory.
@@ -521,7 +523,7 @@ def stat(path):
 
     else:
         if debug:
-            print '*** Larbatch_posix: Stat %s using posix.' % path
+            print('*** Larbatch_posix: Stat %s using posix.' % path)
         result = os.stat(path)
 
     if result == None:
@@ -541,7 +543,7 @@ def access(path, mode):
     result = False
     if path.startswith('/pnfs/') and (prefer_grid or not pnfs_is_mounted):
         if debug:
-            print '*** Larbatch_posix: Check access for %s using ifdh.' % path
+            print('*** Larbatch_posix: Check access for %s using ifdh.' % path)
         sr = stat(path)
         if sr.st_mode != 0:
 
@@ -563,7 +565,7 @@ def access(path, mode):
 
     else:
         if debug:
-            print '*** Larbatch_posix: Check access for %s using posix.' % path
+            print('*** Larbatch_posix: Check access for %s using posix.' % path)
         result = os.access(path, mode)
 
     # Done.
@@ -596,7 +598,7 @@ def walk(top, topdown=True):
     files = []
     if top.startswith('/pnfs/') and (prefer_grid or not pnfs_is_mounted):
         if debug:
-            print '*** Larbatch_posix: Walk directory tree for %s using ifdh.' % top
+            print('*** Larbatch_posix: Walk directory tree for %s using ifdh.' % top)
 
         # Retrieve the contents of this directory using ifdh.
 
@@ -610,7 +612,7 @@ def walk(top, topdown=True):
                     files.append(words[-1])
     else:
         if debug:
-            print '*** Larbatch_posix: Walk directory tree for %s using posix.' % top
+            print('*** Larbatch_posix: Walk directory tree for %s using posix.' % top)
         contents = listdir(top)
         for obj in contents:
             if isdir(os.path.join(top, obj)):
@@ -642,11 +644,11 @@ def walk(top, topdown=True):
 def mkdir(path, mode=0777):
     if path.startswith('/pnfs/') and (prefer_grid or not pnfs_is_mounted):
         if debug:
-            print '*** Larbatch_posix: Make directory for %s using ifdh.' % path
+            print('*** Larbatch_posix: Make directory for %s using ifdh.' % path)
         larbatch_utilities.ifdh_mkdir(path)
     else:
         if debug:
-            print '*** Larbatch_posix: Make directory for %s using posix.' % path
+            print('*** Larbatch_posix: Make directory for %s using posix.' % path)
         os.mkdir(path, mode)
 
 
@@ -658,7 +660,7 @@ def mkdir(path, mode=0777):
 def makedirs(path, mode=0777):
     if path.startswith('/pnfs/') and (prefer_grid or not pnfs_is_mounted):
         if debug:
-            print '*** Larbatch_posix: Make directory recursively for %s using ifdh.' % path
+            print('*** Larbatch_posix: Make directory recursively for %s using ifdh.' % path)
 
         # Make sure parent directory exists.
 
@@ -672,7 +674,7 @@ def makedirs(path, mode=0777):
         larbatch_utilities.ifdh_mkdir(path)
     else:
         if debug:
-            print '*** Larbatch_posix: Make directory recursively for %s using posix.' % path
+            print('*** Larbatch_posix: Make directory recursively for %s using posix.' % path)
         os.makedirs(path, mode)
 
 
@@ -683,7 +685,7 @@ def rename(src, dest):
     if (src.startswith('/pnfs/') or
         dest.startswith('/pnfs/')) and (prefer_grid or not pnfs_is_mounted):
         if debug:
-            print '*** Larbatch_posix: Rename %s to %s using ifdh.' % (src, dest)
+            print('*** Larbatch_posix: Rename %s to %s using ifdh.' % (src, dest))
 
         src_uri = larbatch_utilities.gridftp_uri(src)
         dest_path = larbatch_utilities.dcache_path(dest)
@@ -696,7 +698,7 @@ def rename(src, dest):
         thread.join(timeout=60)
         if thread.is_alive():
             if debug:
-                print '*** Larbatch_posix: Terminating subprocess.'
+                print('*** Larbatch_posix: Terminating subprocess.')
             jobinfo.terminate()
             thread.join()
         rc = q.get()
@@ -706,7 +708,7 @@ def rename(src, dest):
             raise IFDHError(cmd, rc, jobout, joberr)
     else:
         if debug:
-            print '*** Larbatch_posix: Rename %s to %s using posix.' % (src, dest)
+            print('*** Larbatch_posix: Rename %s to %s using posix.' % (src, dest))
         os.rename(src, dest)
 
 
@@ -715,11 +717,11 @@ def rename(src, dest):
 def remove(path):
     if path.startswith('/pnfs/') and (prefer_grid or not pnfs_is_mounted):
         if debug:
-            print '*** Larbatch_posix: Delete file %s using ifdh.' % path
+            print('*** Larbatch_posix: Delete file %s using ifdh.' % path)
         larbatch_utilities.ifdh_rm(path)
     else:
         if debug:
-            print '*** Larbatch_posix: Delete file %s using posix.' % path
+            print('*** Larbatch_posix: Delete file %s using posix.' % path)
 
         # Deleting a file is a hang risk, especially, but not only, in dCache.
         # Therefore, use the following procedure.
@@ -745,11 +747,11 @@ def remove(path):
 def rmdir(path):
     if path.startswith('/pnfs/') and (prefer_grid or not pnfs_is_mounted):
         if debug:
-            print '*** Larbatch_posix: Delete directoroy %s using ifdh.' % path
+            print('*** Larbatch_posix: Delete directoroy %s using ifdh.' % path)
         larbatch_utilities.ifdh_rmdir(path)
     else:
         if debug:
-            print '*** Larbatch_posix: Delete directoroy %s using posix.' % path
+            print('*** Larbatch_posix: Delete directoroy %s using posix.' % path)
         os.rmdir(path)
 
 
@@ -758,7 +760,7 @@ def rmdir(path):
 def rmtree(path):
     if path.startswith('/pnfs/') and (prefer_grid or not pnfs_is_mounted):
         if debug:
-            print '*** Larbatch_posix: Delete directoroy tree %s using ifdh.' % path
+            print('*** Larbatch_posix: Delete directoroy tree %s using ifdh.' % path)
 
         # Delete contents recursively.
 
@@ -777,7 +779,7 @@ def rmtree(path):
 
     else:
         if debug:
-            print '*** Larbatch_posix: Delete directoroy tree %s using posix.' % path
+            print('*** Larbatch_posix: Delete directoroy tree %s using posix.' % path)
 
         # Deleting a directory tree is a hang risk, especially, but not only, in dCache.
         # Therefore, use the following procedure.
@@ -804,11 +806,11 @@ def rmtree(path):
 def chmod(path, mode):
     if path.startswith('/pnfs/') and (prefer_grid or not pnfs_is_mounted):
         if debug:
-            print '*** Larbatch_posix: Change mode for %s using ifdh.' % path
+            print('*** Larbatch_posix: Change mode for %s using ifdh.' % path)
         larbatch_utilities.ifdh_chmod(path, mode)
     else:
         if debug:
-            print '*** Larbatch_posix: Change mode for %s using posix.' % path
+            print('*** Larbatch_posix: Change mode for %s using posix.' % path)
         os.chmod(path, mode)
 
 
@@ -821,7 +823,7 @@ def symlink(src, dest):
 
     if src.startswith('/pnfs/') and not pnfs_is_mounted:
         if debug:
-            print '*** Larbatch_posix: Make symbolic link from %s to %s using nfs server.' % (src, dest)
+            print('*** Larbatch_posix: Make symbolic link from %s to %s using nfs server.' % (src, dest))
         larbatch_utilities.test_ticket()
         cmd = ['ssh', larbatch_utilities.nfs_server(), 'ln', '-s', src, dest]
         jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -832,7 +834,7 @@ def symlink(src, dest):
         thread.join(timeout=60)
         if thread.is_alive():
             if debug:
-                print '*** Larbatch_posix: Terminating subprocess.'
+                print('*** Larbatch_posix: Terminating subprocess.')
             jobinfo.terminate()
             thread.join()
         rc = q.get()
@@ -843,7 +845,7 @@ def symlink(src, dest):
 
     else:
         if debug:
-            print '*** Larbatch_posix: Make symbolic link from %s to %s using posix.' % (src, dest)
+            print('*** Larbatch_posix: Make symbolic link from %s to %s using posix.' % (src, dest))
         os.symlink(src, dest)
 
 
@@ -858,7 +860,7 @@ def readlink(path):
 
     if path.startswith('/pnfs/') and not_pnfs_is_mounted:
         if debug:
-            print '*** Larbatch_posix: Read symbolic link %s using nfs server.' % path
+            print('*** Larbatch_posix: Read symbolic link %s using nfs server.' % path)
         larbatch_utilities.test_ticket()
         cmd = ['ssh', larbatch_utilities.nfs_server(), 'readlink', path]
         jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -869,7 +871,7 @@ def readlink(path):
         thread.join(timeout=60)
         if thread.is_alive():
             if debug:
-                print '*** Larbatch_posix: Terminating subprocess.'
+                print('*** Larbatch_posix: Terminating subprocess.')
             jobinfo.terminate()
             thread.join()
         rc = q.get()
@@ -881,7 +883,7 @@ def readlink(path):
 
     else:
         if debug:
-            print '*** Larbatch_posix: Read symbolic link %s using posix.' % path
+            print('*** Larbatch_posix: Read symbolic link %s using posix.' % path)
         result = os.readlink(path)
 
     # Done.
@@ -899,10 +901,10 @@ def root_stream(path):
     stream = path
     if path.startswith('/pnfs/') and (prefer_grid or not pnfs_is_mounted):
         if debug:
-            print '*** Larbatch_posix: Stream path %s using xrootd.' % path
+            print('*** Larbatch_posix: Stream path %s using xrootd.' % path)
         larbatch_utilities.test_proxy()
         stream = larbatch_utilities.xrootd_uri(path)
     else:
         if debug:
-            print '*** Larbatch_posix: Stream path %s as normal file.' % path
+            print('*** Larbatch_posix: Stream path %s as normal file.' % path)
     return stream

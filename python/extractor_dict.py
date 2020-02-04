@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from __future__ import absolute_import
+from __future__ import print_function
 import sys, getopt
 import os
 from subprocess import Popen, PIPE
@@ -53,7 +55,7 @@ class MetaData(object):
         thread.start()
         thread.join(timeout=60)
         if thread.is_alive():
-            print 'Terminating subprocess because of timeout.'
+            print('Terminating subprocess because of timeout.')
             proc.terminate()
             thread.join()
         rc = q.get()
@@ -78,7 +80,7 @@ class MetaData(object):
         mdtext = ''.join(line.replace(", ,", ",") for line in jobtuple[0].split('\n') if line[-3:-1] != ' ,')
 	mdtop = json.JSONDecoder().decode(mdtext)
         if len(mdtop.keys()) == 0:
-            print 'No top-level key in extracted metadata.'
+            print('No top-level key in extracted metadata.')
             sys.exit(1)
         file_name = mdtop.keys()[0]
         return mdtop[file_name]
@@ -102,7 +104,7 @@ class expMetaData(MetaData):
             #translateMetaData = __import__("experiment_utilities", "MetaDataKey")
 	    from experiment_utilities import MetaDataKey
         except ImportError:
-            print "You have not defined an experiment-specific metadata and key-translating module in experiment_utilities. Exiting"
+            print("You have not defined an experiment-specific metadata and key-translating module in experiment_utilities. Exiting")
             raise
 	    
         metaDataModule = MetaDataKey()
@@ -212,11 +214,11 @@ def main():
     try:
         expSpecificMetadata = expMetaData(os.environ['SAM_EXPERIMENT'], str(sys.argv[1]))
     except TypeError:
-        print 'You have not implemented a defineMetaData function by providing an experiment.'
-        print 'No metadata keys will be saved'
+        print('You have not implemented a defineMetaData function by providing an experiment.')
+        print('No metadata keys will be saved')
         raise
     mdtext = json.dumps(expSpecificMetadata.getmetadata(), indent=2, sort_keys=True)
-    print mdtext
+    print(mdtext)
     sys.exit(0)
 
 

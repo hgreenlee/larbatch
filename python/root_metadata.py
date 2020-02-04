@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import
+from __future__ import print_function
+
 # Import stuff.
 
 import sys, os, string, subprocess, json, stream
@@ -177,5 +180,5 @@ def get_external_metadata(inputfile):
 if __name__ == "__main__":
     md = get_external_metadata(str(sys.argv[1]))
     mdtext = json.dumps(md, indent=2, sort_keys=True)
-    print mdtext
+    print(mdtext)
     sys.exit(0)	

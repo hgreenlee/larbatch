@@ -13,6 +13,9 @@
 #
 #---------------------------------------------------------------------------
 
+from __future__ import absolute_import
+from __future__ import print_function
+
 # Import stuff.
 
 import sys, json
@@ -57,7 +60,7 @@ def merge_json_files(json_filenames):
     # Combine json objects into a single result object.
 
     merged = merge_json_objects(json_objects)
-    print json.dumps(merged, indent=2, sort_keys=True)
+    print(json.dumps(merged, indent=2, sort_keys=True))
 
 if __name__ == "__main__":
 

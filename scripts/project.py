@@ -407,6 +407,8 @@
 #
 ######################################################################
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys, os, stat, string, subprocess, shutil, urllib, json, getpass, uuid, tempfile, hashlib
 import larbatch_posix
 import threading, Queue
@@ -443,7 +445,7 @@ def import_samweb():
 # Multi-project clean function.
 
 def docleanx(projects, projectname, stagename, clean_descendants = True):
-    print projectname, stagename
+    print(projectname, stagename)
 
     # Loop over projects and stages.
     # Clean all stages beginning with the specified project/stage.
@@ -498,14 +500,14 @@ def docleanx(projects, projectname, stagename, clean_descendants = True):
                         cleaned_something = True
                         cleaned_bookdirs.append(stage.bookdir)
 
-                        print 'Clean project %s, stage %s' % (project.name, stage.name)
+                        print('Clean project %s, stage %s' % (project.name, stage.name))
 
                         # Clean this stage outdir.
 
                         if larbatch_posix.exists(stage.outdir):
                             dir_uid = larbatch_posix.stat(stage.outdir).st_uid
                             if dir_uid == uid or dir_uid == euid:
-                                print 'Clean directory %s.' % stage.outdir
+                                print('Clean directory %s.' % stage.outdir)
                                 larbatch_posix.rmtree(stage.outdir)
                             else:
                                 raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.outdir
@@ -515,7 +517,7 @@ def docleanx(projects, projectname, stagename, clean_descendants = True):
                         if larbatch_posix.exists(stage.logdir):
                             dir_uid = larbatch_posix.stat(stage.logdir).st_uid
                             if dir_uid == uid or dir_uid == euid:
-                                print 'Clean directory %s.' % stage.logdir
+                                print('Clean directory %s.' % stage.logdir)
                                 larbatch_posix.rmtree(stage.logdir)
                             else:
                                 raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.logdir
@@ -525,7 +527,7 @@ def docleanx(projects, projectname, stagename, clean_descendants = True):
                         if larbatch_posix.exists(stage.workdir):
                             dir_uid = larbatch_posix.stat(stage.workdir).st_uid
                             if dir_uid == uid or dir_uid == euid:
-                                print 'Clean directory %s.' % stage.workdir
+                                print('Clean directory %s.' % stage.workdir)
                                 larbatch_posix.rmtree(stage.workdir)
                             else:
                                 raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.workdir
@@ -535,7 +537,7 @@ def docleanx(projects, projectname, stagename, clean_descendants = True):
                         if larbatch_posix.exists(stage.bookdir):
                             dir_uid = larbatch_posix.stat(stage.bookdir).st_uid
                             if dir_uid == uid or dir_uid == euid:
-                                print 'Clean directory %s.' % stage.bookdir
+                                print('Clean directory %s.' % stage.bookdir)
                                 larbatch_posix.rmtree(stage.bookdir)
                             else:
                                 raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.bookdir
@@ -566,7 +568,7 @@ def dostatus(projects):
 
     for project in prjs:
 
-        print '\nProject %s:' % project.name
+        print('\nProject %s:' % project.name)
 
         # Loop over stages.
 
@@ -576,13 +578,13 @@ def dostatus(projects):
             stage_status = project_status.get_stage_status(stagename)
             b_stage_status = batch_status.get_stage_status(stagename)
             if stage_status.exists:
-                print '\nStage %s: %d art files, %d events, %d analysis files, %d errors, %d missing files.' % (
+                print('\nStage %s: %d art files, %d events, %d analysis files, %d errors, %d missing files.' % (
                     stagename, stage_status.nfile, stage_status.nev, stage_status.nana,
-                    stage_status.nerror, stage_status.nmiss)
+                    stage_status.nerror, stage_status.nmiss))
             else:
-                print '\nStage %s output directory does not exist.' % stagename
-            print 'Stage %s batch jobs: %d idle, %d running, %d held, %d other.' % (
-                stagename, b_stage_status[0], b_stage_status[1], b_stage_status[2], b_stage_status[3])
+                print('\nStage %s output directory does not exist.' % stagename)
+            print('Stage %s batch jobs: %d idle, %d running, %d held, %d other.' % (
+                stagename, b_stage_status[0], b_stage_status[1], b_stage_status[2], b_stage_status[3]))
     return
 
 
@@ -829,7 +831,7 @@ def check_root(outdir, logdir, data_file_types):
     roots = []
     hists = []
 
-    print 'Checking root files in directory %s.' % outdir
+    print('Checking root files in directory %s.' % outdir)
     filenames = larbatch_posix.listdir(outdir)
     for filename in filenames:
         name, ext = os.path.splitext(filename)
@@ -853,7 +855,7 @@ def check_root(outdir, logdir, data_file_types):
                 # Found a .root file that is not openable.
                 # Print a warning, but don't trigger any other error.
 
-                print 'Warning: File %s in directory %s is not a valid root file.' % (filename, outdir)
+                print('Warning: File %s in directory %s is not a valid root file.' % (filename, outdir))
 
     # Done.
 
@@ -918,7 +920,7 @@ def doshorten(stage):
                     file_path = os.path.join(out_subpath, file)
                     shortfile = file[:150] + str(uuid.uuid4()) + '.root'
                     shortfile_path = os.path.join(out_subpath, shortfile)
-                    print '%s\n->%s\n' % (file_path, shortfile_path)
+                    print('%s\n->%s\n' % (file_path, shortfile_path))
                     larbatch_posix.rename(file_path, shortfile_path)
 
                     # Also rename corresponding json file, if it exists.
@@ -927,7 +929,7 @@ def doshorten(stage):
                     if larbatch_posix.exists(json_path):
                         shortjson = shortfile + '.json'
                         shortjson_path = os.path.join(log_subpath, shortjson)
-                        print '%s\n->%s\n' % (json_path, shortjson_path)
+                        print('%s\n->%s\n' % (json_path, shortjson_path))
                         larbatch_posix.rename(json_path, shortjson_path)
 
     return
@@ -960,7 +962,7 @@ def untarlog(stage):
 
                     # Copy tarball to bookdir.
 
-                    print 'Copying tarball %s into %s' % (src, book_subpath)
+                    print('Copying tarball %s into %s' % (src, book_subpath))
                     if not larbatch_posix.isdir(book_subpath):
                         larbatch_posix.makedirs(book_subpath)
                     larbatch_posix.copy(src, dst)
@@ -971,7 +973,7 @@ def untarlog(stage):
 
                     # Extract tarball.
 
-                    print 'Extracting tarball %s' % dst
+                    print('Extracting tarball %s' % dst)
                     jobinfo = subprocess.Popen(['tar','-xf', dst, '-C', book_subpath,
                                                 '--exclude=beam*.dat',
                                                 '--exclude=beam*.info',
@@ -985,9 +987,9 @@ def untarlog(stage):
                     jobout, joberr = jobinfo.communicate()
                     rc = jobinfo.poll()
                     if rc != 0:
-                        print jobout
-                        print joberr
-                        print 'Failed to extract log tarball in %s' % dst
+                        print(jobout)
+                        print(joberr)
+                        print('Failed to extract log tarball in %s' % dst)
 
                     else:
 
@@ -1069,16 +1071,16 @@ def docheck(project, stage, ana, quick=False):
     # Check that output and log directories exist.
 
     if not larbatch_posix.exists(stage.outdir):
-        print 'Output directory %s does not exist.' % stage.outdir
+        print('Output directory %s does not exist.' % stage.outdir)
         return 1
     if not larbatch_posix.exists(stage.bookdir):
-        print 'Log directory %s does not exist.' % stage.bookdir
+        print('Log directory %s does not exist.' % stage.bookdir)
         return 1
 
     import_samweb()
     has_metadata = project.file_type != '' or project.run_type != ''
     has_input = stage.inputfile != '' or stage.inputlist != '' or stage.inputdef != ''
-    print 'Checking directory %s' % stage.bookdir
+    print('Checking directory %s' % stage.bookdir)
 
     # Count total number of events and root files.
 
@@ -1128,7 +1130,7 @@ def docheck(project, stage, ana, quick=False):
             # Make sure that corresponding output directory exists.
 
             if not project_utilities.fast_isdir(out_subpath):
-                print 'No output directory corresponding to subdirectory %s.' % subdir
+                print('No output directory corresponding to subdirectory %s.' % subdir)
                 bad = 1
 
             # Check lar exit status (if any).
@@ -1140,11 +1142,11 @@ def docheck(project, stage, ana, quick=False):
                     try:
                         status = int(larbatch_posix.readlines(stat_filename)[0].strip())
                         if status != 0:
-                            print 'Job in subdirectory %s ended with non-zero exit status %d.' % (
-                                subdir, status)
+                            print('Job in subdirectory %s ended with non-zero exit status %d.' % (
+                                subdir, status))
                             bad = 1
                     except:
-                        print 'Bad file lar.stat in subdirectory %s.' % subdir
+                        print('Bad file lar.stat in subdirectory %s.' % subdir)
                         bad = 1
 
             # Now check root files in this subdirectory.
@@ -1155,10 +1157,10 @@ def docheck(project, stage, ana, quick=False):
                 nev, roots, subhists = check_root(out_subpath, log_subpath, stage.datafiletypes)
                 if not ana:
                     if len(roots) == 0 or nev < 0:
-                        print 'Problem with root file(s) in subdirectory %s.' % subdir
+                        print('Problem with root file(s) in subdirectory %s.' % subdir)
                         bad = 1
                 elif nev < -1 or len(subhists) == 0:
-                    print 'Problem with analysis root file(s) in subdirectory %s.' % subdir
+                    print('Problem with analysis root file(s) in subdirectory %s.' % subdir)
                     bad = 1
 
 
@@ -1172,10 +1174,10 @@ def docheck(project, stage, ana, quick=False):
                         for oldroot in oldroots:
                             oldrootname = os.path.basename(oldroot[0])
                             if rootname == oldrootname:
-                                print 'Duplicate filename %s in subdirectory %s' % (rootname,
-                                                                                    subdir)
+                                print('Duplicate filename %s in subdirectory %s' % (rootname,
+                                                                                    subdir))
                                 olddir = os.path.basename(os.path.dirname(oldroot[0]))
-                                print 'Previous subdirectory %s' % olddir
+                                print('Previous subdirectory %s' % olddir)
                                 bad = 1
 
             # Make sure root file names do not exceed 200 characters.
@@ -1184,8 +1186,8 @@ def docheck(project, stage, ana, quick=False):
                 for root in roots:
                     rootname = os.path.basename(root[0])
                     if len(rootname) >= 200:
-                        print 'Filename %s in subdirectory %s is longer than 200 characters.' % (
-                            rootname, subdir)
+                        print('Filename %s in subdirectory %s is longer than 200 characters.' % (
+                            rootname, subdir))
                         bad = 1
 
             # Check existence of sam_project.txt and cpid.txt.
@@ -1194,11 +1196,11 @@ def docheck(project, stage, ana, quick=False):
             if not bad and stage.inputdef != '':
                 filename1 = os.path.join(log_subpath, 'sam_project.txt')
                 if not larbatch_posix.exists(filename1):
-                    print 'Could not find file sam_project.txt'
+                    print('Could not find file sam_project.txt')
                     bad = 1
                 filename2 = os.path.join(log_subpath, 'cpid.txt')
                 if not larbatch_posix.exists(filename2):
-                    print 'Could not find file cpid.txt'
+                    print('Could not find file cpid.txt')
                     bad = 1
                 if not bad:
                     sam_project = larbatch_posix.readlines(filename1)[0].strip()
@@ -1214,7 +1216,7 @@ def docheck(project, stage, ana, quick=False):
             if not bad and (stage.inputlist !='' or stage.inputfile != ''):
                 filename = os.path.join(log_subpath, 'transferred_uris.list')
                 if not larbatch_posix.exists(filename):
-                    print 'Could not find file transferred_uris.list'
+                    print('Could not find file transferred_uris.list')
                     bad = 1
                 if not bad:
                     lines = larbatch_posix.readlines(filename)
@@ -1231,7 +1233,7 @@ def docheck(project, stage, ana, quick=False):
                 if len(subdir_split) > 1:
                     process = int(subdir_split[1])
                     if process in processes:
-                        print 'Duplicate process number'
+                        print('Duplicate process number')
                         bad = 1
                     else:
                         processes.append(process)
@@ -1258,7 +1260,7 @@ def docheck(project, stage, ana, quick=False):
             # Print/save result of checks for one subdirectory.
 
             if bad:
-                print 'Bad subdirectory %s.' % subdir
+                print('Bad subdirectory %s.' % subdir)
 
     # Done looping over subdirectoryes.
     # Dictionary procmap now contains a list of good processes
@@ -1271,8 +1273,8 @@ def docheck(project, stage, ana, quick=False):
 
     contents = larbatch_posix.listdir(stage.bookdir)
     if len(contents) == 0:
-        print 'Directory %s may be dead.' % stage.bookdir
-        print 'Returning error status without creating any bookkeeping files.'
+        print('Directory %s may be dead.' % stage.bookdir)
+        print('Returning error status without creating any bookkeeping files.')
         return 1
 
     # Open files.
@@ -1350,12 +1352,12 @@ def docheck(project, stage, ana, quick=False):
     # Print summary.
 
     if ana:
-        print "%d processes completed successfully." % nproc
-        print "%d total good histogram files." % len(filesana)
+        print("%d processes completed successfully." % nproc)
+        print("%d total good histogram files." % len(filesana))
     else:
-        print "%d total good events." % nev_tot
-        print "%d total good root files." % nroot_tot
-        print "%d total good histogram files." % len(filesana)
+        print("%d total good events." % nev_tot)
+        print("%d total good root files." % nroot_tot)
+        print("%d total good histogram files." % len(filesana))
 
     # Close files.
 
@@ -1429,15 +1431,15 @@ def docheck(project, stage, ana, quick=False):
 
         # Sam summary.
 
-        print '%d sam projects.' % len(sam_projects)
-        print '%d successful consumer process ids.' % len(cpids)
-        print '%d files consumed.' % nconsumed
-        print '%d files not consumed.' % nunconsumed
+        print('%d sam projects.' % len(sam_projects))
+        print('%d successful consumer process ids.' % len(cpids))
+        print('%d files consumed.' % nconsumed)
+        print('%d files not consumed.' % nunconsumed)
 
         # Check project statuses.
 
         for sam_project in sam_projects:
-            print '\nChecking sam project %s' % sam_project
+            print('\nChecking sam project %s' % sam_project)
             import_samweb()
             url = samweb.findProject(sam_project, project_utilities.get_experiment())
             if url != '':
@@ -1462,14 +1464,14 @@ def docheck(project, stage, ana, quick=False):
                                 nc = nc + counts['consumed']
                             if counts.has_key('failed'):
                                 nf = nf + counts['failed']
-                print 'Status: %s' % result['project_status']
-                print '%d total processes' % nproc
-                print '%d active processes' % nact
-                print '%d files in snapshot' % result['files_in_snapshot']
-                print '%d files delivered' % (nd + nc)
-                print '%d files consumed' % nc
-                print '%d files failed' % nf
-                print
+                print('Status: %s' % result['project_status'])
+                print('%d total processes' % nproc)
+                print('%d active processes' % nact)
+                print('%d files in snapshot' % result['files_in_snapshot'])
+                print('%d files delivered' % (nd + nc))
+                print('%d files consumed' % nc)
+                print('%d files failed' % nf)
+                print()
 
     # Done
 
@@ -1480,10 +1482,10 @@ def docheck(project, stage, ana, quick=False):
     project_utilities.addLayerTwo(checkfilename)
 
     if stage.inputdef == '' or stage.pubs_input:
-        print '%d processes with errors.' % nerror
-        print '%d missing files.' % nmiss
+        print('%d processes with errors.' % nerror)
+        print('%d missing files.' % nmiss)
     else:
-        print '%d unconsumed files.' % nerror
+        print('%d unconsumed files.' % nerror)
 
     # Return error status if any error or not good root file produced.
     # Also return error if no successful processes were detected
@@ -1501,14 +1503,14 @@ def doquickcheck(project, stage, ana):
 
     # Check that output and log directories exist. Dirs could be lost due to ifdhcp failures
     if not larbatch_posix.isdir(stage.outdir):
-        print 'Output directory %s does not exist.' % stage.outdir
+        print('Output directory %s does not exist.' % stage.outdir)
         return 1
 
     if not larbatch_posix.isdir(stage.bookdir):
-        print 'Log directory %s does not exist.' % stage.bookdir
+        print('Log directory %s does not exist.' % stage.bookdir)
         return 1
 
-    print 'Checking directory %s' % stage.bookdir
+    print('Checking directory %s' % stage.bookdir)
 
     #Aggregate the .list files form the bookdir up one dir. This is where the old docheck would put them, and it double-checks that the files made it back from the worker node.
 
@@ -1543,7 +1545,7 @@ def doquickcheck(project, stage, ana):
             continue
 
 
-        print 'Doing quick check of directory %s.' % log_subpath
+        print('Doing quick check of directory %s.' % log_subpath)
 
         subdir = os.path.relpath(log_subpath, stage.bookdir)
 
@@ -1564,12 +1566,12 @@ def doquickcheck(project, stage, ana):
             missingfiles = project_utilities.saferead(missingfilesname)
         #if we can't find missing_files the check will not work
         except:
-            print 'Cannot open file: %s' % missingfilesname
+            print('Cannot open file: %s' % missingfilesname)
             validateOK = 0
 
 
         if validateOK == 1 and len(missingfiles) == 0:
-            print '%s exists, but is empty' % missingfilesname
+            print('%s exists, but is empty' % missingfilesname)
             validateOK = 0
 
 
@@ -1595,7 +1597,7 @@ def doquickcheck(project, stage, ana):
 
             filename1 = os.path.join(log_subpath, 'sam_project.txt')
             if not larbatch_posix.exists(filename1):
-                print 'Could not find file sam_project.txt'
+                print('Could not find file sam_project.txt')
                 nErrors += 1
             else:
                 sam_project = larbatch_posix.readlines(filename1)[0].strip()
@@ -1604,7 +1606,7 @@ def doquickcheck(project, stage, ana):
 
             filename2 = os.path.join(log_subpath, 'cpid.txt')
             if not larbatch_posix.exists(filename2):
-                print 'Could not find file cpid.txt'
+                print('Could not find file cpid.txt')
                 nErrors += 1
             else:
                 cpid = larbatch_posix.readlines(filename2)[0].strip()
@@ -1859,7 +1861,7 @@ def doquickcheck(project, stage, ana):
 
 
 
-    print 'Number of errors = %d' % nErrors
+    print('Number of errors = %d' % nErrors)
 
     return nErrors
 
@@ -1958,7 +1960,7 @@ def dofetchlog(project, stage):
             # Tarball is fetched into current directory, and unpacked
             # into log directory.
 
-            print 'Fetching log files for id %s' % logid
+            print('Fetching log files for id %s' % logid)
             command = ['jobsub_fetchlog']
             if project.server != '-' and project.server != '':
                 command.append('--jobsub-server=%s' % project.server)
@@ -1980,7 +1982,7 @@ def dofetchlog(project, stage):
         # In this case, the most likely explanation is that no workers have
         # completed yet.
 
-        print 'Failed to fetch log files.'
+        print('Failed to fetch log files.')
         return 1
 
 
@@ -2028,10 +2030,10 @@ def docheck_declarations(logdir, outdir, declare, ana=False):
         # Report or declare file.
 
         if has_metadata:
-            print 'Metadata OK: %s' % fn
+            print('Metadata OK: %s' % fn)
         else:
             if declare:
-                print 'Declaring: %s' % fn
+                print('Declaring: %s' % fn)
                 jsonfile = os.path.join(logdir, os.path.join(dirname, fn)) + '.json'
                 mdjson = {}
                 if larbatch_posix.exists(jsonfile):
@@ -2062,13 +2064,13 @@ def docheck_declarations(logdir, outdir, declare, ana=False):
                         #if md.has_key('parents'):
                         #    del md['parents']
                         #    samweb.declareFile(md=md)
-                        print 'SAM declare failed.'
+                        print('SAM declare failed.')
                         result = 1
 
                 else:
-                    print 'No sam metadata found for %s.' % fn
+                    print('No sam metadata found for %s.' % fn)
             else:
-                print 'Not declared: %s' % fn
+                print('Not declared: %s' % fn)
                 result = 1
 
     return result
@@ -2085,7 +2087,7 @@ def dotest_declarations(dim):
 
     result = samweb.listFilesSummary(dimensions=dim)
     for key in result.keys():
-        print '%s: %s' % (key, result[key])
+        print('%s: %s' % (key, result[key]))
 
     return 0
 
@@ -2120,15 +2122,15 @@ def docheck_definition(defname, dim, define):
     # Make report and maybe make definition.
 
     if def_exists:
-        print 'Definition already exists: %s' % defname
+        print('Definition already exists: %s' % defname)
     else:
         if define:
-            print 'Creating definition %s.' % defname
+            print('Creating definition %s.' % defname)
             project_utilities.test_kca()
             samweb.createDefinition(defname=defname, dims=dim)
         else:
             result = 1
-            print 'Definition should be created: %s' % defname
+            print('Definition should be created: %s' % defname)
 
     return result
 
@@ -2144,7 +2146,7 @@ def dotest_definition(defname):
 
     result = samweb.listFilesSummary(defname=defname)
     for key in result.keys():
-        print '%s: %s' % (key, result[key])
+        print('%s: %s' % (key, result[key]))
 
     return 0
 
@@ -2171,11 +2173,11 @@ def doundefine(defname):
     # Make report and maybe make definition.
 
     if def_exists:
-        print 'Deleting definition: %s' % defname
+        print('Deleting definition: %s' % defname)
         project_utilities.test_kca()
         samweb.deleteDefinition(defname=defname)
     else:
-        print 'No such definition: %s' % defname
+        print('No such definition: %s' % defname)
 
     return 0
 
@@ -2185,15 +2187,15 @@ def doundefine(defname):
 def docheck_locations(dim, outdir, add, clean, remove, upload):
 
     if add:
-        print 'Adding disk locations.'
+        print('Adding disk locations.')
     elif clean:
-        print 'Cleaning disk locations.'
+        print('Cleaning disk locations.')
     elif remove:
-        print 'Removing disk locations.'
+        print('Removing disk locations.')
     elif upload:
-        print 'Uploading to FTS.'
+        print('Uploading to FTS.')
     else:
-        print 'Checking disk locations.'
+        print('Checking disk locations.')
 
     # Initialize samweb.
 
@@ -2225,7 +2227,7 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
         disk_locs = disk_dict[filename]
         sam_locs = samweb.locateFile(filenameorid=filename)
         if len(sam_locs) == 0 and not upload:
-            print 'No location: %s' % filename
+            print('No location: %s' % filename)
 
         # Make a double loop over disk and sam locations, in order
         # to identify locations that should added.
@@ -2283,7 +2285,7 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
             if should_upload:
                 dropbox = project_utilities.get_dropbox(filename)
                 if not larbatch_posix.exists(dropbox):
-                    print 'Making dropbox directory %s.' % dropbox
+                    print('Making dropbox directory %s.' % dropbox)
                     larbatch_posix.makedirs(dropbox)
                 locs_to_upload[disk_locs[0]] = dropbox
 
@@ -2295,19 +2297,19 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
                 node = project_utilities.get_dcache_server()
             loc = node + loc.split(':')[-1]
             if add:
-                print 'Adding location: %s.' % loc
+                print('Adding location: %s.' % loc)
                 project_utilities.test_kca()
                 samweb.addFileLocation(filenameorid=filename, location=loc)
             elif not upload:
-                print 'Can add location: %s.' % loc
+                print('Can add location: %s.' % loc)
 
         for loc in locs_to_remove:
             if clean or remove:
-                print 'Removing location: %s.' % loc
+                print('Removing location: %s.' % loc)
                 project_utilities.test_kca()
                 samweb.removeFileLocation(filenameorid=filename, location=loc)
             elif not upload:
-                print 'Should remove location: %s.' % loc
+                print('Should remove location: %s.' % loc)
 
         for loc in locs_to_upload.keys():
             dropbox = locs_to_upload[loc]
@@ -2315,14 +2317,14 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
             # Make sure dropbox directory exists.
 
             if not larbatch_posix.isdir(dropbox):
-                print 'Dropbox directory %s does not exist.' % dropbox
+                print('Dropbox directory %s does not exist.' % dropbox)
             else:
 
                 # Test whether this file has already been copied to dropbox directory.
 
                 dropbox_filename = os.path.join(dropbox, filename)
                 if larbatch_posix.exists(dropbox_filename):
-                    print 'File %s already exists in dropbox %s.' % (filename, dropbox)
+                    print('File %s already exists in dropbox %s.' % (filename, dropbox))
                 else:
 
                     # Copy file to dropbox.
@@ -2333,14 +2335,14 @@ def docheck_locations(dim, outdir, add, clean, remove, upload):
 
                     if project_utilities.mountpoint(loc_filename) == \
                             project_utilities.mountpoint(dropbox_filename):
-                        print 'Symlinking %s to dropbox directory %s.' % (filename, dropbox)
+                        print('Symlinking %s to dropbox directory %s.' % (filename, dropbox))
                         relpath = os.path.relpath(os.path.realpath(loc_filename), dropbox)
-                        print 'relpath=',relpath
-                        print 'dropbox_filename=',dropbox_filename
+                        print('relpath=',relpath)
+                        print('dropbox_filename=',dropbox_filename)
                         larbatch_posix.symlink(relpath, dropbox_filename)
 
                     else:
-                        print 'Copying %s to dropbox directory %s.' % (filename, dropbox)
+                        print('Copying %s to dropbox directory %s.' % (filename, dropbox))
                         larbatch_posix.copy(loc_filename, dropbox_filename)
 
     return 0
@@ -2384,14 +2386,14 @@ def docheck_tape(dim):
                 break
 
         if is_on_tape:
-            print 'On tape: %s' % filename
+            print('On tape: %s' % filename)
         else:
             result = 1
             nbad = nbad + 1
-            print 'Not on tape: %s' % filename
+            print('Not on tape: %s' % filename)
 
-    print '%d files.' % ntot
-    print '%d files need to be store on tape.' % nbad
+    print('%d files.' % ntot)
+    print('%d files need to be store on tape.' % nbad)
 
     return result
 
@@ -2431,13 +2433,13 @@ def dojobsub(project, stage, makeup, recur):
         work_list_name = os.path.join(tmpworkdir, input_list_name)
         if stage.inputlist != work_list_name:
             input_files = larbatch_posix.readlines(stage.inputlist)
-            print 'Making input list.'
+            print('Making input list.')
             work_list = safeopen(work_list_name)
             for input_file in input_files:
-                print 'Adding input file %s' % input_file
+                print('Adding input file %s' % input_file)
                 work_list.write('%s\n' % input_file.strip())
             work_list.close()
-            print 'Done making input list.'
+            print('Done making input list.')
 
     # Now locate the fcl file on the fcl search path.
 
@@ -2612,7 +2614,7 @@ def dojobsub(project, stage, makeup, recur):
             if helper_path != work_helper:
                 larbatch_posix.copy(helper_path, work_helper)
         else:
-            print 'Helper script %s not found.' % helper
+            print('Helper script %s not found.' % helper)
 
     # Copy helper python modules to work directory.
     # Note that for this to work, these modules must be single files.
@@ -2641,7 +2643,7 @@ def dojobsub(project, stage, makeup, recur):
             if helper_path != work_helper:
                 larbatch_posix.copy(helper_path, work_helper)
         else:
-            print 'Helper python module %s not found.' % helper_module
+            print('Helper python module %s not found.' % helper_module)
 
     # If this is a makeup action, find list of missing files.
     # If sam information is present (cpids.list), create a makeup dataset.
@@ -2663,15 +2665,15 @@ def dojobsub(project, stage, makeup, recur):
                 if bad_subdir != '':
                     bad_path = os.path.join(stage.outdir, bad_subdir)
                     if larbatch_posix.exists(bad_path):
-                        print 'Deleting %s' % bad_path
+                        print('Deleting %s' % bad_path)
                         larbatch_posix.rmtree(bad_path)
                     bad_path = os.path.join(stage.logdir, bad_subdir)
                     if larbatch_posix.exists(bad_path):
-                        print 'Deleting %s' % bad_path
+                        print('Deleting %s' % bad_path)
                         larbatch_posix.rmtree(bad_path)
                     bad_path = os.path.join(stage.bookdir, bad_subdir)
                     if larbatch_posix.exists(bad_path):
-                        print 'Deleting %s' % bad_path
+                        print('Deleting %s' % bad_path)
                         larbatch_posix.rmtree(bad_path)
 
         # Get a list of missing files, if any, for file list input.
@@ -2688,7 +2690,7 @@ def dojobsub(project, stage, makeup, recur):
                     if len(words) > 0:
                         missing_files.append(words[0])
             makeup_count = len(missing_files)
-            print 'Makeup list contains %d files.' % makeup_count
+            print('Makeup list contains %d files.' % makeup_count)
 
         if input_list_name != '':
             work_list_name = os.path.join(tmpworkdir, input_list_name)
@@ -2766,11 +2768,11 @@ def dojobsub(project, stage, makeup, recur):
 
             # Create makeup dataset definition.
 
-            print 'Creating makeup sam dataset definition %s' % makeup_defname
+            print('Creating makeup sam dataset definition %s' % makeup_defname)
             project_utilities.test_kca()
             samweb.createDefinition(defname=makeup_defname, dims=dim)
             makeup_count = samweb.countFiles(defname=makeup_defname)
-            print 'Makeup dataset contains %d files.' % makeup_count
+            print('Makeup dataset contains %d files.' % makeup_count)
 
     # Make a tarball out of all of the files in tmpworkdir in stage.workdir
 
@@ -2838,7 +2840,7 @@ def dojobsub(project, stage, makeup, recur):
                                              stage.num_jobs * stage.max_files_per_job, 
                                              stage.recur, stage.filelistdef)
         if ok != 0:
-            print 'Failed to start project.'
+            print('Failed to start project.')
             sys.exit(1)
         prj_started = True
 
@@ -2847,7 +2849,7 @@ def dojobsub(project, stage, makeup, recur):
     if mixprjname != '' and prj_started:
         ok = project_utilities.start_project(stage.mixinputdef, mixprjname, 0, 0, stage.filelistdef)
         if ok != 0:
-            print 'Failed to start mix project.'
+            print('Failed to start mix project.')
             sys.exit(1)
 
     # Get role
@@ -2992,7 +2994,7 @@ def dojobsub(project, stage, makeup, recur):
 
     #print 'Will Validation will be done on the worker node %d' % stage.validate_on_worker
     if stage.validate_on_worker == 1:
-      print 'Validation will be done on the worker node %d' % stage.validate_on_worker
+      print('Validation will be done on the worker node %d' % stage.validate_on_worker)
       command.extend([' --validate'])
       command.extend([' --declare'])
       # Maintain parentage only if we have multiple fcl files and thus are running in multiple stages
@@ -3252,7 +3254,7 @@ def dojobsub(project, stage, makeup, recur):
 
         # For submit action, invoke the job submission command.
 
-        print 'Invoke jobsub_submit'
+        print('Invoke jobsub_submit')
         q = Queue.Queue()
         jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         thread = threading.Thread(target=project_utilities.wait_for_subprocess, args=[jobinfo, q])
@@ -3277,7 +3279,7 @@ def dojobsub(project, stage, makeup, recur):
                 jobid = line.strip().split()[-1]
         if not jobid:
             raise JobsubError(command, rc, jobout, joberr)
-        print 'jobsub_submit finished.'
+        print('jobsub_submit finished.')
 
     else:
 
@@ -3310,7 +3312,7 @@ def dojobsub(project, stage, makeup, recur):
             if not jobid:
                 raise JobsubError(command, rc, jobout, joberr)
         else:
-            print 'Makeup action aborted because makeup job count is zero.'
+            print('Makeup action aborted because makeup job count is zero.')
 
     # Done.
 
@@ -3329,7 +3331,7 @@ def dosubmit(project, stage, makeup=False, recur=False):
 
     ok = stage.checksubmit()
     if ok != 0:
-        print 'No jobs submitted.'
+        print('No jobs submitted.')
         return
 
     # In pubs mode, delete any existing work, log, or output
@@ -3357,7 +3359,7 @@ def dosubmit(project, stage, makeup=False, recur=False):
 
     ok = stage.checkinput(checkdef=True)
     if ok != 0:
-        print 'No jobs submitted.'
+        print('No jobs submitted.')
         return
 
     # Make sure output and log directories are empty (submit only).
@@ -3437,7 +3439,7 @@ def domerge(stage, mergehist, mergentuple):
         else:
             mergecom = stage.merge
 
-        print "Merging %d root files using %s." % (len(hlist), mergecom)
+        print("Merging %d root files using %s." % (len(hlist), mergecom))
 
         if larbatch_posix.exists(name_temp):
             larbatch_posix.remove(name_temp)
@@ -3445,7 +3447,7 @@ def domerge(stage, mergehist, mergentuple):
         comlist.extend(["-f", "-k", name_temp, '@' + histurlsname_temp])
         rc = subprocess.call(comlist, stdout=sys.stdout, stderr=sys.stderr)
         if rc != 0:
-            print "%s exit status %d" % (mergecom, rc)
+            print("%s exit status %d" % (mergecom, rc))
         if name != name_temp:
             if larbatch_posix.exists(name):
                 larbatch_posix.remove(name)
@@ -3529,7 +3531,7 @@ def doaudit(stage):
             sdict = {'content_status':'bad'}
             project_utilities.test_kca()
             samweb.modifyFileMetadata(rmfile, sdict)
-            print '\nDeclaring the status of the following file as bad:', rmfile
+            print('\nDeclaring the status of the following file as bad:', rmfile)
 
             # Remove this file from the files.list in the output directory.
 
@@ -3540,19 +3542,19 @@ def doaudit(stage):
                 thefile.write("%s\n" % item)
 
     if mc==0 and me==0:
-        print "Everything in order."
+        print("Everything in order.")
         return 0
     else:
-        print 'Missing parent file(s) = ', mc
-        print 'Extra parent file(s) = ',me
+        print('Missing parent file(s) = ', mc)
+        print('Extra parent file(s) = ',me)
 
     if mc != 0:
         missingfilelist.close()
-        print "Creating missingfiles.list in the output directory....done!"
+        print("Creating missingfiles.list in the output directory....done!")
     if me != 0:
         thefile.close()
         #larbatch_posix.remove("jsonfile.json")
-        print "For extra parent files, files.list redefined and content status declared as bad in SAM...done!"
+        print("For extra parent files, files.list redefined and content status declared as bad in SAM...done!")
 
 
 # Print help.
@@ -3571,9 +3573,9 @@ def help():
             doprint = 0
         if doprint:
             if len(line) > 2:
-                print line[2:],
+                print(line[2:], end=' ')
             else:
-                print
+                print()
 
 # Normalize xml path.
 #
@@ -3639,9 +3641,9 @@ def xmlhelp():
             doprint = 0
         if doprint:
             if len(line) > 2:
-                print line[2:],
+                print(line[2:], end=' ')
             else:
-                print
+                print()
 
 
 # Main program.
@@ -3911,7 +3913,7 @@ def main(argv):
             remove_locations_ana = 1
             del args[0]
         else:
-            print 'Unknown option %s' % args[0]
+            print('Unknown option %s' % args[0])
             return 1
 
     # Normalize xml file path.
@@ -3921,7 +3923,7 @@ def main(argv):
     # Make sure xmlfile was specified.
 
     if xmlfile == '':
-        print 'No xml file specified.  Type "project.py -h" for help.'
+        print('No xml file specified.  Type "project.py -h" for help.')
         return 1
 
     # Make sure that no more than one action was specified (except clean, shorten, and info
@@ -3929,7 +3931,7 @@ def main(argv):
 
     num_action = submit + check + checkana + fetchlog + merge + mergehist + mergentuple + audit + stage_status + makeup + define + define_ana + undefine + declare + declare_ana
     if num_action > 1:
-        print 'More than one action was specified.'
+        print('More than one action was specified.')
         return 1
 
     # Extract all project definitions.
@@ -4072,7 +4074,7 @@ def main(argv):
 
                 # Create definition.
 
-                print 'Creating recursive dataset definition %s' % stage.inputdef
+                print('Creating recursive dataset definition %s' % stage.inputdef)
                 project_utilities.test_kca()
                 samweb.createDefinition(defname=stage.inputdef, dims=dim)
 
@@ -4081,71 +4083,71 @@ def main(argv):
 
     if dump_stage:
         for stagename in stagenames:
-            print 'Stage %s:' % stagename
+            print('Stage %s:' % stagename)
             stage = stages[stagename]
-            print stage
+            print(stage)
 
     # Do dump project action now.
 
     if dump_project:
-        print project
+        print(project)
 
     # Do outdir action now.
 
     if print_outdir:
         for stagename in stagenames:
-            print 'Stage %s:' % stagename
+            print('Stage %s:' % stagename)
             stage = stages[stagename]
-            print stage.outdir
+            print(stage.outdir)
 
     # Do logdir action now.
 
     if print_logdir:
         for stagename in stagenames:
-            print 'Stage %s:' % stagename
+            print('Stage %s:' % stagename)
             stage = stages[stagename]
-            print stage.logdir
+            print(stage.logdir)
 
     # Do logdir action now.
 
     if print_workdir:
         for stagename in stagenames:
-            print 'Stage %s:' % stagename
+            print('Stage %s:' % stagename)
             stage = stages[stagename]
-            print stage.workdir
+            print(stage.workdir)
 
     # Do bookdir action now.
 
     if print_bookdir:
         for stagename in stagenames:
-            print 'Stage %s:' % stagename
+            print('Stage %s:' % stagename)
             stage = stages[stagename]
-            print stage.bookdir
+            print(stage.bookdir)
 
     # Do defname action now.
 
     if defname:
         for stagename in stagenames:
-            print 'Stage %s:' % stagename
+            print('Stage %s:' % stagename)
             stage = stages[stagename]
             if stage.defname != '':
-                print stage.defname
+                print(stage.defname)
 
     # Do input_names action now.
 
     if do_input_files:
         for stagename in stagenames:
-            print 'Stage %s:' % stagename
+            print('Stage %s:' % stagename)
             stage = stages[stagename]
             input_files = get_input_files(stage)
             for input_file in input_files:
-                print input_file
+                print(input_file)
 
     # Do check_submit action now.
 
     if do_check_submit:
         for stagename in stagenames:
-            print 'Stage %s:' % stagename
+            print('Stage %s:' % stagename)
             stage = stages[stagename]
             stage.checksubmit()
 
@@ -4153,7 +4155,7 @@ def main(argv):
 
     if do_check_input:
         for stagename in stagenames:
-            print 'Stage %s:' % stagename
+            print('Stage %s:' % stagename)
             stage = stages[stagename]
             stage.checkinput(checkdef=True)
 
@@ -4161,7 +4163,7 @@ def main(argv):
 
     if shorten:
         for stagename in stagenames:
-            print 'Stage %s:' % stagename
+            print('Stage %s:' % stagename)
             stage = stages[stagename]
             doshorten(stage)
 
@@ -4174,10 +4176,10 @@ def main(argv):
         # Submit jobs.
 
         for stagename in stagenames:
-            print 'Stage %s:' % stagename
+            print('Stage %s:' % stagename)
 
             if project_utilities.check_running(xmlfile, stagename):
-                print 'Skipping job submission because similar job submission process is running.'
+                print('Skipping job submission because similar job submission process is running.')
             else:
                 stage = stages[stagename]
                 dosubmit(project, stage, makeup, stage.recur)
@@ -4187,7 +4189,7 @@ def main(argv):
         # Check results from specified project stage.
 
         for stagename in stagenames:
-            print 'Stage %s:' % stagename
+            print('Stage %s:' % stagename)
             stage = stages[stagename]
             docheck(project, stage, checkana or stage.ana, stage.validate_on_worker)
 
@@ -4196,7 +4198,7 @@ def main(argv):
         # Fetch logfiles.
 
         for stagename in stagenames:
-            print 'Stage %s:' % stagename
+            print('Stage %s:' % stagename)
             stage = stages[stagename]
             rc += dofetchlog(project, stage)
 
@@ -4206,7 +4208,7 @@ def main(argv):
         # Makes a merged root file called anahist.root in the project output directory
 
         for stagename in stagenames:
-            print 'Stage %s:' % stagename
+            print('Stage %s:' % stagename)
             stage = stages[stagename]
             domerge(stage, mergehist, mergentuple)
 
@@ -4215,7 +4217,7 @@ def main(argv):
         # Sam audit.
 
         for stagename in stagenames:
-            print 'Stage %s:' % stagename
+            print('Stage %s:' % stagename)
             stage = stages[stagename]
             doaudit(stage)
 
@@ -4224,17 +4226,17 @@ def main(argv):
         # Make sam dataset definition.
 
         for stagename in stagenames:
-            print 'Stage %s:' % stagename
+            print('Stage %s:' % stagename)
             stage = stages[stagename]
             if stage.ana:
                 if stage.ana_defname == '':
-                    print 'No sam analysis dataset definition name specified for this stage.'
+                    print('No sam analysis dataset definition name specified for this stage.')
                     return 1
                 dim = project_utilities.dimensions(project, stage, ana=True)
                 docheck_definition(stage.ana_defname, dim, define)
             else:
                 if stage.defname == '':
-                    print 'No sam dataset definition name specified for this stage.'
+                    print('No sam dataset definition name specified for this stage.')
                     return 1
                 dim = project_utilities.dimensions(project, stage, ana=False)
                 docheck_definition(stage.defname, dim, define)
@@ -4244,10 +4246,10 @@ def main(argv):
         # Make sam dataset definition for analysis files.
 
         for stagename in stagenames:
-            print 'Stage %s:' % stagename
+            print('Stage %s:' % stagename)
             stage = stages[stagename]
             if stage.ana_defname == '':
-                print 'No sam analysis dataset definition name specified for this stage.'
+                print('No sam analysis dataset definition name specified for this stage.')
                 return 1
             dim = project_utilities.dimensions(project, stage, ana=True)
             docheck_definition(stage.ana_defname, dim, define_ana)
@@ -4257,16 +4259,16 @@ def main(argv):
         # Print summary of files returned by dataset definition.
 
         for stagename in stagenames:
-            print 'Stage %s:' % stagename
+            print('Stage %s:' % stagename)
             stage = stages[stagename]
             if stage.ana:
                 if stage.ana_defname == '':
-                    print 'No sam dataset definition name specified for this stage.'
+                    print('No sam dataset definition name specified for this stage.')
                     return 1
                 rc += dotest_definition(stage.ana_defname)
             else:
                 if stage.defname == '':
-                    print 'No sam dataset definition name specified for this stage.'
+                    print('No sam dataset definition name specified for this stage.')
                     return 1
                 rc += dotest_definition(stage.defname)
 
@@ -4275,10 +4277,10 @@ def main(argv):
         # Print summary of files returned by analysis dataset definition.
 
         for stagename in stagenames:
-            print 'Stage %s:' % stagename
+            print('Stage %s:' % stagename)
             stage = stages[stagename]
             if stage.ana_defname == '':
-                print 'No sam dataset definition name specified for this stage.'
+                print('No sam dataset definition name specified for this stage.')
                 return 1
             rc += dotest_definition(stage.ana_defname)
 
@@ -4287,10 +4289,10 @@ def main(argv):
         # Delete sam dataset definition.
 
         for stagename in stagenames:
-            print 'Stage %s:' % stagename
+            print('Stage %s:' % stagename)
             stage = stages[stagename]
             if stage.defname == '':
-                print 'No sam dataset definition name specified for this stage.'
+                print('No sam dataset definition name specified for this stage.')
                 return 1
             rc += doundefine(stage.defname)
 
@@ -4299,7 +4301,7 @@ def main(argv):
         # Check sam declarations.
 
         for stagename in stagenames:
-            print 'Stage %s:' % stagename
+            print('Stage %s:' % stagename)
             stage = stages[stagename]
             docheck_declarations(stage.bookdir, stage.outdir, declare, ana=stage.ana)
 
@@ -4308,7 +4310,7 @@ def main(argv):
         # Check sam analysis declarations.
 
         for stagename in stagenames:
-            print 'Stage %s:' % stagename
+            print('Stage %s:' % stagename)
             stage = stages[stagename]
             docheck_declarations(stage.bookdir, stage.outdir, declare_ana, ana=True)
 
@@ -4317,7 +4319,7 @@ def main(argv):
         # Print summary of declared files.
 
         for stagename in stagenames:
-            print 'Stage %s:' % stagename
+            print('Stage %s:' % stagename)
             stage = stages[stagename]
             dim = project_utilities.dimensions(project, stage, ana=stage.ana)
             rc += dotest_declarations(dim)
@@ -4327,7 +4329,7 @@ def main(argv):
         # Print summary of declared files.
 
         for stagename in stagenames:
-            print 'Stage %s:' % stagename
+            print('Stage %s:' % stagename)
             stage = stages[stagename]
             dim = project_utilities.dimensions(project, stage, ana=True)
             rc += dotest_declarations(dim)
@@ -4337,7 +4339,7 @@ def main(argv):
         # Check sam disk locations.
 
         for stagename in stagenames:
-            print 'Stage %s:' % stagename
+            print('Stage %s:' % stagename)
             stage = stages[stagename]
             dim = project_utilities.dimensions(project, stage, ana=stage.ana)
             docheck_locations(dim, stage.outdir,
@@ -4350,7 +4352,7 @@ def main(argv):
         # Check sam disk locations.
 
         for stagename in stagenames:
-            print 'Stage %s:' % stagename
+            print('Stage %s:' % stagename)
             stage = stages[stagename]
             dim = project_utilities.dimensions(project, stage, ana=True)
             docheck_locations(dim, stage.outdir,
@@ -4362,7 +4364,7 @@ def main(argv):
         # Check sam tape locations.
 
         for stagename in stagenames:
-            print 'Stage %s:' % stagename
+            print('Stage %s:' % stagename)
             stage = stages[stagename]
             dim = project_utilities.dimensions(project, stage, ana=stage.ana)
             docheck_tape(dim)
@@ -4372,7 +4374,7 @@ def main(argv):
         # Check analysis file sam tape locations.
 
         for stagename in stagenames:
-            print 'Stage %s:' % stagename
+            print('Stage %s:' % stagename)
             stage = stages[stagename]
             dim = project_utilities.dimensions(project, stage, ana=True)
             docheck_tape(dim)

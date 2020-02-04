@@ -9,6 +9,9 @@
 #
 ######################################################################
 
+from __future__ import absolute_import
+from __future__ import print_function
+
 # Standard imports
 
 import sys, os, subprocess, traceback
@@ -683,7 +686,7 @@ class ProjectApp(tk.Frame):
         # Actually issue kill commands.
 
         for cluster_id in cluster_ids:
-            print 'Kill cluster id %s' % cluster_id
+            print('Kill cluster id %s' % cluster_id)
             command = ['jobsub_rm']
             if self.current_project_def.server != '-' and self.current_project_def.server != '':
                 command.append('--jobsub-server=%s' % self.current_project_def.server)

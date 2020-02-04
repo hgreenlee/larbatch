@@ -9,6 +9,8 @@
 #
 ######################################################################
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys, os, string, subprocess
 from project_modules.xmlerror import XMLError
 from project_modules.stagedef import StageDef

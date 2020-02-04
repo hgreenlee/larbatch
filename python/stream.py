@@ -14,6 +14,9 @@
 #
 ######################################################################
 
+from __future__ import absolute_import
+from __future__ import print_function
+
 # Import stuff.
 
 import sys, subprocess, json
@@ -69,5 +72,5 @@ def get_stream(inputfile):
 
 if __name__ == "__main__":
     stream = get_stream(str(sys.argv[1]))
-    print stream
+    print(stream)
     sys.exit(0)	

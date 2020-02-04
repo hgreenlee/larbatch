@@ -10,6 +10,8 @@
 #
 ######################################################################
 
+from __future__ import absolute_import
+from __future__ import print_function
 from project_modules.stagestatus import StageStatus
 
 # Project status class.

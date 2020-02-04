@@ -26,6 +26,8 @@
 #
 ######################################################################
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys, os, string
 import project_utilities
 import larbatch_posix
@@ -58,9 +60,9 @@ def help():
             doprint = 0
         if doprint:
             if len(line) > 2:
-                print line[2:],
+                print(line[2:], end=' ')
             else:
-                print
+                print()
 
 # Analyze root file.
 
@@ -81,12 +83,12 @@ def analyze(root, level, gtrees, gbranches, doprint):
     # Print summary of trees.
 
     if doprint:
-        print '\nTrees:\n'
+        print('\nTrees:\n')
     for key in sorted(trees.keys()):
         tree = trees[key]
         nentry = tree.GetEntriesFast()
         if doprint:
-            print '%s has %d entries.' % (key, nentry)
+            print('%s has %d entries.' % (key, nentry))
 
         # Remember information about trees.
 
@@ -98,7 +100,7 @@ def analyze(root, level, gtrees, gbranches, doprint):
     # Print summary of branches in Events tree.
 
     if doprint:
-        print '\nBranches of Events tree:\n'
+        print('\nBranches of Events tree:\n')
 
     # If level is zero, we are done (don't analyze branches).
 
@@ -108,8 +110,8 @@ def analyze(root, level, gtrees, gbranches, doprint):
     if events:
 
         if doprint:
-            print '   Total bytes  Zipped bytes   Comp.  Branch name'
-            print '   -----------  ------------   -----  -----------'
+            print('   Total bytes  Zipped bytes   Comp.  Branch name')
+            print('   -----------  ------------   -----  -----------')
             
         branches = events.GetListOfBranches()
         ntotall = 0
@@ -142,7 +144,7 @@ def analyze(root, level, gtrees, gbranches, doprint):
                                 comp = float(ntot) / float(nzip)
                             else:
                                 comp = 0.
-                            print '%14d%14d%8.2f  %s' % (ntot, nzip, comp, name)
+                            print('%14d%14d%8.2f  %s' % (ntot, nzip, comp, name))
 
                         # Remember information about branches.
                         
@@ -165,8 +167,8 @@ def analyze(root, level, gtrees, gbranches, doprint):
                                         comp = float(ntot) / float(nzip)
                                     else:
                                         comp = 0.
-                                    print '%14d%14d%8.2f  %s' % (ntot, nzip, comp,
-                                                                 subsubbranch.GetName())
+                                    print('%14d%14d%8.2f  %s' % (ntot, nzip, comp,
+                                                                 subsubbranch.GetName()))
 
                                 # Remember information about branches.
                         
@@ -184,7 +186,7 @@ def analyze(root, level, gtrees, gbranches, doprint):
                 comp = float(ntotall) / float(nzipall)
             else:
                 comp = 0.
-            print '%14d%14d%8.2f  %s' % (ntotall, nzipall, comp, name)
+            print('%14d%14d%8.2f  %s' % (ntotall, nzipall, comp, name))
 
             # Print average event size.
 
@@ -195,10 +197,10 @@ def analyze(root, level, gtrees, gbranches, doprint):
             else:
                 nevtot = 0.
                 nevzip = 0.
-            print
-            print '%10d events.' % nev
-            print '%7.2f Mb average size per event.' % nevtot
-            print '%7.2f Mb average zipped size per event.' % nevzip
+            print()
+            print('%10d events.' % nev)
+            print('%7.2f Mb average size per event.' % nevtot)
+            print('%7.2f Mb average zipped size per event.' % nevzip)
 
         if gbranches.has_key(name):
             gbranches[name][0] = gbranches[name][0] + ntotall
@@ -256,7 +258,7 @@ def main(argv):
 
             # Unknown option.
 
-            print 'Unknown option %s' % args[0]
+            print('Unknown option %s' % args[0])
             return 1
             
         elif args[0][0] == '@':
@@ -268,7 +270,7 @@ def main(argv):
                 for filename in larbatch_posix.readlines(filelistname):
                     input_files.append(string.strip(filename))
             else:
-                print 'File list %s does not exist.' % filelistname
+                print('File list %s does not exist.' % filelistname)
                 return 1
             del args[0]
         else:
@@ -291,34 +293,34 @@ def main(argv):
         nfile = nfile + 1
 
         if not larbatch_posix.exists(input_file):
-            print 'Input file %s does not exist.' % input_file
+            print('Input file %s does not exist.' % input_file)
             return 1
 
-        print '\nOpening %s' % input_file
+        print('\nOpening %s' % input_file)
         root = ROOT.TFile.Open(input_file)
         if not root.IsOpen() or root.IsZombie():
-            print 'Failed to open %s' % input_file
+            print('Failed to open %s' % input_file)
             return 1
 
         # Analyze this file.
         
         analyze(root, level, gtrees, gbranches, all)
 
-    print '\n%d files analyzed.' % nfile
+    print('\n%d files analyzed.' % nfile)
                     
     # Print summary of trees.
 
-    print '\nTrees from all files:\n'
+    print('\nTrees from all files:\n')
     for key in sorted(gtrees.keys()):
         nentry = gtrees[key]
-        print '%s has %d total entries.' % (key, nentry)
+        print('%s has %d total entries.' % (key, nentry))
 
     # Print summary of branches.
 
     if level > 0:
-        print '\nBranches of Events tree from all files:\n'
-        print '   Total bytes  Zipped bytes   Comp.  Branch name'
-        print '   -----------  ------------   -----  -----------'
+        print('\nBranches of Events tree from all files:\n')
+        print('   Total bytes  Zipped bytes   Comp.  Branch name')
+        print('   -----------  ------------   -----  -----------')
     allname = 'All branches'
     ntot = 0
     nzip = 0
@@ -330,7 +332,7 @@ def main(argv):
                 comp = float(ntot) / float(nzip)
             else:
                 comp = 0.
-            print '%14d%14d%8.2f  %s' % (ntot, nzip, comp, key)
+            print('%14d%14d%8.2f  %s' % (ntot, nzip, comp, key))
     if gbranches.has_key(allname):
         ntot = gbranches[allname][0]
         nzip = gbranches[allname][1]
@@ -338,7 +340,7 @@ def main(argv):
             comp = float(ntot) / float(nzip)
         else:
             comp = 0.
-        print '%14d%14d%8.2f  %s' % (ntot, nzip, comp, allname)
+        print('%14d%14d%8.2f  %s' % (ntot, nzip, comp, allname))
 
     # Print average event size.
 
@@ -350,11 +352,11 @@ def main(argv):
         else:
             nevtot = 0.
             nevzip = 0.
-        print
-        print '%10d events.' % nev
+        print()
+        print('%10d events.' % nev)
         if level > 0:
-            print '%7.2f Mb average size per event.' % nevtot
-            print '%7.2f Mb average zipped size per event.' % nevzip
+            print('%7.2f Mb average size per event.' % nevtot)
+            print('%7.2f Mb average zipped size per event.' % nevzip)
     
 
     # Done.
