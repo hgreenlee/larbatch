@@ -411,7 +411,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 import sys, os, stat, string, subprocess, shutil, urllib, json, getpass, uuid, tempfile, hashlib
 import larbatch_posix
-import threading, Queue
+import threading, queue
 from xml.dom.minidom import parse
 import project_utilities, root_metadata
 from project_modules.projectdef import ProjectDef
@@ -3255,7 +3255,7 @@ def dojobsub(project, stage, makeup, recur):
         # For submit action, invoke the job submission command.
 
         print('Invoke jobsub_submit')
-        q = Queue.Queue()
+        q = queue.Queue()
         jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         thread = threading.Thread(target=project_utilities.wait_for_subprocess, args=[jobinfo, q])
         thread.start()
@@ -3286,7 +3286,7 @@ def dojobsub(project, stage, makeup, recur):
         # For makeup action, abort if makeup job count is zero for some reason.
 
         if makeup_count > 0:
-            q = Queue.Queue()
+            q = queue.Queue()
             jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             thread = threading.Thread(target=project_utilities.wait_for_subprocess,
                                       args=[jobinfo, q])

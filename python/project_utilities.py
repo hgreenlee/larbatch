@@ -19,7 +19,7 @@ import socket
 import subprocess
 import shutil
 import threading
-import Queue
+import queue
 import uuid
 import samweb_cli
 from project_modules.ifdherror import IFDHError
@@ -563,7 +563,7 @@ def addLayerTwo(path, recreate=True):
         command = ['ifdh', 'cp', '/dev/null', path]
         jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
-        q = Queue.Queue()
+        q = queue.Queue()
         thread = threading.Thread(target=wait_for_subprocess, args=[jobinfo, q])
         thread.start()
         thread.join(timeout=60)

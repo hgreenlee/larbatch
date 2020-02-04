@@ -127,8 +127,7 @@ import os, shutil
 import stat as statmod
 import subprocess
 import threading
-import Queue
-import StringIO
+import queue
 import uuid
 import larbatch_utilities
 from project_modules.ifdherror import IFDHError
@@ -356,7 +355,7 @@ def listdir(path):
         cmd = ['ls', path]
         jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-        q = Queue.Queue()
+        q = queue.Queue()
         thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
         thread.start()
         thread.join(timeout=60)
@@ -692,7 +691,7 @@ def rename(src, dest):
         cmd = ['uberftp', '-rename', src_uri, dest_path]
         jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-        q = Queue.Queue()
+        q = queue.Queue()
         thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
         thread.start()
         thread.join(timeout=60)
@@ -828,7 +827,7 @@ def symlink(src, dest):
         cmd = ['ssh', larbatch_utilities.nfs_server(), 'ln', '-s', src, dest]
         jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-        q = Queue.Queue()
+        q = queue.Queue()
         thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
         thread.start()
         thread.join(timeout=60)
@@ -865,7 +864,7 @@ def readlink(path):
         cmd = ['ssh', larbatch_utilities.nfs_server(), 'readlink', path]
         jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-        q = Queue.Queue()
+        q = queue.Queue()
         thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess, args=[jobinfo, q])
         thread.start()
         thread.join(timeout=60)

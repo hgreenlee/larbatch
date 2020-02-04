@@ -15,8 +15,8 @@ from __future__ import print_function
 
 # Import GUI stuff
 
-import Tkinter as tk
-import tkMessageBox
+import tkinter as tk
+import tkinter.messagebox
 from statusview import ProjectStatusView
 from textwindow import TextWindow
 
@@ -84,14 +84,14 @@ class ProjectView(tk.Frame):
 
         xml_path = self.path['text']
         if xml_path == None or xml_path == '':
-            tkMessageBox.showerror('', 'No xml file specified.')
+            tkinter.messagebox.showerror('', 'No xml file specified.')
             return
 
         # Get text of xml file.
 
         f = open(xml_path)
         if not f:
-            tkMessageBox.showerror('', 'Error opening xml file %s.' % xml_path)
+            tkinter.messagebox.showerror('', 'Error opening xml file %s.' % xml_path)
             return
         xmltext = f.read()
 

@@ -13,7 +13,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 import sys, os, string, stat, math, subprocess, random
 import threading
-import Queue
+import queue
 import samweb_cli
 import project_utilities
 import larbatch_utilities
@@ -1158,7 +1158,7 @@ class StageDef:
             jobinfo = subprocess.Popen(self.submit_script,
                                        stdout=subprocess.PIPE,
                                        stderr=subprocess.PIPE)
-            q = Queue.Queue()
+            q = queue.Queue()
             thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess,
                                       args=[jobinfo, q])
             thread.start()

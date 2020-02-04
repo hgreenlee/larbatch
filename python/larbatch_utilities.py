@@ -70,7 +70,7 @@ import stat
 import subprocess
 import getpass
 import threading
-import Queue
+import queue
 from project_modules.ifdherror import IFDHError
 
 # Global variables.
@@ -102,7 +102,7 @@ def ifdh_cp(source, destination):
     cmd = ['ifdh', 'cp', source, destination]
     jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-    q = Queue.Queue()
+    q = queue.Queue()
     thread = threading.Thread(target=wait_for_subprocess, args=[jobinfo, q])
     thread.start()
     thread.join(timeout=31000000)
@@ -147,7 +147,7 @@ def ifdh_ls(path, depth):
     cmd = ['ifdh', 'ls', path, '%d' % depth]
     jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-    q = Queue.Queue()
+    q = queue.Queue()
     thread = threading.Thread(target=wait_for_subprocess, args=[jobinfo, q])
     thread.start()
     thread.join(timeout=600)
@@ -196,7 +196,7 @@ def ifdh_ll(path, depth):
     cmd = ['ifdh', 'll', path, '%d' % depth]
     jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-    q = Queue.Queue()
+    q = queue.Queue()
     thread = threading.Thread(target=wait_for_subprocess, args=[jobinfo, q])
     thread.start()
     thread.join(timeout=60)
@@ -244,7 +244,7 @@ def ifdh_mkdir(path):
     cmd = ['ifdh', 'mkdir', path]
     jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-    q = Queue.Queue()
+    q = queue.Queue()
     thread = threading.Thread(target=wait_for_subprocess, args=[jobinfo, q])
     thread.start()
     thread.join(timeout=60)
@@ -292,7 +292,7 @@ def ifdh_rmdir(path):
     cmd = ['ifdh', 'rmdir', path]
     jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-    q = Queue.Queue()
+    q = queue.Queue()
     thread = threading.Thread(target=wait_for_subprocess, args=[jobinfo, q])
     thread.start()
     thread.join(timeout=60)
@@ -340,7 +340,7 @@ def ifdh_chmod(path, mode):
     cmd = ['ifdh', 'chmod', '%o' % mode, path]
     jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-    q = Queue.Queue()
+    q = queue.Queue()
     thread = threading.Thread(target=wait_for_subprocess, args=[jobinfo, q])
     thread.start()
     thread.join(timeout=60)
@@ -388,7 +388,7 @@ def ifdh_mv(src, dest):
     cmd = ['ifdh', 'mv', src, dest]
     jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-    q = Queue.Queue()
+    q = queue.Queue()
     thread = threading.Thread(target=wait_for_subprocess, args=[jobinfo, q])
     thread.start()
     thread.join(timeout=60)
@@ -436,7 +436,7 @@ def ifdh_rm(path):
     cmd = ['ifdh', 'rm', path]
     jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-    q = Queue.Queue()
+    q = queue.Queue()
     thread = threading.Thread(target=wait_for_subprocess, args=[jobinfo, q])
     thread.start()
     thread.join(timeout=60)
@@ -478,7 +478,7 @@ def posix_cp(source, destination):
 
         jobinfo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-        q = Queue.Queue()
+        q = queue.Queue()
         thread = threading.Thread(target=wait_for_subprocess, args=[jobinfo, q])
         thread.start()
         thread.join(timeout=600)
