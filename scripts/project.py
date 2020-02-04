@@ -644,6 +644,8 @@ def get_projects(xmlfile):
 
     if xmlfile == '-':
         xml = sys.stdin
+    elif xmlfile.find(':') < 0:
+        xml = open(xmlfile)
     else:
         xml = urlrequest.urlopen(xmlfile)
     doc = parse(xml)
