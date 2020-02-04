@@ -16,7 +16,10 @@ import sys
 
 # Import GUI stuff
 
-import tkinter as tk
+try:
+    import tkinter as tk
+except ImportError:
+    import Tkinter as tk
 
 # Project widget class
 

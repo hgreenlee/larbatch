@@ -25,11 +25,17 @@ from project_modules.batchstatus import BatchStatus
 
 # Import Tkinter GUI stuff
 
-import tkinter as tk
-#import ttk
-import tkinter.filedialog
-import tkinter.messagebox
-import tkinter.font
+try:
+    import tkinter as tk
+    import tkinter.filedialog as tkinter_filedialog
+    import tkinter.messagebox as tkinter_messagebox
+    import tkinter.font as tkinter_font
+except ImportError:
+    import Tkinter as tk
+    import tkFileDialog as tkinter_filedialog
+    import tkMessageBox as tkinter_messagebox
+    import tkFont as tkinter_font
+
 from project_gui_modules.projectview import ProjectView
 from project_gui_modules.textwindow import TextWindow
 
@@ -128,7 +134,7 @@ class ProjectApp(tk.Frame):
 
         # File menu.
 
-        mbutton = tk.Menubutton(self.menubar, text='File', font=tkinter.font.Font(size=12))
+        mbutton = tk.Menubutton(self.menubar, text='File', font=tkinter_font.Font(size=12))
         mbutton.pack(side=tk.LEFT)
         file_menu = tk.Menu(mbutton)
         file_menu.add_command(label='Open Project', command=self.open)
@@ -137,7 +143,7 @@ class ProjectApp(tk.Frame):
 
         # View menu.
 
-        mbutton = tk.Menubutton(self.menubar, text='View', font=tkinter.font.Font(size=12))
+        mbutton = tk.Menubutton(self.menubar, text='View', font=tkinter_font.Font(size=12))
         mbutton.pack(side=tk.LEFT)
         view_menu = tk.Menu(mbutton)
         view_menu.add_command(label='XML', command=self.xml_display)
@@ -145,7 +151,7 @@ class ProjectApp(tk.Frame):
 
         # Project menu.
 
-        mbutton = tk.Menubutton(self.menubar, text='Project', font=tkinter.font.Font(size=12))
+        mbutton = tk.Menubutton(self.menubar, text='Project', font=tkinter_font.Font(size=12))
         mbutton.pack(side=tk.LEFT)
         self.project_menu = tk.Menu(mbutton)
         self.project_menu.add_command(label='Next Project', command=self.next_project,
@@ -164,7 +170,7 @@ class ProjectApp(tk.Frame):
 
         # Stage menu.
 
-        mbutton = tk.Menubutton(self.menubar, text='Stage', font=tkinter.font.Font(size=12))
+        mbutton = tk.Menubutton(self.menubar, text='Stage', font=tkinter_font.Font(size=12))
         mbutton.pack(side=tk.LEFT)
         self.stage_menu = tk.Menu(mbutton)
         self.stage_menu.add_command(label='Next Stage', command=self.next_stage,
@@ -183,7 +189,7 @@ class ProjectApp(tk.Frame):
 
         # Output menu.
 
-        mbutton = tk.Menubutton(self.menubar, text='Output', font=tkinter.font.Font(size=12))
+        mbutton = tk.Menubutton(self.menubar, text='Output', font=tkinter_font.Font(size=12))
         mbutton.pack(side=tk.LEFT)
         self.output_menu = tk.Menu(mbutton)
         self.output_menu.add_command(label='Check', command=self.check)
@@ -200,7 +206,7 @@ class ProjectApp(tk.Frame):
 
         # Batch menu.
 
-        mbutton = tk.Menubutton(self.menubar, text='Batch', font=tkinter.font.Font(size=12))
+        mbutton = tk.Menubutton(self.menubar, text='Batch', font=tkinter_font.Font(size=12))
         mbutton.pack(side=tk.LEFT)
         self.batch_menu = tk.Menu(mbutton)
         self.batch_menu.add_command(label='Submit', command=self.submit)
@@ -211,7 +217,7 @@ class ProjectApp(tk.Frame):
 
         # SAM-art menu.
 
-        mbutton = tk.Menubutton(self.menubar, text='SAM-art', font=tkinter.font.Font(size=12))
+        mbutton = tk.Menubutton(self.menubar, text='SAM-art', font=tkinter_font.Font(size=12))
         mbutton.pack(side=tk.LEFT)
         self.sam_menu = tk.Menu(mbutton)
         self.sam_menu.add_command(label='Check Declarations', command=self.check_declarations)
@@ -234,7 +240,7 @@ class ProjectApp(tk.Frame):
 
         # SAM-ana menu.
 
-        mbutton = tk.Menubutton(self.menubar, text='SAM-ana', font=tkinter.font.Font(size=12))
+        mbutton = tk.Menubutton(self.menubar, text='SAM-ana', font=tkinter_font.Font(size=12))
         mbutton.pack(side=tk.LEFT)
         self.sam_menu = tk.Menu(mbutton)
         self.sam_menu.add_command(label='Check Declarations', command=self.check_ana_declarations)
@@ -259,7 +265,7 @@ class ProjectApp(tk.Frame):
 
         # Help menu.
 
-        mbutton = tk.Menubutton(self.menubar, text='Help', font=tkinter.font.Font(size=12))
+        mbutton = tk.Menubutton(self.menubar, text='Help', font=tkinter_font.Font(size=12))
         mbutton.pack(side=tk.RIGHT)
         self.help_menu = tk.Menu(mbutton)
         self.help_menu.add_command(label='project.py help', command=self.help)
@@ -274,7 +280,7 @@ class ProjectApp(tk.Frame):
         if xml_path == None:
             types = (('XML files', '*.xml'),
                      ('All files', '*'))
-            d = tkinter.filedialog.Open(filetypes=types, parent=self.root)
+            d = tkinter_filedialog.Open(filetypes=types, parent=self.root)
             xml_path = d.show()
 
         # Parse xml into ProjectDef objects.
@@ -296,7 +302,7 @@ class ProjectApp(tk.Frame):
             e = sys.exc_info()
             message = 'Error opening %s\n%s' % (xml_path, e[1])
             traceback.print_tb(e[2])
-            tkinter.messagebox.showerror('', message)
+            tkinter_messagebox.showerror('', message)
             return
 
         if len(project_defs) > 0:
@@ -465,10 +471,10 @@ class ProjectApp(tk.Frame):
 
     def check(self):
         if self.current_project_def == None:
-            tkinter.messagebox.showwarning('', 'No project selected.')
+            tkinter_messagebox.showwarning('', 'No project selected.')
             return
         if self.current_stage_def == None:
-            tkinter.messagebox.showwarning('', 'No stage selected.')
+            tkinter_messagebox.showwarning('', 'No stage selected.')
             return
         top=self.winfo_toplevel()
         old_cursor = top['cursor']
@@ -482,17 +488,17 @@ class ProjectApp(tk.Frame):
             top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
-            tkinter.messagebox.showerror('', e[1])
+            tkinter_messagebox.showerror('', e[1])
         self.project_view.update_status()
 
     # Checkana action.
 
     def checkana(self):
         if self.current_project_def == None:
-            tkinter.messagebox.showwarning('', 'No project selected.')
+            tkinter_messagebox.showwarning('', 'No project selected.')
             return
         if self.current_stage_def == None:
-            tkinter.messagebox.showwarning('', 'No stage selected.')
+            tkinter_messagebox.showwarning('', 'No stage selected.')
             return
         top=self.winfo_toplevel()
         old_cursor = top['cursor']
@@ -505,17 +511,17 @@ class ProjectApp(tk.Frame):
             top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
-            tkinter.messagebox.showerror('', e[1])
+            tkinter_messagebox.showerror('', e[1])
         self.project_view.update_status()
 
     # Fetchlog action.
 
     def fetchlog(self):
         if self.current_project_def == None:
-            tkinter.messagebox.showwarning('', 'No project selected.')
+            tkinter_messagebox.showwarning('', 'No project selected.')
             return
         if self.current_stage_def == None:
-            tkinter.messagebox.showwarning('', 'No stage selected.')
+            tkinter_messagebox.showwarning('', 'No stage selected.')
             return
         top=self.winfo_toplevel()
         old_cursor = top['cursor']
@@ -528,16 +534,16 @@ class ProjectApp(tk.Frame):
             top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
-            tkinter.messagebox.showerror('', e[1])
+            tkinter_messagebox.showerror('', e[1])
 
     # Shorten action.
 
     def shorten(self):
         if self.current_project_def == None:
-            tkinter.messagebox.showwarning('', 'No project selected.')
+            tkinter_messagebox.showwarning('', 'No project selected.')
             return
         if self.current_stage_def == None:
-            tkinter.messagebox.showwarning('', 'No stage selected.')
+            tkinter_messagebox.showwarning('', 'No stage selected.')
             return
         top=self.winfo_toplevel()
         old_cursor = top['cursor']
@@ -550,17 +556,17 @@ class ProjectApp(tk.Frame):
             top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
-            tkinter.messagebox.showerror('', e[1])
+            tkinter_messagebox.showerror('', e[1])
         self.project_view.update_status()
 
     # Clean action.
 
     def clean(self):
         if self.current_project_def == None:
-            tkinter.messagebox.showwarning('', 'No project selected.')
+            tkinter_messagebox.showwarning('', 'No project selected.')
             return
         if self.current_stage_def == None:
-            tkinter.messagebox.showwarning('', 'No stage selected.')
+            tkinter_messagebox.showwarning('', 'No stage selected.')
             return
         top=self.winfo_toplevel()
         old_cursor = top['cursor']
@@ -574,17 +580,17 @@ class ProjectApp(tk.Frame):
             top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
-            tkinter.messagebox.showerror('', e[1])
+            tkinter_messagebox.showerror('', e[1])
         self.project_view.update_status()
 
     # Submit action.
 
     def submit(self):
         if self.current_project_def == None:
-            tkinter.messagebox.showwarning('', 'No project selected.')
+            tkinter_messagebox.showwarning('', 'No project selected.')
             return
         if self.current_stage_def == None:
-            tkinter.messagebox.showwarning('', 'No stage selected.')
+            tkinter_messagebox.showwarning('', 'No stage selected.')
             return
 
         top=self.winfo_toplevel()
@@ -599,7 +605,7 @@ class ProjectApp(tk.Frame):
             top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
-            tkinter.messagebox.showerror('', e[1])
+            tkinter_messagebox.showerror('', e[1])
         BatchStatus.update_jobs()
         self.project_view.update_status()
 
@@ -607,10 +613,10 @@ class ProjectApp(tk.Frame):
 
     def makeup(self):
         if self.current_project_def == None:
-            tkinter.messagebox.showwarning('', 'No project selected.')
+            tkinter_messagebox.showwarning('', 'No project selected.')
             return
         if self.current_stage_def == None:
-            tkinter.messagebox.showwarning('', 'No stage selected.')
+            tkinter_messagebox.showwarning('', 'No stage selected.')
             return
 
         top=self.winfo_toplevel()
@@ -625,7 +631,7 @@ class ProjectApp(tk.Frame):
             top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
-            tkinter.messagebox.showerror('', e[1])
+            tkinter_messagebox.showerror('', e[1])
         BatchStatus.update_jobs()
         self.project_view.update_status()
 
@@ -638,10 +644,10 @@ class ProjectApp(tk.Frame):
 
     def kill_jobs(self):
         if self.current_project_def == None:
-            tkinter.messagebox.showwarning('', 'No project selected.')
+            tkinter_messagebox.showwarning('', 'No project selected.')
             return
         if self.current_stage_def == None:
-            tkinter.messagebox.showwarning('', 'No stage selected.')
+            tkinter_messagebox.showwarning('', 'No stage selected.')
             return
 
         top=self.winfo_toplevel()
@@ -656,7 +662,7 @@ class ProjectApp(tk.Frame):
             top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
-            tkinter.messagebox.showerror('', e[1])
+            tkinter_messagebox.showerror('', e[1])
 
         # Figure out which clusters to kill.
         
@@ -704,10 +710,10 @@ class ProjectApp(tk.Frame):
 
     def mergehist(self):
         if self.current_project_def == None:
-            tkinter.messagebox.showwarning('', 'No project selected.')
+            tkinter_messagebox.showwarning('', 'No project selected.')
             return
         if self.current_stage_def == None:
-            tkinter.messagebox.showwarning('', 'No stage selected.')
+            tkinter_messagebox.showwarning('', 'No stage selected.')
             return
         top=self.winfo_toplevel()
         old_cursor = top['cursor']
@@ -720,16 +726,16 @@ class ProjectApp(tk.Frame):
             top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
-            tkinter.messagebox.showerror('', e[1])
+            tkinter_messagebox.showerror('', e[1])
 
     # Ntuple merge.
 
     def mergentuple(self):
         if self.current_project_def == None:
-            tkinter.messagebox.showwarning('', 'No project selected.')
+            tkinter_messagebox.showwarning('', 'No project selected.')
             return
         if self.current_stage_def == None:
-            tkinter.messagebox.showwarning('', 'No stage selected.')
+            tkinter_messagebox.showwarning('', 'No stage selected.')
             return
         top=self.winfo_toplevel()
         old_cursor = top['cursor']
@@ -742,16 +748,16 @@ class ProjectApp(tk.Frame):
             top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
-            tkinter.messagebox.showerror('', e[1])
+            tkinter_messagebox.showerror('', e[1])
 
     # Custom merge.
 
     def merge(self):
         if self.current_project_def == None:
-            tkinter.messagebox.showwarning('', 'No project selected.')
+            tkinter_messagebox.showwarning('', 'No project selected.')
             return
         if self.current_stage_def == None:
-            tkinter.messagebox.showwarning('', 'No stage selected.')
+            tkinter_messagebox.showwarning('', 'No stage selected.')
             return
         top=self.winfo_toplevel()
         old_cursor = top['cursor']
@@ -764,16 +770,16 @@ class ProjectApp(tk.Frame):
             top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
-            tkinter.messagebox.showerror('', e[1])
+            tkinter_messagebox.showerror('', e[1])
 
     # Declare files to sam.
 
     def declare(self, ana=False):
         if self.current_project_def == None:
-            tkinter.messagebox.showwarning('', 'No project selected.')
+            tkinter_messagebox.showwarning('', 'No project selected.')
             return
         if self.current_stage_def == None:
-            tkinter.messagebox.showwarning('', 'No stage selected.')
+            tkinter_messagebox.showwarning('', 'No stage selected.')
             return
         top=self.winfo_toplevel()
         old_cursor = top['cursor']
@@ -787,7 +793,7 @@ class ProjectApp(tk.Frame):
             top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
-            tkinter.messagebox.showerror('', e[1])
+            tkinter_messagebox.showerror('', e[1])
 
     # Declare analysis files to sam.
 
@@ -798,10 +804,10 @@ class ProjectApp(tk.Frame):
 
     def check_declarations(self, ana=False):
         if self.current_project_def == None:
-            tkinter.messagebox.showwarning('', 'No project selected.')
+            tkinter_messagebox.showwarning('', 'No project selected.')
             return
         if self.current_stage_def == None:
-            tkinter.messagebox.showwarning('', 'No stage selected.')
+            tkinter_messagebox.showwarning('', 'No stage selected.')
             return
         top=self.winfo_toplevel()
         old_cursor = top['cursor']
@@ -815,7 +821,7 @@ class ProjectApp(tk.Frame):
             top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
-            tkinter.messagebox.showerror('', e[1])
+            tkinter_messagebox.showerror('', e[1])
 
     # Check sam analysis file declarations.
 
@@ -826,10 +832,10 @@ class ProjectApp(tk.Frame):
 
     def test_declarations(self, ana=False):
         if self.current_project_def == None:
-            tkinter.messagebox.showwarning('', 'No project selected.')
+            tkinter_messagebox.showwarning('', 'No project selected.')
             return
         if self.current_stage_def == None:
-            tkinter.messagebox.showwarning('', 'No stage selected.')
+            tkinter_messagebox.showwarning('', 'No stage selected.')
             return
         top=self.winfo_toplevel()
         old_cursor = top['cursor']
@@ -844,7 +850,7 @@ class ProjectApp(tk.Frame):
             top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
-            tkinter.messagebox.showerror('', e[1])
+            tkinter_messagebox.showerror('', e[1])
 
     # Test sam analysis file declarations.
 
@@ -855,10 +861,10 @@ class ProjectApp(tk.Frame):
 
     def define(self, ana=False):
         if self.current_project_def == None:
-            tkinter.messagebox.showwarning('', 'No project selected.')
+            tkinter_messagebox.showwarning('', 'No project selected.')
             return
         if self.current_stage_def == None:
-            tkinter.messagebox.showwarning('', 'No stage selected.')
+            tkinter_messagebox.showwarning('', 'No stage selected.')
             return
         top=self.winfo_toplevel()
         old_cursor = top['cursor']
@@ -880,7 +886,7 @@ class ProjectApp(tk.Frame):
             top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
-            tkinter.messagebox.showerror('', e[1])
+            tkinter_messagebox.showerror('', e[1])
 
     # Create sam dataset definition for analysis files.
 
@@ -891,10 +897,10 @@ class ProjectApp(tk.Frame):
 
     def check_definition(self, ana=False):
         if self.current_project_def == None:
-            tkinter.messagebox.showwarning('', 'No project selected.')
+            tkinter_messagebox.showwarning('', 'No project selected.')
             return
         if self.current_stage_def == None:
-            tkinter.messagebox.showwarning('', 'No stage selected.')
+            tkinter_messagebox.showwarning('', 'No stage selected.')
             return
         top=self.winfo_toplevel()
         old_cursor = top['cursor']
@@ -916,7 +922,7 @@ class ProjectApp(tk.Frame):
             top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
-            tkinter.messagebox.showerror('', e[1])
+            tkinter_messagebox.showerror('', e[1])
 
     # Check whether sam analysis dataset definition exists.
 
@@ -927,10 +933,10 @@ class ProjectApp(tk.Frame):
 
     def test_definition(self, ana=False):
         if self.current_project_def == None:
-            tkinter.messagebox.showwarning('', 'No project selected.')
+            tkinter_messagebox.showwarning('', 'No project selected.')
             return
         if self.current_stage_def == None:
-            tkinter.messagebox.showwarning('', 'No stage selected.')
+            tkinter_messagebox.showwarning('', 'No stage selected.')
             return
 
         defname = ''
@@ -939,7 +945,7 @@ class ProjectApp(tk.Frame):
         else:
             defname = self.current_stage_def.defname
         if defname == '':
-            tkinter.messagebox.showwarning('No sam dataset definition specified.')
+            tkinter_messagebox.showwarning('No sam dataset definition specified.')
             return
 
         top=self.winfo_toplevel()
@@ -953,7 +959,7 @@ class ProjectApp(tk.Frame):
             top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
-            tkinter.messagebox.showerror('', e[1])
+            tkinter_messagebox.showerror('', e[1])
 
     # Test sam analysis dataset definition (list files).
 
@@ -964,10 +970,10 @@ class ProjectApp(tk.Frame):
 
     def check_locations(self, ana=False):
         if self.current_project_def == None:
-            tkinter.messagebox.showwarning('', 'No project selected.')
+            tkinter_messagebox.showwarning('', 'No project selected.')
             return
         if self.current_stage_def == None:
-            tkinter.messagebox.showwarning('', 'No stage selected.')
+            tkinter_messagebox.showwarning('', 'No stage selected.')
             return
         top=self.winfo_toplevel()
         old_cursor = top['cursor']
@@ -986,7 +992,7 @@ class ProjectApp(tk.Frame):
             top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
-            tkinter.messagebox.showerror('', e[1])
+            tkinter_messagebox.showerror('', e[1])
 
     # Check locations for analysis files.
 
@@ -997,10 +1003,10 @@ class ProjectApp(tk.Frame):
 
     def check_tape(self, ana=False):
         if self.current_project_def == None:
-            tkinter.messagebox.showwarning('', 'No project selected.')
+            tkinter_messagebox.showwarning('', 'No project selected.')
             return
         if self.current_stage_def == None:
-            tkinter.messagebox.showwarning('', 'No stage selected.')
+            tkinter_messagebox.showwarning('', 'No stage selected.')
             return
         top=self.winfo_toplevel()
         old_cursor = top['cursor']
@@ -1015,7 +1021,7 @@ class ProjectApp(tk.Frame):
             top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
-            tkinter.messagebox.showerror('', e[1])
+            tkinter_messagebox.showerror('', e[1])
 
     # Check tape locations for analysis files.
 
@@ -1026,10 +1032,10 @@ class ProjectApp(tk.Frame):
 
     def add_locations(self, ana=False):
         if self.current_project_def == None:
-            tkinter.messagebox.showwarning('', 'No project selected.')
+            tkinter_messagebox.showwarning('', 'No project selected.')
             return
         if self.current_stage_def == None:
-            tkinter.messagebox.showwarning('', 'No stage selected.')
+            tkinter_messagebox.showwarning('', 'No stage selected.')
             return
         top=self.winfo_toplevel()
         old_cursor = top['cursor']
@@ -1048,7 +1054,7 @@ class ProjectApp(tk.Frame):
             top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
-            tkinter.messagebox.showerror('', e[1])
+            tkinter_messagebox.showerror('', e[1])
 
     # Add disk locations for analysis files.
 
@@ -1059,10 +1065,10 @@ class ProjectApp(tk.Frame):
 
     def clean_locations(self, ana):
         if self.current_project_def == None:
-            tkinter.messagebox.showwarning('', 'No project selected.')
+            tkinter_messagebox.showwarning('', 'No project selected.')
             return
         if self.current_stage_def == None:
-            tkinter.messagebox.showwarning('', 'No stage selected.')
+            tkinter_messagebox.showwarning('', 'No stage selected.')
             return
         top=self.winfo_toplevel()
         old_cursor = top['cursor']
@@ -1081,7 +1087,7 @@ class ProjectApp(tk.Frame):
             top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
-            tkinter.messagebox.showerror('', e[1])
+            tkinter_messagebox.showerror('', e[1])
 
     # Clean disk locations for analysis files.
 
@@ -1092,10 +1098,10 @@ class ProjectApp(tk.Frame):
 
     def remove_locations(self, ana=False):
         if self.current_project_def == None:
-            tkinter.messagebox.showwarning('', 'No project selected.')
+            tkinter_messagebox.showwarning('', 'No project selected.')
             return
         if self.current_stage_def == None:
-            tkinter.messagebox.showwarning('', 'No stage selected.')
+            tkinter_messagebox.showwarning('', 'No stage selected.')
             return
         top=self.winfo_toplevel()
         old_cursor = top['cursor']
@@ -1114,7 +1120,7 @@ class ProjectApp(tk.Frame):
             top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
-            tkinter.messagebox.showerror('', e[1])
+            tkinter_messagebox.showerror('', e[1])
 
     # Remove disk locations for analysis files.
 
@@ -1125,10 +1131,10 @@ class ProjectApp(tk.Frame):
 
     def upload(self, ana=False):
         if self.current_project_def == None:
-            tkinter.messagebox.showwarning('', 'No project selected.')
+            tkinter_messagebox.showwarning('', 'No project selected.')
             return
         if self.current_stage_def == None:
-            tkinter.messagebox.showwarning('', 'No stage selected.')
+            tkinter_messagebox.showwarning('', 'No stage selected.')
             return
         top=self.winfo_toplevel()
         old_cursor = top['cursor']
@@ -1147,7 +1153,7 @@ class ProjectApp(tk.Frame):
             top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
-            tkinter.messagebox.showerror('', e[1])
+            tkinter_messagebox.showerror('', e[1])
 
     # Upload analysis files.
 
@@ -1158,10 +1164,10 @@ class ProjectApp(tk.Frame):
 
     def audit(self):
         if self.current_project_def == None:
-            tkinter.messagebox.showwarning('', 'No project selected.')
+            tkinter_messagebox.showwarning('', 'No project selected.')
             return
         if self.current_stage_def == None:
-            tkinter.messagebox.showwarning('', 'No stage selected.')
+            tkinter_messagebox.showwarning('', 'No stage selected.')
             return
         top=self.winfo_toplevel()
         old_cursor = top['cursor']
@@ -1174,7 +1180,7 @@ class ProjectApp(tk.Frame):
             top['cursor'] = old_cursor
             e = sys.exc_info()
             traceback.print_tb(e[2])
-            tkinter.messagebox.showerror('', e[1])
+            tkinter_messagebox.showerror('', e[1])
 
     # Help method.
 
