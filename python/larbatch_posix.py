@@ -27,7 +27,6 @@
 #               - read
 #               - readline
 #               - readlines
-#               - xreadlines
 #               - seek
 #               - tell
 #               - truncate
@@ -241,11 +240,6 @@ class dcache_file:
 
     def readlines(self, sizehint=-1):
         return self.local_file.readlines()
-
-    # Same as next.
-
-    def xreadlines(self):
-        return self.local_file.xreadlines()
 
     # Return file position.
 
