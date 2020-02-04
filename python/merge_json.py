@@ -35,7 +35,7 @@ def merge_json_objects(json_objects):
         for key in json_object.keys():
             if key in merged.keys():
                 if json_object[key] != merged[key]:
-                    raise RuntimeError, 'Duplicate nonmatching key %s.' % key
+                    raise RuntimeError('Duplicate nonmatching key %s.' % key)
             else:
                 merged[key] = json_object[key]
 
@@ -53,7 +53,7 @@ def merge_json_files(json_filenames):
     for json_filename in json_filenames:
         json_file = open(json_filename)
         if not json_file:
-            raise IOError, 'Unable to open json file %s.' % json_filename
+            raise IOError('Unable to open json file %s.' % json_filename)
         obj = json.load(json_file)
         json_objects.append(obj)
 

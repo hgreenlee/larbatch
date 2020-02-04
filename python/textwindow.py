@@ -123,17 +123,17 @@ class TextWindow(tk.Frame):
     # Read methods (raise IOError).
 
     def next(self):
-        raise IOError, 'File is not open for reading.'
+        raise IOError('File is not open for reading.')
     def read(self, size=0):
-        raise IOError, 'File is not open for reading.'
+        raise IOError('File is not open for reading.')
     def readline(self, size=0):
-        raise IOError, 'File is not open for reading.'
+        raise IOError('File is not open for reading.')
     def readlines(self, size=0):
-        raise IOError, 'File is not open for reading.'
+        raise IOError('File is not open for reading.')
     def readline(self, size=0):
-        raise IOError, 'File is not open for reading.'
+        raise IOError('File is not open for reading.')
     def seek(self, offset, pos=0):
-        raise IOError, 'File is not open for reading.'
+        raise IOError('File is not open for reading.')
 
     # Current position.
 

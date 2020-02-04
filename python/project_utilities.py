@@ -123,10 +123,10 @@ def get_scratch_dir():
     # Checkout.
 
     if scratch == '':
-        raise RuntimeError, 'No scratch directory specified.'
+        raise RuntimeError('No scratch directory specified.')
 
     if not larbatch_posix.isdir(scratch) or not larbatch_posix.access(scratch, os.W_OK):
-        raise RuntimeError, 'Scratch directory %s does not exist or is not writeable.' % scratch
+        raise RuntimeError('Scratch directory %s does not exist or is not writeable.' % scratch)
 
     return scratch
 
@@ -188,7 +188,7 @@ def parseInt(s):
 
         # Don't understand.
 
-        raise ValueError, 'Unparseable range token %s.' % token
+        raise ValueError('Unparseable range token %s.' % token)
 
     # Return result in form of a sorted list.
 
@@ -735,13 +735,13 @@ def tokenizeRPN(dim):
                     done = True
                 elif last == 'isparentof:(':
                     if len(result) == 0 or result[-1] == 'or' or result[-1] == 'minus':
-                        raise RuntimeError, 'isparentof: parse error'
+                        raise RuntimeError('isparentof: parse error')
                     last = result.pop()
                     result.append('isparentof:( %s )' % last)
                     done = True
                 elif last == 'ischildof:(':
                     if len(result) == 0 or result[-1] == 'or' or result[-1] == 'minus':
-                        raise RuntimeError, 'ischildof: parse error'
+                        raise RuntimeError('ischildof: parse error')
                     last = result.pop()
                     result.append('ischildof:( %s )' % last)
                     done = True

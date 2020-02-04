@@ -67,7 +67,7 @@ class ProjectDef:
         if project_element.attributes.has_key('name'):
             self.name = str(project_element.attributes['name'].firstChild.data)
         if self.name == '':
-            raise XMLError, 'Project name not specified.'
+            raise XMLError('Project name not specified.')
 
         # Total events (subelement).
 
@@ -76,7 +76,7 @@ class ProjectDef:
             if num_events_element.parentNode == project_element:
                 self.num_events = int(num_events_element.firstChild.data)
         if self.num_events == 0:
-            raise XMLError, 'Number of events not specified.'
+            raise XMLError('Number of events not specified.')
 
         # Number of jobs (subelement).
 
@@ -217,7 +217,7 @@ class ProjectDef:
         # Existence of non-null local_release_dir has already been tested.
 
         if self.local_release_tar != '' and not larbatch_posix.exists(self.local_release_tar):
-            raise IOError, "Local release directory/tarball %s does not exist." % self.local_release_tar
+            raise IOError("Local release directory/tarball %s does not exist." % self.local_release_tar)
             
         # Sam file type (subelement).
 
@@ -257,7 +257,7 @@ class ProjectDef:
         except:
             pass
         if script_path == '' or not larbatch_posix.access(script_path, os.X_OK):
-            raise IOError, 'Script %s not found.' % self.script
+            raise IOError('Script %s not found.' % self.script)
         self.script = script_path
 	
 	worker_validations = project_element.getElementsByTagName('check')
@@ -331,7 +331,7 @@ class ProjectDef:
 
         for fcldir in self.fclpath:
             if not larbatch_posix.exists(fcldir):
-                raise IOError, "Fcl search directory %s does not exist." % fcldir
+                raise IOError("Fcl search directory %s does not exist." % fcldir)
 
         # Project stages (repeatable subelement).
 
@@ -352,7 +352,7 @@ class ProjectDef:
                             break
 
                     if base_stage == None:
-                        raise LookupError, 'Base stage %s not found.' % base_name
+                        raise LookupError('Base stage %s not found.' % base_name)
 
             self.stages.append(StageDef(stage_element, 
                                         base_stage, 
@@ -434,7 +434,7 @@ class ProjectDef:
     def get_stage(self, stagename):
 
         if len(self.stages) == 0:
-            raise LookupError, "Project does not have any stages."
+            raise LookupError("Project does not have any stages.")
 
         elif stagename == '' and len(self.stages) == 1:
             return self.stages[0]
@@ -446,7 +446,7 @@ class ProjectDef:
 
         # If we fell through to here, we didn't find an appropriate stage.
 
-        raise RuntimeError, 'No stage %s.' % stagename
+        raise RuntimeError('No stage %s.' % stagename)
 
     # Find fcl file on fcl search path.
 
@@ -462,6 +462,6 @@ class ProjectDef:
                 break
          
 	 if fcl == '' or not larbatch_posix.exists(fcl):
-             raise IOError, 'Could not find fcl file %s.' % name
+             raise IOError('Could not find fcl file %s.' % name)
 	 fcl_list.append(fcl)      
         return fcl_list

@@ -510,7 +510,7 @@ def docleanx(projects, projectname, stagename, clean_descendants = True):
                                 print('Clean directory %s.' % stage.outdir)
                                 larbatch_posix.rmtree(stage.outdir)
                             else:
-                                raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.outdir
+                                raise RuntimeError('Owner mismatch, delete %s manually.' % stage.outdir)
 
                         # Clean this stage logdir.
 
@@ -520,7 +520,7 @@ def docleanx(projects, projectname, stagename, clean_descendants = True):
                                 print('Clean directory %s.' % stage.logdir)
                                 larbatch_posix.rmtree(stage.logdir)
                             else:
-                                raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.logdir
+                                raise RuntimeError('Owner mismatch, delete %s manually.' % stage.logdir)
 
                         # Clean this stage workdir.
 
@@ -530,7 +530,7 @@ def docleanx(projects, projectname, stagename, clean_descendants = True):
                                 print('Clean directory %s.' % stage.workdir)
                                 larbatch_posix.rmtree(stage.workdir)
                             else:
-                                raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.workdir
+                                raise RuntimeError('Owner mismatch, delete %s manually.' % stage.workdir)
 
                         # Clean this stage bookdir.
 
@@ -540,7 +540,7 @@ def docleanx(projects, projectname, stagename, clean_descendants = True):
                                 print('Clean directory %s.' % stage.bookdir)
                                 larbatch_posix.rmtree(stage.bookdir)
                             else:
-                                raise RuntimeError, 'Owner mismatch, delete %s manually.' % stage.bookdir
+                                raise RuntimeError('Owner mismatch, delete %s manually.' % stage.bookdir)
 
         done_cleaning = not cleaned_something
 
@@ -741,12 +741,12 @@ def get_pubs_stage(xmlfile, projectname, stagename, run, subruns, version=None):
     projects = get_projects(xmlfile)
     project = select_project(projects, projectname, stagename)
     if project == None:
-        raise RuntimeError, 'No project selected for projectname=%s, stagename=%s' % (
-            projectname, stagename)
+        raise RuntimeError('No project selected for projectname=%s, stagename=%s' % (
+            projectname, stagename))
     stage = project.get_stage(stagename)
     if stage == None:
-        raise RuntimeError, 'No stage selected for projectname=%s, stagename=%s' % (
-            projectname, stagename)
+        raise RuntimeError('No stage selected for projectname=%s, stagename=%s' % (
+            projectname, stagename))
     get_projects.cache = {}
     stage.pubsify_input(run, subruns, version)
     stage.pubsify_output(run, subruns, version)
@@ -2010,7 +2010,7 @@ def docheck_declarations(logdir, outdir, declare, ana=False):
     if larbatch_posix.exists(fnlist):
         roots = larbatch_posix.readlines(fnlist)
     else:
-        raise RuntimeError, 'No %s file found %s, run project.py --check' % (listname, fnlist)
+        raise RuntimeError('No %s file found %s, run project.py --check' % (listname, fnlist))
 
     for root in roots:
         path = string.strip(root)
@@ -2564,8 +2564,8 @@ def dojobsub(project, stage, makeup, recur):
 
     if stage.init_script != '':
         if not larbatch_posix.exists(stage.init_script):
-            raise RuntimeError, 'Worker initialization script %s does not exist.\n' % \
-                stage.init_script
+            raise RuntimeError('Worker initialization script %s does not exist.\n' % \
+                stage.init_script)
         work_init_script = os.path.join(tmpworkdir, os.path.basename(stage.init_script))
         if stage.init_script != work_init_script:
             larbatch_posix.copy(stage.init_script, work_init_script)
@@ -2574,8 +2574,8 @@ def dojobsub(project, stage, makeup, recur):
 
     if stage.init_source != '':
         if not larbatch_posix.exists(stage.init_source):
-            raise RuntimeError, 'Worker initialization source script %s does not exist.\n' % \
-                stage.init_source
+            raise RuntimeError('Worker initialization source script %s does not exist.\n' % \
+                stage.init_source)
         work_init_source = os.path.join(tmpworkdir, os.path.basename(stage.init_source))
         if stage.init_source != work_init_source:
             larbatch_posix.copy(stage.init_source, work_init_source)
@@ -2584,7 +2584,7 @@ def dojobsub(project, stage, makeup, recur):
 
     if stage.end_script != '':
         if not larbatch_posix.exists(stage.end_script):
-            raise RuntimeError, 'Worker end-of-job script %s does not exist.\n' % stage.end_script
+            raise RuntimeError('Worker end-of-job script %s does not exist.\n' % stage.end_script)
         work_end_script = os.path.join(tmpworkdir, os.path.basename(stage.end_script))
         if stage.end_script != work_end_script:
             larbatch_posix.copy(stage.end_script, work_end_script)
@@ -2652,7 +2652,7 @@ def dojobsub(project, stage, makeup, recur):
 
         checked_file = os.path.join(stage.bookdir, 'checked')
         if not larbatch_posix.exists(checked_file):
-            raise RuntimeError, 'Wait for any running jobs to finish and run project.py --check'
+            raise RuntimeError('Wait for any running jobs to finish and run project.py --check')
         makeup_count = 0
 
         # First delete bad worker subdirectories.
@@ -2722,7 +2722,7 @@ def dojobsub(project, stage, makeup, recur):
                         if proc in procs:
                             procs.remove(proc)
                 if len(procs) != makeup_count:
-                    raise RuntimeError, 'Makeup process list has different length than makeup count.'
+                    raise RuntimeError('Makeup process list has different length than makeup count.')
 
                 # Generate process map.
 
@@ -2785,7 +2785,7 @@ def dojobsub(project, stage, makeup, recur):
     jobout, joberr = jobinfo.communicate()
     rc = jobinfo.poll()
     if rc != 0:
-        raise RuntimeError, 'Failed to create work tarball in %s' % tmpworkdir
+        raise RuntimeError('Failed to create work tarball in %s' % tmpworkdir)
 
     # Calculate the checksum of the tarball.
 
@@ -3030,7 +3030,7 @@ def dojobsub(project, stage, makeup, recur):
         # scripts were not found.
 
         if workstartname == '' or workstopname == '':
-            raise RuntimeError, 'Sam start or stop project script not found.'
+            raise RuntimeError('Sam start or stop project script not found.')
 
         # Start project jobsub command.
 
@@ -3366,11 +3366,11 @@ def dosubmit(project, stage, makeup=False, recur=False):
 
     if not makeup and not recur and not stage.dynamic:
         if len(larbatch_posix.listdir(stage.outdir)) != 0:
-            raise RuntimeError, 'Output directory %s is not empty.' % stage.outdir
+            raise RuntimeError('Output directory %s is not empty.' % stage.outdir)
         if len(larbatch_posix.listdir(stage.logdir)) != 0:
-            raise RuntimeError, 'Log directory %s is not empty.' % stage.logdir
+            raise RuntimeError('Log directory %s is not empty.' % stage.logdir)
         if len(larbatch_posix.listdir(stage.bookdir)) != 0:
-            raise RuntimeError, 'Log directory %s is not empty.' % stage.bookdir
+            raise RuntimeError('Log directory %s is not empty.' % stage.bookdir)
 
     # Copy files to workdir and issue jobsub command to submit jobs.
 
@@ -3411,7 +3411,7 @@ def domerge(stage, mergehist, mergentuple):
     if larbatch_posix.exists(hnlist):
         hlist = larbatch_posix.readlines(hnlist)
     else:
-        raise RuntimeError, 'No filesana.list file found %s, run project.py --checkana' % hnlist
+        raise RuntimeError('No filesana.list file found %s, run project.py --checkana' % hnlist)
 
     histurlsname_temp = 'histurls.list'
     histurls = safeopen(histurlsname_temp)
@@ -3466,7 +3466,7 @@ def doaudit(stage):
     import_samweb()
     stage_has_input = stage.inputfile != '' or stage.inputlist != '' or stage.inputdef != ''
     if not stage_has_input:
-        raise RuntimeError, 'No auditing for generator stage.'
+        raise RuntimeError('No auditing for generator stage.')
 
     # Are there other ways to get output files other than through definition!?
 
@@ -3478,9 +3478,9 @@ def doaudit(stage):
             outparentlist = samweb.listFiles(dimensions=query)
             outputlist = samweb.listFiles(defname=stage.defname)
         except:
-            raise RuntimeError, 'Error accessing sam information for definition %s.\nDoes definition exist?' % stage.defname
+            raise RuntimeError('Error accessing sam information for definition %s.\nDoes definition exist?' % stage.defname)
     else:
-        raise RuntimeError, 'Output definition not found.'
+        raise RuntimeError('Output definition not found.')
 
     # To get input files one can use definition or get inputlist given to that stage or
     # get input files for a given stage as get_input_files(stage)
@@ -3497,7 +3497,7 @@ def doaudit(stage):
             for i in ilist:
                 inputlist.append(os.path.basename(string.strip(i)))
     else:
-        raise RuntimeError, 'Input definition and/or input list does not exist.'
+        raise RuntimeError('Input definition and/or input list does not exist.')
 
     difflist = set(inputlist)^set(outparentlist)
     mc = 0;
@@ -3524,7 +3524,7 @@ def doaudit(stage):
                     for line in flist:
                         slist.append(string.split(line)[0])
                 else:
-                    raise RuntimeError, 'No files.list file found %s, run project.py --check' % fnlist
+                    raise RuntimeError('No files.list file found %s, run project.py --check' % fnlist)
 
             # Declare the content status of the file as bad in SAM.
 
@@ -3946,7 +3946,7 @@ def main(argv):
             if projectname == '':
                 projectname = project.name
         else:
-            raise RuntimeError, 'No project selected.\n'
+            raise RuntimeError('No project selected.\n')
 
     # Do clean action now.  Cleaning can be combined with submission.
 
@@ -4065,7 +4065,7 @@ def main(argv):
                         project_utilities.makeDummyDef(activedef)
                         project_utilities.makeDummyDef(waitdef)
                 elif stage.recurtype != '' and stage.recurtype != 'none':
-                    raise RuntimeError, 'Unknown recursive type %s.' % stage.recurtype
+                    raise RuntimeError('Unknown recursive type %s.' % stage.recurtype)
 
                 # Add "with limit" clause.
 

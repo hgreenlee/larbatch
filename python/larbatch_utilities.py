@@ -544,7 +544,7 @@ def test_ticket():
     if not ticket_ok:
         ok = subprocess.call(['klist', '-s'], stdout=-1, stderr=-1)
         if ok != 0:
-            raise RuntimeError, 'Please get a kerberos ticket.'
+            raise RuntimeError('Please get a kerberos ticket.')
         ticket_ok = True
     return ticket_ok
 
@@ -668,7 +668,7 @@ def test_kca():
                 subprocess.check_call(['voms-proxy-info', '-exists'], stdout=-1, stderr=-1)
             kca_ok = True
         except:
-            raise RuntimeError, 'Please get a kca certificate.'
+            raise RuntimeError('Please get a kca certificate.')
     return kca_ok
 
 
@@ -697,7 +697,7 @@ def test_proxy():
             subprocess.check_call(['voms-proxy-info', '-exists', '-acissuer'], stdout=-1, stderr=-1)
             proxy_ok = True
         except:
-            raise RuntimeError, 'Please get a grid proxy.'
+            raise RuntimeError('Please get a grid proxy.')
     return proxy_ok
 
 # Return dCache server.
@@ -856,7 +856,7 @@ def get_experiment():
             exp = hostname[:n]
 
     if not exp:
-        raise RuntimeError, 'Unable to determine experiment.'
+        raise RuntimeError('Unable to determine experiment.')
 
     return exp
 
@@ -897,14 +897,14 @@ def get_ups_products():
 # This function should be overridden in <experiment>_utilities.py.
 
 def get_setup_script_path():
-    raise RuntimeError, 'Function get_setup_script_path not implemented.'
+    raise RuntimeError('Function get_setup_script_path not implemented.')
 
 
 # Function to return dimension string for project, stage.
 # This function should be overridden in experiment_utilities.py
 
 def dimensions(project, stage, ana=False):
-    raise RuntimeError, 'Function dimensions not implemented.'
+    raise RuntimeError('Function dimensions not implemented.')
 
 
 # Function to return the production user name
@@ -932,7 +932,7 @@ def get_dcache_server():
 # This function should be overridden in <experiment>_utilities module.
 
 def get_dropbox(filename):
-    raise RuntimeError, 'Function get_dropbox not implemented.'
+    raise RuntimeError('Function get_dropbox not implemented.')
 
 
 # Function to return string containing sam metadata in the form 
@@ -1017,7 +1017,7 @@ def get_user():
 
     # Something went wrong...
 
-    raise RuntimeError, 'Unable to determine authenticated user.'
+    raise RuntimeError('Unable to determine authenticated user.')
 
 
 # Function to check whether there is a running project.py process on this node

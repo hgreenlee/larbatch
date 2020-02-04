@@ -188,7 +188,7 @@ class StageDef:
         if stage_element.attributes.has_key('name'):
             self.name = str(stage_element.attributes['name'].firstChild.data)
         if self.name == '':
-            raise XMLError, "Stage name not specified."
+            raise XMLError("Stage name not specified.")
 
         # Batch job name (subelement).
 
@@ -204,7 +204,7 @@ class StageDef:
             for fcl in fclname_elements:
                 self.fclname.append(str(fcl.firstChild.data))
         if len(self.fclname) == 0:
-            raise XMLError, 'No Fcl names specified for stage %s.' % self.name
+            raise XMLError('No Fcl names specified for stage %s.' % self.name)
 
         # Output directory (subelement).
 
@@ -212,7 +212,7 @@ class StageDef:
         if outdir_elements:
             self.outdir = str(outdir_elements[0].firstChild.data)
         if self.outdir == '':
-            raise XMLError, 'Output directory not specified for stage %s.' % self.name
+            raise XMLError('Output directory not specified for stage %s.' % self.name)
 
         # Log directory (subelement).
 
@@ -228,7 +228,7 @@ class StageDef:
         if workdir_elements:
             self.workdir = str(workdir_elements[0].firstChild.data)
         if self.workdir == '':
-            raise XMLError, 'Work directory not specified for stage %s.' % self.name
+            raise XMLError('Work directory not specified for stage %s.' % self.name)
 
         # Bookkeeping directory (subelement).
 
@@ -352,7 +352,7 @@ class StageDef:
             # It never makes sense to specify a previous stage with some other input.
 
             if self.inputfile != '' or self.inputlist != '' or self.inputdef != '':
-                raise XMLError, 'Previous stage and input specified for stage %s.' % self.name
+                raise XMLError('Previous stage and input specified for stage %s.' % self.name)
 
         # Mix input sam dataset (subelement).
 
@@ -363,17 +363,17 @@ class StageDef:
         # It is an error to specify both input file and input list.
 
         if self.inputfile != '' and self.inputlist != '':
-            raise XMLError, 'Input file and input list both specified for stage %s.' % self.name
+            raise XMLError('Input file and input list both specified for stage %s.' % self.name)
 
         # It is an error to specify either input file or input list together
         # with a sam input dataset.
 
         if self.inputdef != '' and (self.inputfile != '' or self.inputlist != ''):
-            raise XMLError, 'Input dataset and input files specified for stage %s.' % self.name
+            raise XMLError('Input dataset and input files specified for stage %s.' % self.name)
 
         # It is an error to use textfile inputmode without an inputlist or inputfile
         if self.inputmode == 'textfile' and self.inputlist == '' and self.inputfile == '':
-            raise XMLError, 'Input list (inputlist) or inputfile is needed for textfile model.'
+            raise XMLError('Input list (inputlist) or inputfile is needed for textfile model.')
 
         # If none of input definition, input file, nor input list were specified, set
         # the input list to the dafault input list.  If an input stream was specified,
@@ -502,7 +502,7 @@ class StageDef:
                 except:
                     pass
             if not larbatch_posix.exists(self.submit_script[0]):
-                raise IOError, 'Submit script %s not found.' % self.submit_script[0]
+                raise IOError('Submit script %s not found.' % self.submit_script[0])
 
         # Worker initialization script (subelement).
 
@@ -529,7 +529,7 @@ class StageDef:
                 except:
                     pass
             if not larbatch_posix.exists(self.init_script):
-                raise IOError, 'Init script %s not found.' % self.init_script
+                raise IOError('Init script %s not found.' % self.init_script)
 
         # Worker initialization source script (subelement).
 
@@ -556,7 +556,7 @@ class StageDef:
                 except:
                     pass
             if not larbatch_posix.exists(self.init_source):
-                raise IOError, 'Init source script %s not found.' % self.init_source
+                raise IOError('Init source script %s not found.' % self.init_source)
 
         # Worker end-of-job script (subelement).
 
@@ -583,7 +583,7 @@ class StageDef:
                 except:
                     pass
             if not larbatch_posix.exists(self.end_script):
-                raise IOError, 'End-of-job script %s not found.' % self.end_script
+                raise IOError('End-of-job script %s not found.' % self.end_script)
 
         # Histogram merging program.
 
@@ -728,7 +728,7 @@ class StageDef:
         except:
             pass
         if script_path == '' or not larbatch_posix.access(script_path, os.X_OK):
-            raise IOError, 'Script %s not found.' % self.script
+            raise IOError('Script %s not found.' % self.script)
         self.script = script_path
 	
 	# Start script
@@ -921,7 +921,7 @@ class StageDef:
         # The case if input from a single file is not supported.  Raise an exception.
 
         if self.inputfile != '':
-            raise RuntimeError, 'Pubs input for single file input is not supported.'
+            raise RuntimeError('Pubs input for single file input is not supported.')
 
         # Set pubs input mode.
 
@@ -1188,9 +1188,9 @@ class StageDef:
     def checkinput(self, checkdef=False):
 
         if self.inputfile != '' and not larbatch_posix.exists(self.inputfile):
-            raise IOError, 'Input file %s does not exist.' % self.inputfile
+            raise IOError('Input file %s does not exist.' % self.inputfile)
         if self.inputlist != '' and not larbatch_posix.exists(self.inputlist):
-            raise IOError, 'Input list %s does not exist.' % self.inputlist
+            raise IOError('Input list %s does not exist.' % self.inputlist)
 
         checkok = False
 
@@ -1379,22 +1379,22 @@ class StageDef:
 
     def check_output_dirs(self):
         if not larbatch_posix.exists(self.outdir):
-            raise IOError, 'Output directory %s does not exist.' % self.outdir
+            raise IOError('Output directory %s does not exist.' % self.outdir)
         if not larbatch_posix.exists(self.logdir):
-            raise IOError, 'Log directory %s does not exist.' % self.logdir
+            raise IOError('Log directory %s does not exist.' % self.logdir)
         return
     
     # Raise an exception if output, log, work, or bookkeeping directory doesn't exist.
 
     def checkdirs(self):
         if not larbatch_posix.exists(self.outdir):
-            raise IOError, 'Output directory %s does not exist.' % self.outdir
+            raise IOError('Output directory %s does not exist.' % self.outdir)
         if self.logdir != self.outdir and not larbatch_posix.exists(self.logdir):
-            raise IOError, 'Log directory %s does not exist.' % self.logdir
+            raise IOError('Log directory %s does not exist.' % self.logdir)
         if not larbatch_posix.exists(self.workdir):
-            raise IOError, 'Work directory %s does not exist.' % self.workdir
+            raise IOError('Work directory %s does not exist.' % self.workdir)
         if self.bookdir != self.logdir and not larbatch_posix.exists(self.bookdir):
-            raise IOError, 'Bookkeeping directory %s does not exist.' % self.bookdir
+            raise IOError('Bookkeeping directory %s does not exist.' % self.bookdir)
         return
     
     # Make output, log, work, and bookkeeping directory, if they don't exist.

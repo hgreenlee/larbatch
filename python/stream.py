@@ -35,7 +35,7 @@ def get_stream(inputfile):
     jobout, joberr = jobinfo.communicate()
     rc = jobinfo.poll()
     if rc != 0:
-        raise RuntimeError, 'sam_metadata_dumper failed with status %d' % rc
+        raise RuntimeError('sam_metadata_dumper failed with status %d' % rc)
 
     # Decode json string to dictionary.
     # Work around art bug by deleting "runs" line.
@@ -62,7 +62,7 @@ def get_stream(inputfile):
     if md.has_key('data_stream'):
         result = md['data_stream']
     else:
-        raise RuntimeError, 'Sam metadata does not contain stream.'
+        raise RuntimeError('Sam metadata does not contain stream.')
 
     # Done.
 

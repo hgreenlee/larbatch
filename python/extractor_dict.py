@@ -62,7 +62,7 @@ class MetaData(object):
         jobout = q.get()
         joberr = q.get()
         if rc != 0:
-            raise RuntimeError, 'sam_metadata_dumper returned nonzero exit status {}.'.format(rc)
+            raise RuntimeError('sam_metadata_dumper returned nonzero exit status {}.'.format(rc))
         return jobout, joberr
     
     @staticmethod

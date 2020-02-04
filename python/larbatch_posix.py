@@ -321,7 +321,7 @@ def copy(src, dest):
 def listdir(path):
 
     if not isdir(path):
-        raise OSError, '%s is not a directory.' % path
+        raise OSError('%s is not a directory.' % path)
     result = []
     if path.startswith('/pnfs/') and (prefer_grid or not pnfs_is_mounted):
         if debug:
@@ -527,7 +527,7 @@ def stat(path):
         result = os.stat(path)
 
     if result == None:
-        raise OSError, 'No such file or directory.'
+        raise OSError('No such file or directory.')
 
     # Done.
 
