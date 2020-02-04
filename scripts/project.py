@@ -2372,7 +2372,7 @@ def docheck_tape(dim):
     filelist = samweb.listFiles(dimensions=dim, stream=True)
     while 1:
         try:
-            filename = filelist.next()
+            filename = next(filelist)
         except StopIteration:
             break
 

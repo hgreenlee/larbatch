@@ -122,7 +122,7 @@ class TextWindow(tk.Frame):
 
     # Read methods (raise IOError).
 
-    def next(self):
+    def __next__(self):
         raise IOError('File is not open for reading.')
     def read(self, size=0):
         raise IOError('File is not open for reading.')

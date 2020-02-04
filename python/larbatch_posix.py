@@ -224,8 +224,8 @@ class dcache_file:
 
     # Iterator.
 
-    def next(self):
-        return self.local_file.next()
+    def __next__(self):
+        return next(self.local_file)
 
     # Read the specified number of bytes.
 
