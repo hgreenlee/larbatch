@@ -13,7 +13,10 @@
 from __future__ import absolute_import
 from __future__ import print_function
 import sys, os, stat, time, types
-import urllib
+try:
+    import urllib.request as urlrequest
+except ImportError:
+    import urllib as urlrequest
 import datetime
 import socket
 import subprocess
@@ -408,7 +411,7 @@ def active_projects(defname = ''):
     # Dump station
 
     url = '%s/dumpStation?station=%s' % (s.get_baseurl(), get_experiment())
-    furl = urllib.urlopen(url)
+    furl = urlrequest.urlopen(url)
 
     # Parse response.
 

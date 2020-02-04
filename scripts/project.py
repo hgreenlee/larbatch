@@ -409,7 +409,11 @@
 
 from __future__ import absolute_import
 from __future__ import print_function
-import sys, os, stat, string, subprocess, shutil, urllib, json, getpass, uuid, tempfile, hashlib
+import sys, os, stat, string, subprocess, shutil, json, getpass, uuid, tempfile, hashlib
+try:
+    import urllib.request as urlrequest
+except ImportError:
+    import urllib as urlrequest
 import larbatch_posix
 import threading
 try:
@@ -641,7 +645,7 @@ def get_projects(xmlfile):
     if xmlfile == '-':
         xml = sys.stdin
     else:
-        xml = urllib.urlopen(xmlfile)
+        xml = urlrequest.urlopen(xmlfile)
     doc = parse(xml)
 
     # Extract root element.
