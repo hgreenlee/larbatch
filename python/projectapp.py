@@ -30,8 +30,8 @@ import tkinter as tk
 import tkinter.filedialog
 import tkinter.messagebox
 import tkinter.font
-from projectview import ProjectView
-from textwindow import TextWindow
+from project_modules.projectview import ProjectView
+from project_modules.textwindow import TextWindow
 
 ticket_ok = False
 
