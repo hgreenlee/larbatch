@@ -641,7 +641,7 @@ def walk(top, topdown=True):
 # Mode argument is ignored for dCache files, but is passed to os.mkdir
 # for non-dCache files.
 
-def mkdir(path, mode=0777):
+def mkdir(path, mode=0o777):
     if path.startswith('/pnfs/') and (prefer_grid or not pnfs_is_mounted):
         if debug:
             print('*** Larbatch_posix: Make directory for %s using ifdh.' % path)
@@ -657,7 +657,7 @@ def mkdir(path, mode=0777):
 # for non-dCache files.
 # "ifdh mkdir_p" is buggy, so we do the recursion locally.
 
-def makedirs(path, mode=0777):
+def makedirs(path, mode=0o777):
     if path.startswith('/pnfs/') and (prefer_grid or not pnfs_is_mounted):
         if debug:
             print('*** Larbatch_posix: Make directory recursively for %s using ifdh.' % path)

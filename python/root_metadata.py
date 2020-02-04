@@ -56,7 +56,7 @@ def enstoreChecksum(fileobj):
     crc = long(crc)
     if crc < 0:
         # Return 32 bit unsigned value
-        crc  = (crc & 0x7FFFFFFFL) | 0x80000000L
+        crc  = (crc & 0x7FFFFFFF) | 0x80000000
     return { "crc_value" : str(crc), "crc_type" : "adler 32 crc type" }
 
 def fileEnstoreChecksum(path):
