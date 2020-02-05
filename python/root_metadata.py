@@ -5,9 +5,10 @@ from __future__ import print_function
 
 # Import stuff.
 
-import sys, os, string, subprocess, json, stream
+import sys, os, subprocess, json, stream
 import larbatch_posix
 import larbatch_utilities
+from larbatch_utilities import convert_str
 import project_utilities
 
 # Import ROOT (hide command line arguments).
@@ -88,10 +89,10 @@ def fileEnstoreChecksum(path):
             # stored checksum using srm.
             project_utilities.test_proxy()
             cmd = ['srmls', '-2', '-l', srm_url]
-            srmout = subprocess.check_output(cmd)
+            srmout = convert_str(subprocess.check_output(cmd))
             first = True
             crc0 = 0
-            for line in string.split(srmout, '\n'):
+            for line in srmout.split('\n'):
                 if first:
                     size = int(line[2:line.find('/')-1])
                     first = False

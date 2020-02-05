@@ -132,6 +132,7 @@ except ImportError:
     import Queue as queue
 import uuid
 import larbatch_utilities
+from larbatch_utilities import convert_str
 from project_modules.ifdherror import IFDHError
 
 # Global flags.

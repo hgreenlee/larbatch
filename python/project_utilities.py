@@ -42,6 +42,7 @@ from larbatch_utilities import get_sam_metadata
 from larbatch_utilities import get_ups_products
 from larbatch_utilities import get_setup_script_path
 from larbatch_utilities import check_running
+from larbatch_utilities import convert_str
 
 # Prevent root from printing garbage on initialization.
 if 'TERM' in os.environ:
@@ -418,7 +419,7 @@ def active_projects(defname = ''):
     for line in furl.readlines():
         words = line.split()
         if len(words) > 5:
-            prjname = words[0]
+            prjname = convert_str(words[0])
             if prjstem == '' or prjname.startswith(prjstem):
                 result.add(prjname)
 
@@ -578,8 +579,8 @@ def addLayerTwo(path, recreate=True):
             jobinfo.terminate()
             thread.join()
         rc = q.get()
-        jobout = q.get()
-        joberr = q.get()
+        jobout = convert_str(q.get())
+        joberr = convert_str(q.get())
         if rc != 0:
             for var in list(save_vars.keys()):
                 os.environ[var] = save_vars[var]

@@ -11,7 +11,7 @@
 
 from __future__ import absolute_import
 from __future__ import print_function
-import sys, os, string, stat, math, subprocess, random
+import sys, os, stat, math, subprocess, random
 import threading
 try:
     import queue
@@ -20,6 +20,7 @@ except ImportError:
 import samweb_cli
 import project_utilities
 import larbatch_utilities
+from larbatch_utilities import convert_str
 import larbatch_posix
 import uuid
 import math
@@ -500,8 +501,10 @@ class StageDef:
                                                stdout=subprocess.PIPE,
                                                stderr=subprocess.PIPE)
                     jobout, joberr = jobinfo.communicate()
+                    jobout = convert_str(jobout)
+                    joberr = convert_str(joberr)
                     rc = jobinfo.poll()
-                    self.submit_script[0] = jobout.splitlines()[0].strip()
+                    self.submit_script[0] = convert_str(jobout.splitlines()[0].strip())
                 except:
                     pass
             if not larbatch_posix.exists(self.submit_script[0]):
@@ -527,8 +530,10 @@ class StageDef:
                                                stdout=subprocess.PIPE,
                                                stderr=subprocess.PIPE)
                     jobout, joberr = jobinfo.communicate()
+                    jobout = convert_str(jobout)
+                    joberr = convert_str(joberr)
                     rc = jobinfo.poll()
-                    self.init_script = jobout.splitlines()[0].strip()
+                    self.init_script = convert_str(jobout.splitlines()[0].strip())
                 except:
                     pass
             if not larbatch_posix.exists(self.init_script):
@@ -554,8 +559,10 @@ class StageDef:
                                                stdout=subprocess.PIPE,
                                                stderr=subprocess.PIPE)
                     jobout, joberr = jobinfo.communicate()
+                    jobout = convert_str(jobout)
+                    joberr = convert_str(joberr)
                     rc = jobinfo.poll()
-                    self.init_source = jobout.splitlines()[0].strip()
+                    self.init_source = convert_str(jobout.splitlines()[0].strip())
                 except:
                     pass
             if not larbatch_posix.exists(self.init_source):
@@ -581,8 +588,10 @@ class StageDef:
                                                stdout=subprocess.PIPE,
                                                stderr=subprocess.PIPE)
                     jobout, joberr = jobinfo.communicate()
+                    jobout = convert_str(jobout)
+                    joberr = convert_str(joberr)
                     rc = jobinfo.poll()
-                    self.end_script = jobout.splitlines()[0].strip()
+                    self.end_script = convert_str(jobout.splitlines()[0].strip())
                 except:
                     pass
             if not larbatch_posix.exists(self.end_script):
@@ -726,8 +735,10 @@ class StageDef:
                                        stdout=subprocess.PIPE,
                                        stderr=subprocess.PIPE)
             jobout, joberr = jobinfo.communicate()
+            jobout = convert_str(jobout)
+            joberr = convert_str(joberr)
             rc = jobinfo.poll()
-            script_path = jobout.splitlines()[0].strip()
+            script_path = convert_str(jobout.splitlines()[0].strip())
         except:
             pass
         if script_path == '' or not larbatch_posix.access(script_path, os.X_OK):
@@ -748,8 +759,10 @@ class StageDef:
                                        stdout=subprocess.PIPE,
                                        stderr=subprocess.PIPE)
             jobout, joberr = jobinfo.communicate()
+            jobout = convert_str(jobout)
+            joberr = convert_str(joberr)
             rc = jobinfo.poll()
-            script_path = jobout.splitlines()[0].strip()
+            script_path = convert_str(jobout.splitlines()[0].strip())
         except:
             pass
         self.start_script = script_path
@@ -768,8 +781,10 @@ class StageDef:
                                        stdout=subprocess.PIPE,
                                        stderr=subprocess.PIPE)
             jobout, joberr = jobinfo.communicate()
+            jobout = convert_str(jobout)
+            joberr = convert_str(joberr)
             rc = jobinfo.poll()
-            script_path = jobout.splitlines()[0].strip()
+            script_path = convert_str(jobout.splitlines()[0].strip())
         except:
             pass
         self.stop_script = script_path
@@ -1171,8 +1186,8 @@ class StageDef:
                 jobinfo.terminate()
                 thread.join()
             rc = q.get()
-            jobout = q.get()
-            joberr = q.get()
+            jobout = convert_str(q.get())
+            joberr = convert_str(q.get())
             print('Script exit status = %d' % rc)
             print('Script standard output:')
             print(jobout)
@@ -1215,7 +1230,7 @@ class StageDef:
             input_filenames = larbatch_posix.readlines(self.inputlist)
             size_tot = 0
             for line in input_filenames:
-                filename = string.split(line)[0]
+                filename = line.split()[0]
                 filesize = larbatch_posix.stat(filename).st_size
                 size_tot = size_tot + filesize
             new_num_jobs = size_tot / self.target_size

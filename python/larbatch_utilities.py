@@ -115,8 +115,8 @@ def ifdh_cp(source, destination):
         jobinfo.terminate()
         thread.join()
     rc = q.get()
-    jobout = q.get()
-    joberr = q.get()
+    jobout = convert_str(q.get())
+    joberr = convert_str(q.get())
     if rc != 0:
         for var in list(save_vars.keys()):
             os.environ[var] = save_vars[var]
@@ -160,8 +160,8 @@ def ifdh_ls(path, depth):
         jobinfo.terminate()
         thread.join()
     rc = q.get()
-    jobout = q.get()
-    joberr = q.get()
+    jobout = convert_str(q.get())
+    joberr = convert_str(q.get())
     if rc != 0:
         for var in list(save_vars.keys()):
             os.environ[var] = save_vars[var]
@@ -209,8 +209,8 @@ def ifdh_ll(path, depth):
         jobinfo.terminate()
         thread.join()
     rc = q.get()
-    jobout = q.get()
-    joberr = q.get()
+    jobout = convert_str(q.get())
+    joberr = convert_str(q.get())
     if rc != 0:
         for var in list(save_vars.keys()):
             os.environ[var] = save_vars[var]
@@ -257,8 +257,8 @@ def ifdh_mkdir(path):
         jobinfo.terminate()
         thread.join()
     rc = q.get()
-    jobout = q.get()
-    joberr = q.get()
+    jobout = convert_str(q.get())
+    joberr = convert_str(q.get())
     if rc != 0:
         for var in list(save_vars.keys()):
             os.environ[var] = save_vars[var]
@@ -305,8 +305,8 @@ def ifdh_rmdir(path):
         jobinfo.terminate()
         thread.join()
     rc = q.get()
-    jobout = q.get()
-    joberr = q.get()
+    jobout = convert_str(q.get())
+    joberr = convert_str(q.get())
     if rc != 0:
         for var in list(save_vars.keys()):
             os.environ[var] = save_vars[var]
@@ -353,8 +353,8 @@ def ifdh_chmod(path, mode):
         jobinfo.terminate()
         thread.join()
     rc = q.get()
-    jobout = q.get()
-    joberr = q.get()
+    jobout = convert_str(q.get())
+    joberr = convert_str(q.get())
     if rc != 0:
         for var in list(save_vars.keys()):
             os.environ[var] = save_vars[var]
@@ -401,8 +401,8 @@ def ifdh_mv(src, dest):
         jobinfo.terminate()
         thread.join()
     rc = q.get()
-    jobout = q.get()
-    joberr = q.get()
+    jobout = convert_str(q.get())
+    joberr = convert_str(q.get())
     if rc != 0:
         for var in list(save_vars.keys()):
             os.environ[var] = save_vars[var]
@@ -449,8 +449,8 @@ def ifdh_rm(path):
         jobinfo.terminate()
         thread.join()
     rc = q.get()
-    jobout = q.get()
-    joberr = q.get()
+    jobout = convert_str(q.get())
+    joberr = convert_str(q.get())
     if rc != 0:
         for var in list(save_vars.keys()):
             os.environ[var] = save_vars[var]
@@ -501,8 +501,8 @@ def posix_cp(source, destination):
             # Subprocess finished normally.
 
             rc = q.get()
-            jobout = q.get()
-            joberr = q.get()
+            jobout = convert_str(q.get())
+            joberr = convert_str(q.get())
             os._exit(rc)
 
     else:
@@ -644,7 +644,7 @@ def test_kca():
                 # Workaround jobsub bug by setting environment variable X509_USER_PROXY to
                 # point to the default location of the kca certificate.
 
-                x509_path = subprocess.check_output(['voms-proxy-info', '-path'], stderr=-1)
+                x509_path = convert_str(subprocess.check_output(['voms-proxy-info', '-path'], stderr=-1))
                 os.environ['X509_USER_PROXY'] = x509_path.strip()
 
             kca_ok = True
@@ -973,15 +973,16 @@ def get_user():
 
         subject = ''
         if 'X509_USER_PROXY' in os.environ:
-            subject = subprocess.check_output(['voms-proxy-info',
-                                               '-file', os.environ['X509_USER_PROXY'],
-                                               '-subject'], stderr=-1)
+            subject = convert_str(subprocess.check_output(['voms-proxy-info',
+                                                           '-file', os.environ['X509_USER_PROXY'],
+                                                           '-subject'], stderr=-1))
         elif 'X509_USER_CERT' in os.environ and 'X509_USER_KEY' in os.environ:
-            subject = subprocess.check_output(['voms-proxy-info',
-                                               '-file', os.environ['X509_USER_CERT'],
-                                               '-subject'], stderr=-1)
+            subject = convert_str(subprocess.check_output(['voms-proxy-info',
+                                                           '-file', os.environ['X509_USER_CERT'],
+                                                           '-subject'], stderr=-1))
         else:
-            subject = subprocess.check_output(['voms-proxy-info', '-subject'], stderr=-1)
+            subject = convert_str(subprocess.check_output(['voms-proxy-info', '-subject'],
+                                                          stderr=-1))
 
         # Get the last non-numeric CN
 

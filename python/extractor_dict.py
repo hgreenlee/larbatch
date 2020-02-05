@@ -10,6 +10,7 @@ try:
 except ImportError:
     import Queue as queue
 import project_utilities, root_metadata
+import larbatch_utilities import convert_str
 import json
 import abc
 
@@ -62,8 +63,8 @@ class MetaData(object):
             proc.terminate()
             thread.join()
         rc = q.get()
-        jobout = q.get()
-        joberr = q.get()
+        jobout = convert_str(q.get())
+        joberr = convert_str(q.get())
         if rc != 0:
             raise RuntimeError('sam_metadata_dumper returned nonzero exit status {}.'.format(rc))
         return jobout, joberr
@@ -72,6 +73,8 @@ class MetaData(object):
     def wait_for_subprocess(jobinfo, q):
         """Run jobinfo, put the return code, stdout, and stderr into a queue"""
         jobout, joberr = jobinfo.communicate()
+        jobout = convert_str(jobout)
+        joberr = convert_str(joberr)
         rc = jobinfo.poll()
         for item in (rc, jobout, joberr):
             q.put(item)

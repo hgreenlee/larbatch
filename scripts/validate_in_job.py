@@ -24,7 +24,7 @@
 #=================================================================================
 from __future__ import absolute_import
 from __future__ import print_function
-import sys, os, string, json
+import sys, os, json
 from larbatch_utilities import ifdh_cp
 import project_utilities
 import samweb_cli

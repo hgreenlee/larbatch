@@ -409,7 +409,7 @@
 
 from __future__ import absolute_import
 from __future__ import print_function
-import sys, os, stat, string, subprocess, shutil, json, getpass, uuid, tempfile, hashlib
+import sys, os, stat, subprocess, shutil, json, getpass, uuid, tempfile, hashlib
 try:
     import urllib.request as urlrequest
 except ImportError:
@@ -427,6 +427,7 @@ from project_modules.projectstatus import ProjectStatus
 from project_modules.batchstatus import BatchStatus
 from project_modules.jobsuberror import JobsubError
 from project_modules.ifdherror import IFDHError
+from larbatch_utilities import convert_str
 import samweb_cli
 
 samweb = None           # Initialized SAMWebClient object
@@ -888,7 +889,7 @@ def get_input_files(stage):
         try:
             input_filenames = larbatch_posix.readlines(stage.inputlist)
             for line in input_filenames:
-                words = string.split(line)
+                words = line.split()
                 result.append(words[0])
         except:
             pass
@@ -995,6 +996,8 @@ def untarlog(stage):
                                                stdout=subprocess.PIPE,
                                                stderr=subprocess.PIPE)
                     jobout, joberr = jobinfo.communicate()
+                    jobout = convert_str(jobout)
+                    joberr = convert_str(joberr)
                     rc = jobinfo.poll()
                     if rc != 0:
                         print(jobout)
@@ -1978,6 +1981,8 @@ def dofetchlog(project, stage):
             command.append('--dest-dir=%s' % logdir)
             jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             jobout, joberr = jobinfo.communicate()
+            jobout = convert_str(jobout)
+            joberr = convert_str(joberr)
             rc = jobinfo.poll()
             if rc != 0:
                 raise JobsubError(command, rc, jobout, joberr)
@@ -2023,7 +2028,7 @@ def docheck_declarations(logdir, outdir, declare, ana=False):
         raise RuntimeError('No %s file found %s, run project.py --check' % (listname, fnlist))
 
     for root in roots:
-        path = string.strip(root)
+        path = root.strip()
         fn = os.path.basename(path)
         dirpath = os.path.dirname(path)
         dirname = os.path.relpath(dirpath, outdir)
@@ -2617,6 +2622,8 @@ def dojobsub(project, stage, makeup, recur):
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
         jobout, joberr = jobinfo.communicate()
+        jobout = convert_str(jobout)
+        joberr = convert_str(joberr)
         rc = jobinfo.poll()
         helper_path = jobout.splitlines()[0].strip()
         if rc == 0:
@@ -2645,6 +2652,8 @@ def dojobsub(project, stage, makeup, recur):
                                    stderr=subprocess.PIPE)
         jobinfo.stdin.write('import %s\nprint %s.__file__\n' % (helper_module, helper_module))
         jobout, joberr = jobinfo.communicate()
+        jobout = convert_str(jobout)
+        joberr = convert_str(joberr)
         rc = jobinfo.poll()
         helper_path = jobout.splitlines()[-1].strip()
         if rc == 0:
@@ -2696,7 +2705,7 @@ def dojobsub(project, stage, makeup, recur):
             if larbatch_posix.exists(missing_filename):
                 lines = larbatch_posix.readlines(missing_filename)
                 for line in lines:
-                    words = string.split(line)
+                    words = line.split()
                     if len(words) > 0:
                         missing_files.append(words[0])
             makeup_count = len(missing_files)
@@ -3274,8 +3283,8 @@ def dojobsub(project, stage, makeup, recur):
             jobinfo.terminate()
             thread.join()
         rc = q.get()
-        jobout = q.get()
-        joberr = q.get()
+        jobout = convert_str(q.get())
+        joberr = convert_str(q.get())
         if larbatch_posix.exists(checked_file):
             larbatch_posix.remove(checked_file)
         if larbatch_posix.isdir(tmpdir):
@@ -3306,8 +3315,8 @@ def dojobsub(project, stage, makeup, recur):
                 jobinfo.terminate()
                 thread.join()
             rc = q.get()
-            jobout = q.get()
-            joberr = q.get()
+            jobout = convert_str(q.get())
+            joberr = convert_str(q.get())
             if larbatch_posix.exists(checked_file):
                 larbatch_posix.remove(checked_file)
             if larbatch_posix.isdir(tmpdir):
@@ -3505,7 +3514,7 @@ def doaudit(stage):
             ilist = larbatch_posix.readlines(stage.inputlist)
             inputlist = []
             for i in ilist:
-                inputlist.append(os.path.basename(string.strip(i)))
+                inputlist.append(os.path.basename(i.strip()))
     else:
         raise RuntimeError('Input definition and/or input list does not exist.')
 
@@ -3523,7 +3532,7 @@ def doaudit(stage):
         elif item in outparentlist:
             me = me+1
             childcmd = 'samweb list-files "ischildof: (file_name=%s) and availability: physical"' %(item)
-            children = subprocess.check_output(childcmd, shell=True).splitlines()
+            children = convert_str(subprocess.check_output(childcmd, shell=True)).splitlines()
             rmfile = list(set(children) & set(outputlist))[0]
             if me ==1:
                 flist = []
@@ -3532,7 +3541,7 @@ def doaudit(stage):
                     flist = larbatch_posix.readlines(fnlist)
                     slist = []
                     for line in flist:
-                        slist.append(string.split(line)[0])
+                        slist.append(line.split()[0])
                 else:
                     raise RuntimeError('No files.list file found %s, run project.py --check' % fnlist)
 
@@ -3546,7 +3555,7 @@ def doaudit(stage):
             # Remove this file from the files.list in the output directory.
 
             fn = []
-            fn = [x for x in slist if os.path.basename(string.strip(x)) != rmfile]
+            fn = [x for x in slist if os.path.basename(x.strip()) != rmfile]
             thefile = safeopen(fnlist)
             for item in fn:
                 thefile.write("%s\n" % item)

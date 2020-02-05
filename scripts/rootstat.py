@@ -28,7 +28,7 @@
 
 from __future__ import absolute_import
 from __future__ import print_function
-import sys, os, string
+import sys, os
 import project_utilities
 import larbatch_posix
 
@@ -268,7 +268,7 @@ def main(argv):
             filelistname = args[0][1:]
             if larbatch_posix.exists(filelistname):
                 for filename in larbatch_posix.readlines(filelistname):
-                    input_files.append(string.strip(filename))
+                    input_files.append(filename.strip())
             else:
                 print('File list %s does not exist.' % filelistname)
                 return 1

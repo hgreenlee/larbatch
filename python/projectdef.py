@@ -11,10 +11,11 @@
 
 from __future__ import absolute_import
 from __future__ import print_function
-import sys, os, string, subprocess
+import sys, os, subprocess
 from project_modules.xmlerror import XMLError
 from project_modules.stagedef import StageDef
 import larbatch_posix
+from larbatch_utilities import convert_str
 
 # Project definition class contains data parsed from project defition xml file.
 
@@ -252,8 +253,10 @@ class ProjectDef:
                                        stdout=subprocess.PIPE,
                                        stderr=subprocess.PIPE)
             jobout, joberr = jobinfo.communicate()
+            jobout = convert_str(jobout)
+            joberr = convert_str(joberr)
             rc = jobinfo.poll()
-            script_path = jobout.splitlines()[0].strip()
+            script_path = convert_str(jobout.splitlines()[0].strip())
         except:
             pass
         if script_path == '' or not larbatch_posix.access(script_path, os.X_OK):
@@ -286,8 +289,10 @@ class ProjectDef:
                                        stdout=subprocess.PIPE,
                                        stderr=subprocess.PIPE)
             jobout, joberr = jobinfo.communicate()
+            jobout = convert_str(jobout)
+            joberr = convert_str(joberr)
             rc = jobinfo.poll()
-            script_path = jobout.splitlines()[0].strip()
+            script_path = convert_str(jobout.splitlines()[0].strip())
         except:
             pass
         self.start_script = script_path
@@ -308,8 +313,10 @@ class ProjectDef:
                                        stdout=subprocess.PIPE,
                                        stderr=subprocess.PIPE)
             jobout, joberr = jobinfo.communicate()
+            jobout = convert_str(jobout)
+            joberr = convert_str(joberr)
             rc = jobinfo.poll()
-            script_path = jobout.splitlines()[0].strip()
+            script_path = convert_str(jobout.splitlines()[0].strip())
         except:
             pass
         self.stop_script = script_path
@@ -323,7 +330,7 @@ class ProjectDef:
         # Add $FHICL_FILE_PATH.
 
         if 'FHICL_FILE_PATH' in os.environ:
-            for fcldir in string.split(os.environ['FHICL_FILE_PATH'], ':'):
+            for fcldir in os.environ['FHICL_FILE_PATH'].split(':'):
                 if larbatch_posix.exists(fcldir):
                     self.fclpath.append(fcldir)
 

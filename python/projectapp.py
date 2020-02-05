@@ -16,6 +16,7 @@ from __future__ import print_function
 
 import sys, os, subprocess, traceback
 from project_modules.jobsuberror import JobsubError
+from larbatch_utilities import convert_str
 
 # Import project.py as a module.
 
@@ -699,6 +700,8 @@ class ProjectApp(tk.Frame):
             command.append('--role=%s' % project_utilities.get_role())
             jobinfo = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             jobout, joberr = jobinfo.communicate()
+            jobout = convert_str(jobout)
+            joberr = convert_str(joberr)
             rc = jobinfo.poll()
             if rc != 0:
                 raise JobsubError(command, rc, jobout, joberr)
@@ -1191,7 +1194,7 @@ class ProjectApp(tk.Frame):
         # to run in a separate process, not just call method help of project module.
 
         command = ['project.py', '--help']
-        helptext = subprocess.check_output(command)
+        helptext = convert_str(subprocess.check_output(command))
         w = TextWindow()
         w.append(helptext)
 
@@ -1204,7 +1207,7 @@ class ProjectApp(tk.Frame):
         # to run in a separate process, not just call method xmlhelp of project module.
 
         command = ['project.py', '--xmlhelp']
-        helptext = subprocess.check_output(command)
+        helptext = convert_str(subprocess.check_output(command))
         w = TextWindow()
         w.append(helptext)
 

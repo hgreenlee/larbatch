@@ -20,6 +20,7 @@ from __future__ import print_function
 # Import stuff.
 
 import sys, subprocess, json
+from larbatch_utilities import convert_str
 
 # Read and decode stream encoded in sam metadata.
 
@@ -33,6 +34,8 @@ def get_stream(inputfile):
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE)
     jobout, joberr = jobinfo.communicate()
+    jobout = convert_str(jobout)
+    joberr = convert_str(joberr)
     rc = jobinfo.poll()
     if rc != 0:
         raise RuntimeError('sam_metadata_dumper failed with status %d' % rc)
