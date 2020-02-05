@@ -363,8 +363,8 @@ def listdir(path):
             jobinfo.terminate()
             thread.join()
         rc = q.get()
-        jobout = q.get()
-        joberr = q.get()
+        jobout = convert_str(q.get())
+        joberr = convert_str(q.get())
         if rc == 0:
             for word in jobout.split():
                 result.append(word)
@@ -699,8 +699,8 @@ def rename(src, dest):
             jobinfo.terminate()
             thread.join()
         rc = q.get()
-        jobout = q.get()
-        joberr = q.get()
+        jobout = convert_str(q.get())
+        joberr = convert_str(q.get())
         if rc != 0:
             raise IFDHError(cmd, rc, jobout, joberr)
     else:
@@ -835,8 +835,8 @@ def symlink(src, dest):
             jobinfo.terminate()
             thread.join()
         rc = q.get()
-        jobout = q.get()
-        joberr = q.get()
+        jobout = convert_str(q.get())
+        joberr = convert_str(q.get())
         if rc != 0:
             raise IFDHError(cmd, rc, jobout, joberr)
 
@@ -872,8 +872,8 @@ def readlink(path):
             jobinfo.terminate()
             thread.join()
         rc = q.get()
-        jobout = q.get()
-        joberr = q.get()
+        jobout = convert_str(q.get())
+        joberr = convert_str(q.get())
         if rc != 0:
             raise IFDHError(cmd, rc, jobout, joberr)
         result = jobout.strip()
