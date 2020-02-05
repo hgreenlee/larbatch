@@ -67,7 +67,7 @@
 
 from __future__ import absolute_import
 from __future__ import print_function
-import os
+import sys, os
 import stat
 import subprocess
 import getpass
@@ -84,6 +84,7 @@ ticket_ok = False
 kca_ok = False
 proxy_ok = False
 kca_user = ''
+jobsub_ok = False
 
 # Copy file using ifdh, with timeout.
 
@@ -704,6 +705,33 @@ def test_proxy():
         except:
             raise RuntimeError('Please get a grid proxy.')
     return proxy_ok
+
+# Test whether jobsub_client has been set up.
+
+def test_jobsub():
+    global jobsub_ok
+    if not jobsub_ok:
+
+        # Look for command jobsub_submit on execution path.
+
+        try:
+            jobinfo = subprocess.Popen(['which', 'jobsub_submit'],
+                                       stdout=subprocess.PIPE,
+                                       stderr=subprocess.PIPE)
+            jobout, joberr = jobinfo.communicate()
+            jobout = convert_str(jobout)
+            joberr = convert_str(joberr)
+            jobsub_path = jobout.splitlines()[0].strip()
+            if jobsub_path != '':
+                jobsub_ok = True
+        except:
+            pass
+
+    if not jobsub_ok:
+        print('Please set up jobsub_client')
+        sys.exit(1)
+
+    return jobsub_ok
 
 # Return dCache server.
 

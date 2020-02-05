@@ -256,7 +256,7 @@ class ProjectDef:
             jobout = convert_str(jobout)
             joberr = convert_str(joberr)
             rc = jobinfo.poll()
-            script_path = convert_str(jobout.splitlines()[0].strip())
+            script_path = jobout.splitlines()[0].strip()
         except:
             pass
         if script_path == '' or not larbatch_posix.access(script_path, os.X_OK):
@@ -292,7 +292,7 @@ class ProjectDef:
             jobout = convert_str(jobout)
             joberr = convert_str(joberr)
             rc = jobinfo.poll()
-            script_path = convert_str(jobout.splitlines()[0].strip())
+            script_path = jobout.splitlines()[0].strip()
         except:
             pass
         self.start_script = script_path
@@ -316,7 +316,7 @@ class ProjectDef:
             jobout = convert_str(jobout)
             joberr = convert_str(joberr)
             rc = jobinfo.poll()
-            script_path = convert_str(jobout.splitlines()[0].strip())
+            script_path = jobout.splitlines()[0].strip()
         except:
             pass
         self.stop_script = script_path

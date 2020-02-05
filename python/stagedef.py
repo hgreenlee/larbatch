@@ -504,7 +504,7 @@ class StageDef:
                     jobout = convert_str(jobout)
                     joberr = convert_str(joberr)
                     rc = jobinfo.poll()
-                    self.submit_script[0] = convert_str(jobout.splitlines()[0].strip())
+                    self.submit_script[0] = jobout.splitlines()[0].strip()
                 except:
                     pass
             if not larbatch_posix.exists(self.submit_script[0]):
@@ -533,7 +533,7 @@ class StageDef:
                     jobout = convert_str(jobout)
                     joberr = convert_str(joberr)
                     rc = jobinfo.poll()
-                    self.init_script = convert_str(jobout.splitlines()[0].strip())
+                    self.init_script = jobout.splitlines()[0].strip()
                 except:
                     pass
             if not larbatch_posix.exists(self.init_script):
@@ -562,7 +562,7 @@ class StageDef:
                     jobout = convert_str(jobout)
                     joberr = convert_str(joberr)
                     rc = jobinfo.poll()
-                    self.init_source = convert_str(jobout.splitlines()[0].strip())
+                    self.init_source = jobout.splitlines()[0].strip()
                 except:
                     pass
             if not larbatch_posix.exists(self.init_source):
@@ -591,7 +591,7 @@ class StageDef:
                     jobout = convert_str(jobout)
                     joberr = convert_str(joberr)
                     rc = jobinfo.poll()
-                    self.end_script = convert_str(jobout.splitlines()[0].strip())
+                    self.end_script = jobout.splitlines()[0].strip()
                 except:
                     pass
             if not larbatch_posix.exists(self.end_script):
@@ -738,7 +738,7 @@ class StageDef:
             jobout = convert_str(jobout)
             joberr = convert_str(joberr)
             rc = jobinfo.poll()
-            script_path = convert_str(jobout.splitlines()[0].strip())
+            script_path = jobout.splitlines()[0].strip()
         except:
             pass
         if script_path == '' or not larbatch_posix.access(script_path, os.X_OK):
@@ -762,7 +762,7 @@ class StageDef:
             jobout = convert_str(jobout)
             joberr = convert_str(joberr)
             rc = jobinfo.poll()
-            script_path = convert_str(jobout.splitlines()[0].strip())
+            script_path = jobout.splitlines()[0].strip()
         except:
             pass
         self.start_script = script_path
@@ -784,7 +784,7 @@ class StageDef:
             jobout = convert_str(jobout)
             joberr = convert_str(joberr)
             rc = jobinfo.poll()
-            script_path = convert_str(jobout.splitlines()[0].strip())
+            script_path = jobout.splitlines()[0].strip()
         except:
             pass
         self.stop_script = script_path

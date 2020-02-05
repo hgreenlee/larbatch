@@ -3348,6 +3348,10 @@ def dosubmit(project, stage, makeup=False, recur=False):
 
     project_utilities.test_kca()
 
+    # Make sure jobsub_client is available.
+
+    larbatch_utiltiies.test_jobsub()
+
     # Run presubmission check script.
 
     ok = stage.checksubmit()
