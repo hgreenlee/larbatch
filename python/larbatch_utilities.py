@@ -1123,30 +1123,30 @@ def convert_str(s):
 
     if type(s) == type(''):
 
-        # Already a string type?
+        # Already a default str.
         # Just return the original.
 
         result = s
 
+    elif type(s) == type(u''):
+
+        # Unicode and not str.
+        # Convert to bytes.
+
+        result = s.encode()
+
+    elif type(s) == type(b''):
+
+        # Bytes and not str.
+        # Convert to unicode.
+
+        result = s.decode('utf-8')
+
     else:
 
-        if type(s) == type(u''):
+        # Last resort, use standard str conversion.
 
-            # Unicode to bytes (python 2).
-
-            result = s.encode()
-
-        elif type(s) == type(b''):
-
-            # Bytes to unicode (python 3).
-
-            result = s.decode('utf-8')
-
-        else:
-
-            # Last resort, use standard str conversion.
-
-            result = str(s)
+        result = str(s)
 
     return result
 
@@ -1160,16 +1160,22 @@ def convert_bytes(s):
 
     if type(s) == type(b''):
 
-        # Already a string type?
-        # Just return the original.
+        # Already bytes.
+        # Return the original.
 
         result = s
 
     elif type(s) == type(u''):
 
-        # Unicode to bytes (python 2).
+        # Unicode to bytes.
 
         result = s.encode()
+
+    else:
+
+        # Anything else, just return the original.
+
+        result = s
 
     return result
 
