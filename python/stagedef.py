@@ -9,12 +9,18 @@
 #
 ######################################################################
 
-import sys, os, string, stat, math, subprocess, random
+from __future__ import absolute_import
+from __future__ import print_function
+import sys, os, stat, math, subprocess, random
 import threading
-import Queue
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 import samweb_cli
 import project_utilities
 import larbatch_utilities
+from larbatch_utilities import convert_str
 import larbatch_posix
 import uuid
 import math
@@ -178,15 +184,15 @@ class StageDef:
             self.script = default_script             # Upload-on-worker flag.
             self.start_script = default_start_script # Upload-on-worker flag.
             self.stop_script = default_stop_script   # Upload-on-worker flag.
-	
+        
         # Extract values from xml.
 
         # Stage name (attribute).
 
-        if stage_element.attributes.has_key('name'):
+        if 'name' in dict(stage_element.attributes):
             self.name = str(stage_element.attributes['name'].firstChild.data)
         if self.name == '':
-            raise XMLError, "Stage name not specified."
+            raise XMLError("Stage name not specified.")
 
         # Batch job name (subelement).
 
@@ -202,7 +208,7 @@ class StageDef:
             for fcl in fclname_elements:
                 self.fclname.append(str(fcl.firstChild.data))
         if len(self.fclname) == 0:
-            raise XMLError, 'No Fcl names specified for stage %s.' % self.name
+            raise XMLError('No Fcl names specified for stage %s.' % self.name)
 
         # Output directory (subelement).
 
@@ -210,7 +216,7 @@ class StageDef:
         if outdir_elements:
             self.outdir = str(outdir_elements[0].firstChild.data)
         if self.outdir == '':
-            raise XMLError, 'Output directory not specified for stage %s.' % self.name
+            raise XMLError('Output directory not specified for stage %s.' % self.name)
 
         # Log directory (subelement).
 
@@ -226,7 +232,7 @@ class StageDef:
         if workdir_elements:
             self.workdir = str(workdir_elements[0].firstChild.data)
         if self.workdir == '':
-            raise XMLError, 'Work directory not specified for stage %s.' % self.name
+            raise XMLError('Work directory not specified for stage %s.' % self.name)
 
         # Bookkeeping directory (subelement).
 
@@ -350,7 +356,7 @@ class StageDef:
             # It never makes sense to specify a previous stage with some other input.
 
             if self.inputfile != '' or self.inputlist != '' or self.inputdef != '':
-                raise XMLError, 'Previous stage and input specified for stage %s.' % self.name
+                raise XMLError('Previous stage and input specified for stage %s.' % self.name)
 
         # Mix input sam dataset (subelement).
 
@@ -361,17 +367,17 @@ class StageDef:
         # It is an error to specify both input file and input list.
 
         if self.inputfile != '' and self.inputlist != '':
-            raise XMLError, 'Input file and input list both specified for stage %s.' % self.name
+            raise XMLError('Input file and input list both specified for stage %s.' % self.name)
 
         # It is an error to specify either input file or input list together
         # with a sam input dataset.
 
         if self.inputdef != '' and (self.inputfile != '' or self.inputlist != ''):
-            raise XMLError, 'Input dataset and input files specified for stage %s.' % self.name
+            raise XMLError('Input dataset and input files specified for stage %s.' % self.name)
 
         # It is an error to use textfile inputmode without an inputlist or inputfile
         if self.inputmode == 'textfile' and self.inputlist == '' and self.inputfile == '':
-            raise XMLError, 'Input list (inputlist) or inputfile is needed for textfile model.'
+            raise XMLError('Input list (inputlist) or inputfile is needed for textfile model.')
 
         # If none of input definition, input file, nor input list were specified, set
         # the input list to the dafault input list.  If an input stream was specified,
@@ -385,7 +391,7 @@ class StageDef:
             previous_stage_name = default_previous_stage
             if self.previousstage != '':
                 previous_stage_name = self.previousstage
-            if default_input_lists.has_key(previous_stage_name):
+            if previous_stage_name in default_input_lists:
                 default_input_list = default_input_lists[previous_stage_name]
 
             # Modify default input list according to input stream, if any.
@@ -436,9 +442,9 @@ class StageDef:
         max_files_per_job_elements = stage_element.getElementsByTagName('maxfilesperjob')
         if max_files_per_job_elements:
             self.max_files_per_job = int(max_files_per_job_elements[0].firstChild.data)
-	
-	# Run number of events (MC Gen only).
-	#overriden by --pubs <run> is running in pubs mode
+        
+        # Run number of events (MC Gen only).
+        #overriden by --pubs <run> is running in pubs mode
 
         run_number = stage_element.getElementsByTagName('runnumber')
         if run_number:
@@ -449,7 +455,7 @@ class StageDef:
         target_size_elements = stage_element.getElementsByTagName('targetsize')
         if target_size_elements:
             self.target_size = int(target_size_elements[0].firstChild.data)
-	
+        
 
         # Sam dataset definition name (subelement).
 
@@ -495,12 +501,14 @@ class StageDef:
                                                stdout=subprocess.PIPE,
                                                stderr=subprocess.PIPE)
                     jobout, joberr = jobinfo.communicate()
+                    jobout = convert_str(jobout)
+                    joberr = convert_str(joberr)
                     rc = jobinfo.poll()
                     self.submit_script[0] = jobout.splitlines()[0].strip()
                 except:
                     pass
             if not larbatch_posix.exists(self.submit_script[0]):
-                raise IOError, 'Submit script %s not found.' % self.submit_script[0]
+                raise IOError('Submit script %s not found.' % self.submit_script[0])
 
         # Worker initialization script (subelement).
 
@@ -522,12 +530,14 @@ class StageDef:
                                                stdout=subprocess.PIPE,
                                                stderr=subprocess.PIPE)
                     jobout, joberr = jobinfo.communicate()
+                    jobout = convert_str(jobout)
+                    joberr = convert_str(joberr)
                     rc = jobinfo.poll()
                     self.init_script = jobout.splitlines()[0].strip()
                 except:
                     pass
             if not larbatch_posix.exists(self.init_script):
-                raise IOError, 'Init script %s not found.' % self.init_script
+                raise IOError('Init script %s not found.' % self.init_script)
 
         # Worker initialization source script (subelement).
 
@@ -549,12 +559,14 @@ class StageDef:
                                                stdout=subprocess.PIPE,
                                                stderr=subprocess.PIPE)
                     jobout, joberr = jobinfo.communicate()
+                    jobout = convert_str(jobout)
+                    joberr = convert_str(joberr)
                     rc = jobinfo.poll()
                     self.init_source = jobout.splitlines()[0].strip()
                 except:
                     pass
             if not larbatch_posix.exists(self.init_source):
-                raise IOError, 'Init source script %s not found.' % self.init_source
+                raise IOError('Init source script %s not found.' % self.init_source)
 
         # Worker end-of-job script (subelement).
 
@@ -576,19 +588,21 @@ class StageDef:
                                                stdout=subprocess.PIPE,
                                                stderr=subprocess.PIPE)
                     jobout, joberr = jobinfo.communicate()
+                    jobout = convert_str(jobout)
+                    joberr = convert_str(joberr)
                     rc = jobinfo.poll()
                     self.end_script = jobout.splitlines()[0].strip()
                 except:
                     pass
             if not larbatch_posix.exists(self.end_script):
-                raise IOError, 'End-of-job script %s not found.' % self.end_script
+                raise IOError('End-of-job script %s not found.' % self.end_script)
 
         # Histogram merging program.
 
         merge_elements = stage_element.getElementsByTagName('merge')
         if merge_elements:
             self.merge = str(merge_elements[0].firstChild.data)
-	
+        
         # Resource (subelement).
 
         resource_elements = stage_element.getElementsByTagName('resource')
@@ -658,56 +672,56 @@ class StageDef:
         output_elements = stage_element.getElementsByTagName('output')
         if output_elements:
             self.output = str(output_elements[0].firstChild.data)
-	    
-	# TFileName (subelement).
+            
+        # TFileName (subelement).
 
         TFileName_elements = stage_element.getElementsByTagName('TFileName')
         if TFileName_elements:
             self.TFileName = str(TFileName_elements[0].firstChild.data)
 
-	# Jobsub.
+        # Jobsub.
 
         jobsub_elements = stage_element.getElementsByTagName('jobsub')
         if jobsub_elements:
             self.jobsub = str(jobsub_elements[0].firstChild.data)
 
-	# Jobsub start/stop.
+        # Jobsub start/stop.
 
         jobsub_start_elements = stage_element.getElementsByTagName('jobsub_start')
         if jobsub_start_elements:
             self.jobsub_start = str(jobsub_start_elements[0].firstChild.data)
 
-	# Jobsub submit timeout.
+        # Jobsub submit timeout.
 
         jobsub_timeout_elements = stage_element.getElementsByTagName('jobsub_timeout')
         if jobsub_timeout_elements:
             self.jobsub_timeout = int(jobsub_timeout_elements[0].firstChild.data)
 
-	# Name of art-like executable.
+        # Name of art-like executable.
 
         exe_elements = stage_element.getElementsByTagName('exe')
         if exe_elements:
             self.exe = str(exe_elements[0].firstChild.data)
 
-	# Sam schema.
+        # Sam schema.
 
         schema_elements = stage_element.getElementsByTagName('schema')
         if schema_elements:
             self.schema = str(schema_elements[0].firstChild.data)
 
-	# Validate-on-worker.
+        # Validate-on-worker.
 
         validate_on_worker_elements = stage_element.getElementsByTagName('check')
         if validate_on_worker_elements:
             self.validate_on_worker = int(validate_on_worker_elements[0].firstChild.data)
 
-	# Upload-on-worker.
+        # Upload-on-worker.
 
         copy_to_fts_elements = stage_element.getElementsByTagName('copy')
         if copy_to_fts_elements:
             self.copy_to_fts = copy_to_fts_elements[0].firstChild.data
 
-	# Batch script
+        # Batch script
 
         script_elements = stage_element.getElementsByTagName('script')
         if script_elements:
@@ -721,15 +735,17 @@ class StageDef:
                                        stdout=subprocess.PIPE,
                                        stderr=subprocess.PIPE)
             jobout, joberr = jobinfo.communicate()
+            jobout = convert_str(jobout)
+            joberr = convert_str(joberr)
             rc = jobinfo.poll()
             script_path = jobout.splitlines()[0].strip()
         except:
             pass
         if script_path == '' or not larbatch_posix.access(script_path, os.X_OK):
-            raise IOError, 'Script %s not found.' % self.script
+            raise IOError('Script %s not found.' % self.script)
         self.script = script_path
-	
-	# Start script
+        
+        # Start script
 
         start_script_elements = stage_element.getElementsByTagName('startscript')
         if start_script_elements:
@@ -743,13 +759,15 @@ class StageDef:
                                        stdout=subprocess.PIPE,
                                        stderr=subprocess.PIPE)
             jobout, joberr = jobinfo.communicate()
+            jobout = convert_str(jobout)
+            joberr = convert_str(joberr)
             rc = jobinfo.poll()
             script_path = jobout.splitlines()[0].strip()
         except:
             pass
         self.start_script = script_path
 
-	# Stop script
+        # Stop script
 
         stop_script_elements = stage_element.getElementsByTagName('stopscript')
         if stop_script_elements:
@@ -763,6 +781,8 @@ class StageDef:
                                        stdout=subprocess.PIPE,
                                        stderr=subprocess.PIPE)
             jobout, joberr = jobinfo.communicate()
+            jobout = convert_str(jobout)
+            joberr = convert_str(joberr)
             rc = jobinfo.poll()
             script_path = jobout.splitlines()[0].strip()
         except:
@@ -780,8 +800,8 @@ class StageDef:
         result = 'Batch job name = %s\n' % self.batchname
         #result += 'Fcl filename = %s\n' % self.fclname
         for fcl in self.fclname:
-	  result += 'Fcl filename = %s\n' % fcl 
-	result += 'Output directory = %s\n' % self.outdir
+          result += 'Fcl filename = %s\n' % fcl 
+        result += 'Output directory = %s\n' % self.outdir
         result += 'Log directory = %s\n' % self.logdir
         result += 'Work directory = %s\n' % self.workdir
         result += 'Bookkeeping directory = %s\n' % self.bookdir
@@ -819,7 +839,7 @@ class StageDef:
             result += 'Pubs output subrun number = %d\n' % subrun
         result += 'Pubs output version number = %d\n' % self.output_version
         result += 'Output file name = %s\n' % self.output
-        result += 'TFileName = %s\n' % self.TFileName	
+        result += 'TFileName = %s\n' % self.TFileName   
         result += 'Number of jobs = %d\n' % self.num_jobs
         result += 'Number of events = %d\n' % self.num_events
         result += 'Max flux MB = %d\n' % self.maxfluxfilemb
@@ -919,7 +939,7 @@ class StageDef:
         # The case if input from a single file is not supported.  Raise an exception.
 
         if self.inputfile != '':
-            raise RuntimeError, 'Pubs input for single file input is not supported.'
+            raise RuntimeError('Pubs input for single file input is not supported.')
 
         # Set pubs input mode.
 
@@ -1060,7 +1080,7 @@ class StageDef:
                     if sr_size > 0:
                         actual_subruns.append(subrun)
                         if new_inputlist_file == None:
-                            print 'Generating new input list %s\n' % new_inputlist_path
+                            print('Generating new input list %s\n' % new_inputlist_path)
                             new_inputlist_file = larbatch_posix.open(new_inputlist_path, 'w')
                         new_inputlist_file.write('%s\n' % subrun_inputfile)
                         total_size += sr.st_size
@@ -1085,7 +1105,7 @@ class StageDef:
             # Update the list of subruns to be the actual list of subruns.
 
             if len(actual_subruns) != len(subruns):
-                print 'Truncating subrun list: %s' % str(actual_subruns)
+                print('Truncating subrun list: %s' % str(actual_subruns))
                 del subruns[:]
                 subruns.extend(actual_subruns)
 
@@ -1149,30 +1169,30 @@ class StageDef:
 
         rc = 0
         if len(self.submit_script) > 0:
-            print 'Running presubmission check script',
+            print('Running presubmission check script', end=' ')
             for word in self.submit_script:
-                print word,
-            print
+                print(word, end=' ')
+            print()
             jobinfo = subprocess.Popen(self.submit_script,
                                        stdout=subprocess.PIPE,
                                        stderr=subprocess.PIPE)
-            q = Queue.Queue()
+            q = queue.Queue()
             thread = threading.Thread(target=larbatch_utilities.wait_for_subprocess,
                                       args=[jobinfo, q])
             thread.start()
             thread.join(timeout=60)
             if thread.is_alive():
-                print 'Submit script timed out, terminating.'
+                print('Submit script timed out, terminating.')
                 jobinfo.terminate()
                 thread.join()
             rc = q.get()
-            jobout = q.get()
-            joberr = q.get()
-            print 'Script exit status = %d' % rc
-            print 'Script standard output:'
-            print jobout
-            print 'Script diagnostic output:'
-            print joberr
+            jobout = convert_str(q.get())
+            joberr = convert_str(q.get())
+            print('Script exit status = %d' % rc)
+            print('Script standard output:')
+            print(jobout)
+            print('Script diagnostic output:')
+            print(joberr)
 
         # Done.
         # Return exit status.
@@ -1186,9 +1206,9 @@ class StageDef:
     def checkinput(self, checkdef=False):
 
         if self.inputfile != '' and not larbatch_posix.exists(self.inputfile):
-            raise IOError, 'Input file %s does not exist.' % self.inputfile
+            raise IOError('Input file %s does not exist.' % self.inputfile)
         if self.inputlist != '' and not larbatch_posix.exists(self.inputlist):
-            raise IOError, 'Input list %s does not exist.' % self.inputlist
+            raise IOError('Input list %s does not exist.' % self.inputlist)
 
         checkok = False
 
@@ -1210,7 +1230,7 @@ class StageDef:
             input_filenames = larbatch_posix.readlines(self.inputlist)
             size_tot = 0
             for line in input_filenames:
-                filename = string.split(line)[0]
+                filename = line.split()[0]
                 filesize = larbatch_posix.stat(filename).st_size
                 size_tot = size_tot + filesize
             new_num_jobs = size_tot / self.target_size
@@ -1218,9 +1238,9 @@ class StageDef:
                 new_num_jobs = 1
             if new_num_jobs > self.num_jobs:
                 new_num_jobs = self.num_jobs
-            print "Ideal number of jobs based on target file size is %d." % new_num_jobs
+            print("Ideal number of jobs based on target file size is %d." % new_num_jobs)
             if new_num_jobs != self.num_jobs:
-                print "Updating number of jobs from %d to %d." % (self.num_jobs, new_num_jobs)
+                print("Updating number of jobs from %d to %d." % (self.num_jobs, new_num_jobs))
                 self.num_jobs = new_num_jobs
 
         # If singlerun mode is requested, pick a random file from the input
@@ -1231,7 +1251,7 @@ class StageDef:
         if self.singlerun and checkdef:
 
             samweb = project_utilities.samweb()
-            print "Doing single run processing."
+            print("Doing single run processing.")
 
             # First find an input file.
 
@@ -1243,7 +1263,7 @@ class StageDef:
                 input_files = samweb.listFiles(dimensions=dim)
             if len(input_files) > 0:
                 random_file = random.choice(input_files)
-                print 'Example file: %s' % random_file
+                print('Example file: %s' % random_file)
 
                 # Extract run number.
 
@@ -1251,7 +1271,7 @@ class StageDef:
                 run_tuples = md['runs']
                 if len(run_tuples) > 0:
                     run = run_tuples[0][0]
-                    print 'Input files will be limited to run %d.' % run
+                    print('Input files will be limited to run %d.' % run)
 
                     # Make a new dataset definition.
                     # If this definition already exists, assume it is correct.
@@ -1264,17 +1284,17 @@ class StageDef:
                     except samweb_cli.exceptions.DefinitionNotFound:
                         pass
                     if not def_exists:
-                        print 'Creating dataset definition %s' % newdef
+                        print('Creating dataset definition %s' % newdef)
                         newdim = 'defname: %s and run_number %d' % (self.inputdef, run)
                         samweb.createDefinition(defname=newdef, dims=newdim)
                     self.inputdef = newdef
 
                 else:
-                    print 'Problem extracting run number from example file.'
+                    print('Problem extracting run number from example file.')
                     return 1
 
             else:
-                print 'Input dataset is empty.'
+                print('Input dataset is empty.')
                 return 1
 
         # If target size is nonzero, and input is from a sam dataset definition,
@@ -1296,7 +1316,7 @@ class StageDef:
             else:
                 sum = samweb.listFilesSummary(dimensions=dim)
                 nfiles = sum['file_count']
-            print 'Input dataset %s has %d files.' % (self.inputdef, nfiles)
+            print('Input dataset %s has %d files.' % (self.inputdef, nfiles))
             if nfiles > 0:
                 checkok = True
                 max_files = self.max_files_per_job * self.num_jobs
@@ -1335,17 +1355,17 @@ class StageDef:
                     if new_num_jobs > self.num_jobs:
                         new_num_jobs = self.num_jobs
 
-                print "Ideal number of jobs based on target file size is %d." % new_num_jobs
+                print("Ideal number of jobs based on target file size is %d." % new_num_jobs)
                 if new_num_jobs != self.num_jobs:
-                    print "Updating number of jobs from %d to %d." % (self.num_jobs, new_num_jobs)
+                    print("Updating number of jobs from %d to %d." % (self.num_jobs, new_num_jobs))
                     self.num_jobs = new_num_jobs
-                print "Ideal number of files per job is %d." % new_max_files_per_job
+                print("Ideal number of files per job is %d." % new_max_files_per_job)
                 if new_max_files_per_job != self.max_files_per_job:
-                    print "Updating maximum files per job from %d to %d." % (
-                        self.max_files_per_job, new_max_files_per_job)
+                    print("Updating maximum files per job from %d to %d." % (
+                        self.max_files_per_job, new_max_files_per_job))
                     self.max_files_per_job = new_max_files_per_job
             else:
-                print 'Input dataset is empty.'
+                print('Input dataset is empty.')
                 return 1
 
         # If requested, do a final check in the input dataset.
@@ -1362,7 +1382,7 @@ class StageDef:
             else:
                 sum = samweb.listFilesSummary(defname=self.inputdef)
                 n = sum['file_count']
-            print 'Input dataset %s contains %d files.' % (self.inputdef, n)
+            print('Input dataset %s contains %d files.' % (self.inputdef, n))
             if n < self.num_jobs:
                 self.num_jobs = n
             if n == 0:
@@ -1377,22 +1397,22 @@ class StageDef:
 
     def check_output_dirs(self):
         if not larbatch_posix.exists(self.outdir):
-            raise IOError, 'Output directory %s does not exist.' % self.outdir
+            raise IOError('Output directory %s does not exist.' % self.outdir)
         if not larbatch_posix.exists(self.logdir):
-            raise IOError, 'Log directory %s does not exist.' % self.logdir
+            raise IOError('Log directory %s does not exist.' % self.logdir)
         return
     
     # Raise an exception if output, log, work, or bookkeeping directory doesn't exist.
 
     def checkdirs(self):
         if not larbatch_posix.exists(self.outdir):
-            raise IOError, 'Output directory %s does not exist.' % self.outdir
+            raise IOError('Output directory %s does not exist.' % self.outdir)
         if self.logdir != self.outdir and not larbatch_posix.exists(self.logdir):
-            raise IOError, 'Log directory %s does not exist.' % self.logdir
+            raise IOError('Log directory %s does not exist.' % self.logdir)
         if not larbatch_posix.exists(self.workdir):
-            raise IOError, 'Work directory %s does not exist.' % self.workdir
+            raise IOError('Work directory %s does not exist.' % self.workdir)
         if self.bookdir != self.logdir and not larbatch_posix.exists(self.bookdir):
-            raise IOError, 'Bookkeeping directory %s does not exist.' % self.bookdir
+            raise IOError('Bookkeeping directory %s does not exist.' % self.bookdir)
         return
     
     # Make output, log, work, and bookkeeping directory, if they don't exist.
