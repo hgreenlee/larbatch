@@ -428,6 +428,7 @@ from project_modules.batchstatus import BatchStatus
 from project_modules.jobsuberror import JobsubError
 from project_modules.ifdherror import IFDHError
 from larbatch_utilities import convert_str
+from larbatch_utilities import convert_bytes
 import samweb_cli
 
 samweb = None           # Initialized SAMWebClient object
@@ -2650,7 +2651,8 @@ def dojobsub(project, stage, makeup, recur):
                                    stdin=subprocess.PIPE,
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
-        jobinfo.stdin.write('import %s\nprint %s.__file__\n' % (helper_module, helper_module))
+        cmd = 'import %s\nprint(%s.__file__)\n' % (helper_module, helper_module)
+        jobinfo.stdin.write(convert_bytes(cmd))
         jobout, joberr = jobinfo.communicate()
         jobout = convert_str(jobout)
         joberr = convert_str(joberr)

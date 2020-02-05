@@ -10,7 +10,7 @@ try:
 except ImportError:
     import Queue as queue
 import project_utilities, root_metadata
-import larbatch_utilities import convert_str
+from larbatch_utilities import convert_str
 import json
 import abc
 
