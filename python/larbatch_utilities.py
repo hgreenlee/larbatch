@@ -61,6 +61,7 @@
 # parse_mode - Parse the ten-character file mode string ("ls -l").
 # check_running - Check for running project.py submission process.
 # convert_str - Accepting unicode or bytes as input, convert to default python str.
+# convert_bytes - Accepting unicode or bytes as input, convert to bytes.
 #
 ######################################################################
 
@@ -1146,6 +1147,29 @@ def convert_str(s):
             # Last resort, use standard str conversion.
 
             result = str(s)
+
+    return result
+
+
+# Convert bytes or unicode string to bytes.
+# Works on python 2 and python 3.
+
+def convert_bytes(s):
+
+    result = ''
+
+    if type(s) == type(b''):
+
+        # Already a string type?
+        # Just return the original.
+
+        result = s
+
+    elif type(s) == type(u''):
+
+        # Unicode to bytes (python 2).
+
+        result = s.encode()
 
     return result
 
