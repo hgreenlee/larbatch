@@ -65,7 +65,7 @@ class ProjectDef:
 
         # Project name (attribute)
 
-        if 'name' in project_element.attributes:
+        if 'name' in dict(project_element.attributes):
             self.name = str(project_element.attributes['name'].firstChild.data)
         if self.name == '':
             raise XMLError('Project name not specified.')
@@ -350,7 +350,7 @@ class ProjectDef:
             # Get base stage, if any.
 
             base_stage = None
-            if 'base' in stage_element.attributes:
+            if 'base' in dict(stage_element.attributes):
                 base_name = str(stage_element.attributes['base'].firstChild.data)
                 if base_name != '':
                     for stage in self.stages:

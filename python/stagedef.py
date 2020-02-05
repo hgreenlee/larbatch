@@ -189,7 +189,7 @@ class StageDef:
 
         # Stage name (attribute).
 
-        if 'name' in stage_element.attributes:
+        if 'name' in dict(stage_element.attributes):
             self.name = str(stage_element.attributes['name'].firstChild.data)
         if self.name == '':
             raise XMLError("Stage name not specified.")
