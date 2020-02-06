@@ -62,6 +62,7 @@
 # check_running - Check for running project.py submission process.
 # convert_str - Accepting unicode or bytes as input, convert to default python str.
 # convert_bytes - Accepting unicode or bytes as input, convert to bytes.
+# test_jobsub - Test whether jobsub_client is set up.
 #
 ######################################################################
 
