@@ -427,6 +427,7 @@ from project_modules.projectstatus import ProjectStatus
 from project_modules.batchstatus import BatchStatus
 from project_modules.jobsuberror import JobsubError
 from project_modules.ifdherror import IFDHError
+import larbatch_utilities
 from larbatch_utilities import convert_str
 from larbatch_utilities import convert_bytes
 import samweb_cli
@@ -3350,7 +3351,7 @@ def dosubmit(project, stage, makeup=False, recur=False):
 
     # Make sure jobsub_client is available.
 
-    larbatch_utiltiies.test_jobsub()
+    larbatch_utilities.test_jobsub()
 
     # Run presubmission check script.
 
