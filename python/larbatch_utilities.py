@@ -1169,7 +1169,7 @@ def convert_str(s):
         # Bytes and not str.
         # Convert to unicode.
 
-        result = s.decode('utf-8')
+        result = s.decode()
 
     else:
 
