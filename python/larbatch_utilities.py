@@ -784,7 +784,7 @@ def srm_uri(path):
         return path
 
 
-# Return the name of a computer with login access that has the /pnfs 
+# Return the name of a computer with login access that has the /pnfs
 # filesystem nfs-mounted.  This function makes use of the $EXPERIMENT
 # environment variable (as does ifdh), which must be set.
 
@@ -792,7 +792,7 @@ def nfs_server():
     return '%sgpvm01.fnal.gov' % os.environ['EXPERIMENT']
 
 
-# Parse the ten-character file mode string as returned by "ls -l" 
+# Parse the ten-character file mode string as returned by "ls -l"
 # and return mode bit masek.
 
 def parse_mode(mode_str):
@@ -847,7 +847,7 @@ def parse_mode(mode_str):
         mode += stat.S_ISGID
 
     # World triad (includes sticky bit).
-                    
+
     if mode_str[7] == 'r':
         mode += stat.S_IROTH
     if mode_str[8] == 'w':
@@ -969,7 +969,7 @@ def get_dropbox(filename):
     raise RuntimeError('Function get_dropbox not implemented.')
 
 
-# Function to return string containing sam metadata in the form 
+# Function to return string containing sam metadata in the form
 # of an fcl configuraiton.  It is intended that this function
 # may be overridden in experiment_utilities.py.
 
@@ -1209,7 +1209,7 @@ def convert_bytes(s):
     return result
 
 
-# Import experiment-specific utilities.  In this imported module, one can 
+# Import experiment-specific utilities.  In this imported module, one can
 # override any function or symbol defined above, or add new ones.
 
 from experiment_utilities import *
