@@ -119,7 +119,7 @@ def analyze(root, level, gtrees, gbranches, doprint):
 
         # Loop over branche of Events tree.
 
-        for branch in sorted(branches):
+        for branch in branches:
             branch_class = branch.GetClass().GetName()
 
             # Only look at data products (class art::Wrapper<T>).
@@ -129,7 +129,7 @@ def analyze(root, level, gtrees, gbranches, doprint):
                 # Loop over subbranches.
                 
                 subbranches = branch.GetListOfBranches()
-                for subbranch in sorted(subbranches):
+                for subbranch in subbranches:
                     name = subbranch.GetName()
 
                     # Only look at '.obj' subbranch (wrapped object).
@@ -158,7 +158,7 @@ def analyze(root, level, gtrees, gbranches, doprint):
                         
                         if level > 1:
                             subsubbranches = subbranch.GetListOfBranches()
-                            for subsubbranch in sorted(subsubbranches):
+                            for subsubbranch in subsubbranches:
                                 name = subsubbranch.GetName()
                                 ntot = subsubbranch.GetTotBytes("*")
                                 nzip = subsubbranch.GetZipBytes("*")
