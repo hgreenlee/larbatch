@@ -705,7 +705,7 @@ class StageDef:
 
         copy_to_fts_elements = stage_element.getElementsByTagName('copy')
         if copy_to_fts_elements:
-            self.copy_to_fts = copy_to_fts_elements[0].firstChild.data
+            self.copy_to_fts = int(copy_to_fts_elements[0].firstChild.data)
 
 	# Batch script
 
