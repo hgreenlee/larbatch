@@ -80,7 +80,9 @@ class StageDef:
             self.defname = base_stage.defname
             self.ana_defname = base_stage.ana_defname
             self.data_tier = base_stage.data_tier
+            self.data_stream = base_stage.data_stream
             self.ana_data_tier = base_stage.ana_data_tier
+            self.ana_data_stream = base_stage.ana_data_stream
             self.submit_script = base_stage.submit_script
             self.init_script = base_stage.init_script
             self.init_source = base_stage.init_source
@@ -151,7 +153,9 @@ class StageDef:
             self.defname = ''      # Sam dataset definition name.
             self.ana_defname = ''  # Sam dataset definition name.
             self.data_tier = ''    # Sam data tier.
+            self.data_stream = ''  # Sam data stream.
             self.ana_data_tier = '' # Sam data tier.
+            self.ana_data_stream = '' # Sam data stream.
             self.submit_script = '' # Submit script.
             self.init_script = ''  # Worker initialization script.
             self.init_source = ''  # Worker initialization bash source script.
@@ -469,11 +473,23 @@ class StageDef:
         if data_tier_elements:
             self.data_tier = str(data_tier_elements[0].firstChild.data)
 
+        # Sam data stream (subelement).
+
+        data_stream_elements = stage_element.getElementsByTagName('datastream')
+        if data_stream_elements:
+            self.data_stream = str(data_stream_elements[0].firstChild.data)
+
         # Sam analysis data tier (subelement).
 
         ana_data_tier_elements = stage_element.getElementsByTagName('anadatatier')
         if ana_data_tier_elements:
             self.ana_data_tier = str(ana_data_tier_elements[0].firstChild.data)
+
+        # Sam analysis data stream (subelement).
+
+        ana_data_stream_elements = stage_element.getElementsByTagName('anadatastream')
+        if ana_data_stream_elements:
+            self.ana_data_stream = str(ana_data_stream_elements[0].firstChild.data)
 
         # Submit script (subelement).
 
@@ -828,7 +844,9 @@ class StageDef:
         result += 'Dataset definition name = %s\n' % self.defname
         result += 'Analysis dataset definition name = %s\n' % self.ana_defname
         result += 'Data tier = %s\n' % self.data_tier
+        result += 'Data stream = %s\n' % self.data_stream
         result += 'Analysis data tier = %s\n' % self.ana_data_tier
+        result += 'Analysis data stream = %s\n' % self.ana_data_stream
         result += 'Submit script = %s\n' % self.submit_script
         result += 'Worker initialization script = %s\n' % self.init_script
         result += 'Worker initialization source script = %s\n' % self.init_source

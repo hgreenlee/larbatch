@@ -26,6 +26,7 @@ import larbatch_utilities
 from larbatch_utilities import get_experiment, get_user, get_role, get_prouser
 from larbatch_utilities import test_ticket, test_kca, test_proxy, get_kca, get_proxy
 from larbatch_utilities import dimensions
+from larbatch_utilities import dimensions_datastream
 from larbatch_utilities import wait_for_subprocess
 from larbatch_utilities import get_bluearc_server
 from larbatch_utilities import get_dcache_server

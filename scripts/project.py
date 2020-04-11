@@ -319,7 +319,9 @@
 # <stage><defname> - Sam output dataset defition name (default none).
 # <stage><anadefname> - Sam analysis output dataset defition name (default none).
 # <stage><datatier> - Sam data tier (default none).
+# <stage><datastream> - Sam data stream (default none).
 # <stage><anadatatier> - Sam analysis data tier (default none).
+# <stage><anadatastream> - Sam analysis data stream (default none).
 # <stage><submitscript> - Presubmission check script.  Must be on execution path.
 #                         If this script exits with nonzero exit status, job submission 
 #                         is aborted.
@@ -4031,14 +4033,13 @@ def main(argv):
                     dim += ' minus (project_name %s and consumed_status consumed)' % \
                         project_wildcard
                 elif stage.recurtype == 'child':
-                    pdim = project_utilities.dimensions(project, stage, ana=False)
-                    n = pdim.find('and availability:')
+                    pdim = project_utilities.dimensions_datastream(project, stage, ana=False)
+                    n = pdim.find('anylocation')
                     if n > 0:
-                        pdim = pdim[:n]
-                    n = pdim.find('with availability')
-                    if n > 0:
-                        pdim = pdim[:n]
-                    dim += ' minus (isparentof: ( %s with availability physical ) )' % pdim
+                        pdim = pdim[:n] + 'physical' + pdim[n+11:]
+                    else:
+                        pdim += ' with availability physical'
+                    dim += ' minus (isparentof: ( %s ) )' % pdim
                     if stage.activebase != '':
                         activedef = '%s_active' % stage.activebase
                         waitdef = '%s_wait' % stage.activebase
@@ -4047,14 +4048,12 @@ def main(argv):
                         project_utilities.makeDummyDef(activedef)
                         project_utilities.makeDummyDef(waitdef)
                 elif stage.recurtype == 'anachild':
-                    pdim = project_utilities.dimensions(project, stage, ana=True)
-                    n = pdim.find('and availability:')
+                    pdim = project_utilities.dimensions_datastream(project, stage, ana=True)
                     if n > 0:
-                        pdim = pdim[:n]
-                    n = pdim.find('with availability')
-                    if n > 0:
-                        pdim = pdim[:n]
-                    dim += ' minus (isparentof: ( %s with availability physical ) )' % pdim
+                        pdim = pdim[:n] + 'physical' + pdim[n+11:]
+                    else:
+                        pdim += ' with availability physical'
+                    dim += ' minus (isparentof: ( %s ) )' % pdim
                     if stage.activebase != '':
                         activedef = '%s_active' % stage.activebase
                         waitdef = '%s_wait' % stage.activebase
@@ -4230,13 +4229,13 @@ def main(argv):
                 if stage.ana_defname == '':
                     print 'No sam analysis dataset definition name specified for this stage.'
                     return 1
-                dim = project_utilities.dimensions(project, stage, ana=True)
+                dim = project_utilities.dimensions_datastream(project, stage, ana=True)
                 docheck_definition(stage.ana_defname, dim, define)
             else:
                 if stage.defname == '':
                     print 'No sam dataset definition name specified for this stage.'
                     return 1
-                dim = project_utilities.dimensions(project, stage, ana=False)
+                dim = project_utilities.dimensions_datastream(project, stage, ana=False)
                 docheck_definition(stage.defname, dim, define)
 
     if check_definition_ana or define_ana:
@@ -4249,7 +4248,7 @@ def main(argv):
             if stage.ana_defname == '':
                 print 'No sam analysis dataset definition name specified for this stage.'
                 return 1
-            dim = project_utilities.dimensions(project, stage, ana=True)
+            dim = project_utilities.dimensions_datastream(project, stage, ana=True)
             docheck_definition(stage.ana_defname, dim, define_ana)
 
     if test_definition:
@@ -4319,7 +4318,7 @@ def main(argv):
         for stagename in stagenames:
             print 'Stage %s:' % stagename
             stage = stages[stagename]
-            dim = project_utilities.dimensions(project, stage, ana=stage.ana)
+            dim = project_utilities.dimensions_datastream(project, stage, ana=stage.ana)
             rc += dotest_declarations(dim)
 
     if test_declarations_ana:
@@ -4329,7 +4328,7 @@ def main(argv):
         for stagename in stagenames:
             print 'Stage %s:' % stagename
             stage = stages[stagename]
-            dim = project_utilities.dimensions(project, stage, ana=True)
+            dim = project_utilities.dimensions_datastream(project, stage, ana=True)
             rc += dotest_declarations(dim)
 
     if check_locations or add_locations or clean_locations or remove_locations or upload:
@@ -4339,7 +4338,7 @@ def main(argv):
         for stagename in stagenames:
             print 'Stage %s:' % stagename
             stage = stages[stagename]
-            dim = project_utilities.dimensions(project, stage, ana=stage.ana)
+            dim = project_utilities.dimensions_datastream(project, stage, ana=stage.ana)
             docheck_locations(dim, stage.outdir,
                               add_locations, clean_locations, remove_locations,
                               upload)
@@ -4352,7 +4351,7 @@ def main(argv):
         for stagename in stagenames:
             print 'Stage %s:' % stagename
             stage = stages[stagename]
-            dim = project_utilities.dimensions(project, stage, ana=True)
+            dim = project_utilities.dimensions_datastream(project, stage, ana=True)
             docheck_locations(dim, stage.outdir,
                               add_locations_ana, clean_locations_ana, remove_locations_ana,
                               upload_ana)
@@ -4364,7 +4363,7 @@ def main(argv):
         for stagename in stagenames:
             print 'Stage %s:' % stagename
             stage = stages[stagename]
-            dim = project_utilities.dimensions(project, stage, ana=stage.ana)
+            dim = project_utilities.dimensions_datastream(project, stage, ana=stage.ana)
             docheck_tape(dim)
 
     if check_tape_ana:
@@ -4374,7 +4373,7 @@ def main(argv):
         for stagename in stagenames:
             print 'Stage %s:' % stagename
             stage = stages[stagename]
-            dim = project_utilities.dimensions(project, stage, ana=True)
+            dim = project_utilities.dimensions_datastream(project, stage, ana=True)
             docheck_tape(dim)
 
     # Done.
