@@ -153,9 +153,9 @@ class StageDef:
             self.defname = ''      # Sam dataset definition name.
             self.ana_defname = ''  # Sam dataset definition name.
             self.data_tier = ''    # Sam data tier.
-            self.data_stream = ''  # Sam data stream.
+            self.data_stream = []  # Sam data stream.
             self.ana_data_tier = '' # Sam data tier.
-            self.ana_data_stream = '' # Sam data stream.
+            self.ana_data_stream = [] # Sam data stream.
             self.submit_script = '' # Submit script.
             self.init_script = ''  # Worker initialization script.
             self.init_source = ''  # Worker initialization bash source script.
@@ -476,8 +476,10 @@ class StageDef:
         # Sam data stream (subelement).
 
         data_stream_elements = stage_element.getElementsByTagName('datastream')
-        if data_stream_elements:
-            self.data_stream = str(data_stream_elements[0].firstChild.data)
+        if len(data_stream_elements) > 0:
+            self.data_stream = []
+            for data_stream in data_stream_elements:
+                self.data_stream.append(str(data_stream.firstChild.data))
 
         # Sam analysis data tier (subelement).
 
@@ -488,8 +490,10 @@ class StageDef:
         # Sam analysis data stream (subelement).
 
         ana_data_stream_elements = stage_element.getElementsByTagName('anadatastream')
-        if ana_data_stream_elements:
-            self.ana_data_stream = str(ana_data_stream_elements[0].firstChild.data)
+        if len(ana_data_stream_elements) > 0:
+            self.ana_data_stream = []
+            for ana_data_stream in ana_data_stream_elements:
+                self.ana_data_stream.append(str(ana_data_stream.firstChild.data))
 
         # Submit script (subelement).
 

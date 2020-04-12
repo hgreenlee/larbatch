@@ -697,6 +697,16 @@ def tokenizeRPN(dim):
         head = dim[:n]
         tail = dim[n:]
 
+    # Space out parentheses.
+
+    head = head.replace('(', ' ( ')
+    head = head.replace(')', ' ) ')
+
+    # But not isxxx: 
+
+    head = head.replace('isparentof: ', 'isparentof:')
+    head = head.replace('ischildof: ', 'ischildof:')
+
     for word in head.split():
 
         if word == '(' or word  == 'isparentof:(' or word == 'ischildof:(':

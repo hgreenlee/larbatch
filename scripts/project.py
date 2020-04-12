@@ -4021,25 +4021,40 @@ def main(argv):
 
                 # Start sam dimension with the base dataset.
 
-                dim = 'defname: %s' % stage.basedef
+                dim = ''
 
                 # Add minus clause.
 
                 project_wildcard = '%s_%%' % samweb.makeProjectName(stage.inputdef).rsplit('_',1)[0]
                 if stage.recurtype == 'snapshot':
-                    dim += ' minus snapshot_for_project_name %s' % \
-                        project_wildcard
+                    dim = 'defname: %s minus snapshot_for_project_name %s' % \
+                        (stage.basedef, project_wildcard)
                 elif stage.recurtype == 'consumed':
-                    dim += ' minus (project_name %s and consumed_status consumed)' % \
-                        project_wildcard
+                    dim = 'defname: %s minus (project_name %s and consumed_status consumed)' % \
+                        (stage.basedef, project_wildcard)
+
                 elif stage.recurtype == 'child':
-                    pdim = project_utilities.dimensions_datastream(project, stage, ana=False)
-                    n = pdim.find('anylocation')
-                    if n > 0:
-                        pdim = pdim[:n] + 'physical' + pdim[n+11:]
-                    else:
-                        pdim += ' with availability physical'
-                    dim += ' minus (isparentof: ( %s ) )' % pdim
+
+                    # In case of multiple data strams, generate one clause for each
+                    # data stream.
+
+                    nstream = 1
+                    if stage.data_stream != None and len(stage.data_stream) > 0:
+                        nstream = len(stage.data_stream)
+
+                    dim = ''
+                    for istream in range(nstream):
+                        idim = project_utilities.dimensions_datastream(project, stage, 
+                                                                       ana=False, index=istream)
+                        if idim.find('anylocation') > 0:
+                            idim = idim.replace('anylocation', 'physical')
+                        else:
+                            idim += ' with availability physical'
+
+                        if len(dim) > 0:
+                            dim += ' or '
+                        dim += '(defname: %s minus isparentof:( %s ) )' % (stage.basedef, idim)
+
                     if stage.activebase != '':
                         activedef = '%s_active' % stage.activebase
                         waitdef = '%s_wait' % stage.activebase
@@ -4047,13 +4062,29 @@ def main(argv):
                         dim += ' minus defname: %s' % waitdef
                         project_utilities.makeDummyDef(activedef)
                         project_utilities.makeDummyDef(waitdef)
+
                 elif stage.recurtype == 'anachild':
-                    pdim = project_utilities.dimensions_datastream(project, stage, ana=True)
-                    if n > 0:
-                        pdim = pdim[:n] + 'physical' + pdim[n+11:]
-                    else:
-                        pdim += ' with availability physical'
-                    dim += ' minus (isparentof: ( %s ) )' % pdim
+
+                    # In case of multiple data strams, generate one clause for each
+                    # data stream.
+
+                    nstream = 1
+                    if stage.ana_data_stream != None and len(stage.ana_data_stream) > 0:
+                        nstream = len(stage.ana_data_stream)
+
+                    dim = ''
+                    for istream in range(nstream):
+                        idim = project_utilities.dimensions_datastream(project, stage, 
+                                                                       ana=True, index=istream)
+                        if idim.find('anylocation') > 0:
+                            idim = idim.replace('anylocation', 'physical')
+                        else:
+                            idim += ' with availability physical'
+
+                        if len(dim) > 0:
+                            dim += ' or '
+                        dim += '(defname: %s minus isparentof:( %s ) )' % (stage.basedef, idim)
+
                     if stage.activebase != '':
                         activedef = '%s_active' % stage.activebase
                         waitdef = '%s_wait' % stage.activebase
@@ -4061,6 +4092,7 @@ def main(argv):
                         dim += ' minus defname: %s' % waitdef
                         project_utilities.makeDummyDef(activedef)
                         project_utilities.makeDummyDef(waitdef)
+
                 elif stage.recurtype != '' and stage.recurtype != 'none':
                     raise RuntimeError, 'Unknown recursive type %s.' % stage.recurtype
 
