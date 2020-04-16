@@ -1542,8 +1542,10 @@ EOF
 
   if [ x$INITSCRIPT != x ]; then
     echo "Running initialization script ${INITSCRIPT}."
-    if ! ./${INITSCRIPT}; then
-      exit $?
+    ./${INITSCRIPT}
+    status=$?
+    if [ $status -ne 0 ]; then
+      exit $status
     fi
   fi
 
@@ -1706,8 +1708,10 @@ fi
 
 if [ x$ENDSCRIPT != x ]; then
   echo "Running end-of-job script ${ENDSCRIPT}."
-  if ! ./${ENDSCRIPT}; then
-    exit $?
+  ./${ENDSCRIPT}
+  status=$?
+  if [ $status -ne 0 ]; then
+    exit $status
   fi
 fi
 
