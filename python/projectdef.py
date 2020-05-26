@@ -40,6 +40,7 @@ class ProjectDef:
         self.disk = ''                    # Disk space (string value+unit).
         self.memory = 0                   # Amount of memory (integer MB).
         self.merge = 'hadd -T'            # histogram merging program.
+        self.anamerge = ''                # Analysis merge flag.
         self.release_tag = ''             # Larsoft release tag.
         self.release_qual = 'debug'       # Larsoft release qualifier.
         self.version = ''                 # Project version.
@@ -174,6 +175,16 @@ class ProjectDef:
                     self.merge = str(merge_element.firstChild.data)
                 else:
                     self.merge = ''
+	    
+        # anamerge (subelement).
+ 	
+        anamerge_elements = project_element.getElementsByTagName('anamerge')
+        for anamerge_element in anamerge_elements:
+            if anamerge_element.parentNode == project_element:
+                if anamerge_element.firstChild:
+                    self.anamerge = str(anamerge_element.firstChild.data)
+                else:
+                    self.anamerge = ''
 	    
         # Larsoft (subelement).
 
@@ -360,6 +371,7 @@ class ProjectDef:
                                         self.num_events,
                                         self.max_files_per_job,
                                         self.merge,
+                                        self.anamerge,
                                         self.cpu,
                                         self.disk,
                                         self.memory,
@@ -404,6 +416,7 @@ class ProjectDef:
         result += 'Disk = %s\n' % self.disk
         result += 'Memory = %d MB\n' % self.memory
         result += 'Histogram merging program = %s\n' % self.merge
+        result += 'Analysis merge flag = %s\n' % self.anamerge
         result += 'Larsoft release tag = %s\n' % self.release_tag
         result += 'Larsoft release qualifier = %s\n' % self.release_qual
         result += 'Version = %s\n' % self.version

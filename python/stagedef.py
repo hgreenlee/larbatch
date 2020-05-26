@@ -30,6 +30,7 @@ class StageDef:
 
     def __init__(self, stage_element, base_stage, default_input_lists, default_previous_stage, 
                  default_num_jobs, default_num_events, default_max_files_per_job, default_merge,
+                 default_anamerge,
                  default_cpu, default_disk, default_memory, default_validate_on_worker,
                  default_copy_to_fts, default_script, default_start_script, default_stop_script,
                  default_site, default_blacklist):
@@ -88,6 +89,7 @@ class StageDef:
             self.init_source = base_stage.init_source
             self.end_script = base_stage.end_script
             self.merge = base_stage.merge
+            self.anamerge = base_stage.anamerge
             self.resource = base_stage.resource
             self.lines = base_stage.lines
             self.site = base_stage.site
@@ -161,6 +163,7 @@ class StageDef:
             self.init_source = ''  # Worker initialization bash source script.
             self.end_script = ''   # Worker end-of-job script.
             self.merge = default_merge    # Histogram merging program
+            self.anamerge = default_anamerge    # Analysis merge flag.
             self.resource = ''     # Jobsub resources.
             self.lines = ''        # Arbitrary condor commands.
             self.site = default_site # Site.
@@ -609,6 +612,12 @@ class StageDef:
         if merge_elements:
             self.merge = str(merge_elements[0].firstChild.data)
 	
+        # Analysis merge flag.
+
+        anamerge_elements = stage_element.getElementsByTagName('anamerge')
+        if anamerge_elements:
+            self.anamerge = str(anamerge_elements[0].firstChild.data)
+	
         # Resource (subelement).
 
         resource_elements = stage_element.getElementsByTagName('resource')
@@ -856,6 +865,7 @@ class StageDef:
         result += 'Worker initialization source script = %s\n' % self.init_source
         result += 'Worker end-of-job script = %s\n' % self.end_script
         result += 'Special histogram merging program = %s\n' % self.merge
+        result += 'Analysis merge flag = %s\n' % self.anamerge
         result += 'Resource = %s\n' % self.resource
         result += 'Lines = %s\n' % self.lines
         result += 'Site = %s\n' % self.site

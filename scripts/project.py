@@ -176,7 +176,10 @@
 # <parameter name="parametername"> - Specify experiment-specific metadata parameters
 #
 # <merge>    - special histogram merging program (default "hadd -T",
-#               can be overridden at each stage).
+#              can be overridden at each stage).
+#              Set to "1" to generate merging metadata for artroot files.
+# <anamerge> - Set to "1" to generate merging metadata for analysis files.
+#              
 # <check>    - Do on-node validation and sam declaration (0 or 1, default 0).
 # <copy>     - Copy validated root files to FTS (0 or 1, default 0).
 #
@@ -331,7 +334,9 @@
 #                       Initialization/end-of-job scripts can be specified using an
 #                       absolute or relative path relative to the current directory.
 # <stage><merge>  - Name of special histogram merging program or script (default "hadd -T",
-#                       can be overridden at each stage).
+#                   can be overridden at each stage).
+#                   Set to "1" to generate merging metadata for artroot files.
+# <state><anamerge> - Set to "1" to generate merging metadata for analysis files.
 # <stage><resource> - Jobsub resources (comma-separated list: DEDICATED,OPPORTUNISTIC,
 #                     OFFSITE,FERMICLOUD,PAID_CLOUD,FERMICLOUD8G).
 #                     Default: DEDICATED,OPPORTUNISTIC.
