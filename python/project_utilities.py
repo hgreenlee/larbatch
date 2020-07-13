@@ -337,7 +337,7 @@ def start_project(defname, default_prjname, max_files, force_snapshot, filelistd
 #
 # 2.  Project no end time.
 
-def active_projects2(defname = ''):
+def active_projects2(defname = '', dropboxwait = 0.):
 
     result = set()
 
@@ -379,7 +379,7 @@ def active_projects2(defname = ''):
 
             # Keep this project if there is no end time.
 
-            if age == 0:
+            if age <= dropboxwait * 86400:
                 result.add(prjname)
 
     # Done.
@@ -433,7 +433,7 @@ def make_active_project_dataset(defname, dropboxwait, active_defname, wait_defna
 
     # Get list of active projects.
 
-    prjs = active_projects(defname) | active_projects2(defname)
+    prjs = active_projects(defname) | active_projects2(defname, dropboxwait)
 
     # Make sam dimension.
 
