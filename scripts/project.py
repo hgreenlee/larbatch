@@ -328,11 +328,17 @@
 # <stage><submitscript> - Presubmission check script.  Must be on execution path.
 #                         If this script exits with nonzero exit status, job submission 
 #                         is aborted.
-# <stage><initscript> - Worker initialization script (condor_lar.sh --init-script).
+# <stage><initscript> - Worker initialization script (condor_lar.sh --init-script).  Repeatable.
 # <stage><initsource> - Worker initialization bash source script (condor_lar.sh --init-source).
-# <stage><endscript>  - Worker end-of-job script (condor_lar.sh --end-script).
-#                       Initialization/end-of-job scripts can be specified using an
-#                       absolute or relative path relative to the current directory.
+# <stage><endscript>  - Worker finalization script (condor_lar.sh --end-script).  Repeatable.
+# <stage><midsource>  - Worker midstage initialization source script (condor_lar.sh --mid-source).
+#                       Repeatable.
+#                       Specify as "<n>:<script>," for script to be sourced before stage n
+#                       (0 = first).
+# <stage><midscript>  - Worker midstage finalization script (condor_lar.sh --mid-script).
+#                       Repeatable.
+#                       Specify as "<n>:<script>," for script to be executed after stage n
+#                       (0 = first).
 # <stage><merge>  - Name of special histogram merging program or script (default "hadd -T",
 #                   can be overridden at each stage).
 #                   Set to "1" to generate merging metadata for artroot files.
@@ -2567,13 +2573,36 @@ def dojobsub(project, stage, makeup, recur):
 
     # Copy worker initialization script to work directory.
 
-    if stage.init_script != '':
-        if not larbatch_posix.exists(stage.init_script):
-            raise RuntimeError, 'Worker initialization script %s does not exist.\n' % \
-                stage.init_script
-        work_init_script = os.path.join(tmpworkdir, os.path.basename(stage.init_script))
-        if stage.init_script != work_init_script:
-            larbatch_posix.copy(stage.init_script, work_init_script)
+    for init_script in stage.init_script:
+        if init_script != '':
+            if not larbatch_posix.exists(init_script):
+                raise RuntimeError, 'Worker initialization script %s does not exist.\n' % init_script
+            work_init_script = os.path.join(tmpworkdir, os.path.basename(init_script))
+            if init_script != work_init_script:
+                larbatch_posix.copy(init_script, work_init_script)
+
+    # Update stage.init_script from list to single script.
+
+    n = len(stage.init_script)
+    if n == 0:
+        stage.init_script = ''
+    elif n == 1:
+        stage.init_script = stage.init_script[0]
+    else:
+
+        # If there are multiple init scripts, generate a wrapper init script init_wrapper.sh.
+
+        work_init_wrapper = os.path.join(tmpworkdir, 'init_wrapper.sh')
+        f = open(work_init_wrapper, 'w')
+        f.write('#! /bin/bash\n')
+        for init_script in stage.init_script:
+            f.write('echo\n')
+            f.write('echo "Executing %s"\n' % os.path.basename(init_script))
+            f.write('./%s\n' % os.path.basename(init_script))
+        f.write('echo\n')
+        f.write('echo "Done executing initialization scripts."\n')
+        f.close()
+        stage.init_script = work_init_wrapper
 
     # Copy worker initialization source script to work directory.
 
@@ -2585,14 +2614,99 @@ def dojobsub(project, stage, makeup, recur):
         if stage.init_source != work_init_source:
             larbatch_posix.copy(stage.init_source, work_init_source)
 
-    # Copy worker end-of-job script to work directory.
+    # Copy worker end-of-job scripts to work directory.
 
-    if stage.end_script != '':
-        if not larbatch_posix.exists(stage.end_script):
-            raise RuntimeError, 'Worker end-of-job script %s does not exist.\n' % stage.end_script
-        work_end_script = os.path.join(tmpworkdir, os.path.basename(stage.end_script))
-        if stage.end_script != work_end_script:
-            larbatch_posix.copy(stage.end_script, work_end_script)
+    for end_script in stage.end_script:
+        if end_script != '':
+            if not larbatch_posix.exists(end_script):
+                raise RuntimeError, 'Worker end-of-job script %s does not exist.\n' % end_script
+            work_end_script = os.path.join(tmpworkdir, os.path.basename(end_script))
+            if end_script != work_end_script:
+                larbatch_posix.copy(end_script, work_end_script)
+
+    # Update stage.end_script from list to single script.
+
+    n = len(stage.end_script)
+    if n == 0:
+        stage.end_script = ''
+    elif n == 1:
+        stage.end_script = stage.end_script[0]
+    else:
+
+        # If there are multiple end scripts, generate a wrapper end script end_wrapper.sh.
+
+        work_end_wrapper = os.path.join(tmpworkdir, 'end_wrapper.sh')
+        f = open(work_end_wrapper, 'w')
+        f.write('#! /bin/bash\n')
+        for end_script in stage.end_script:
+            f.write('echo\n')
+            f.write('echo "Executing %s"\n' % os.path.basename(end_script))
+            f.write('./%s\n' % os.path.basename(end_script))
+        f.write('echo\n')
+        f.write('echo "Done executing finalization scripts."\n')
+        f.close()
+        stage.end_script = work_end_wrapper
+
+    # Copy worker midstage source initialization scripts to work directory.
+
+    for istage in stage.mid_source:
+        for mid_source in stage.mid_source[istage]:
+            if mid_source != '':
+                if not larbatch_posix.exists(mid_source):
+                    raise RuntimeError, 'Worker midstage initialization source script %s does not exist.\n' % mid_source
+                work_mid_source = os.path.join(tmpworkdir, os.path.basename(mid_source))
+                if mid_source != work_mid_source:
+                    larbatch_posix.copy(mid_source, work_mid_source)
+
+    # Generate midstage source initialization wrapper script mid_source_wrapper.sh 
+    # and update stage.mid_script to point to wrapper.
+    # Note that variable $stage should be defined external to this script.
+
+    if len(mid_source) > 0:
+        work_mid_source_wrapper = os.path.join(tmpworkdir, 'mid_source_wrapper.sh')
+        f = open(work_mid_source_wrapper, 'w')
+        for istage in stage.mid_source:
+            for mid_source in stage.mid_source[istage]:
+                f.write('if [ $stage -eq %d ]; then\n' % istage)
+                f.write('  echo\n')
+                f.write('  echo "Sourcing %s"\n' % os.path.basename(mid_source))
+                f.write('  source %s\n' % os.path.basename(mid_source))
+                f.write('fi\n')
+        f.write('echo\n')
+        f.write('echo "Done sourcing midstage source initialization scripts for stage $stage."\n')
+        f.close()
+        stage.mid_source = work_mid_source_wrapper
+
+    # Copy worker midstage finalization scripts to work directory.
+
+    for istage in stage.mid_script:
+        for mid_script in stage.mid_script[istage]:
+            if mid_script != '':
+                if not larbatch_posix.exists(mid_script):
+                    raise RuntimeError, 'Worker midstage finalization script %s does not exist.\n' % mid_script
+                work_mid_script = os.path.join(tmpworkdir, os.path.basename(mid_script))
+                if mid_script != work_mid_script:
+                    larbatch_posix.copy(mid_script, work_mid_script)
+
+    # Generate midstage finalization wrapper script mid_wrapper.sh and update stage.mid_script 
+    # to point to wrapper.
+
+    if len(mid_script) > 0:
+        work_mid_wrapper = os.path.join(tmpworkdir, 'mid_wrapper.sh')
+        f = open(work_mid_wrapper, 'w')
+        f.write('#! /bin/bash\n')
+        f.write('stage=$1\n')
+        for istage in stage.mid_script:
+            for mid_script in stage.mid_script[istage]:
+                f.write('if [ $stage -eq %d ]; then\n' % istage)
+                f.write('  echo\n')
+                f.write('  echo "Executing %s"\n' % os.path.basename(mid_script))
+                f.write('  ./%s\n' % os.path.basename(mid_script))
+                f.write('fi\n')
+        f.write('echo\n')
+        f.write('echo "Done executing midstage finalization scripts for stage $stage."\n')
+        f.close()
+        stage.mid_script = work_mid_wrapper
 
     # Copy helper scripts to work directory.
 
@@ -2945,8 +3059,11 @@ def dojobsub(project, stage, makeup, recur):
     command.extend([' --workdir', stage.workdir])
     command.extend([' --outdir', stage.outdir])
     command.extend([' --logdir', stage.logdir])
-    if stage.exe != '':
-        command.extend([' --exe', stage.exe])
+    if stage.exe:
+        if type(stage.exe) == type([]):
+            command.extend([' --exe', ':'.join(stage.exe)])
+        else:
+            command.extend([' --exe', stage.exe])
     if stage.schema != '':
         command.extend([' --sam_schema', stage.schema])
     if project.os != '':
@@ -2983,8 +3100,11 @@ def dojobsub(project, stage, makeup, recur):
         command.extend(['--data_file_type', ftype])
     if procmap != '':
         command.extend([' --procmap', procmap])
-    if stage.output != '':
-        command.extend([' --output', stage.output])
+    if stage.output:
+        if type(stage.output) == type([]):
+            command.extend([' --output', ':'.join(stage.output)])
+        else:
+            command.extend([' --output', stage.output])
     if stage.TFileName != '':
         command.extend([' --TFileName', stage.TFileName])
     if stage.init_script != '':
@@ -2993,6 +3113,10 @@ def dojobsub(project, stage, makeup, recur):
         command.extend([' --init-source', os.path.basename(stage.init_source)])
     if stage.end_script != '':
         command.extend([' --end-script', os.path.basename(stage.end_script)])
+    if stage.mid_source != '':
+        command.extend([' --mid-source', os.path.basename(stage.mid_source)])
+    if stage.mid_script != '':
+        command.extend([' --mid-script', os.path.basename(stage.mid_script)])
     if abssetupscript != '':
         command.extend([' --init', abssetupscript])
 

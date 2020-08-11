@@ -88,6 +88,8 @@ class StageDef:
             self.init_script = base_stage.init_script
             self.init_source = base_stage.init_source
             self.end_script = base_stage.end_script
+            self.mid_source = base_stage.mid_source
+            self.mid_script = base_stage.mid_script
             self.merge = base_stage.merge
             self.anamerge = base_stage.anamerge
             self.resource = base_stage.resource
@@ -159,9 +161,11 @@ class StageDef:
             self.ana_data_tier = '' # Sam data tier.
             self.ana_data_stream = [] # Sam data stream.
             self.submit_script = '' # Submit script.
-            self.init_script = ''  # Worker initialization script.
+            self.init_script = []  # Worker initialization script.
             self.init_source = ''  # Worker initialization bash source script.
-            self.end_script = ''   # Worker end-of-job script.
+            self.end_script = []   # Worker end-of-job script.
+            self.mid_source = {}   # Worker midstage source init scripts.
+            self.mid_script = {}   # Worker midstage finalization scripts.
             self.merge = default_merge    # Histogram merging program
             self.anamerge = default_anamerge    # Analysis merge flag.
             self.resource = ''     # Jobsub resources.
@@ -173,12 +177,12 @@ class StageDef:
             self.datafiletypes = ["root"] # Data file types.
             self.memory = default_memory # Amount of memory (integer MB).
             self.parameters = {}   # Dictionary of metadata parameters.
-            self.output = ''       # Art output file name.
+            self.output = []       # Art output file names.
             self.TFileName = ''    # TFile output file name.
             self.jobsub = ''       # Arbitrary jobsub_submit options.
             self.jobsub_start = '' # Arbitrary jobsub_submit options for sam start/stop jobs.
             self.jobsub_timeout = 0 # Jobsub submit timeout.
-            self.exe = ''          # Art-like executable.
+            self.exe = []          # Art-like executables.
             self.schema = ''       # Sam schema.
             self.validate_on_worker = default_validate_on_worker # Validate-on-worker flag.
             self.copy_to_fts = default_copy_to_fts   # Upload-on-worker flag.
@@ -525,32 +529,37 @@ class StageDef:
             if not larbatch_posix.exists(self.submit_script[0]):
                 raise IOError, 'Submit script %s not found.' % self.submit_script[0]
 
-        # Worker initialization script (subelement).
+        # Worker initialization script (repeatable subelement).
 
         init_script_elements = stage_element.getElementsByTagName('initscript')
-        if init_script_elements:
-            self.init_script = str(init_script_elements[0].firstChild.data)
+        if len(init_script_elements) > 0:
+            self.init_script = []
+            for init_script_element in init_script_elements:
+                init_script = str(init_script_element.firstChild.data)
 
-        # Make sure init script exists, and convert into a full path.
+                # Make sure init script exists, and convert into a full path.
 
-        if self.init_script != '':
-            if larbatch_posix.exists(self.init_script):
-                self.init_script = os.path.realpath(self.init_script)
-            else:
+                if init_script != '':
+                    if larbatch_posix.exists(init_script):
+                        init_script = os.path.realpath(init_script)
+                    else:
 
-                # Look for script on execution path.
+                        # Look for script on execution path.
 
-                try:
-                    jobinfo = subprocess.Popen(['which', self.init_script],
-                                               stdout=subprocess.PIPE,
-                                               stderr=subprocess.PIPE)
-                    jobout, joberr = jobinfo.communicate()
-                    rc = jobinfo.poll()
-                    self.init_script = jobout.splitlines()[0].strip()
-                except:
-                    pass
-            if not larbatch_posix.exists(self.init_script):
-                raise IOError, 'Init script %s not found.' % self.init_script
+                        try:
+                            jobinfo = subprocess.Popen(['which', init_script],
+                                                       stdout=subprocess.PIPE,
+                                                       stderr=subprocess.PIPE)
+                            jobout, joberr = jobinfo.communicate()
+                            rc = jobinfo.poll()
+                            init_script = jobout.splitlines()[0].strip()
+                        except:
+                            pass
+
+                    if not larbatch_posix.exists(init_script):
+                        raise IOError, 'Init script %s not found.' % init_script
+
+                    self.init_script.append(init_script)
 
         # Worker initialization source script (subelement).
 
@@ -579,32 +588,119 @@ class StageDef:
             if not larbatch_posix.exists(self.init_source):
                 raise IOError, 'Init source script %s not found.' % self.init_source
 
-        # Worker end-of-job script (subelement).
+        # Worker end-of-job script (repeatable subelement).
 
         end_script_elements = stage_element.getElementsByTagName('endscript')
-        if end_script_elements:
-            self.end_script = str(end_script_elements[0].firstChild.data)
+        if len(end_script_elements) > 0:
+            self.end_script = []
+            for end_script_element in end_script_elements:
+                end_script = str(end_script_element.firstChild.data)
 
-        # Make sure end-of-job script exists, and convert into a full path.
+                # Make sure end-of-job scripts exists, and convert into a full path.
 
-        if self.end_script != '':
-            if larbatch_posix.exists(self.end_script):
-                self.end_script = os.path.realpath(self.end_script)
-            else:
+                if end_script != '':
+                    if larbatch_posix.exists(end_script):
+                        end_script = os.path.realpath(end_script)
+                    else:
 
-                # Look for script on execution path.
+                        # Look for script on execution path.
 
-                try:
-                    jobinfo = subprocess.Popen(['which', self.end_script],
-                                               stdout=subprocess.PIPE,
-                                               stderr=subprocess.PIPE)
-                    jobout, joberr = jobinfo.communicate()
-                    rc = jobinfo.poll()
-                    self.end_script = jobout.splitlines()[0].strip()
-                except:
-                    pass
-            if not larbatch_posix.exists(self.end_script):
-                raise IOError, 'End-of-job script %s not found.' % self.end_script
+                        try:
+                            jobinfo = subprocess.Popen(['which', end_script],
+                                                       stdout=subprocess.PIPE,
+                                                       stderr=subprocess.PIPE)
+                            jobout, joberr = jobinfo.communicate()
+                            rc = jobinfo.poll()
+                            end_script = jobout.splitlines()[0].strip()
+                        except:
+                            pass
+
+                    if not larbatch_posix.exists(end_script):
+                        raise IOError, 'End-of-job script %s not found.' % end_script
+
+                    self.end_script.append(end_script)
+
+        # Worker midstage source initialization script (repeatable subelement).
+
+        mid_source_elements = stage_element.getElementsByTagName('midsource')
+        if len(mid_source_elements) > 0:
+            self.mid_source = {}
+            for mid_source_element in mid_source_elements:
+                mid_source_list = str(mid_source_element.firstChild.data).split(':')
+                n = -1
+                mid_source = ''
+                if len(mid_source_list) == 2:
+                    n = int(mid_source_list[0])
+                    mid_source = mid_source_list[1]
+                else:
+                    raise XMLError, '<midsource> parse error.'
+
+                # Make sure midstage scripts exists, and convert into a full path.
+
+                if mid_source != '':
+                    if larbatch_posix.exists(mid_source):
+                        mid_source = os.path.realpath(mid_source)
+                    else:
+
+                        # Look for script on execution path.
+
+                        try:
+                            jobinfo = subprocess.Popen(['which', mid_source],
+                                                       stdout=subprocess.PIPE,
+                                                       stderr=subprocess.PIPE)
+                            jobout, joberr = jobinfo.communicate()
+                            rc = jobinfo.poll()
+                            mid_source = jobout.splitlines()[0].strip()
+                        except:
+                            pass
+
+                    if not larbatch_posix.exists(mid_source):
+                        raise IOError, 'Midstage source initialization script %s not found.' % mid_source
+
+                    if not self.mid_source.has_key(n):
+                        self.mid_source[n] = []
+                    self.mid_source[n].append(mid_source)
+
+        # Worker midstage finalization script (repeatable subelement).
+
+        mid_script_elements = stage_element.getElementsByTagName('midscript')
+        if len(mid_script_elements) > 0:
+            self.mid_script = {}
+            for mid_script_element in mid_script_elements:
+                mid_script_list = str(mid_script_element.firstChild.data).split(':')
+                n = -1
+                mid_script = ''
+                if len(mid_script_list) == 2:
+                    n = int(mid_script_list[0])
+                    mid_script = mid_script_list[1]
+                else:
+                    raise XMLError, '<midscript> parse error.'
+
+                # Make sure midstage scripts exists, and convert into a full path.
+
+                if mid_script != '':
+                    if larbatch_posix.exists(mid_script):
+                        mid_script = os.path.realpath(mid_script)
+                    else:
+
+                        # Look for script on execution path.
+
+                        try:
+                            jobinfo = subprocess.Popen(['which', mid_script],
+                                                       stdout=subprocess.PIPE,
+                                                       stderr=subprocess.PIPE)
+                            jobout, joberr = jobinfo.communicate()
+                            rc = jobinfo.poll()
+                            mid_script = jobout.splitlines()[0].strip()
+                        except:
+                            pass
+
+                    if not larbatch_posix.exists(mid_script):
+                        raise IOError, 'Midstage finlzation script %s not found.' % mid_script
+
+                    if not self.mid_script.has_key(n):
+                        self.mid_script[n] = []
+                    self.mid_script[n].append(mid_script)
 
         # Histogram merging program.
 
@@ -682,12 +778,25 @@ class StageDef:
                 value = str(param_element.firstChild.data)
                 self.parameters[name] = value
 
-        # Output file name (subelement).
+        # Output file name (repeatable subelement).
 
         output_elements = stage_element.getElementsByTagName('output')
-        if output_elements:
-            self.output = str(output_elements[0].firstChild.data)
+        if len(output_elements) > 0:
+            self.output = []
+            for output_element in output_elements:
+                output = ''
+                if output_element.firstChild:
+                    output = str(output_element.firstChild.data)
+                self.output.append(output)
 	    
+        # Make sure that the size of the output list (if specified) ia at least as
+        # long as the fclname list.
+        # If not, extend by adding empty names.
+
+        if len(self.output) > 0:
+            while len(self.output) < len(self.fclname):
+                self.output.append(self.output[-1])
+
 	# TFileName (subelement).
 
         TFileName_elements = stage_element.getElementsByTagName('TFileName')
@@ -712,11 +821,22 @@ class StageDef:
         if jobsub_timeout_elements:
             self.jobsub_timeout = int(jobsub_timeout_elements[0].firstChild.data)
 
-	# Name of art-like executable.
+	# Name of art-like executables (repeatable subelement).
 
         exe_elements = stage_element.getElementsByTagName('exe')
-        if exe_elements:
-            self.exe = str(exe_elements[0].firstChild.data)
+        if len(exe_elements) > 0:
+            self.exe = []
+            for exe_element in exe_elements:
+                exe = str(exe_element.firstChild.data)
+                self.exe.append(exe)
+
+        # Make sure that the size of the exe list (if specified) ia at least as
+        # long as the fclname list.
+        # If not, extend by copying the last item.
+
+        if len(self.exe) > 0:
+            while len(self.exe) < len(self.fclname):
+                self.exe.append(self.exe[-1])
 
 	# Sam schema.
 
@@ -864,6 +984,8 @@ class StageDef:
         result += 'Worker initialization script = %s\n' % self.init_script
         result += 'Worker initialization source script = %s\n' % self.init_source
         result += 'Worker end-of-job script = %s\n' % self.end_script
+        result += 'Worker midstage source initialization scripts = %s\n' % self.mid_source
+        result += 'Worker midstage finalization scripts = %s\n' % self.mid_script
         result += 'Special histogram merging program = %s\n' % self.merge
         result += 'Analysis merge flag = %s\n' % self.anamerge
         result += 'Resource = %s\n' % self.resource
@@ -882,7 +1004,7 @@ class StageDef:
         result += 'Jobsub_submit options = %s\n' % self.jobsub
         result += 'Jobsub_submit start/stop options = %s\n' % self.jobsub_start
         result += 'Jobsub submit timeout = %d\n' % self.jobsub_timeout
-        result += 'Executable = %s\n' % self.exe
+        result += 'Executables = %s\n' % self.exe
         result += 'Schema = %s\n' % self.schema
         result += 'Validate-on-worker = %d\n' % self.validate_on_worker
         result += 'Upload-on-worker = %d\n' % self.copy_to_fts
