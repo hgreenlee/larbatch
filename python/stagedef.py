@@ -162,7 +162,7 @@ class StageDef:
             self.ana_data_stream = [] # Sam data stream.
             self.submit_script = '' # Submit script.
             self.init_script = []  # Worker initialization script.
-            self.init_source = ''  # Worker initialization bash source script.
+            self.init_source = []  # Worker initialization bash source script.
             self.end_script = []   # Worker end-of-job script.
             self.mid_source = {}   # Worker midstage source init scripts.
             self.mid_script = {}   # Worker midstage finalization scripts.
@@ -561,32 +561,37 @@ class StageDef:
 
                     self.init_script.append(init_script)
 
-        # Worker initialization source script (subelement).
+        # Worker initialization source script (repeatable subelement).
 
         init_source_elements = stage_element.getElementsByTagName('initsource')
-        if init_source_elements:
-            self.init_source = str(init_source_elements[0].firstChild.data)
+        if len(init_source_elements) > 0:
+            self.init_source = []
+            for init_source_element in init_source_elements:
+                init_source = str(init_source_element.firstChild.data)
 
-        # Make sure init source script exists, and convert into a full path.
+                # Make sure init source script exists, and convert into a full path.
 
-        if self.init_source != '':
-            if larbatch_posix.exists(self.init_source):
-                self.init_source = os.path.realpath(self.init_source)
-            else:
+                if init_source != '':
+                    if larbatch_posix.exists(init_source):
+                        init_source = os.path.realpath(init_source)
+                    else:
 
-                # Look for script on execution path.
+                        # Look for script on execution path.
 
-                try:
-                    jobinfo = subprocess.Popen(['which', self.init_source],
-                                               stdout=subprocess.PIPE,
-                                               stderr=subprocess.PIPE)
-                    jobout, joberr = jobinfo.communicate()
-                    rc = jobinfo.poll()
-                    self.init_source = jobout.splitlines()[0].strip()
-                except:
-                    pass
-            if not larbatch_posix.exists(self.init_source):
-                raise IOError, 'Init source script %s not found.' % self.init_source
+                        try:
+                            jobinfo = subprocess.Popen(['which', init_source],
+                                                       stdout=subprocess.PIPE,
+                                                       stderr=subprocess.PIPE)
+                            jobout, joberr = jobinfo.communicate()
+                            rc = jobinfo.poll()
+                            init_source = jobout.splitlines()[0].strip()
+                        except:
+                            pass
+
+                    if not larbatch_posix.exists(init_source):
+                        raise IOError, 'Init source script %s not found.' % init_source
+
+                    self.init_source.append(init_source)
 
         # Worker end-of-job script (repeatable subelement).
 

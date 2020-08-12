@@ -2571,12 +2571,13 @@ def dojobsub(project, stage, makeup, recur):
         if stage.stop_script != workstopscript:
             larbatch_posix.copy(stage.stop_script, workstopscript)
 
-    # Copy worker initialization script to work directory.
+    # Copy worker initialization scripts to work directory.
 
     for init_script in stage.init_script:
         if init_script != '':
             if not larbatch_posix.exists(init_script):
-                raise RuntimeError, 'Worker initialization script %s does not exist.\n' % init_script
+                raise RuntimeError, 'Worker initialization script %s does not exist.\n' % \
+                    init_script
             work_init_script = os.path.join(tmpworkdir, os.path.basename(init_script))
             if init_script != work_init_script:
                 larbatch_posix.copy(init_script, work_init_script)
@@ -2604,15 +2605,39 @@ def dojobsub(project, stage, makeup, recur):
         f.close()
         stage.init_script = work_init_wrapper
 
-    # Copy worker initialization source script to work directory.
+    # Copy worker initialization source scripts to work directory.
 
-    if stage.init_source != '':
-        if not larbatch_posix.exists(stage.init_source):
-            raise RuntimeError, 'Worker initialization source script %s does not exist.\n' % \
-                stage.init_source
-        work_init_source = os.path.join(tmpworkdir, os.path.basename(stage.init_source))
-        if stage.init_source != work_init_source:
-            larbatch_posix.copy(stage.init_source, work_init_source)
+    for init_source in stage.init_source:
+        if init_source != '':
+            if not larbatch_posix.exists(init_source):
+                raise RuntimeError, 'Worker initialization source script %s does not exist.\n' % \
+                    init_source
+        work_init_source = os.path.join(tmpworkdir, os.path.basename(init_source))
+        if init_source != work_init_source:
+            larbatch_posix.copy(init_source, work_init_source)
+
+    # Update stage.init_source from list to single script.
+
+    n = len(stage.init_source)
+    if n == 0:
+        stage.init_source = ''
+    elif n == 1:
+        stage.init_source = stage.init_source[0]
+    else:
+
+        # If there are multiple init source scripts, generate a wrapper init script
+        # init_source_wrapper.sh.
+
+        work_init_source_wrapper = os.path.join(tmpworkdir, 'init_source_wrapper.sh')
+        f = open(work_init_source_wrapper, 'w')
+        for init_source in stage.init_source:
+            f.write('echo\n')
+            f.write('echo "Sourcing %s"\n' % os.path.basename(init_source))
+            f.write('source %s\n' % os.path.basename(init_source))
+        f.write('echo\n')
+        f.write('echo "Done sourcing initialization scripts."\n')
+        f.close()
+        stage.init_source = work_init_source_wrapper
 
     # Copy worker end-of-job scripts to work directory.
 

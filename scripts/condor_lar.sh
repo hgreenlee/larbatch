@@ -1080,7 +1080,7 @@ if [ x$INITSCRIPT != x ]; then
   fi
 fi
 
-if [ x$INITSOURCE != x -a $stage -eq 0 ]; then
+if [ x$INITSOURCE != x ]; then
   echo "Sourcing initialization source script ${INITSOURCE}."
   . $INITSOURCE
   status=$?
