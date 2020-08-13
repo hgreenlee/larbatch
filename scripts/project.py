@@ -339,10 +339,13 @@
 #                       Repeatable.
 #                       Specify as "<n>:<script>," for script to be executed after stage n
 #                       (0 = first).
+# <stage><projectname> - Override project name (substage repeatable).
+# <stage><stagename> - Override stage name (substage repeatable).
+# <stage><projectversion> - Override project version (substage repeatable).
 # <stage><merge>  - Name of special histogram merging program or script (default "hadd -T",
 #                   can be overridden at each stage).
 #                   Set to "1" to generate merging metadata for artroot files.
-# <state><anamerge> - Set to "1" to generate merging metadata for analysis files.
+# <stage><anamerge> - Set to "1" to generate merging metadata for analysis files.
 # <stage><resource> - Jobsub resources (comma-separated list: DEDICATED,OPPORTUNISTIC,
 #                     OFFSITE,FERMICLOUD,PAID_CLOUD,FERMICLOUD8G).
 #                     Default: DEDICATED,OPPORTUNISTIC.
@@ -353,7 +356,7 @@
 # <stage><disk>    - Amount of scratch disk space (jobsub_submit --disk=...).
 #                    Specify value and unit (e.g. 50GB).
 # <stage><memory>  - Specify amount of memory in MB (jobsub_submit --memory=...).
-# <stage><output>  - Specify output file name.
+# <stage><output>  - Specify output file name.  Repeatable by substage.
 # <stage><datafiletypes>  - Specify file types that should be considered as data and
 #                           saved in batch jobs (comma-separated list).  Default "root".
 # <stage><TFileName>   - Ability to specify unique output TFile Name
@@ -365,7 +368,7 @@
 #                    Applies to sam start/stop project submissions.
 # <stage><jobsub_timeout> - Jobsubmission timeout (seconds).
 # <stage><maxfilesperjob> - Maximum number of files to be processed in a single worker.
-# <stage><exe>     - Executable (default "lar").
+# <stage><exe>     - Executable (default "lar").  Repeatable by substage.
 # <stage><schema>  - Sam schema (default none).  Use "root" to stream using xrootd.
 # <stage><check>   - Do on-node validation and sam declaration (0 or 1, default 0).
 # <stage><copy>    - Copy validated root files to FTS (0 or 1, default 0).
@@ -2472,6 +2475,9 @@ def dojobsub(project, stage, makeup, recur):
     wrapper_fcl_name = os.path.join(tmpworkdir, 'wrapper.fcl')
     wrapper_fcl = safeopen(wrapper_fcl_name)
     stageNum = 0
+    original_project_name = project.name
+    original_stage_name = stage.name
+    original_project_version = project.version
 
     for fcl in fcls:
       wrapper_fcl.write('#---STAGE %d\n' % stageNum)
@@ -2502,9 +2508,18 @@ def dojobsub(project, stage, makeup, recur):
 
         # Add experiment-specific sam metadata.
 
+        if stageNum < len(stage.project_name) and stage.project_name[stageNum] != '':
+            project.name = stage.project_name[stageNum]
+        if stageNum < len(stage.stage_name) and stage.stage_name[stageNum] != '':
+            stage.name = stage.stage_name[stageNum]
+        if stageNum < len(stage.project_version) and stage.project_version[stageNum] != '':
+            project.version = stage.project_version[stageNum]
         sam_metadata = project_utilities.get_sam_metadata(project, stage)
         if sam_metadata:
             wrapper_fcl.write(sam_metadata)
+        project.name = original_project_name
+        stage.name = original_stage_name
+        project.version = original_project_version
 
       # In case of generator jobs, add override for pubs run number
       # (subrun number is overridden inside condor_lar.sh).

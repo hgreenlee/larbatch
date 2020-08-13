@@ -90,6 +90,9 @@ class StageDef:
             self.end_script = base_stage.end_script
             self.mid_source = base_stage.mid_source
             self.mid_script = base_stage.mid_script
+            self.project_name = base_stage.project_name
+            self.stage_name = base_stage.stage_name
+            self.project_version = base_stage.project_version
             self.merge = base_stage.merge
             self.anamerge = base_stage.anamerge
             self.resource = base_stage.resource
@@ -166,6 +169,9 @@ class StageDef:
             self.end_script = []   # Worker end-of-job script.
             self.mid_source = {}   # Worker midstage source init scripts.
             self.mid_script = {}   # Worker midstage finalization scripts.
+            self.project_name = [] # Project name overrides.
+            self.stage_name = []   # Stage name overrides.
+            self.project_version = [] # Project version overrides.
             self.merge = default_merge    # Histogram merging program
             self.anamerge = default_anamerge    # Analysis merge flag.
             self.resource = ''     # Jobsub resources.
@@ -707,6 +713,63 @@ class StageDef:
                         self.mid_script[n] = []
                     self.mid_script[n].append(mid_script)
 
+	# Project name overrides (repeatable subelement).
+
+        project_name_elements = stage_element.getElementsByTagName('projectname')
+        if len(project_name_elements) > 0:
+            self.project_name = []
+            for project_name_element in project_name_elements:
+                project_name = ''
+                if project_name_element.firstChild:
+                    project_name = str(project_name_element.firstChild.data)
+                self.project_name.append(project_name)
+
+        # Make sure that the size of the project_name list (if specified) ia at least as
+        # long as the fclname list.
+        # If not, extend by adding empty string.
+
+        if len(self.project_name) > 0:
+            while len(self.project_name) < len(self.fclname):
+                self.project_name.append('')
+
+	# Stage name overrides (repeatable subelement).
+
+        stage_name_elements = stage_element.getElementsByTagName('stagename')
+        if len(stage_name_elements) > 0:
+            self.stage_name = []
+            for stage_name_element in stage_name_elements:
+                stage_name = ''
+                if stage_name_element.firstChild:
+                    stage_name = str(stage_name_element.firstChild.data)
+                self.stage_name.append(stage_name)
+
+        # Make sure that the size of the stage_name list (if specified) ia at least as
+        # long as the fclname list.
+        # If not, extend by adding empty string.
+
+        if len(self.stage_name) > 0:
+            while len(self.stage_name) < len(self.fclname):
+                self.stage_name.append('')
+
+	# Project version overrides (repeatable subelement).
+
+        project_version_elements = stage_element.getElementsByTagName('projectversion')
+        if len(project_version_elements) > 0:
+            self.project_version = []
+            for project_version_element in project_version_elements:
+                project_version = ''
+                if project_version_element.firstChild:
+                    project_version = str(project_version_element.firstChild.data)
+                self.project_version.append(project_version)
+
+        # Make sure that the size of the project_version list (if specified) ia at least as
+        # long as the fclname list.
+        # If not, extend by adding empty string.
+
+        if len(self.project_version) > 0:
+            while len(self.project_version) < len(self.fclname):
+                self.project_version.append('')
+
         # Histogram merging program.
 
         merge_elements = stage_element.getElementsByTagName('merge')
@@ -991,6 +1054,9 @@ class StageDef:
         result += 'Worker end-of-job script = %s\n' % self.end_script
         result += 'Worker midstage source initialization scripts = %s\n' % self.mid_source
         result += 'Worker midstage finalization scripts = %s\n' % self.mid_script
+        result += 'Project name overrides = %s\n' % self.project_name
+        result += 'Stage name overrides = %s\n' % self.stage_name
+        result += 'Project version overrides = %s\n' % self.project_version
         result += 'Special histogram merging program = %s\n' % self.merge
         result += 'Analysis merge flag = %s\n' % self.anamerge
         result += 'Resource = %s\n' % self.resource
