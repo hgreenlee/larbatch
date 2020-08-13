@@ -2687,7 +2687,7 @@ def dojobsub(project, stage, makeup, recur):
     # and update stage.mid_script to point to wrapper.
     # Note that variable $stage should be defined external to this script.
 
-    if len(mid_source) > 0:
+    if len(stage.mid_source) > 0:
         work_mid_source_wrapper = os.path.join(tmpworkdir, 'mid_source_wrapper.sh')
         f = open(work_mid_source_wrapper, 'w')
         for istage in stage.mid_source:
@@ -2701,6 +2701,8 @@ def dojobsub(project, stage, makeup, recur):
         f.write('echo "Done sourcing midstage source initialization scripts for stage $stage."\n')
         f.close()
         stage.mid_source = work_mid_source_wrapper
+    else:
+        stage.mid_source = ''
 
     # Copy worker midstage finalization scripts to work directory.
 
@@ -2716,7 +2718,7 @@ def dojobsub(project, stage, makeup, recur):
     # Generate midstage finalization wrapper script mid_wrapper.sh and update stage.mid_script 
     # to point to wrapper.
 
-    if len(mid_script) > 0:
+    if len(stage.mid_script) > 0:
         work_mid_wrapper = os.path.join(tmpworkdir, 'mid_wrapper.sh')
         f = open(work_mid_wrapper, 'w')
         f.write('#! /bin/bash\n')
@@ -2732,6 +2734,8 @@ def dojobsub(project, stage, makeup, recur):
         f.write('echo "Done executing midstage finalization scripts for stage $stage."\n')
         f.close()
         stage.mid_script = work_mid_wrapper
+    else:
+        stage.mid_script = ''
 
     # Copy helper scripts to work directory.
 
