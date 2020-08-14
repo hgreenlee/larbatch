@@ -217,7 +217,7 @@ class StageDef:
         if len(fclname_elements) > 0:
             self.fclname = []
             for fcl in fclname_elements:
-                self.fclname.append(str(fcl.firstChild.data))
+                self.fclname.append(str(fcl.firstChild.data).strip())
         if len(self.fclname) == 0:
             raise XMLError, 'No Fcl names specified for stage %s.' % self.name
 
@@ -539,7 +539,6 @@ class StageDef:
 
         init_script_elements = stage_element.getElementsByTagName('initscript')
         if len(init_script_elements) > 0:
-            self.init_script = []
             for init_script_element in init_script_elements:
                 init_script = str(init_script_element.firstChild.data)
 
@@ -571,7 +570,6 @@ class StageDef:
 
         init_source_elements = stage_element.getElementsByTagName('initsource')
         if len(init_source_elements) > 0:
-            self.init_source = []
             for init_source_element in init_source_elements:
                 init_source = str(init_source_element.firstChild.data)
 
@@ -597,13 +595,34 @@ class StageDef:
                     if not larbatch_posix.exists(init_source):
                         raise IOError, 'Init source script %s not found.' % init_source
 
-                    self.init_source.append(init_source)
+                    # The <initsource> element can occur at the top level of the <stage>
+                    # element, or inside a <fcl> element.
+                    # Update the StageDef object differently in these two cases.
+
+                    parent_element = init_source_element.parentNode
+                    if parent_element.nodeName == 'fcl':
+
+                        # This <initsource> is located inside a <fcl> element.
+                        # Find the index of this fcl file.
+                        # Python will raise an exception if the fcl can't be found
+                        # (shouldn't happen).
+
+                        fcl = str(parent_element.firstChild.data).strip()
+                        n = self.fclname.index(fcl)
+                        if not n in self.mid_source:
+                            self.mid_source[n] = []
+                        self.mid_source[n].append(init_source)
+
+                    else:
+
+                        # This is a <stage> level <initsource> element.
+
+                        self.init_source.append(init_source)
 
         # Worker end-of-job script (repeatable subelement).
 
         end_script_elements = stage_element.getElementsByTagName('endscript')
         if len(end_script_elements) > 0:
-            self.end_script = []
             for end_script_element in end_script_elements:
                 end_script = str(end_script_element.firstChild.data)
 
@@ -629,102 +648,59 @@ class StageDef:
                     if not larbatch_posix.exists(end_script):
                         raise IOError, 'End-of-job script %s not found.' % end_script
 
-                    self.end_script.append(end_script)
+                    # The <endscript> element can occur at the top level of the <stage>
+                    # element, or inside a <fcl> element.
+                    # Update the StageDef object differently in these two cases.
 
-        # Worker midstage source initialization script (repeatable subelement).
+                    parent_element = end_script_element.parentNode
+                    if parent_element.nodeName == 'fcl':
 
-        mid_source_elements = stage_element.getElementsByTagName('midsource')
-        if len(mid_source_elements) > 0:
-            self.mid_source = {}
-            for mid_source_element in mid_source_elements:
-                mid_source_list = str(mid_source_element.firstChild.data).split(':')
-                n = -1
-                mid_source = ''
-                if len(mid_source_list) == 2:
-                    n = int(mid_source_list[0])
-                    mid_source = mid_source_list[1]
-                else:
-                    raise XMLError, '<midsource> parse error.'
+                        # This <endscript> is located inside a <fcl> element.
+                        # Find the index of this fcl file.
+                        # Python will raise an exception if the fcl can't be found
+                        # (shouldn't happen).
 
-                # Make sure midstage scripts exists, and convert into a full path.
+                        fcl = str(parent_element.firstChild.data).strip()
+                        n = self.fclname.index(fcl)
+                        if not n in self.mid_script:
+                            self.mid_script[n] = []
+                        self.mid_script[n].append(end_script)
 
-                if mid_source != '':
-                    if larbatch_posix.exists(mid_source):
-                        mid_source = os.path.realpath(mid_source)
                     else:
 
-                        # Look for script on execution path.
+                        # This is a <stage> level <endscript> element.
 
-                        try:
-                            jobinfo = subprocess.Popen(['which', mid_source],
-                                                       stdout=subprocess.PIPE,
-                                                       stderr=subprocess.PIPE)
-                            jobout, joberr = jobinfo.communicate()
-                            rc = jobinfo.poll()
-                            mid_source = jobout.splitlines()[0].strip()
-                        except:
-                            pass
-
-                    if not larbatch_posix.exists(mid_source):
-                        raise IOError, 'Midstage source initialization script %s not found.' % mid_source
-
-                    if not self.mid_source.has_key(n):
-                        self.mid_source[n] = []
-                    self.mid_source[n].append(mid_source)
-
-        # Worker midstage finalization script (repeatable subelement).
-
-        mid_script_elements = stage_element.getElementsByTagName('midscript')
-        if len(mid_script_elements) > 0:
-            self.mid_script = {}
-            for mid_script_element in mid_script_elements:
-                mid_script_list = str(mid_script_element.firstChild.data).split(':')
-                n = -1
-                mid_script = ''
-                if len(mid_script_list) == 2:
-                    n = int(mid_script_list[0])
-                    mid_script = mid_script_list[1]
-                else:
-                    raise XMLError, '<midscript> parse error.'
-
-                # Make sure midstage scripts exists, and convert into a full path.
-
-                if mid_script != '':
-                    if larbatch_posix.exists(mid_script):
-                        mid_script = os.path.realpath(mid_script)
-                    else:
-
-                        # Look for script on execution path.
-
-                        try:
-                            jobinfo = subprocess.Popen(['which', mid_script],
-                                                       stdout=subprocess.PIPE,
-                                                       stderr=subprocess.PIPE)
-                            jobout, joberr = jobinfo.communicate()
-                            rc = jobinfo.poll()
-                            mid_script = jobout.splitlines()[0].strip()
-                        except:
-                            pass
-
-                    if not larbatch_posix.exists(mid_script):
-                        raise IOError, 'Midstage finlzation script %s not found.' % mid_script
-
-                    if not self.mid_script.has_key(n):
-                        self.mid_script[n] = []
-                    self.mid_script[n].append(mid_script)
+                        self.end_script.append(end_script)
 
 	# Project name overrides (repeatable subelement).
 
         project_name_elements = stage_element.getElementsByTagName('projectname')
         if len(project_name_elements) > 0:
-            self.project_name = []
             for project_name_element in project_name_elements:
-                project_name = ''
-                if project_name_element.firstChild:
-                    project_name = str(project_name_element.firstChild.data)
-                self.project_name.append(project_name)
 
-        # Make sure that the size of the project_name list (if specified) ia at least as
+                # Match this project name with its parent fcl element.
+
+                fcl_element = project_name_element.parentNode
+                if fcl_element.nodeName != 'fcl':
+                    raise XMLError, "Found <projectname> element outside <fcl> element."
+                fcl = str(fcl_element.firstChild.data).strip()
+
+                # Find the index of this fcl file.
+                # Python will raise an exception if the fcl can't be found (shouldn't happen).
+
+                n = self.fclname.index(fcl)
+
+                # Make sure project_name list is long enough.
+
+                while len(self.project_name) < n+1:
+                    self.project_name.append('')
+
+                # Extract project name and add it to list.
+
+                project_name = str(project_name_element.firstChild.data)
+                self.project_name[n] = project_name
+
+        # Make sure that the size of the project_name list (if present) ia at least as
         # long as the fclname list.
         # If not, extend by adding empty string.
 
@@ -736,14 +712,31 @@ class StageDef:
 
         stage_name_elements = stage_element.getElementsByTagName('stagename')
         if len(stage_name_elements) > 0:
-            self.stage_name = []
             for stage_name_element in stage_name_elements:
-                stage_name = ''
-                if stage_name_element.firstChild:
-                    stage_name = str(stage_name_element.firstChild.data)
-                self.stage_name.append(stage_name)
 
-        # Make sure that the size of the stage_name list (if specified) ia at least as
+                # Match this project name with its parent fcl element.
+
+                fcl_element = stage_name_element.parentNode
+                if fcl_element.nodeName != 'fcl':
+                    raise XMLError, "Found <stagename> element outside <fcl> element."
+                fcl = str(fcl_element.firstChild.data).strip()
+
+                # Find the index of this fcl file.
+                # Python will raise an exception if the fcl can't be found (shouldn't happen).
+
+                n = self.fclname.index(fcl)
+
+                # Make sure stage_name list is long enough.
+
+                while len(self.stage_name) < n+1:
+                    self.stage_name.append('')
+
+                # Extract stage name and add it to list.
+
+                stage_name = str(stage_name_element.firstChild.data)
+                self.stage_name[n] = stage_name
+
+        # Make sure that the size of the stage_name list (if present) ia at least as
         # long as the fclname list.
         # If not, extend by adding empty string.
 
@@ -755,14 +748,31 @@ class StageDef:
 
         project_version_elements = stage_element.getElementsByTagName('projectversion')
         if len(project_version_elements) > 0:
-            self.project_version = []
             for project_version_element in project_version_elements:
-                project_version = ''
-                if project_version_element.firstChild:
-                    project_version = str(project_version_element.firstChild.data)
-                self.project_version.append(project_version)
 
-        # Make sure that the size of the project_version list (if specified) ia at least as
+                # Match this project version with its parent fcl element.
+
+                fcl_element = project_version_element.parentNode
+                if fcl_element.nodeName != 'fcl':
+                    raise XMLError, "Found <projectversion> element outside <fcl> element."
+                fcl = str(fcl_element.firstChild.data).strip()
+
+                # Find the index of this fcl file.
+                # Python will raise an exception if the fcl can't be found (shouldn't happen).
+
+                n = self.fclname.index(fcl)
+
+                # Make sure project_version list is long enough.
+
+                while len(self.project_version) < n+1:
+                    self.project_version.append('')
+
+                # Extract project version and add it to list.
+
+                project_version = str(project_version_element.firstChild.data)
+                self.project_version[n] = project_version
+
+        # Make sure that the size of the project_version list (if present) ia at least as
         # long as the fclname list.
         # If not, extend by adding empty string.
 
@@ -850,20 +860,49 @@ class StageDef:
 
         output_elements = stage_element.getElementsByTagName('output')
         if len(output_elements) > 0:
-            self.output = []
+
+            # The output element can occur once at the top level of the <stage> element, or
+            # inside a <fcl> element.  The former applies globally.  The latter applies
+            # only to that fcl substage.
+
+            # Loop over global output elements.
+
             for output_element in output_elements:
-                output = ''
-                if output_element.firstChild:
+                parent_element = output_element.parentNode
+                if parent_element.nodeName != 'fcl':
                     output = str(output_element.firstChild.data)
-                self.output.append(output)
-	    
-        # Make sure that the size of the output list (if specified) ia at least as
+                    self.output = []
+                    while len(self.output) < len(self.fclname):
+                        self.output.append(output)
+
+            # Loop over fcl output elements.
+
+            for output_element in output_elements:
+                parent_element = output_element.parentNode
+                if parent_element.nodeName == 'fcl':
+
+                    # Match this output name with its parent fcl element.
+
+                    fcl = str(parent_element.firstChild.data).strip()
+                    n = self.fclname.index(fcl)
+
+                    # Make sure project_name list is long enough.
+
+                    while len(self.output) < n+1:
+                        self.output.append('')
+
+                    # Extract output name and add it to list.
+
+                    output = str(output_element.firstChild.data)
+                    self.output[n] = output
+
+        # Make sure that the size of the output list (if present) ia at least as
         # long as the fclname list.
-        # If not, extend by adding empty names.
+        # If not, extend by adding empty string.
 
         if len(self.output) > 0:
             while len(self.output) < len(self.fclname):
-                self.output.append(self.output[-1])
+                self.output.append('')
 
 	# TFileName (subelement).
 
@@ -893,18 +932,49 @@ class StageDef:
 
         exe_elements = stage_element.getElementsByTagName('exe')
         if len(exe_elements) > 0:
-            self.exe = []
-            for exe_element in exe_elements:
-                exe = str(exe_element.firstChild.data)
-                self.exe.append(exe)
 
-        # Make sure that the size of the exe list (if specified) ia at least as
+            # The exe element can occur once at the top level of the <stage> element, or
+            # inside a <fcl> element.  The former applies globally.  The latter applies
+            # only to that fcl substage.
+
+            # Loop over global exe elements.
+
+            for exe_element in exe_elements:
+                parent_element = exe_element.parentNode
+                if parent_element.nodeName != 'fcl':
+                    exe = str(exe_element.firstChild.data)
+                    self.exe = []
+                    while len(self.exe) < len(self.fclname):
+                        self.exe.append(exe)
+
+            # Loop over fcl exe elements.
+
+            for exe_element in exe_elements:
+                parent_element = exe_element.parentNode
+                if parent_element.nodeName == 'fcl':
+
+                    # Match this exe name with its parent fcl element.
+
+                    fcl = str(parent_element.firstChild.data).strip()
+                    n = self.fclname.index(fcl)
+
+                    # Make sure project_name list is long enough.
+
+                    while len(self.exe) < n+1:
+                        self.exe.append('')
+
+                    # Extract exe name and add it to list.
+
+                    exe = str(exe_element.firstChild.data)
+                    self.exe[n] = exe
+
+        # Make sure that the size of the exe list (if present) ia at least as
         # long as the fclname list.
-        # If not, extend by copying the last item.
+        # If not, extend by adding empty string.
 
         if len(self.exe) > 0:
             while len(self.exe) < len(self.fclname):
-                self.exe.append(self.exe[-1])
+                self.exe.append('')
 
 	# Sam schema.
 

@@ -1645,7 +1645,11 @@ EOF
 
   # Extract this stage exe.
 
-  exe=$EXE
+  if echo $EXE | grep -q :; then
+    exe='lar'
+  else
+    exe=$EXE
+  fi
   field=$(( $stage + 1 ))
   exe_stage=`echo $EXE | cut -d: -f$field`
   if [ x$exe_stage != x ]; then

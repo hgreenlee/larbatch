@@ -190,8 +190,10 @@
 #             If present, it specifies a "base stage" which supplies default
 #             values for all unspecified xml tags.
 # <stage><batchname> - If present and not empty, override default batch job name.
-# <stage><fcl> - Name of fcl file (required).  Specify just the filename,
-#             not the full path.
+# <stage><fcl> - Name of fcl file (required).
+#                Search $FHICL_FILE_PATH, <fcldir>, or specify full path.
+#                Repeatable.
+#                See below for additional information about multiple fcls (substages).
 # <stage><outdir> - Output directory (required).  A subdirectory with the
 #             project name is created underneath this directory.  Individual
 #             batch workers create an additional subdirectory under that with
@@ -331,17 +333,6 @@
 # <stage><initscript> - Worker initialization script (condor_lar.sh --init-script).  Repeatable.
 # <stage><initsource> - Worker initialization bash source script (condor_lar.sh --init-source).
 # <stage><endscript>  - Worker finalization script (condor_lar.sh --end-script).  Repeatable.
-# <stage><midsource>  - Worker midstage initialization source script (condor_lar.sh --mid-source).
-#                       Repeatable.
-#                       Specify as "<n>:<script>," for script to be sourced before stage n
-#                       (0 = first).
-# <stage><midscript>  - Worker midstage finalization script (condor_lar.sh --mid-script).
-#                       Repeatable.
-#                       Specify as "<n>:<script>," for script to be executed after stage n
-#                       (0 = first).
-# <stage><projectname> - Override project name (substage repeatable).
-# <stage><stagename> - Override stage name (substage repeatable).
-# <stage><projectversion> - Override project version (substage repeatable).
 # <stage><merge>  - Name of special histogram merging program or script (default "hadd -T",
 #                   can be overridden at each stage).
 #                   Set to "1" to generate merging metadata for artroot files.
@@ -356,7 +347,7 @@
 # <stage><disk>    - Amount of scratch disk space (jobsub_submit --disk=...).
 #                    Specify value and unit (e.g. 50GB).
 # <stage><memory>  - Specify amount of memory in MB (jobsub_submit --memory=...).
-# <stage><output>  - Specify output file name.  Repeatable by substage.
+# <stage><output>  - Specify output file name.  Can aslso appear in fcl substages (see below).
 # <stage><datafiletypes>  - Specify file types that should be considered as data and
 #                           saved in batch jobs (comma-separated list).  Default "root".
 # <stage><TFileName>   - Ability to specify unique output TFile Name
@@ -368,10 +359,27 @@
 #                    Applies to sam start/stop project submissions.
 # <stage><jobsub_timeout> - Jobsubmission timeout (seconds).
 # <stage><maxfilesperjob> - Maximum number of files to be processed in a single worker.
-# <stage><exe>     - Executable (default "lar").  Repeatable by substage.
+# <stage><exe>     - Executable (default "lar").  Can also appear in fcl substages (see below).
 # <stage><schema>  - Sam schema (default none).  Use "root" to stream using xrootd.
 # <stage><check>   - Do on-node validation and sam declaration (0 or 1, default 0).
 # <stage><copy>    - Copy validated root files to FTS (0 or 1, default 0).
+#
+# Batch job substages.
+#
+# Batch jobs can have multiple substages.  The number of substages equals the number
+# of <fcl> elements.  Each <fcl> element triggers the execution of a different executable
+# within a single batch job.  Some aspects of the environment are tunable within each 
+# substage by specifying additional subelements within each <fcl> slement.
+#
+# <stage><fcl> - Name of fcl file.  This should come first within each <fcl> element
+#                before additional substage subelements.
+# <stage><fcl><initsource> - Initialization source script for this substage.
+# <stage><fcl><endstage> - Finalization script for this substage.
+# <stage><fcl><exe> - Executable to use in this substage (default "lar").
+# <stage><fcl><output> - Output file name for this substage.
+# <stage><fcl><projectname> - Override project name for this substage.
+# <stage><fcl><stagename> - Override stage name for this substage.
+# <stage><fcl><projectversion> - Override project version for this substage.
 #
 #
 # <fcldir>  - Directory in which to search for fcl files (optional, repeatable).
