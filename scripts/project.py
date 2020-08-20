@@ -379,7 +379,7 @@
 # <stage><fcl><output> - Output file name for this substage.
 # <stage><fcl><projectname> - Override project name for this substage.
 # <stage><fcl><stagename> - Override stage name for this substage.
-# <stage><fcl><projectversion> - Override project version for this substage.
+# <stage><fcl><version> - Override project version for this substage.
 #
 #
 # <fcldir>  - Directory in which to search for fcl files (optional, repeatable).

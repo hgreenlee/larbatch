@@ -746,7 +746,7 @@ class StageDef:
 
 	# Project version overrides (repeatable subelement).
 
-        project_version_elements = stage_element.getElementsByTagName('projectversion')
+        project_version_elements = stage_element.getElementsByTagName('version')
         if len(project_version_elements) > 0:
             for project_version_element in project_version_elements:
 
@@ -754,7 +754,7 @@ class StageDef:
 
                 fcl_element = project_version_element.parentNode
                 if fcl_element.nodeName != 'fcl':
-                    raise XMLError, "Found <projectversion> element outside <fcl> element."
+                    raise XMLError, "Found stage level <version> element outside <fcl> element."
                 fcl = str(fcl_element.firstChild.data).strip()
 
                 # Find the index of this fcl file.
