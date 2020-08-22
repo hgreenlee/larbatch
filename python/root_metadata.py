@@ -179,7 +179,23 @@ def get_external_metadata(inputfile):
     return md
 
 if __name__ == "__main__":
-    md = get_external_metadata(str(sys.argv[1]))
+    
+    import argparse
+    
+    Parser = argparse.ArgumentParser \
+      (description="Extracts metadata for a ROOT file.")
+    
+    Parser.add_argument("InputFile", help="ROOT file to extract metadata about")
+    Parser.add_argument("--output", "-o", dest="OutputFile", default=None,
+      help="JSON file to write the output to [default: screen]"
+      )
+    
+    args = Parser.parse_args()
+    
+    md = get_external_metadata(args.InputFile)
     mdtext = json.dumps(md, indent=2, sort_keys=True)
-    print(mdtext)
-    sys.exit(0) 
+    
+    outputFile = open(args.OutputFile, 'w') if args.OutputFile else sys.stdout
+    print(mdtext, file=outputFile)
+    
+    sys.exit(0)
