@@ -134,6 +134,7 @@ def get_external_metadata(inputfile):
 
     # Root checks.
 
+    ROOT.gEnv.SetValue('RooFit.Banner', '0')
     file = ROOT.TFile.Open(larbatch_posix.root_stream(inputfile))
     if file and file.IsOpen() and not file.IsZombie():
 
