@@ -2618,8 +2618,8 @@ def dojobsub(project, stage, makeup, recur):
     for init_script in stage.init_script:
         if init_script != '':
             if not larbatch_posix.exists(init_script):
-                raise RuntimeError, 'Worker initialization script %s does not exist.\n' % \
-                    init_script
+                raise RuntimeError('Worker initialization script %s does not exist.\n' % \
+                    init_script)
             work_init_script = os.path.join(tmpworkdir, os.path.basename(init_script))
             if init_script != work_init_script:
                 larbatch_posix.copy(init_script, work_init_script)
@@ -2652,8 +2652,8 @@ def dojobsub(project, stage, makeup, recur):
     for init_source in stage.init_source:
         if init_source != '':
             if not larbatch_posix.exists(init_source):
-                raise RuntimeError, 'Worker initialization source script %s does not exist.\n' % \
-                    init_source
+                raise RuntimeError('Worker initialization source script %s does not exist.\n' % \
+                    init_source)
         work_init_source = os.path.join(tmpworkdir, os.path.basename(init_source))
         if init_source != work_init_source:
             larbatch_posix.copy(init_source, work_init_source)
@@ -2686,7 +2686,7 @@ def dojobsub(project, stage, makeup, recur):
     for end_script in stage.end_script:
         if end_script != '':
             if not larbatch_posix.exists(end_script):
-                raise RuntimeError, 'Worker end-of-job script %s does not exist.\n' % end_script
+                raise RuntimeError('Worker end-of-job script %s does not exist.\n' % end_script)
             work_end_script = os.path.join(tmpworkdir, os.path.basename(end_script))
             if end_script != work_end_script:
                 larbatch_posix.copy(end_script, work_end_script)
@@ -2720,7 +2720,7 @@ def dojobsub(project, stage, makeup, recur):
         for mid_source in stage.mid_source[istage]:
             if mid_source != '':
                 if not larbatch_posix.exists(mid_source):
-                    raise RuntimeError, 'Worker midstage initialization source script %s does not exist.\n' % mid_source
+                    raise RuntimeError('Worker midstage initialization source script %s does not exist.\n' % mid_source)
                 work_mid_source = os.path.join(tmpworkdir, os.path.basename(mid_source))
                 if mid_source != work_mid_source:
                     larbatch_posix.copy(mid_source, work_mid_source)
@@ -2752,7 +2752,7 @@ def dojobsub(project, stage, makeup, recur):
         for mid_script in stage.mid_script[istage]:
             if mid_script != '':
                 if not larbatch_posix.exists(mid_script):
-                    raise RuntimeError, 'Worker midstage finalization script %s does not exist.\n' % mid_script
+                    raise RuntimeError('Worker midstage finalization script %s does not exist.\n' % mid_script)
                 work_mid_script = os.path.join(tmpworkdir, os.path.basename(mid_script))
                 if mid_script != work_mid_script:
                     larbatch_posix.copy(mid_script, work_mid_script)

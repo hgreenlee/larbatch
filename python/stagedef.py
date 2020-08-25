@@ -570,7 +570,7 @@ class StageDef:
                             pass
 
                     if not larbatch_posix.exists(init_script):
-                        raise IOError, 'Init script %s not found.' % init_script
+                        raise IOError('Init script %s not found.' % init_script)
 
                     self.init_script.append(init_script)
 
@@ -601,7 +601,7 @@ class StageDef:
                             pass
 
                     if not larbatch_posix.exists(init_source):
-                        raise IOError, 'Init source script %s not found.' % init_source
+                        raise IOError('Init source script %s not found.' % init_source)
 
                     # The <initsource> element can occur at the top level of the <stage>
                     # element, or inside a <fcl> element.
@@ -654,7 +654,7 @@ class StageDef:
                             pass
 
                     if not larbatch_posix.exists(end_script):
-                        raise IOError, 'End-of-job script %s not found.' % end_script
+                        raise IOError('End-of-job script %s not found.' % end_script)
 
                     # The <endscript> element can occur at the top level of the <stage>
                     # element, or inside a <fcl> element.
@@ -690,7 +690,7 @@ class StageDef:
 
                 fcl_element = project_name_element.parentNode
                 if fcl_element.nodeName != 'fcl':
-                    raise XMLError, "Found <projectname> element outside <fcl> element."
+                    raise XMLError("Found <projectname> element outside <fcl> element.")
                 fcl = str(fcl_element.firstChild.data).strip()
 
                 # Find the index of this fcl file.
@@ -726,7 +726,7 @@ class StageDef:
 
                 fcl_element = stage_name_element.parentNode
                 if fcl_element.nodeName != 'fcl':
-                    raise XMLError, "Found <stagename> element outside <fcl> element."
+                    raise XMLError("Found <stagename> element outside <fcl> element.")
                 fcl = str(fcl_element.firstChild.data).strip()
 
                 # Find the index of this fcl file.
@@ -762,7 +762,7 @@ class StageDef:
 
                 fcl_element = project_version_element.parentNode
                 if fcl_element.nodeName != 'fcl':
-                    raise XMLError, "Found stage level <version> element outside <fcl> element."
+                    raise XMLError("Found stage level <version> element outside <fcl> element.")
                 fcl = str(fcl_element.firstChild.data).strip()
 
                 # Find the index of this fcl file.
