@@ -176,7 +176,10 @@
 # <parameter name="parametername"> - Specify experiment-specific metadata parameters
 #
 # <merge>    - special histogram merging program (default "hadd -T",
-#               can be overridden at each stage).
+#              can be overridden at each stage).
+#              Set to "1" to generate merging metadata for artroot files.
+# <anamerge> - Set to "1" to generate merging metadata for analysis files.
+#              
 # <check>    - Do on-node validation and sam declaration (0 or 1, default 0).
 # <copy>     - Copy validated root files to FTS (0 or 1, default 0).
 #
@@ -187,8 +190,10 @@
 #             If present, it specifies a "base stage" which supplies default
 #             values for all unspecified xml tags.
 # <stage><batchname> - If present and not empty, override default batch job name.
-# <stage><fcl> - Name of fcl file (required).  Specify just the filename,
-#             not the full path.
+# <stage><fcl> - Name of fcl file (required).
+#                Search $FHICL_FILE_PATH, <fcldir>, or specify full path.
+#                Repeatable.
+#                See below for additional information about multiple fcls (substages).
 # <stage><outdir> - Output directory (required).  A subdirectory with the
 #             project name is created underneath this directory.  Individual
 #             batch workers create an additional subdirectory under that with
@@ -319,17 +324,19 @@
 # <stage><defname> - Sam output dataset defition name (default none).
 # <stage><anadefname> - Sam analysis output dataset defition name (default none).
 # <stage><datatier> - Sam data tier (default none).
+# <stage><datastream> - Sam data stream (default none).
 # <stage><anadatatier> - Sam analysis data tier (default none).
+# <stage><anadatastream> - Sam analysis data stream (default none).
 # <stage><submitscript> - Presubmission check script.  Must be on execution path.
 #                         If this script exits with nonzero exit status, job submission
 #                         is aborted.
-# <stage><initscript> - Worker initialization script (condor_lar.sh --init-script).
+# <stage><initscript> - Worker initialization script (condor_lar.sh --init-script).  Repeatable.
 # <stage><initsource> - Worker initialization bash source script (condor_lar.sh --init-source).
-# <stage><endscript>  - Worker end-of-job script (condor_lar.sh --end-script).
-#                       Initialization/end-of-job scripts can be specified using an
-#                       absolute or relative path relative to the current directory.
+# <stage><endscript>  - Worker finalization script (condor_lar.sh --end-script).  Repeatable.
 # <stage><merge>  - Name of special histogram merging program or script (default "hadd -T",
-#                       can be overridden at each stage).
+#                   can be overridden at each stage).
+#                   Set to "1" to generate merging metadata for artroot files.
+# <stage><anamerge> - Set to "1" to generate merging metadata for analysis files.
 # <stage><resource> - Jobsub resources (comma-separated list: DEDICATED,OPPORTUNISTIC,
 #                     OFFSITE,FERMICLOUD,PAID_CLOUD,FERMICLOUD8G).
 #                     Default: DEDICATED,OPPORTUNISTIC.
@@ -340,7 +347,7 @@
 # <stage><disk>    - Amount of scratch disk space (jobsub_submit --disk=...).
 #                    Specify value and unit (e.g. 50GB).
 # <stage><memory>  - Specify amount of memory in MB (jobsub_submit --memory=...).
-# <stage><output>  - Specify output file name.
+# <stage><output>  - Specify output file name.  Can aslso appear in fcl substages (see below).
 # <stage><datafiletypes>  - Specify file types that should be considered as data and
 #                           saved in batch jobs (comma-separated list).  Default "root".
 # <stage><TFileName>   - Ability to specify unique output TFile Name
@@ -352,10 +359,27 @@
 #                    Applies to sam start/stop project submissions.
 # <stage><jobsub_timeout> - Jobsubmission timeout (seconds).
 # <stage><maxfilesperjob> - Maximum number of files to be processed in a single worker.
-# <stage><exe>     - Executable (default "lar").
+# <stage><exe>     - Executable (default "lar").  Can also appear in fcl substages (see below).
 # <stage><schema>  - Sam schema (default none).  Use "root" to stream using xrootd.
 # <stage><check>   - Do on-node validation and sam declaration (0 or 1, default 0).
 # <stage><copy>    - Copy validated root files to FTS (0 or 1, default 0).
+#
+# Batch job substages.
+#
+# Batch jobs can have multiple substages.  The number of substages equals the number
+# of <fcl> elements.  Each <fcl> element triggers the execution of a different executable
+# within a single batch job.  Some aspects of the environment are tunable within each 
+# substage by specifying additional subelements within each <fcl> slement.
+#
+# <stage><fcl> - Name of fcl file.  This should come first within each <fcl> element
+#                before additional substage subelements.
+# <stage><fcl><initsource> - Initialization source script for this substage.
+# <stage><fcl><endstage> - Finalization script for this substage.
+# <stage><fcl><exe> - Executable to use in this substage (default "lar").
+# <stage><fcl><output> - Output file name for this substage.
+# <stage><fcl><projectname> - Override project name for this substage.
+# <stage><fcl><stagename> - Override stage name for this substage.
+# <stage><fcl><version> - Override project version for this substage.
 #
 #
 # <fcldir>  - Directory in which to search for fcl files (optional, repeatable).
@@ -2478,6 +2502,9 @@ def dojobsub(project, stage, makeup, recur):
     wrapper_fcl_name = os.path.join(tmpworkdir, 'wrapper.fcl')
     wrapper_fcl = safeopen(wrapper_fcl_name)
     stageNum = 0
+    original_project_name = project.name
+    original_stage_name = stage.name
+    original_project_version = project.version
 
     for fcl in fcls:
       wrapper_fcl.write('#---STAGE %d\n' % stageNum)
@@ -2508,9 +2535,18 @@ def dojobsub(project, stage, makeup, recur):
 
         # Add experiment-specific sam metadata.
 
+        if stageNum < len(stage.project_name) and stage.project_name[stageNum] != '':
+            project.name = stage.project_name[stageNum]
+        if stageNum < len(stage.stage_name) and stage.stage_name[stageNum] != '':
+            stage.name = stage.stage_name[stageNum]
+        if stageNum < len(stage.project_version) and stage.project_version[stageNum] != '':
+            project.version = stage.project_version[stageNum]
         sam_metadata = project_utilities.get_sam_metadata(project, stage)
         if sam_metadata:
             wrapper_fcl.write(sam_metadata)
+        project.name = original_project_name
+        stage.name = original_stage_name
+        project.version = original_project_version
 
       # In case of generator jobs, add override for pubs run number
       # (subrun number is overridden inside condor_lar.sh).
@@ -2577,34 +2613,171 @@ def dojobsub(project, stage, makeup, recur):
         if stage.stop_script != workstopscript:
             larbatch_posix.copy(stage.stop_script, workstopscript)
 
-    # Copy worker initialization script to work directory.
+    # Copy worker initialization scripts to work directory.
 
-    if stage.init_script != '':
-        if not larbatch_posix.exists(stage.init_script):
-            raise RuntimeError('Worker initialization script %s does not exist.\n' % \
-                stage.init_script)
-        work_init_script = os.path.join(tmpworkdir, os.path.basename(stage.init_script))
-        if stage.init_script != work_init_script:
-            larbatch_posix.copy(stage.init_script, work_init_script)
+    for init_script in stage.init_script:
+        if init_script != '':
+            if not larbatch_posix.exists(init_script):
+                raise RuntimeError, 'Worker initialization script %s does not exist.\n' % \
+                    init_script
+            work_init_script = os.path.join(tmpworkdir, os.path.basename(init_script))
+            if init_script != work_init_script:
+                larbatch_posix.copy(init_script, work_init_script)
 
-    # Copy worker initialization source script to work directory.
+    # Update stage.init_script from list to single script.
 
-    if stage.init_source != '':
-        if not larbatch_posix.exists(stage.init_source):
-            raise RuntimeError('Worker initialization source script %s does not exist.\n' % \
-                stage.init_source)
-        work_init_source = os.path.join(tmpworkdir, os.path.basename(stage.init_source))
-        if stage.init_source != work_init_source:
-            larbatch_posix.copy(stage.init_source, work_init_source)
+    n = len(stage.init_script)
+    if n == 0:
+        stage.init_script = ''
+    elif n == 1:
+        stage.init_script = stage.init_script[0]
+    else:
 
-    # Copy worker end-of-job script to work directory.
+        # If there are multiple init scripts, generate a wrapper init script init_wrapper.sh.
 
-    if stage.end_script != '':
-        if not larbatch_posix.exists(stage.end_script):
-            raise RuntimeError('Worker end-of-job script %s does not exist.\n' % stage.end_script)
-        work_end_script = os.path.join(tmpworkdir, os.path.basename(stage.end_script))
-        if stage.end_script != work_end_script:
-            larbatch_posix.copy(stage.end_script, work_end_script)
+        work_init_wrapper = os.path.join(tmpworkdir, 'init_wrapper.sh')
+        f = open(work_init_wrapper, 'w')
+        f.write('#! /bin/bash\n')
+        for init_script in stage.init_script:
+            f.write('echo\n')
+            f.write('echo "Executing %s"\n' % os.path.basename(init_script))
+            f.write('./%s\n' % os.path.basename(init_script))
+        f.write('echo\n')
+        f.write('echo "Done executing initialization scripts."\n')
+        f.close()
+        stage.init_script = work_init_wrapper
+
+    # Copy worker initialization source scripts to work directory.
+
+    for init_source in stage.init_source:
+        if init_source != '':
+            if not larbatch_posix.exists(init_source):
+                raise RuntimeError, 'Worker initialization source script %s does not exist.\n' % \
+                    init_source
+        work_init_source = os.path.join(tmpworkdir, os.path.basename(init_source))
+        if init_source != work_init_source:
+            larbatch_posix.copy(init_source, work_init_source)
+
+    # Update stage.init_source from list to single script.
+
+    n = len(stage.init_source)
+    if n == 0:
+        stage.init_source = ''
+    elif n == 1:
+        stage.init_source = stage.init_source[0]
+    else:
+
+        # If there are multiple init source scripts, generate a wrapper init script
+        # init_source_wrapper.sh.
+
+        work_init_source_wrapper = os.path.join(tmpworkdir, 'init_source_wrapper.sh')
+        f = open(work_init_source_wrapper, 'w')
+        for init_source in stage.init_source:
+            f.write('echo\n')
+            f.write('echo "Sourcing %s"\n' % os.path.basename(init_source))
+            f.write('source %s\n' % os.path.basename(init_source))
+        f.write('echo\n')
+        f.write('echo "Done sourcing initialization scripts."\n')
+        f.close()
+        stage.init_source = work_init_source_wrapper
+
+    # Copy worker end-of-job scripts to work directory.
+
+    for end_script in stage.end_script:
+        if end_script != '':
+            if not larbatch_posix.exists(end_script):
+                raise RuntimeError, 'Worker end-of-job script %s does not exist.\n' % end_script
+            work_end_script = os.path.join(tmpworkdir, os.path.basename(end_script))
+            if end_script != work_end_script:
+                larbatch_posix.copy(end_script, work_end_script)
+
+    # Update stage.end_script from list to single script.
+
+    n = len(stage.end_script)
+    if n == 0:
+        stage.end_script = ''
+    elif n == 1:
+        stage.end_script = stage.end_script[0]
+    else:
+
+        # If there are multiple end scripts, generate a wrapper end script end_wrapper.sh.
+
+        work_end_wrapper = os.path.join(tmpworkdir, 'end_wrapper.sh')
+        f = open(work_end_wrapper, 'w')
+        f.write('#! /bin/bash\n')
+        for end_script in stage.end_script:
+            f.write('echo\n')
+            f.write('echo "Executing %s"\n' % os.path.basename(end_script))
+            f.write('./%s\n' % os.path.basename(end_script))
+        f.write('echo\n')
+        f.write('echo "Done executing finalization scripts."\n')
+        f.close()
+        stage.end_script = work_end_wrapper
+
+    # Copy worker midstage source initialization scripts to work directory.
+
+    for istage in stage.mid_source:
+        for mid_source in stage.mid_source[istage]:
+            if mid_source != '':
+                if not larbatch_posix.exists(mid_source):
+                    raise RuntimeError, 'Worker midstage initialization source script %s does not exist.\n' % mid_source
+                work_mid_source = os.path.join(tmpworkdir, os.path.basename(mid_source))
+                if mid_source != work_mid_source:
+                    larbatch_posix.copy(mid_source, work_mid_source)
+
+    # Generate midstage source initialization wrapper script mid_source_wrapper.sh 
+    # and update stage.mid_script to point to wrapper.
+    # Note that variable $stage should be defined external to this script.
+
+    if len(stage.mid_source) > 0:
+        work_mid_source_wrapper = os.path.join(tmpworkdir, 'mid_source_wrapper.sh')
+        f = open(work_mid_source_wrapper, 'w')
+        for istage in stage.mid_source:
+            for mid_source in stage.mid_source[istage]:
+                f.write('if [ $stage -eq %d ]; then\n' % istage)
+                f.write('  echo\n')
+                f.write('  echo "Sourcing %s"\n' % os.path.basename(mid_source))
+                f.write('  source %s\n' % os.path.basename(mid_source))
+                f.write('fi\n')
+        f.write('echo\n')
+        f.write('echo "Done sourcing midstage source initialization scripts for stage $stage."\n')
+        f.close()
+        stage.mid_source = work_mid_source_wrapper
+    else:
+        stage.mid_source = ''
+
+    # Copy worker midstage finalization scripts to work directory.
+
+    for istage in stage.mid_script:
+        for mid_script in stage.mid_script[istage]:
+            if mid_script != '':
+                if not larbatch_posix.exists(mid_script):
+                    raise RuntimeError, 'Worker midstage finalization script %s does not exist.\n' % mid_script
+                work_mid_script = os.path.join(tmpworkdir, os.path.basename(mid_script))
+                if mid_script != work_mid_script:
+                    larbatch_posix.copy(mid_script, work_mid_script)
+
+    # Generate midstage finalization wrapper script mid_wrapper.sh and update stage.mid_script 
+    # to point to wrapper.
+
+    if len(stage.mid_script) > 0:
+        work_mid_wrapper = os.path.join(tmpworkdir, 'mid_wrapper.sh')
+        f = open(work_mid_wrapper, 'w')
+        f.write('#! /bin/bash\n')
+        f.write('stage=$1\n')
+        for istage in stage.mid_script:
+            for mid_script in stage.mid_script[istage]:
+                f.write('if [ $stage -eq %d ]; then\n' % istage)
+                f.write('  echo\n')
+                f.write('  echo "Executing %s"\n' % os.path.basename(mid_script))
+                f.write('  ./%s\n' % os.path.basename(mid_script))
+                f.write('fi\n')
+        f.write('echo\n')
+        f.write('echo "Done executing midstage finalization scripts for stage $stage."\n')
+        f.close()
+        stage.mid_script = work_mid_wrapper
+    else:
+        stage.mid_script = ''
 
     # Copy helper scripts to work directory.
 
@@ -2962,8 +3135,11 @@ def dojobsub(project, stage, makeup, recur):
     command.extend([' --workdir', stage.workdir])
     command.extend([' --outdir', stage.outdir])
     command.extend([' --logdir', stage.logdir])
-    if stage.exe != '':
-        command.extend([' --exe', stage.exe])
+    if stage.exe:
+        if type(stage.exe) == type([]):
+            command.extend([' --exe', ':'.join(stage.exe)])
+        else:
+            command.extend([' --exe', stage.exe])
     if stage.schema != '':
         command.extend([' --sam_schema', stage.schema])
     if project.os != '':
@@ -3000,8 +3176,11 @@ def dojobsub(project, stage, makeup, recur):
         command.extend(['--data_file_type', ftype])
     if procmap != '':
         command.extend([' --procmap', procmap])
-    if stage.output != '':
-        command.extend([' --output', stage.output])
+    if stage.output:
+        if type(stage.output) == type([]):
+            command.extend([' --output', ':'.join(stage.output)])
+        else:
+            command.extend([' --output', stage.output])
     if stage.TFileName != '':
         command.extend([' --TFileName', stage.TFileName])
     if stage.init_script != '':
@@ -3010,6 +3189,10 @@ def dojobsub(project, stage, makeup, recur):
         command.extend([' --init-source', os.path.basename(stage.init_source)])
     if stage.end_script != '':
         command.extend([' --end-script', os.path.basename(stage.end_script)])
+    if stage.mid_source != '':
+        command.extend([' --mid-source', os.path.basename(stage.mid_source)])
+    if stage.mid_script != '':
+        command.extend([' --mid-script', os.path.basename(stage.mid_script)])
     if abssetupscript != '':
         command.extend([' --init', abssetupscript])
 
@@ -4047,26 +4230,40 @@ def main(argv):
 
                 # Start sam dimension with the base dataset.
 
-                dim = 'defname: %s' % stage.basedef
+                dim = ''
 
                 # Add minus clause.
 
                 project_wildcard = '%s_%%' % samweb.makeProjectName(stage.inputdef).rsplit('_',1)[0]
                 if stage.recurtype == 'snapshot':
-                    dim += ' minus snapshot_for_project_name %s' % \
-                        project_wildcard
+                    dim = 'defname: %s minus snapshot_for_project_name %s' % \
+                        (stage.basedef, project_wildcard)
                 elif stage.recurtype == 'consumed':
-                    dim += ' minus (project_name %s and consumed_status consumed)' % \
-                        project_wildcard
+                    dim = 'defname: %s minus (project_name %s and consumed_status consumed)' % \
+                        (stage.basedef, project_wildcard)
+
                 elif stage.recurtype == 'child':
-                    pdim = project_utilities.dimensions(project, stage, ana=False)
-                    n = pdim.find('and availability:')
-                    if n > 0:
-                        pdim = pdim[:n]
-                    n = pdim.find('with availability')
-                    if n > 0:
-                        pdim = pdim[:n]
-                    dim += ' minus (isparentof: ( %s with availability physical ) )' % pdim
+
+                    # In case of multiple data strams, generate one clause for each
+                    # data stream.
+
+                    nstream = 1
+                    if stage.data_stream != None and len(stage.data_stream) > 0:
+                        nstream = len(stage.data_stream)
+
+                    dim = ''
+                    for istream in range(nstream):
+                        idim = project_utilities.dimensions_datastream(project, stage, 
+                                                                       ana=False, index=istream)
+                        if idim.find('anylocation') > 0:
+                            idim = idim.replace('anylocation', 'physical')
+                        else:
+                            idim += ' with availability physical'
+
+                        if len(dim) > 0:
+                            dim += ' or '
+                        dim += '(defname: %s minus isparentof:( %s ) )' % (stage.basedef, idim)
+
                     if stage.activebase != '':
                         activedef = '%s_active' % stage.activebase
                         waitdef = '%s_wait' % stage.activebase
@@ -4074,15 +4271,29 @@ def main(argv):
                         dim += ' minus defname: %s' % waitdef
                         project_utilities.makeDummyDef(activedef)
                         project_utilities.makeDummyDef(waitdef)
+
                 elif stage.recurtype == 'anachild':
-                    pdim = project_utilities.dimensions(project, stage, ana=True)
-                    n = pdim.find('and availability:')
-                    if n > 0:
-                        pdim = pdim[:n]
-                    n = pdim.find('with availability')
-                    if n > 0:
-                        pdim = pdim[:n]
-                    dim += ' minus (isparentof: ( %s with availability physical ) )' % pdim
+
+                    # In case of multiple data strams, generate one clause for each
+                    # data stream.
+
+                    nstream = 1
+                    if stage.ana_data_stream != None and len(stage.ana_data_stream) > 0:
+                        nstream = len(stage.ana_data_stream)
+
+                    dim = ''
+                    for istream in range(nstream):
+                        idim = project_utilities.dimensions_datastream(project, stage, 
+                                                                       ana=True, index=istream)
+                        if idim.find('anylocation') > 0:
+                            idim = idim.replace('anylocation', 'physical')
+                        else:
+                            idim += ' with availability physical'
+
+                        if len(dim) > 0:
+                            dim += ' or '
+                        dim += '(defname: %s minus isparentof:( %s ) )' % (stage.basedef, idim)
+
                     if stage.activebase != '':
                         activedef = '%s_active' % stage.activebase
                         waitdef = '%s_wait' % stage.activebase
@@ -4090,6 +4301,7 @@ def main(argv):
                         dim += ' minus defname: %s' % waitdef
                         project_utilities.makeDummyDef(activedef)
                         project_utilities.makeDummyDef(waitdef)
+
                 elif stage.recurtype != '' and stage.recurtype != 'none':
                     raise RuntimeError('Unknown recursive type %s.' % stage.recurtype)
 
@@ -4258,13 +4470,13 @@ def main(argv):
                 if stage.ana_defname == '':
                     print('No sam analysis dataset definition name specified for this stage.')
                     return 1
-                dim = project_utilities.dimensions(project, stage, ana=True)
+                dim = project_utilities.dimensions_datastream(project, stage, ana=True)
                 docheck_definition(stage.ana_defname, dim, define)
             else:
                 if stage.defname == '':
                     print('No sam dataset definition name specified for this stage.')
                     return 1
-                dim = project_utilities.dimensions(project, stage, ana=False)
+                dim = project_utilities.dimensions_datastream(project, stage, ana=False)
                 docheck_definition(stage.defname, dim, define)
 
     if check_definition_ana or define_ana:
@@ -4277,7 +4489,7 @@ def main(argv):
             if stage.ana_defname == '':
                 print('No sam analysis dataset definition name specified for this stage.')
                 return 1
-            dim = project_utilities.dimensions(project, stage, ana=True)
+            dim = project_utilities.dimensions_datastream(project, stage, ana=True)
             docheck_definition(stage.ana_defname, dim, define_ana)
 
     if test_definition:
@@ -4347,7 +4559,7 @@ def main(argv):
         for stagename in stagenames:
             print('Stage %s:' % stagename)
             stage = stages[stagename]
-            dim = project_utilities.dimensions(project, stage, ana=stage.ana)
+            dim = project_utilities.dimensions_datastream(project, stage, ana=stage.ana)
             rc += dotest_declarations(dim)
 
     if test_declarations_ana:
@@ -4357,7 +4569,7 @@ def main(argv):
         for stagename in stagenames:
             print('Stage %s:' % stagename)
             stage = stages[stagename]
-            dim = project_utilities.dimensions(project, stage, ana=True)
+            dim = project_utilities.dimensions_datastream(project, stage, ana=True)
             rc += dotest_declarations(dim)
 
     if check_locations or add_locations or clean_locations or remove_locations or upload:
@@ -4367,7 +4579,7 @@ def main(argv):
         for stagename in stagenames:
             print('Stage %s:' % stagename)
             stage = stages[stagename]
-            dim = project_utilities.dimensions(project, stage, ana=stage.ana)
+            dim = project_utilities.dimensions_datastream(project, stage, ana=stage.ana)
             docheck_locations(dim, stage.outdir,
                               add_locations, clean_locations, remove_locations,
                               upload)
@@ -4380,7 +4592,7 @@ def main(argv):
         for stagename in stagenames:
             print('Stage %s:' % stagename)
             stage = stages[stagename]
-            dim = project_utilities.dimensions(project, stage, ana=True)
+            dim = project_utilities.dimensions_datastream(project, stage, ana=True)
             docheck_locations(dim, stage.outdir,
                               add_locations_ana, clean_locations_ana, remove_locations_ana,
                               upload_ana)
@@ -4392,7 +4604,7 @@ def main(argv):
         for stagename in stagenames:
             print('Stage %s:' % stagename)
             stage = stages[stagename]
-            dim = project_utilities.dimensions(project, stage, ana=stage.ana)
+            dim = project_utilities.dimensions_datastream(project, stage, ana=stage.ana)
             docheck_tape(dim)
 
     if check_tape_ana:
@@ -4402,7 +4614,7 @@ def main(argv):
         for stagename in stagenames:
             print('Stage %s:' % stagename)
             stage = stages[stagename]
-            dim = project_utilities.dimensions(project, stage, ana=True)
+            dim = project_utilities.dimensions_datastream(project, stage, ana=True)
             docheck_tape(dim)
 
     # Done.

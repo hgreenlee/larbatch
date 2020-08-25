@@ -941,6 +941,30 @@ def dimensions(project, stage, ana=False):
     raise RuntimeError('Function dimensions not implemented.')
 
 
+# Function to return dimension string for project, stage, including data stream.
+
+def dimensions_datastream(project, stage, ana=False, index=0):
+
+    # Default same as no data stream.
+
+    dim = dimensions(project, stage, ana=ana)
+
+    # Append data stream dimension, if appropriate.
+
+    if ana:
+        if stage.ana_data_stream != None and len(stage.ana_data_stream) > 0:
+            dim1 = '( data_stream %s and %s )' % (stage.ana_data_stream[index], dim)
+            dim = dim1
+    else:
+        if stage.data_stream != None and len(stage.data_stream) > 0:
+            dim1 = '( data_stream %s and %s )' % (stage.data_stream[index], dim)
+            dim = dim1
+
+    # Done.
+
+    return dim
+
+
 # Function to return the production user name
 
 def get_prouser():

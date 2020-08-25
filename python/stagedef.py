@@ -36,6 +36,7 @@ class StageDef:
 
     def __init__(self, stage_element, base_stage, default_input_lists, default_previous_stage, 
                  default_num_jobs, default_num_events, default_max_files_per_job, default_merge,
+                 default_anamerge,
                  default_cpu, default_disk, default_memory, default_validate_on_worker,
                  default_copy_to_fts, default_script, default_start_script, default_stop_script,
                  default_site, default_blacklist):
@@ -86,12 +87,20 @@ class StageDef:
             self.defname = base_stage.defname
             self.ana_defname = base_stage.ana_defname
             self.data_tier = base_stage.data_tier
+            self.data_stream = base_stage.data_stream
             self.ana_data_tier = base_stage.ana_data_tier
+            self.ana_data_stream = base_stage.ana_data_stream
             self.submit_script = base_stage.submit_script
             self.init_script = base_stage.init_script
             self.init_source = base_stage.init_source
             self.end_script = base_stage.end_script
+            self.mid_source = base_stage.mid_source
+            self.mid_script = base_stage.mid_script
+            self.project_name = base_stage.project_name
+            self.stage_name = base_stage.stage_name
+            self.project_version = base_stage.project_version
             self.merge = base_stage.merge
+            self.anamerge = base_stage.anamerge
             self.resource = base_stage.resource
             self.lines = base_stage.lines
             self.site = base_stage.site
@@ -157,12 +166,20 @@ class StageDef:
             self.defname = ''      # Sam dataset definition name.
             self.ana_defname = ''  # Sam dataset definition name.
             self.data_tier = ''    # Sam data tier.
+            self.data_stream = []  # Sam data stream.
             self.ana_data_tier = '' # Sam data tier.
+            self.ana_data_stream = [] # Sam data stream.
             self.submit_script = '' # Submit script.
-            self.init_script = ''  # Worker initialization script.
-            self.init_source = ''  # Worker initialization bash source script.
-            self.end_script = ''   # Worker end-of-job script.
+            self.init_script = []  # Worker initialization script.
+            self.init_source = []  # Worker initialization bash source script.
+            self.end_script = []   # Worker end-of-job script.
+            self.mid_source = {}   # Worker midstage source init scripts.
+            self.mid_script = {}   # Worker midstage finalization scripts.
+            self.project_name = [] # Project name overrides.
+            self.stage_name = []   # Stage name overrides.
+            self.project_version = [] # Project version overrides.
             self.merge = default_merge    # Histogram merging program
+            self.anamerge = default_anamerge    # Analysis merge flag.
             self.resource = ''     # Jobsub resources.
             self.lines = ''        # Arbitrary condor commands.
             self.site = default_site # Site.
@@ -172,12 +189,12 @@ class StageDef:
             self.datafiletypes = ["root"] # Data file types.
             self.memory = default_memory # Amount of memory (integer MB).
             self.parameters = {}   # Dictionary of metadata parameters.
-            self.output = ''       # Art output file name.
+            self.output = []       # Art output file names.
             self.TFileName = ''    # TFile output file name.
             self.jobsub = ''       # Arbitrary jobsub_submit options.
             self.jobsub_start = '' # Arbitrary jobsub_submit options for sam start/stop jobs.
             self.jobsub_timeout = 0 # Jobsub submit timeout.
-            self.exe = ''          # Art-like executable.
+            self.exe = []          # Art-like executables.
             self.schema = ''       # Sam schema.
             self.validate_on_worker = default_validate_on_worker # Validate-on-worker flag.
             self.copy_to_fts = default_copy_to_fts   # Upload-on-worker flag.
@@ -206,7 +223,7 @@ class StageDef:
         if len(fclname_elements) > 0:
             self.fclname = []
             for fcl in fclname_elements:
-                self.fclname.append(str(fcl.firstChild.data))
+                self.fclname.append(str(fcl.firstChild.data).strip())
         if len(self.fclname) == 0:
             raise XMLError('No Fcl names specified for stage %s.' % self.name)
 
@@ -475,11 +492,27 @@ class StageDef:
         if data_tier_elements:
             self.data_tier = str(data_tier_elements[0].firstChild.data)
 
+        # Sam data stream (subelement).
+
+        data_stream_elements = stage_element.getElementsByTagName('datastream')
+        if len(data_stream_elements) > 0:
+            self.data_stream = []
+            for data_stream in data_stream_elements:
+                self.data_stream.append(str(data_stream.firstChild.data))
+
         # Sam analysis data tier (subelement).
 
         ana_data_tier_elements = stage_element.getElementsByTagName('anadatatier')
         if ana_data_tier_elements:
             self.ana_data_tier = str(ana_data_tier_elements[0].firstChild.data)
+
+        # Sam analysis data stream (subelement).
+
+        ana_data_stream_elements = stage_element.getElementsByTagName('anadatastream')
+        if len(ana_data_stream_elements) > 0:
+            self.ana_data_stream = []
+            for ana_data_stream in ana_data_stream_elements:
+                self.ana_data_stream.append(str(ana_data_stream.firstChild.data))
 
         # Submit script (subelement).
 
@@ -510,99 +543,263 @@ class StageDef:
             if not larbatch_posix.exists(self.submit_script[0]):
                 raise IOError('Submit script %s not found.' % self.submit_script[0])
 
-        # Worker initialization script (subelement).
+        # Worker initialization script (repeatable subelement).
 
         init_script_elements = stage_element.getElementsByTagName('initscript')
-        if init_script_elements:
-            self.init_script = str(init_script_elements[0].firstChild.data)
+        if len(init_script_elements) > 0:
+            for init_script_element in init_script_elements:
+                init_script = str(init_script_element.firstChild.data)
 
-        # Make sure init script exists, and convert into a full path.
+                # Make sure init script exists, and convert into a full path.
 
-        if self.init_script != '':
-            if larbatch_posix.exists(self.init_script):
-                self.init_script = os.path.realpath(self.init_script)
-            else:
+                if init_script != '':
+                    if larbatch_posix.exists(init_script):
+                        init_script = os.path.realpath(init_script)
+                    else:
 
-                # Look for script on execution path.
+                        # Look for script on execution path.
 
-                try:
-                    jobinfo = subprocess.Popen(['which', self.init_script],
-                                               stdout=subprocess.PIPE,
-                                               stderr=subprocess.PIPE)
-                    jobout, joberr = jobinfo.communicate()
-                    jobout = convert_str(jobout)
-                    joberr = convert_str(joberr)
-                    rc = jobinfo.poll()
-                    self.init_script = jobout.splitlines()[0].strip()
-                except:
-                    pass
-            if not larbatch_posix.exists(self.init_script):
-                raise IOError('Init script %s not found.' % self.init_script)
+                        try:
+                            jobinfo = subprocess.Popen(['which', init_script],
+                                                       stdout=subprocess.PIPE,
+                                                       stderr=subprocess.PIPE)
+                            jobout, joberr = jobinfo.communicate()
+                            rc = jobinfo.poll()
+                            init_script = convert_str(jobout.splitlines()[0].strip())
+                        except:
+                            pass
 
-        # Worker initialization source script (subelement).
+                    if not larbatch_posix.exists(init_script):
+                        raise IOError, 'Init script %s not found.' % init_script
+
+                    self.init_script.append(init_script)
+
+        # Worker initialization source script (repeatable subelement).
 
         init_source_elements = stage_element.getElementsByTagName('initsource')
-        if init_source_elements:
-            self.init_source = str(init_source_elements[0].firstChild.data)
+        if len(init_source_elements) > 0:
+            for init_source_element in init_source_elements:
+                init_source = str(init_source_element.firstChild.data)
 
-        # Make sure init source script exists, and convert into a full path.
+                # Make sure init source script exists, and convert into a full path.
 
-        if self.init_source != '':
-            if larbatch_posix.exists(self.init_source):
-                self.init_source = os.path.realpath(self.init_source)
-            else:
+                if init_source != '':
+                    if larbatch_posix.exists(init_source):
+                        init_source = os.path.realpath(init_source)
+                    else:
 
-                # Look for script on execution path.
+                        # Look for script on execution path.
 
-                try:
-                    jobinfo = subprocess.Popen(['which', self.init_source],
-                                               stdout=subprocess.PIPE,
-                                               stderr=subprocess.PIPE)
-                    jobout, joberr = jobinfo.communicate()
-                    jobout = convert_str(jobout)
-                    joberr = convert_str(joberr)
-                    rc = jobinfo.poll()
-                    self.init_source = jobout.splitlines()[0].strip()
-                except:
-                    pass
-            if not larbatch_posix.exists(self.init_source):
-                raise IOError('Init source script %s not found.' % self.init_source)
+                        try:
+                            jobinfo = subprocess.Popen(['which', init_source],
+                                                       stdout=subprocess.PIPE,
+                                                       stderr=subprocess.PIPE)
+                            jobout, joberr = jobinfo.communicate()
+                            rc = jobinfo.poll()
+                            init_source = convert_str(jobout.splitlines()[0].strip())
+                        except:
+                            pass
 
-        # Worker end-of-job script (subelement).
+                    if not larbatch_posix.exists(init_source):
+                        raise IOError, 'Init source script %s not found.' % init_source
+
+                    # The <initsource> element can occur at the top level of the <stage>
+                    # element, or inside a <fcl> element.
+                    # Update the StageDef object differently in these two cases.
+
+                    parent_element = init_source_element.parentNode
+                    if parent_element.nodeName == 'fcl':
+
+                        # This <initsource> is located inside a <fcl> element.
+                        # Find the index of this fcl file.
+                        # Python will raise an exception if the fcl can't be found
+                        # (shouldn't happen).
+
+                        fcl = str(parent_element.firstChild.data).strip()
+                        n = self.fclname.index(fcl)
+                        if not n in self.mid_source:
+                            self.mid_source[n] = []
+                        self.mid_source[n].append(init_source)
+
+                    else:
+
+                        # This is a <stage> level <initsource> element.
+
+                        self.init_source.append(init_source)
+
+        # Worker end-of-job script (repeatable subelement).
 
         end_script_elements = stage_element.getElementsByTagName('endscript')
-        if end_script_elements:
-            self.end_script = str(end_script_elements[0].firstChild.data)
+        if len(end_script_elements) > 0:
+            for end_script_element in end_script_elements:
+                end_script = str(end_script_element.firstChild.data)
 
-        # Make sure end-of-job script exists, and convert into a full path.
+                # Make sure end-of-job scripts exists, and convert into a full path.
 
-        if self.end_script != '':
-            if larbatch_posix.exists(self.end_script):
-                self.end_script = os.path.realpath(self.end_script)
-            else:
+                if end_script != '':
+                    if larbatch_posix.exists(end_script):
+                        end_script = os.path.realpath(end_script)
+                    else:
 
-                # Look for script on execution path.
+                        # Look for script on execution path.
 
-                try:
-                    jobinfo = subprocess.Popen(['which', self.end_script],
-                                               stdout=subprocess.PIPE,
-                                               stderr=subprocess.PIPE)
-                    jobout, joberr = jobinfo.communicate()
-                    jobout = convert_str(jobout)
-                    joberr = convert_str(joberr)
-                    rc = jobinfo.poll()
-                    self.end_script = jobout.splitlines()[0].strip()
-                except:
-                    pass
-            if not larbatch_posix.exists(self.end_script):
-                raise IOError('End-of-job script %s not found.' % self.end_script)
+                        try:
+                            jobinfo = subprocess.Popen(['which', end_script],
+                                                       stdout=subprocess.PIPE,
+                                                       stderr=subprocess.PIPE)
+                            jobout, joberr = jobinfo.communicate()
+                            rc = jobinfo.poll()
+                            end_script = convert_str(jobout.splitlines()[0].strip())
+                        except:
+                            pass
+
+                    if not larbatch_posix.exists(end_script):
+                        raise IOError, 'End-of-job script %s not found.' % end_script
+
+                    # The <endscript> element can occur at the top level of the <stage>
+                    # element, or inside a <fcl> element.
+                    # Update the StageDef object differently in these two cases.
+
+                    parent_element = end_script_element.parentNode
+                    if parent_element.nodeName == 'fcl':
+
+                        # This <endscript> is located inside a <fcl> element.
+                        # Find the index of this fcl file.
+                        # Python will raise an exception if the fcl can't be found
+                        # (shouldn't happen).
+
+                        fcl = str(parent_element.firstChild.data).strip()
+                        n = self.fclname.index(fcl)
+                        if not n in self.mid_script:
+                            self.mid_script[n] = []
+                        self.mid_script[n].append(end_script)
+
+                    else:
+
+                        # This is a <stage> level <endscript> element.
+
+                        self.end_script.append(end_script)
+
+	# Project name overrides (repeatable subelement).
+
+        project_name_elements = stage_element.getElementsByTagName('projectname')
+        if len(project_name_elements) > 0:
+            for project_name_element in project_name_elements:
+
+                # Match this project name with its parent fcl element.
+
+                fcl_element = project_name_element.parentNode
+                if fcl_element.nodeName != 'fcl':
+                    raise XMLError, "Found <projectname> element outside <fcl> element."
+                fcl = str(fcl_element.firstChild.data).strip()
+
+                # Find the index of this fcl file.
+                # Python will raise an exception if the fcl can't be found (shouldn't happen).
+
+                n = self.fclname.index(fcl)
+
+                # Make sure project_name list is long enough.
+
+                while len(self.project_name) < n+1:
+                    self.project_name.append('')
+
+                # Extract project name and add it to list.
+
+                project_name = str(project_name_element.firstChild.data)
+                self.project_name[n] = project_name
+
+        # Make sure that the size of the project_name list (if present) ia at least as
+        # long as the fclname list.
+        # If not, extend by adding empty string.
+
+        if len(self.project_name) > 0:
+            while len(self.project_name) < len(self.fclname):
+                self.project_name.append('')
+
+	# Stage name overrides (repeatable subelement).
+
+        stage_name_elements = stage_element.getElementsByTagName('stagename')
+        if len(stage_name_elements) > 0:
+            for stage_name_element in stage_name_elements:
+
+                # Match this project name with its parent fcl element.
+
+                fcl_element = stage_name_element.parentNode
+                if fcl_element.nodeName != 'fcl':
+                    raise XMLError, "Found <stagename> element outside <fcl> element."
+                fcl = str(fcl_element.firstChild.data).strip()
+
+                # Find the index of this fcl file.
+                # Python will raise an exception if the fcl can't be found (shouldn't happen).
+
+                n = self.fclname.index(fcl)
+
+                # Make sure stage_name list is long enough.
+
+                while len(self.stage_name) < n+1:
+                    self.stage_name.append('')
+
+                # Extract stage name and add it to list.
+
+                stage_name = str(stage_name_element.firstChild.data)
+                self.stage_name[n] = stage_name
+
+        # Make sure that the size of the stage_name list (if present) ia at least as
+        # long as the fclname list.
+        # If not, extend by adding empty string.
+
+        if len(self.stage_name) > 0:
+            while len(self.stage_name) < len(self.fclname):
+                self.stage_name.append('')
+
+	# Project version overrides (repeatable subelement).
+
+        project_version_elements = stage_element.getElementsByTagName('version')
+        if len(project_version_elements) > 0:
+            for project_version_element in project_version_elements:
+
+                # Match this project version with its parent fcl element.
+
+                fcl_element = project_version_element.parentNode
+                if fcl_element.nodeName != 'fcl':
+                    raise XMLError, "Found stage level <version> element outside <fcl> element."
+                fcl = str(fcl_element.firstChild.data).strip()
+
+                # Find the index of this fcl file.
+                # Python will raise an exception if the fcl can't be found (shouldn't happen).
+
+                n = self.fclname.index(fcl)
+
+                # Make sure project_version list is long enough.
+
+                while len(self.project_version) < n+1:
+                    self.project_version.append('')
+
+                # Extract project version and add it to list.
+
+                project_version = str(project_version_element.firstChild.data)
+                self.project_version[n] = project_version
+
+        # Make sure that the size of the project_version list (if present) ia at least as
+        # long as the fclname list.
+        # If not, extend by adding empty string.
+
+        if len(self.project_version) > 0:
+            while len(self.project_version) < len(self.fclname):
+                self.project_version.append('')
 
         # Histogram merging program.
 
         merge_elements = stage_element.getElementsByTagName('merge')
         if merge_elements:
             self.merge = str(merge_elements[0].firstChild.data)
-        
+	
+        # Analysis merge flag.
+
+        anamerge_elements = stage_element.getElementsByTagName('anamerge')
+        if anamerge_elements:
+            self.anamerge = str(anamerge_elements[0].firstChild.data)
+	
         # Resource (subelement).
 
         resource_elements = stage_element.getElementsByTagName('resource')
@@ -667,13 +864,55 @@ class StageDef:
                 value = str(param_element.firstChild.data)
                 self.parameters[name] = value
 
-        # Output file name (subelement).
+        # Output file name (repeatable subelement).
 
         output_elements = stage_element.getElementsByTagName('output')
-        if output_elements:
-            self.output = str(output_elements[0].firstChild.data)
-            
-        # TFileName (subelement).
+        if len(output_elements) > 0:
+
+            # The output element can occur once at the top level of the <stage> element, or
+            # inside a <fcl> element.  The former applies globally.  The latter applies
+            # only to that fcl substage.
+
+            # Loop over global output elements.
+
+            for output_element in output_elements:
+                parent_element = output_element.parentNode
+                if parent_element.nodeName != 'fcl':
+                    output = str(output_element.firstChild.data)
+                    self.output = []
+                    while len(self.output) < len(self.fclname):
+                        self.output.append(output)
+
+            # Loop over fcl output elements.
+
+            for output_element in output_elements:
+                parent_element = output_element.parentNode
+                if parent_element.nodeName == 'fcl':
+
+                    # Match this output name with its parent fcl element.
+
+                    fcl = str(parent_element.firstChild.data).strip()
+                    n = self.fclname.index(fcl)
+
+                    # Make sure project_name list is long enough.
+
+                    while len(self.output) < n+1:
+                        self.output.append('')
+
+                    # Extract output name and add it to list.
+
+                    output = str(output_element.firstChild.data)
+                    self.output[n] = output
+
+        # Make sure that the size of the output list (if present) ia at least as
+        # long as the fclname list.
+        # If not, extend by adding empty string.
+
+        if len(self.output) > 0:
+            while len(self.output) < len(self.fclname):
+                self.output.append('')
+
+	# TFileName (subelement).
 
         TFileName_elements = stage_element.getElementsByTagName('TFileName')
         if TFileName_elements:
@@ -697,11 +936,53 @@ class StageDef:
         if jobsub_timeout_elements:
             self.jobsub_timeout = int(jobsub_timeout_elements[0].firstChild.data)
 
-        # Name of art-like executable.
+	# Name of art-like executables (repeatable subelement).
 
         exe_elements = stage_element.getElementsByTagName('exe')
-        if exe_elements:
-            self.exe = str(exe_elements[0].firstChild.data)
+        if len(exe_elements) > 0:
+
+            # The exe element can occur once at the top level of the <stage> element, or
+            # inside a <fcl> element.  The former applies globally.  The latter applies
+            # only to that fcl substage.
+
+            # Loop over global exe elements.
+
+            for exe_element in exe_elements:
+                parent_element = exe_element.parentNode
+                if parent_element.nodeName != 'fcl':
+                    exe = str(exe_element.firstChild.data)
+                    self.exe = []
+                    while len(self.exe) < len(self.fclname):
+                        self.exe.append(exe)
+
+            # Loop over fcl exe elements.
+
+            for exe_element in exe_elements:
+                parent_element = exe_element.parentNode
+                if parent_element.nodeName == 'fcl':
+
+                    # Match this exe name with its parent fcl element.
+
+                    fcl = str(parent_element.firstChild.data).strip()
+                    n = self.fclname.index(fcl)
+
+                    # Make sure project_name list is long enough.
+
+                    while len(self.exe) < n+1:
+                        self.exe.append('')
+
+                    # Extract exe name and add it to list.
+
+                    exe = str(exe_element.firstChild.data)
+                    self.exe[n] = exe
+
+        # Make sure that the size of the exe list (if present) ia at least as
+        # long as the fclname list.
+        # If not, extend by adding empty string.
+
+        if len(self.exe) > 0:
+            while len(self.exe) < len(self.fclname):
+                self.exe.append('')
 
         # Sam schema.
 
@@ -719,7 +1000,7 @@ class StageDef:
 
         copy_to_fts_elements = stage_element.getElementsByTagName('copy')
         if copy_to_fts_elements:
-            self.copy_to_fts = copy_to_fts_elements[0].firstChild.data
+            self.copy_to_fts = int(copy_to_fts_elements[0].firstChild.data)
 
         # Batch script
 
@@ -848,12 +1129,20 @@ class StageDef:
         result += 'Dataset definition name = %s\n' % self.defname
         result += 'Analysis dataset definition name = %s\n' % self.ana_defname
         result += 'Data tier = %s\n' % self.data_tier
+        result += 'Data stream = %s\n' % self.data_stream
         result += 'Analysis data tier = %s\n' % self.ana_data_tier
+        result += 'Analysis data stream = %s\n' % self.ana_data_stream
         result += 'Submit script = %s\n' % self.submit_script
         result += 'Worker initialization script = %s\n' % self.init_script
         result += 'Worker initialization source script = %s\n' % self.init_source
         result += 'Worker end-of-job script = %s\n' % self.end_script
+        result += 'Worker midstage source initialization scripts = %s\n' % self.mid_source
+        result += 'Worker midstage finalization scripts = %s\n' % self.mid_script
+        result += 'Project name overrides = %s\n' % self.project_name
+        result += 'Stage name overrides = %s\n' % self.stage_name
+        result += 'Project version overrides = %s\n' % self.project_version
         result += 'Special histogram merging program = %s\n' % self.merge
+        result += 'Analysis merge flag = %s\n' % self.anamerge
         result += 'Resource = %s\n' % self.resource
         result += 'Lines = %s\n' % self.lines
         result += 'Site = %s\n' % self.site
@@ -870,7 +1159,7 @@ class StageDef:
         result += 'Jobsub_submit options = %s\n' % self.jobsub
         result += 'Jobsub_submit start/stop options = %s\n' % self.jobsub_start
         result += 'Jobsub submit timeout = %d\n' % self.jobsub_timeout
-        result += 'Executable = %s\n' % self.exe
+        result += 'Executables = %s\n' % self.exe
         result += 'Schema = %s\n' % self.schema
         result += 'Validate-on-worker = %d\n' % self.validate_on_worker
         result += 'Upload-on-worker = %d\n' % self.copy_to_fts
