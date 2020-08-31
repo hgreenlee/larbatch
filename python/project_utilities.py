@@ -34,6 +34,7 @@ import larbatch_utilities
 from larbatch_utilities import get_experiment, get_user, get_role, get_prouser
 from larbatch_utilities import test_ticket, test_kca, test_proxy, get_kca, get_proxy
 from larbatch_utilities import dimensions
+from larbatch_utilities import dimensions_datastream
 from larbatch_utilities import wait_for_subprocess
 from larbatch_utilities import get_bluearc_server
 from larbatch_utilities import get_dcache_server
@@ -345,7 +346,7 @@ def start_project(defname, default_prjname, max_files, force_snapshot, filelistd
 #
 # 2.  Project no end time.
 
-def active_projects2(defname = ''):
+def active_projects2(defname = '', dropboxwait = 0.):
 
     result = set()
 
@@ -387,7 +388,7 @@ def active_projects2(defname = ''):
 
             # Keep this project if there is no end time.
 
-            if age == 0:
+            if age <= dropboxwait * 86400:
                 result.add(prjname)
 
     # Done.
@@ -441,7 +442,7 @@ def make_active_project_dataset(defname, dropboxwait, active_defname, wait_defna
 
     # Get list of active projects.
 
-    prjs = active_projects(defname) | active_projects2(defname)
+    prjs = active_projects(defname) | active_projects2(defname, dropboxwait)
 
     # Make sam dimension.
 
@@ -704,6 +705,16 @@ def tokenizeRPN(dim):
     if n >= 0:
         head = dim[:n]
         tail = dim[n:]
+
+    # Space out parentheses.
+
+    head = head.replace('(', ' ( ')
+    head = head.replace(')', ' ) ')
+
+    # But not isxxx: 
+
+    head = head.replace('isparentof: ', 'isparentof:')
+    head = head.replace('ischildof: ', 'ischildof:')
 
     for word in head.split():
 

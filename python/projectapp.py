@@ -845,8 +845,9 @@ class ProjectApp(tk.Frame):
         try:
             top['cursor'] = 'watch'
             top.update_idletasks()
-            dim = project_utilities.dimensions(self.current_project_def, self.current_stage_def,
-                                               ana=ana)
+            dim = project_utilities.dimensions_datastream(self.current_project_def,
+                                                          self.current_stage_def,
+                                                          ana=ana)
             project.dotest_declarations(dim)
             top['cursor'] = old_cursor
         except:
@@ -881,8 +882,9 @@ class ProjectApp(tk.Frame):
         try:
             top['cursor'] = 'watch'
             top.update_idletasks()
-            dim = project_utilities.dimensions(self.current_project_def, self.current_stage_def,
-                                               ana=ana)
+            dim = project_utilities.dimensions_datastream(self.current_project_def,
+                                                          self.current_stage_def,
+                                                          ana=ana)
             project.docheck_definition(defname, dim, define=True)
             top['cursor'] = old_cursor
         except:
@@ -917,8 +919,9 @@ class ProjectApp(tk.Frame):
         try:
             top['cursor'] = 'watch'
             top.update_idletasks()
-            dim = project_utilities.dimensions(self.current_project_def, self.current_stage_def,
-                                               ana=ana)
+            dim = project_utilities.dimensions_datastream(self.current_project_def,
+                                                          self.current_stage_def,
+                                                          ana=ana)
             project.docheck_definition(defname, dim, define=False)
             top['cursor'] = old_cursor
         except:
@@ -983,8 +986,9 @@ class ProjectApp(tk.Frame):
         try:
             top['cursor'] = 'watch'
             top.update_idletasks()
-            dim = project_utilities.dimensions(self.current_project_def, self.current_stage_def,
-                                               ana=ana)
+            dim = project_utilities.dimensions_datastream(self.current_project_def,
+                                                          self.current_stage_def,
+                                                          ana=ana)
             project.docheck_locations(dim, self.current_stage_def.logdir,
                                       add=False,
                                       clean=False,
@@ -1016,8 +1020,9 @@ class ProjectApp(tk.Frame):
         try:
             top['cursor'] = 'watch'
             top.update_idletasks()
-            dim = project_utilities.dimensions(self.current_project_def, self.current_stage_def,
-                                               ana=ana)
+            dim = project_utilities.dimensions_datastream(self.current_project_def,
+                                                          self.current_stage_def,
+                                                          ana=ana)
             project.docheck_tape(dim)
             top['cursor'] = old_cursor
         except:
@@ -1045,8 +1050,9 @@ class ProjectApp(tk.Frame):
         try:
             top['cursor'] = 'watch'
             top.update_idletasks()
-            dim = project_utilities.dimensions(self.current_project_def, self.current_stage_def,
-                                               ana=ana)
+            dim = project_utilities.dimensions_datastream(self.current_project_def,
+                                                          self.current_stage_def,
+                                                          ana=ana)
             project.docheck_locations(dim, self.current_stage_def.outdir,
                                       add=True,
                                       clean=False,
@@ -1078,8 +1084,9 @@ class ProjectApp(tk.Frame):
         try:
             top['cursor'] = 'watch'
             top.update_idletasks()
-            dim = project_utilities.dimensions(self.current_project_def, self.current_stage_def,
-                                               ana=ana)
+            dim = project_utilities.dimensions_datastream(self.current_project_def,
+                                                          self.current_stage_def,
+                                                          ana=ana)
             project.docheck_locations(dim, self.current_stage_def.outdir,
                                       add=False,
                                       clean=True,
@@ -1111,8 +1118,9 @@ class ProjectApp(tk.Frame):
         try:
             top['cursor'] = 'watch'
             top.update_idletasks()
-            dim = project_utilities.dimensions(self.current_project_def, self.current_stage_def,
-                                               ana=ana)
+            dim = project_utilities.dimensions_datastream(self.current_project_def,
+                                                          self.current_stage_def,
+                                                          ana=ana)
             project.docheck_locations(dim, self.current_stage_def.outdir,
                                       add=False,
                                       clean=False,
@@ -1144,8 +1152,9 @@ class ProjectApp(tk.Frame):
         try:
             top['cursor'] = 'watch'
             top.update_idletasks()
-            dim = project_utilities.dimensions(self.current_project_def, self.current_stage_def,
-                                               ana=ana)
+            dim = project_utilities.dimensions_datastream(self.current_project_def,
+                                                          self.current_stage_def,
+                                                          ana=ana)
             project.docheck_locations(dim, self.current_stage_def.outdir,
                                       add=False,
                                       clean=False,

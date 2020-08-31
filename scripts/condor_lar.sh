@@ -80,6 +80,8 @@
 # --init-script <arg>     - User initialization script execute.
 # --init-source <arg>     - User initialization script to source (bash).
 # --end-script <arg>      - User end-of-job script to execute.
+# --mid-source <arg>      - User midstage initialization script to source.
+# --mid-script <arg>      - User midstage finalization script to execute.
 # --exe <arg>             - Specify art-like executable (default "lar").
 # --init <path>           - Absolute path of environment initialization script.
 #
@@ -227,6 +229,8 @@ PROCMAP=""
 INITSCRIPT=""
 INITSOURCE=""
 ENDSCRIPT=""
+MIDSOURCE=""
+MIDSCRIPT=""
 SAM_USER=$GRID_USER
 SAM_GROUP=""
 SAM_STATION=""
@@ -578,6 +582,22 @@ while [ $# -gt 0 ]; do
       fi
       ;;
     
+    # User midstage initialization source script.
+    --mid-source )
+      if [ $# -gt 1 ]; then
+        MIDSOURCE=$2
+        shift
+      fi
+      ;;
+    
+    # User midstage finalization script.
+    --mid-script )
+      if [ $# -gt 1 ]; then
+        MIDSCRIPT=$2
+        shift
+      fi
+      ;;
+    
     # Declare good output root files to SAM.
     --declare )
       DECLARE_IN_JOB=1
@@ -665,6 +685,8 @@ done
 #echo "INITSCRIPT=$INITSCRIPT"
 #echo "INITSOURCE=$INITSOURCE"
 #echo "ENDSCRIPT=$ENDSCRIPT"
+#echo "MIDSOURCE=$MIDSOURCE"
+#echo "MIDSCRIPT=$MIDSCRIPT"
 #echo "VALIDATE_IN_JOB=$VALIDATE_IN_JOB"
 
 # Set default data file types ("root").
@@ -904,7 +926,25 @@ if [ x$ENDSCRIPT != x ]; then
   if [ -f "$ENDSCRIPT" ]; then
     chmod +x $ENDSCRIPT
   else
-    echo "Initialization script $ENDSCRIPT does not exist."
+    echo "Finalization script $ENDSCRIPT does not exist."
+    exit 1
+  fi
+fi
+
+# Make sure midstage init source script exists (if specified).
+
+if [ x$MIDSOURCE != x -a ! -f "$MIDSOURCE" ]; then
+  echo "Midstage initialization source script $MIDSOURCE does not exist."
+  exit 1
+fi
+
+# Make sure midstage finalization script exists and is executable (if specified).
+
+if [ x$MIDSCRIPT != x ]; then
+  if [ -f "$MIDSCRIPT" ]; then
+    chmod +x $MIDSCRIPT
+  else
+    echo "Midstage finalization script $MIDSCRIPT does not exist."
     exit 1
   fi
 fi
@@ -1028,6 +1068,30 @@ if [ x$IFDHC_DIR = x ]; then
 fi
 echo "IFDH_ART_DIR=$IFDH_ART_DIR"
 echo "IFDHC_DIR=$IFDHC_DIR"
+
+# Run/source optional initialization scripts.
+
+if [ x$INITSCRIPT != x ]; then
+  echo "Running initialization script ${INITSCRIPT}."
+  ./${INITSCRIPT}
+  status=$?
+  if [ $status -ne 0 ]; then
+    exit $status
+  fi
+fi
+
+if [ x$INITSOURCE != x ]; then
+  echo "Sourcing initialization source script ${INITSOURCE}."
+  . $INITSOURCE
+  status=$?
+  if [ $status -ne 0 ]; then
+    exit $status
+  fi
+fi
+
+# Save a copy of the environment, which can be helpful for debugging.
+
+env > env.txt
 
 # Get input files to process, either single file, file list, or sam.
 #
@@ -1505,8 +1569,20 @@ EOF
     fi
   fi
  
-  if [ x$OUTFILE != x ]; then
-    LAROPT="$LAROPT -o `basename $OUTFILE .root`$stage.root"
+  # Extract output file name for this stage.
+
+  if echo $OUTFILE | grep -q :; then
+    outfile=''
+  else
+    outfile=$OUTFILE
+  fi
+  field=$(( $stage + 1 ))
+  outfile_stage=`echo $OUTFILE | cut -d: -f$field`
+  if [ x$outfile_stage != x ]; then
+    outfile=$outfile_stage
+  fi
+  if [ x$outfile != x ]; then
+    LAROPT="$LAROPT -o `basename $outfile .root`$stage.root"
     outstem=`basename $OUTFILE .root` 
   fi
 
@@ -1534,31 +1610,24 @@ EOF
     LAROPT="$LAROPT $ARGS"  
   fi
  
-  if [ $stage -ne 0 ]; then
-    LAROPT="$LAROPT -s $next_stage_input"
-  fi 
+  # Source optional midstage initialization scripts.
 
-  # Run/source optional initialization scripts.
-
-  if [ x$INITSCRIPT != x ]; then
-    echo "Running initialization script ${INITSCRIPT}."
-    if ! ./${INITSCRIPT}; then
-      exit $?
-    fi
-  fi
-
-  if [ x$INITSOURCE != x -a $stage -eq 0 ]; then
-    echo "Sourcing initialization source script ${INITSOURCE}."
-    . $INITSOURCE
+  if [ x$MIDSOURCE != x ]; then
+    echo "Sourcing midstage initialization source script ${MIDSOURCE}."
+    . $MIDSOURCE
     status=$?
     if [ $status -ne 0 ]; then
       exit $status
     fi
   fi
 
+  if [ $stage -ne 0 ]; then
+    LAROPT="$LAROPT -s $next_stage_input"
+  fi 
+
   # Save a copy of the environment, which can be helpful for debugging.
 
-  env > env.txt
+  env > env${stage}.txt
 
   # Save a canonicalized version of the fcl configuration.
 
@@ -1573,12 +1642,25 @@ EOF
 
   # Run lar.
   pwd
-  echo "$EXE $LAROPT"
-  echo "$EXE $LAROPT" > commandStage$stage.txt
-  $EXE $LAROPT > larStage$stage.out 2> larStage$stage.err
+
+  # Extract this stage exe.
+
+  if echo $EXE | grep -q :; then
+    exe='lar'
+  else
+    exe=$EXE
+  fi
+  field=$(( $stage + 1 ))
+  exe_stage=`echo $EXE | cut -d: -f$field`
+  if [ x$exe_stage != x ]; then
+    exe=$exe_stage
+  fi
+  echo "$exe $LAROPT"
+  echo "$exe $LAROPT" > commandStage$stage.txt
+  $exe $LAROPT > larStage$stage.out 2> larStage$stage.err
   stat=$?
   echo $stat > larStage$stage.stat
-  echo "$EXE completed with exit status ${stat}."
+  echo "$exe completed with exit status ${stat}."
   if [ $stat -ne 0 ]; then
     echo
     echo "Proxy:"
@@ -1627,6 +1709,19 @@ EOF
     break
   fi
  
+  # Run optional midstage script.
+
+  if [ x$MIDSCRIPT != x ]; then
+    echo "Running midstage finalization script ${MIDSCRIPT}."
+    ./${MIDSCRIPT} $stage
+    status=$?
+    if [ $status -ne 0 ]; then
+      exit $status
+    fi
+  fi
+
+  # Delete temporary input file.
+
   if [ $stage -ne 0 ]; then
    rm -rf $next_stage_input
   fi
@@ -1706,8 +1801,10 @@ fi
 
 if [ x$ENDSCRIPT != x ]; then
   echo "Running end-of-job script ${ENDSCRIPT}."
-  if ! ./${ENDSCRIPT}; then
-    exit $?
+  ./${ENDSCRIPT}
+  status=$?
+  if [ $status -ne 0 ]; then
+    exit $status
   fi
 fi
 
