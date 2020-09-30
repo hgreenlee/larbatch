@@ -625,7 +625,7 @@ def dostatus(projects):
 
 # Recursively extract projects from an xml element.
 
-def find_projects(element):
+def find_projects(element, check=True):
 
     projects = []
 
@@ -634,7 +634,7 @@ def find_projects(element):
 
     if element.nodeName == 'project':
         default_input_by_stage = {}
-        project = ProjectDef(element, '', default_input_by_stage)
+        project = ProjectDef(element, '', default_input_by_stage, check=check)
         projects.append(project)
 
     else:
@@ -646,7 +646,7 @@ def find_projects(element):
         default_input_by_stage = {}
         subelements = element.getElementsByTagName('project')
         for subelement in subelements:
-            project = ProjectDef(subelement, default_input, default_input_by_stage)
+            project = ProjectDef(subelement, default_input, default_input_by_stage, check=check)
             projects.append(project)
             for stage in project.stages:
                 stage_list = os.path.join(stage.bookdir, 'files.list')
@@ -660,7 +660,7 @@ def find_projects(element):
 
 # Extract all projects from the specified xml file.
 
-def get_projects(xmlfile):
+def get_projects(xmlfile, check=True):
 
     # Cache results.
 
@@ -683,7 +683,7 @@ def get_projects(xmlfile):
 
     # Find project names in the root element.
 
-    projects = find_projects(root)
+    projects = find_projects(root, check=check)
 
     # Cache result.
 
@@ -715,8 +715,8 @@ def select_project(projects, projectname, stagename):
 
 # Extract the specified project element from xml file.
 
-def get_project(xmlfile, projectname='', stagename=''):
-    projects = get_projects(xmlfile)
+def get_project(xmlfile, projectname='', stagename='', check=True):
+    projects = get_projects(xmlfile, check=check)
     project = select_project(projects, projectname, stagename)
     return project
 

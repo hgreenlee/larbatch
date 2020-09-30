@@ -24,7 +24,7 @@ class ProjectDef:
     # Constructor.
     # project_element argument can be an xml element or None.
 
-    def __init__(self, project_element, default_first_input_list, default_input_lists):
+    def __init__(self, project_element, default_first_input_list, default_input_lists, check=True):
 
         # Assign default values.
         
@@ -228,7 +228,7 @@ class ProjectDef:
         # Make sure local test release directory/tarball exists, if specified.
         # Existence of non-null local_release_dir has already been tested.
 
-        if self.local_release_tar != '' and not larbatch_posix.exists(self.local_release_tar):
+        if check and self.local_release_tar != '' and not larbatch_posix.exists(self.local_release_tar):
             raise IOError("Local release directory/tarball %s does not exist." % self.local_release_tar)
             
         # Sam file type (subelement).
@@ -258,28 +258,33 @@ class ProjectDef:
 
         # Make sure batch script exists, and convert into a full path.
 
-        script_path = ''
-        try:
-            jobinfo = subprocess.Popen(['which', self.script],
-                                       stdout=subprocess.PIPE,
-                                       stderr=subprocess.PIPE)
-            jobout, joberr = jobinfo.communicate()
-            jobout = convert_str(jobout)
-            joberr = convert_str(joberr)
-            rc = jobinfo.poll()
-            script_path = jobout.splitlines()[0].strip()
-        except:
-            pass
-        if script_path == '' or not larbatch_posix.access(script_path, os.X_OK):
-            raise IOError('Script %s not found.' % self.script)
-        self.script = script_path
-        
-        worker_validations = project_element.getElementsByTagName('check')
+        if check:
+            script_path = ''
+            try:
+                jobinfo = subprocess.Popen(['which', self.script],
+                                           stdout=subprocess.PIPE,
+                                           stderr=subprocess.PIPE)
+                jobout, joberr = jobinfo.communicate()
+                jobout = convert_str(jobout)
+                joberr = convert_str(joberr)
+                rc = jobinfo.poll()
+                script_path = jobout.splitlines()[0].strip()
+            except:
+                pass
+            if script_path == '' or not larbatch_posix.access(script_path, os.X_OK):
+                raise IOError('Script %s not found.' % self.script)
+            self.script = script_path
+
+        # Validate-on-worker flag (subelement).
+	
+	worker_validations = project_element.getElementsByTagName('check')
         for worker_validation in worker_validations:
             if worker_validation.parentNode == project_element:
                 self.validate_on_worker = int(worker_validation.firstChild.data)
-        
-        worker_copys = project_element.getElementsByTagName('copy')
+
+        # Copy to FTS flag (subelement).
+	
+	worker_copys = project_element.getElementsByTagName('copy')
         for worker_copy in worker_copys:
             if worker_copy.parentNode == project_element:
                 self.copy_to_fts = int(worker_copy.firstChild.data)    
@@ -294,19 +299,20 @@ class ProjectDef:
 
         # Make sure start project batch script exists, and convert into a full path.
 
-        script_path = ''
-        try:
-            jobinfo = subprocess.Popen(['which', self.start_script],
-                                       stdout=subprocess.PIPE,
-                                       stderr=subprocess.PIPE)
-            jobout, joberr = jobinfo.communicate()
-            jobout = convert_str(jobout)
-            joberr = convert_str(joberr)
-            rc = jobinfo.poll()
-            script_path = jobout.splitlines()[0].strip()
-        except:
-            pass
-        self.start_script = script_path
+        if check:
+            script_path = ''
+            try:
+                jobinfo = subprocess.Popen(['which', self.start_script],
+                                           stdout=subprocess.PIPE,
+                                           stderr=subprocess.PIPE)
+                jobout, joberr = jobinfo.communicate()
+                jobout = convert_str(jobout)
+                joberr = convert_str(joberr)
+                rc = jobinfo.poll()
+                script_path = jobout.splitlines()[0].strip()
+            except:
+                pass
+            self.start_script = script_path
 
         # Stop project batch script (subelement).
         
@@ -318,19 +324,20 @@ class ProjectDef:
 
         # Make sure stop project batch script exists, and convert into a full path.
 
-        script_path = ''
-        try:
-            jobinfo = subprocess.Popen(['which', self.stop_script],
-                                       stdout=subprocess.PIPE,
-                                       stderr=subprocess.PIPE)
-            jobout, joberr = jobinfo.communicate()
-            jobout = convert_str(jobout)
-            joberr = convert_str(joberr)
-            rc = jobinfo.poll()
-            script_path = jobout.splitlines()[0].strip()
-        except:
-            pass
-        self.stop_script = script_path
+        if check:
+            script_path = ''
+            try:
+                jobinfo = subprocess.Popen(['which', self.stop_script],
+                                           stdout=subprocess.PIPE,
+                                           stderr=subprocess.PIPE)
+                jobout, joberr = jobinfo.communicate()
+                jobout = convert_str(jobout)
+                joberr = convert_str(joberr)
+                rc = jobinfo.poll()
+                script_path = jobout.splitlines()[0].strip()
+            except:
+                pass
+            self.stop_script = script_path
 
         # Fcl search path (repeatable subelement).
 
@@ -340,16 +347,17 @@ class ProjectDef:
 
         # Add $FHICL_FILE_PATH.
 
-        if 'FHICL_FILE_PATH' in os.environ:
+        if check and 'FHICL_FILE_PATH' in os.environ:
             for fcldir in os.environ['FHICL_FILE_PATH'].split(':'):
                 if larbatch_posix.exists(fcldir):
                     self.fclpath.append(fcldir)
 
         # Make sure all directories of fcl search path exist.
 
-        for fcldir in self.fclpath:
-            if not larbatch_posix.exists(fcldir):
-                raise IOError("Fcl search directory %s does not exist." % fcldir)
+        if check:
+            for fcldir in self.fclpath:
+                if not larbatch_posix.exists(fcldir):
+                    raise IOError("Fcl search directory %s does not exist." % fcldir)
 
         # Project stages (repeatable subelement).
 
@@ -390,7 +398,8 @@ class ProjectDef:
                                         self.start_script,
                                         self.stop_script,
                                         self.site,
-                                        self.blacklist))
+                                        self.blacklist,
+                                        check=check))
             default_previous_stage = self.stages[-1].name
             default_input_lists[default_previous_stage] = os.path.join(self.stages[-1].bookdir,
                                                                        'files.list')
