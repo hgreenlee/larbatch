@@ -16,6 +16,7 @@ from project_modules.xmlerror import XMLError
 from project_modules.stagedef import StageDef
 import larbatch_posix
 from larbatch_utilities import convert_str
+from larbatch_utilities get_ups_products
 
 # Project definition class contains data parsed from project defition xml file.
 
@@ -32,6 +33,7 @@ class ProjectDef:
         self.num_events = 0               # Total events (all jobs).
         self.num_jobs = 1                 # Number of jobs.
         self.max_files_per_job = 0        # Max number of files per job.
+        self.ups = []                     # Top level ups products.
         self.os = ''                      # Batch OS.
         self.resource = 'DEDICATED,OPPORTUNISTIC' # Jobsub resources.
         self.role = ''                    # Role (normally Analysis or Production).
@@ -93,6 +95,17 @@ class ProjectDef:
         for max_files_per_job_element in max_files_per_job_elements:
             if max_files_per_job_element.parentNode == project_element:
                 self.max_files_per_job = int(max_files_per_job_element.firstChild.data)
+
+        # Top level ups product (repeatable subelement).
+
+        ups_elements = project_element.getElementsByTagName('ups')
+        for ups_element in ups_elements:
+            self.ups.append(str(ups_element.firstChild.data))
+
+        # If ups products list is empty, set default.
+
+        if len(self.ups) == 0:
+            self.ups = get_ups_products().split(',')
 
         # OS (subelement).
 
@@ -423,6 +436,9 @@ class ProjectDef:
         result += 'Total events = %d\n' % self.num_events
         result += 'Number of jobs = %d\n' % self.num_jobs
         result += 'Max files per job = %d\n' % self.max_files_per_job
+        result += 'Top level ups products:\n'
+        for prod in self.ups:
+            result += '    %s\n' % prod
         result += 'OS = %s\n' % self.os
         result += 'Resource = %s\n' % self.resource
         result += 'Role = %s\n' % self.role
