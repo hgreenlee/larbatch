@@ -16,7 +16,7 @@ from project_modules.xmlerror import XMLError
 from project_modules.stagedef import StageDef
 import larbatch_posix
 from larbatch_utilities import convert_str
-from larbatch_utilities get_ups_products
+from larbatch_utilities import get_ups_products
 
 # Project definition class contains data parsed from project defition xml file.
 
@@ -191,9 +191,9 @@ class ProjectDef:
                     self.merge = str(merge_element.firstChild.data)
                 else:
                     self.merge = ''
-	    
+
         # anamerge (subelement).
- 	
+
         anamerge_elements = project_element.getElementsByTagName('anamerge')
         for anamerge_element in anamerge_elements:
             if anamerge_element.parentNode == project_element:
@@ -201,7 +201,7 @@ class ProjectDef:
                     self.anamerge = str(anamerge_element.firstChild.data)
                 else:
                     self.anamerge = ''
-	    
+
         # Larsoft (subelement).
 
         larsoft_elements = project_element.getElementsByTagName('larsoft')
@@ -289,15 +289,15 @@ class ProjectDef:
             self.script = script_path
 
         # Validate-on-worker flag (subelement).
-	
-	worker_validations = project_element.getElementsByTagName('check')
+
+        worker_validations = project_element.getElementsByTagName('check')
         for worker_validation in worker_validations:
             if worker_validation.parentNode == project_element:
                 self.validate_on_worker = int(worker_validation.firstChild.data)
 
         # Copy to FTS flag (subelement).
-	
-	worker_copys = project_element.getElementsByTagName('copy')
+
+        worker_copys = project_element.getElementsByTagName('copy')
         for worker_copy in worker_copys:
             if worker_copy.parentNode == project_element:
                 self.copy_to_fts = int(worker_copy.firstChild.data)    
