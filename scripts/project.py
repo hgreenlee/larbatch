@@ -137,6 +137,7 @@
 #             Useful in case you want to limit output file size or keep
 #             1 -> 1 correlation between input and output. can be overwritten
 #             by <stage><maxfilesperjob>
+# <ups>     - Override top level ups products (repeatable).
 # <os>      - Specify batch OS (comma-separated list: SL5,SL6).
 #             Default let jobsub decide.
 # <server>  - Jobsub server (expert option, jobsub_submit --jobsub-server=...).
@@ -347,6 +348,12 @@
 # <stage><disk>    - Amount of scratch disk space (jobsub_submit --disk=...).
 #                    Specify value and unit (e.g. 50GB).
 # <stage><memory>  - Specify amount of memory in MB (jobsub_submit --memory=...).
+# <stage><script>  - Name of batch worker script (default condor_lar.sh).
+#                    The batch script must be on the execution path.
+# <stage><startscript> - Name of batch worker start project script (default condor_start_project.sh)
+#                    Must be on execution path.
+# <stage><stopscript> - Name of batch worker stop project script (default condor_start_project.sh)
+#                    Must be on execution path.
 # <stage><output>  - Specify output file name.  Can aslso appear in fcl substages (see below).
 # <stage><datafiletypes>  - Specify file types that should be considered as data and
 #                           saved in batch jobs (comma-separated list).  Default "root".
@@ -3115,7 +3122,7 @@ def dojobsub(project, stage, makeup, recur):
     command.extend([' --group', project_utilities.get_experiment()])
     command.extend([' -g'])
     command.extend([' -c', 'wrapper.fcl'])
-    command.extend([' --ups', project_utilities.get_ups_products()])
+    command.extend([' --ups', ','.join(project.ups)])
     if project.release_tag != '':
         command.extend([' -r', project.release_tag])
     command.extend([' -b', project.release_qual])
