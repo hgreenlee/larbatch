@@ -51,6 +51,8 @@ class StageDef:
             self.logdir = base_stage.logdir
             self.workdir = base_stage.workdir
             self.bookdir = base_stage.bookdir
+            self.dirsize = base_stage.dirsize
+            self.dirlevels = base_stage.dirlevels
             self.dynamic = base_stage.dynamic
             self.inputfile = base_stage.inputfile
             self.inputlist = base_stage.inputlist
@@ -130,6 +132,8 @@ class StageDef:
             self.logdir = ''       # Log directory.
             self.workdir = ''      # Work directory.
             self.bookdir = ''      # Bookkeeping directory.
+            self.dirsize = 0       # Maximum directory size.
+            self.dirlevels = 0     # Number of extra directory levels.
             self.dynamic = 0       # Dynamic output/log directory.
             self.inputfile = ''    # Single input file.
             self.inputlist = ''    # Input file list.
@@ -258,6 +262,18 @@ class StageDef:
             self.bookdir = str(bookdir_elements[0].firstChild.data)
         if self.bookdir == '':
             self.bookdir = self.logdir
+
+        # Maximum directory size (subelement).
+
+        dirsize_elements = stage_element.getElementsByTagName('dirsize')
+        if dirsize_elements:
+            self.dirsize = int(dirsize_elements[0].firstChild.data)
+
+        # Extra directory levels (subelement).
+
+        dirlevels_elements = stage_element.getElementsByTagName('dirlevels')
+        if dirlevels_elements:
+            self.dirlevels = int(dirlevels_elements[0].firstChild.data)
 
         # Single input file (subelement).
 
@@ -1093,6 +1109,8 @@ class StageDef:
         result += 'Log directory = %s\n' % self.logdir
         result += 'Work directory = %s\n' % self.workdir
         result += 'Bookkeeping directory = %s\n' % self.bookdir
+        result += 'Maximum directory size = %d\n' % self.dirsize
+        result += 'Extra directory levels = %d\n' % self.dirlevels
         result += 'Dynamic directories = %d\n' % self.dynamic
         result += 'Input file = %s\n' % self.inputfile
         result += 'Input list = %s\n' % self.inputlist
