@@ -81,6 +81,8 @@
 #
 # --dump_project - Dump project object (dumps all stages).
 # --dump_stage   - Dump stage object.
+# --nocheck    - Parse xml with reduced checks.  This is mainly useful when
+#                combined with one of the dump options.
 #
 # --outdir     - Print the name of the output directory for stage.
 # --logdir     - Print the name of the log directory for stage.
@@ -3891,6 +3893,7 @@ def main(argv):
     clean_one = 0
     dump_project = 0
     dump_stage = 0
+    nocheck = 0
     print_outdir = 0
     print_logdir = 0
     print_workdir = 0
@@ -4020,6 +4023,9 @@ def main(argv):
         elif args[0] == '--dump_stage':
             dump_stage = 1
             del args[0]
+        elif args[0] == '--nocheck':
+            nocheck = 1
+            del args[0]
         elif args[0] == '--outdir':
             print_outdir = 1
             del args[0]
@@ -4146,7 +4152,7 @@ def main(argv):
 
     # Extract all project definitions.
 
-    projects = get_projects(xmlfile)
+    projects = get_projects(xmlfile, check=(not nocheck))
 
     # Get the selected project element.
 
