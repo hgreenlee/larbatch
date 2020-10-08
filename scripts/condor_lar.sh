@@ -912,21 +912,11 @@ echo "Process: $PROCESS"
 
 # Construct name of output subdirectory.
 
-dirbase=''
-subdir=''
 parentdir=''
+ndir=$PROCESS
 while [ $DIRLEVELS -gt 0 -a $DIRSIZE -gt 0 ]; do
-  if [ x$dirbase = x ]; then
-    dirbase=$(( $PROCESS / $DIRSIZE ))
-  else
-    if [ x$subdir = x ]; then
-      subdir=$(( $dirbase % $DIRSIZE ))/
-    else
-      subdir=$(( $dirbase % $DIRSIZE ))/${subdir}/
-    fi
-    dirbase=$(( $dirbase / $DIRSIZE ))
-  fi
-  parentdir=${dirbase}/${subdir}
+  parentdir=$(( $ndir % $DIRSIZE ))/$parentdir
+  ndir=$(( $ndir / $DIRSIZE ))
   DIRLEVELS=$(( $DIRLEVELS - 1 ))
 done
 OUTPUT_SUBDIR=${parentdir}${CLUSTER}_${PROCESS}
