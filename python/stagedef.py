@@ -40,6 +40,7 @@ class StageDef:
         if base_stage != None:
             self.name = base_stage.name
             self.batchname = base_stage.batchname
+            self.poms_stage = base_stage.poms_stage
             self.fclname = base_stage.fclname
             self.outdir = base_stage.outdir
             self.logdir = base_stage.logdir
@@ -121,6 +122,7 @@ class StageDef:
         else:
             self.name = ''         # Stage name.
             self.batchname = ''    # Batch job name
+            self.poms_stage = ''   # POMS stage name
             self.fclname = []
             self.outdir = ''       # Output directory.
             self.logdir = ''       # Log directory.
@@ -214,6 +216,14 @@ class StageDef:
         batchname_elements = stage_element.getElementsByTagName('batchname')
         if batchname_elements:
             self.batchname = str(batchname_elements[0].firstChild.data)
+
+        # POMS stage name (subelement).
+
+        pomsstage_elements = stage_element.getElementsByTagName('pomsstage')
+        if pomsstage_elements:
+            self.poms_stage = str(pomsstage_elements[0].firstChild.data)
+        if self.poms_stage == '':
+            self.poms_stage = self.name
 
         # Fcl file name (repeatable subelement).
 
@@ -1087,7 +1097,8 @@ class StageDef:
 
     def __str__(self):
         result = 'Stage name = %s\n' % self.name
-        result = 'Batch job name = %s\n' % self.batchname
+        result += 'Batch job name = %s\n' % self.batchname
+        result += 'POMS stage = %s\n' % self.poms_stage
         #result += 'Fcl filename = %s\n' % self.fclname
         for fcl in self.fclname:
 	  result += 'Fcl filename = %s\n' % fcl 

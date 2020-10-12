@@ -93,6 +93,7 @@
 # --input_files        - Print all input files.
 # --check_submit       - Run presubmission check script, if any.
 # --check_input        - Do all standard input file checks.
+# --poms       - Write POMS campaign ini file to standard output.
 #
 # --check_declarations - Check whether data files are declared to sam.
 # --test_declarations  - Print a summary of files returned by sam query.
@@ -172,6 +173,10 @@
 # <larsoft><qual> - Build qualifier (default "debug", or "prof").
 # <larsoft><local> - Local test release directory or tarball (default none).
 # <version> - Specify project version (default same as <larsoft><tag>).
+# <poms>    - POMS information.
+# <poms><loginsetup> - POMS login/setup (aka launch template).  Default none.
+# <poms><jobtype> - POMS job type.  Default none.
+# <poms><campaign> - POMS campaign name.  Default same as project name.
 #
 # <filetype> - Sam file type ("data" or "mc", default none).
 # <runtype>  - Sam run type (normally "physics", default none).
@@ -193,6 +198,7 @@
 #             If present, it specifies a "base stage" which supplies default
 #             values for all unspecified xml tags.
 # <stage><batchname> - If present and not empty, override default batch job name.
+# <stage><pomsstage> - POMS stage name (default same as stage name).
 # <stage><fcl> - Name of fcl file (required).
 #                Search $FHICL_FILE_PATH, <fcldir>, or specify full path.
 #                Repeatable.
@@ -3671,6 +3677,66 @@ def domerge(stage, mergehist, mergentuple):
         larbatch_posix.remove(histurlsname_temp)
 
 
+# Print POMS init file.
+
+def do_poms_ini(project, xmlfile):
+
+    # Campaign section.
+
+    print '[campaign]'
+    print 'experiment=%s' % project_utilities.get_experiment()
+    print 'poms_role=production'
+    print 'name=%s' % project.poms_campaign
+    print 'stage=Active'
+    print 'campaign_keywords={}'
+    stage_list = ''
+    for stage in project.stages:
+        if stage_list != '':
+            stage_list += ','
+        stage_list += stage.name
+    print 'campaign_stage_list=%s' % stage_list
+    print
+
+    # Campaign defaults section.
+
+    print '[campaign_defaults]'
+    print 'vo_role=Production'
+    print 'software_version=v1_0'
+    print 'dataset_or_split_data='
+    print 'cs_split_type='
+    print 'completion_type=located'
+    print 'completion_pct=95'
+    print 'param_overrides=[]'
+    print 'test_param_overrides=[]'
+    print 'merge_overrides='
+    print 'login_setup=generic'
+    print 'job_type=generic'
+    print 'stage_type=regular'
+    print 'output_ancestor_depth=1'
+    print
+
+    # Campaign stages sections.
+    # Loop over stages.
+
+    for stage in project.stages:
+        print '[campaign_stage %s]' % stage.poms_stage
+        print 'software_version=%s' % project.release_tag
+        print 'dataset_or_split_data='
+        print 'cs_split_type=draining'
+        print 'completion_type=located'
+        print 'param_overrides=[["--xml", " %s"], ["--stage", " %s"]]' % (xmlfile, stage.name)
+        print 'login_setup=%s' % project.poms_login_setup
+        print 'job_type=%s' % project.poms_job_type
+        print 'merge_overrides=False'
+        print 'stage_type=regular'
+        print
+
+
+
+    
+
+
+
 # Sam audit.
 
 def doaudit(stage):
@@ -3903,6 +3969,7 @@ def main(argv):
     do_input_files = 0
     do_check_submit = 0
     do_check_input = 0
+    do_poms = 0
     declare = 0
     declare_ana = 0
     define = 0
@@ -4052,6 +4119,9 @@ def main(argv):
             del args[0]
         elif args[0] == '--check_input':
             do_check_input = 1
+            del args[0]
+        elif args[0] == '--poms':
+            do_poms = 1
             del args[0]
         elif args[0] == '--declare':
             declare = 1
@@ -4403,6 +4473,11 @@ def main(argv):
             print 'Stage %s:' % stagename
             stage = stages[stagename]
             stage.checkinput(checkdef=True)
+
+    # Do poms ini output.
+
+    if do_poms:
+        do_poms_ini(project, xmlfile)
 
     # Do shorten action now.
 

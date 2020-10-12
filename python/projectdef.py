@@ -48,6 +48,9 @@ class ProjectDef:
         self.version = ''                 # Project version.
         self.local_release_dir = ''       # Larsoft local release directory.
         self.local_release_tar = ''       # Larsoft local release tarball.
+        self.poms_login_setup = ''        # POMS login/setup.
+        self.poms_job_type = ''           # POMS job type.
+        self.poms_campaign = ''           # POMS campaign name.
         self.file_type = ''               # Sam file type.
         self.run_type = ''                # Sam run type.
         self.run_number = 0               # Sam run number.
@@ -226,6 +229,32 @@ class ProjectDef:
                     self.local_release_dir = local
                 else:
                     self.local_release_tar = local
+
+        # POMS (subelement).
+
+        poms_elements = project_element.getElementsByTagName('poms')
+        if poms_elements:
+
+            # POMS login/stup (subelement).
+
+            loginsetup_elements = poms_elements[0].getElementsByTagName('loginsetup')
+            if loginsetup_elements and loginsetup_elements[0].firstChild != None:
+                self.poms_login_setup = str(loginsetup_elements[0].firstChild.data)
+
+            # POMS job type (subelement).
+
+            jobtype_elements = poms_elements[0].getElementsByTagName('jobtype')
+            if jobtype_elements:
+                self.poms_job_type = str(jobtype_elements[0].firstChild.data)
+
+            # POMS campaign (subelement).
+
+            campaign_elements = poms_elements[0].getElementsByTagName('campaign')
+            if campaign_elements:
+                campaign = str(campaign_elements[0].firstChild.data)
+                self.poms_campaign = campaign
+        if self.poms_campaign == '':
+            self.poms_campaign = self.name
 
         # Version (subelement).
 
@@ -447,6 +476,9 @@ class ProjectDef:
         result += 'Version = %s\n' % self.version
         result += 'Local test release directory = %s\n' % self.local_release_dir
         result += 'Local test release tarball = %s\n' % self.local_release_tar
+        result += 'POMS login/setup = %s\n' % self.poms_login_setup
+        result += 'POMS job type = %s\n' % self.poms_job_type
+        result += 'POMS campaign = %s\n' % self.poms_campaign
         result += 'File type = %s\n' % self.file_type
         result += 'Run type = %s\n' % self.run_type
         result += 'Run number = %d\n' % self.run_number
