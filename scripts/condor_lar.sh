@@ -73,6 +73,8 @@
 # --workdir <arg>         - No effect (allowed for compatibility).
 # --outdir <arg>          - Output directory (required).
 # --logdir <arg>          - Log directory (required).
+# --dirsize <n>           - Maximum directory size.
+# --dirlevels <n>         - Number of extra directory levels.
 # --scratch <arg>         - Scratch directory (only for interactive).
 # --cluster <arg>         - Job cluster (override $CLUSTER)
 # --process <arg>         - Process within cluster (override $PROCESS).
@@ -222,6 +224,8 @@ INTERACTIVE=0
 GRP=""
 OUTDIR=""
 LOGDIR=""
+DIRSIZE=0
+DIRLEVELS=0
 SCRATCH=""
 CLUS=""
 PROC=""
@@ -522,6 +526,22 @@ while [ $# -gt 0 ]; do
     --logdir )
       if [ $# -gt 1 ]; then
         LOGDIR=$2
+        shift
+      fi
+      ;;
+
+    # Maximum directory size.
+    --dirsize )
+      if [ $# -gt 1 ]; then
+        DIRSIZE=$2
+        shift
+      fi
+      ;;
+
+    # Number of extra directory levels.
+    --dirlevels )
+      if [ $# -gt 1 ]; then
+        DIRLEVELS=$2
         shift
       fi
       ;;
@@ -892,7 +912,14 @@ echo "Process: $PROCESS"
 
 # Construct name of output subdirectory.
 
-OUTPUT_SUBDIR=${CLUSTER}_${PROCESS}
+parentdir=''
+ndir=$PROCESS
+while [ $DIRLEVELS -gt 0 -a $DIRSIZE -gt 0 ]; do
+  parentdir=$(( $ndir % $DIRSIZE ))/$parentdir
+  ndir=$(( $ndir / $DIRSIZE ))
+  DIRLEVELS=$(( $DIRLEVELS - 1 ))
+done
+OUTPUT_SUBDIR=${parentdir}${CLUSTER}_${PROCESS}
 echo "Output subdirectory: $OUTPUT_SUBDIR"
 
 # Make sure fcl file exists.
@@ -1977,6 +2004,15 @@ export IFDH_CP_MAXRETRIES=5
 
 echo "Make directory ${LOGDIR}/${OUTPUT_SUBDIR}."
 date
+subdir=$OUTPUT_SUBDIR
+dir=$LOGDIR
+while echo $subdir | grep -q /; do
+  dir=${dir}/${subdir%%/*}
+  subdir=${subdir#*/}
+  echo "ifdh mkdir $IFDH_OPT $dir"
+  ifdh mkdir $IFDH_OPT $dir
+done
+echo "ifdh mkdir $IFDH_OPT ${LOGDIR}/$OUTPUT_SUBDIR"
 ifdh mkdir $IFDH_OPT ${LOGDIR}/$OUTPUT_SUBDIR
 echo "Done making directory ${LOGDIR}/${OUTPUT_SUBDIR}."
 date
@@ -1984,6 +2020,15 @@ date
 if [ ${OUTDIR} != ${LOGDIR} ]; then
   echo "Make directory ${OUTDIR}/${OUTPUT_SUBDIR}."
   date
+  subdir=$OUTPUT_SUBDIR
+  dir=$OUTDIR
+  while echo $subdir | grep -q /; do
+    dir=${dir}/${subdir%%/*}
+    subdir=${subdir#*/}
+    echo "ifdh mkdir $IFDH_OPT $dir"
+    ifdh mkdir $IFDH_OPT $dir
+  done
+  echo "ifdh mkdir $IFDH_OPT ${OUTDIR}/$OUTPUT_SUBDIR"
   ifdh mkdir $IFDH_OPT ${OUTDIR}/$OUTPUT_SUBDIR
   echo "Done making directory ${OUTDIR}/${OUTPUT_SUBDIR}."
   date

@@ -39,7 +39,7 @@ class StageDef:
                  default_anamerge,
                  default_cpu, default_disk, default_memory, default_validate_on_worker,
                  default_copy_to_fts, default_script, default_start_script, default_stop_script,
-                 default_site, default_blacklist):
+                 default_site, default_blacklist, check=True):
 
         # Assign default values.
 
@@ -51,6 +51,8 @@ class StageDef:
             self.logdir = base_stage.logdir
             self.workdir = base_stage.workdir
             self.bookdir = base_stage.bookdir
+            self.dirsize = base_stage.dirsize
+            self.dirlevels = base_stage.dirlevels
             self.dynamic = base_stage.dynamic
             self.inputfile = base_stage.inputfile
             self.inputlist = base_stage.inputlist
@@ -130,6 +132,8 @@ class StageDef:
             self.logdir = ''       # Log directory.
             self.workdir = ''      # Work directory.
             self.bookdir = ''      # Bookkeeping directory.
+            self.dirsize = 0       # Maximum directory size.
+            self.dirlevels = 0     # Number of extra directory levels.
             self.dynamic = 0       # Dynamic output/log directory.
             self.inputfile = ''    # Single input file.
             self.inputlist = ''    # Input file list.
@@ -258,6 +262,18 @@ class StageDef:
             self.bookdir = str(bookdir_elements[0].firstChild.data)
         if self.bookdir == '':
             self.bookdir = self.logdir
+
+        # Maximum directory size (subelement).
+
+        dirsize_elements = stage_element.getElementsByTagName('dirsize')
+        if dirsize_elements:
+            self.dirsize = int(dirsize_elements[0].firstChild.data)
+
+        # Extra directory levels (subelement).
+
+        dirlevels_elements = stage_element.getElementsByTagName('dirlevels')
+        if dirlevels_elements:
+            self.dirlevels = int(dirlevels_elements[0].firstChild.data)
 
         # Single input file (subelement).
 
@@ -522,26 +538,27 @@ class StageDef:
 
         # Make sure submit script exists, and convert into a full path.
 
-        if len(self.submit_script) > 0:
-            if larbatch_posix.exists(self.submit_script[0]):
-                self.submit_script[0] = os.path.realpath(self.submit_script[0])
-            else:
+        if check:
+            if len(self.submit_script) > 0:
+                if larbatch_posix.exists(self.submit_script[0]):
+                    self.submit_script[0] = os.path.realpath(self.submit_script[0])
+                else:
 
-                # Look for script on execution path.
+                    # Look for script on execution path.
 
-                try:
-                    jobinfo = subprocess.Popen(['which', self.submit_script[0]],
-                                               stdout=subprocess.PIPE,
-                                               stderr=subprocess.PIPE)
-                    jobout, joberr = jobinfo.communicate()
-                    jobout = convert_str(jobout)
-                    joberr = convert_str(joberr)
-                    rc = jobinfo.poll()
-                    self.submit_script[0] = jobout.splitlines()[0].strip()
-                except:
-                    pass
-            if not larbatch_posix.exists(self.submit_script[0]):
-                raise IOError('Submit script %s not found.' % self.submit_script[0])
+                    try:
+                        jobinfo = subprocess.Popen(['which', self.submit_script[0]],
+                                                   stdout=subprocess.PIPE,
+                                                   stderr=subprocess.PIPE)
+                        jobout, joberr = jobinfo.communicate()
+                        jobout = convert_str(jobout)
+                        joberr = convert_str(joberr)
+                        rc = jobinfo.poll()
+                        self.submit_script[0] = jobout.splitlines()[0].strip()
+                    except:
+                        pass
+                if not larbatch_posix.exists(self.submit_script[0]):
+                    raise IOError('Submit script %s not found.' % self.submit_script[0])
 
         # Worker initialization script (repeatable subelement).
 
@@ -552,25 +569,26 @@ class StageDef:
 
                 # Make sure init script exists, and convert into a full path.
 
-                if init_script != '':
-                    if larbatch_posix.exists(init_script):
-                        init_script = os.path.realpath(init_script)
-                    else:
+                if check:
+                    if init_script != '':
+                        if larbatch_posix.exists(init_script):
+                            init_script = os.path.realpath(init_script)
+                        else:
 
-                        # Look for script on execution path.
+                            # Look for script on execution path.
 
-                        try:
-                            jobinfo = subprocess.Popen(['which', init_script],
-                                                       stdout=subprocess.PIPE,
-                                                       stderr=subprocess.PIPE)
-                            jobout, joberr = jobinfo.communicate()
-                            rc = jobinfo.poll()
-                            init_script = convert_str(jobout.splitlines()[0].strip())
-                        except:
-                            pass
+                            try:
+                                jobinfo = subprocess.Popen(['which', init_script],
+                                                           stdout=subprocess.PIPE,
+                                                           stderr=subprocess.PIPE)
+                                jobout, joberr = jobinfo.communicate()
+                                rc = jobinfo.poll()
+                                init_script = convert_str(jobout.splitlines()[0].strip())
+                            except:
+                                pass
 
-                    if not larbatch_posix.exists(init_script):
-                        raise IOError('Init script %s not found.' % init_script)
+                        if not larbatch_posix.exists(init_script):
+                            raise IOError('Init script %s not found.' % init_script)
 
                     self.init_script.append(init_script)
 
@@ -584,24 +602,25 @@ class StageDef:
                 # Make sure init source script exists, and convert into a full path.
 
                 if init_source != '':
-                    if larbatch_posix.exists(init_source):
-                        init_source = os.path.realpath(init_source)
-                    else:
+                    if check:
+                        if larbatch_posix.exists(init_source):
+                            init_source = os.path.realpath(init_source)
+                        else:
 
-                        # Look for script on execution path.
+                            # Look for script on execution path.
 
-                        try:
-                            jobinfo = subprocess.Popen(['which', init_source],
-                                                       stdout=subprocess.PIPE,
-                                                       stderr=subprocess.PIPE)
-                            jobout, joberr = jobinfo.communicate()
-                            rc = jobinfo.poll()
-                            init_source = convert_str(jobout.splitlines()[0].strip())
-                        except:
-                            pass
+                            try:
+                                jobinfo = subprocess.Popen(['which', init_source],
+                                                           stdout=subprocess.PIPE,
+                                                           stderr=subprocess.PIPE)
+                                jobout, joberr = jobinfo.communicate()
+                                rc = jobinfo.poll()
+                                init_source = convert_str(jobout.splitlines()[0].strip())
+                            except:
+                                pass
 
-                    if not larbatch_posix.exists(init_source):
-                        raise IOError('Init source script %s not found.' % init_source)
+                        if not larbatch_posix.exists(init_source):
+                            raise IOError('Init source script %s not found.' % init_source)
 
                     # The <initsource> element can occur at the top level of the <stage>
                     # element, or inside a <fcl> element.
@@ -637,24 +656,25 @@ class StageDef:
                 # Make sure end-of-job scripts exists, and convert into a full path.
 
                 if end_script != '':
-                    if larbatch_posix.exists(end_script):
-                        end_script = os.path.realpath(end_script)
-                    else:
+                    if check:
+                        if larbatch_posix.exists(end_script):
+                            end_script = os.path.realpath(end_script)
+                        else:
 
-                        # Look for script on execution path.
+                            # Look for script on execution path.
 
-                        try:
-                            jobinfo = subprocess.Popen(['which', end_script],
-                                                       stdout=subprocess.PIPE,
-                                                       stderr=subprocess.PIPE)
-                            jobout, joberr = jobinfo.communicate()
-                            rc = jobinfo.poll()
-                            end_script = convert_str(jobout.splitlines()[0].strip())
-                        except:
-                            pass
+                            try:
+                                jobinfo = subprocess.Popen(['which', end_script],
+                                                           stdout=subprocess.PIPE,
+                                                           stderr=subprocess.PIPE)
+                                jobout, joberr = jobinfo.communicate()
+                                rc = jobinfo.poll()
+                                end_script = convert_str(jobout.splitlines()[0].strip())
+                            except:
+                                pass
 
-                    if not larbatch_posix.exists(end_script):
-                        raise IOError('End-of-job script %s not found.' % end_script)
+                        if not larbatch_posix.exists(end_script):
+                            raise IOError('End-of-job script %s not found.' % end_script)
 
                     # The <endscript> element can occur at the top level of the <stage>
                     # element, or inside a <fcl> element.
@@ -1010,23 +1030,24 @@ class StageDef:
 
         # Make sure batch script exists, and convert into a full path.
 
-        script_path = ''
-        try:
-            jobinfo = subprocess.Popen(['which', self.script],
-                                       stdout=subprocess.PIPE,
-                                       stderr=subprocess.PIPE)
-            jobout, joberr = jobinfo.communicate()
-            jobout = convert_str(jobout)
-            joberr = convert_str(joberr)
-            rc = jobinfo.poll()
-            script_path = jobout.splitlines()[0].strip()
-        except:
-            pass
-        if script_path == '' or not larbatch_posix.access(script_path, os.X_OK):
-            raise IOError('Script %s not found.' % self.script)
-        self.script = script_path
-        
-        # Start script
+        if check:
+            script_path = ''
+            try:
+                jobinfo = subprocess.Popen(['which', self.script],
+                                           stdout=subprocess.PIPE,
+                                           stderr=subprocess.PIPE)
+                jobout, joberr = jobinfo.communicate()
+                jobout = convert_str(jobout)
+                joberr = convert_str(joberr)
+                rc = jobinfo.poll()
+                script_path = jobout.splitlines()[0].strip()
+            except:
+                pass
+            if script_path == '' or not larbatch_posix.access(script_path, os.X_OK):
+                raise IOError('Script %s not found.' % self.script)
+            self.script = script_path
+	
+	# Start script
 
         start_script_elements = stage_element.getElementsByTagName('startscript')
         if start_script_elements:
@@ -1034,19 +1055,20 @@ class StageDef:
 
         # Make sure start project batch script exists, and convert into a full path.
 
-        script_path = ''
-        try:
-            jobinfo = subprocess.Popen(['which', self.start_script],
-                                       stdout=subprocess.PIPE,
-                                       stderr=subprocess.PIPE)
-            jobout, joberr = jobinfo.communicate()
-            jobout = convert_str(jobout)
-            joberr = convert_str(joberr)
-            rc = jobinfo.poll()
-            script_path = jobout.splitlines()[0].strip()
-        except:
-            pass
-        self.start_script = script_path
+        if check:
+            script_path = ''
+            try:
+                jobinfo = subprocess.Popen(['which', self.start_script],
+                                           stdout=subprocess.PIPE,
+                                           stderr=subprocess.PIPE)
+                jobout, joberr = jobinfo.communicate()
+                jobout = convert_str(jobout)
+                joberr = convert_str(joberr)
+                rc = jobinfo.poll()
+                script_path = jobout.splitlines()[0].strip()
+            except:
+                pass
+            self.start_script = script_path
 
         # Stop script
 
@@ -1056,19 +1078,20 @@ class StageDef:
 
         # Make sure stop project batch script exists, and convert into a full path.
 
-        script_path = ''
-        try:
-            jobinfo = subprocess.Popen(['which', self.stop_script],
-                                       stdout=subprocess.PIPE,
-                                       stderr=subprocess.PIPE)
-            jobout, joberr = jobinfo.communicate()
-            jobout = convert_str(jobout)
-            joberr = convert_str(joberr)
-            rc = jobinfo.poll()
-            script_path = jobout.splitlines()[0].strip()
-        except:
-            pass
-        self.stop_script = script_path
+        if check:
+            script_path = ''
+            try:
+                jobinfo = subprocess.Popen(['which', self.stop_script],
+                                           stdout=subprocess.PIPE,
+                                           stderr=subprocess.PIPE)
+                jobout, joberr = jobinfo.communicate()
+                jobout = convert_str(jobout)
+                joberr = convert_str(joberr)
+                rc = jobinfo.poll()
+                script_path = jobout.splitlines()[0].strip()
+            except:
+                pass
+            self.stop_script = script_path
 
         # Done.
 
@@ -1086,6 +1109,8 @@ class StageDef:
         result += 'Log directory = %s\n' % self.logdir
         result += 'Work directory = %s\n' % self.workdir
         result += 'Bookkeeping directory = %s\n' % self.bookdir
+        result += 'Maximum directory size = %d\n' % self.dirsize
+        result += 'Extra directory levels = %d\n' % self.dirlevels
         result += 'Dynamic directories = %d\n' % self.dynamic
         result += 'Input file = %s\n' % self.inputfile
         result += 'Input list = %s\n' % self.inputlist
