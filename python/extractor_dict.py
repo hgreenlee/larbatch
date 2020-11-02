@@ -169,7 +169,7 @@ class expMetaData(MetaData):
                 mixparents.append(mdval.strip(' ,"') )  
                 
             # Other fields where the key or value requires minor conversion.
-            elif mdkey in ['first_event', 'last_event']:
+            elif mdkey in ['first_event', 'last_event'] and not type(mdval) == type(1):
                 md[mdkey] = mdval[2]
             elif mdkey in self.metadataList:
                 #print mdkey
