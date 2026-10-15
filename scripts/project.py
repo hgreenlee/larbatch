@@ -3499,6 +3499,9 @@ def dojobsub(project, stage, makeup, recur, dryrun, retain, use_rcds):
         if abssetupscript != '':
             start_command.extend([' --init', abssetupscript])
 
+        if project.spack_environment != '':
+            start_command.extend([' --spack_environment', project.spack_environment])
+
         if stage.num_jobs > 0 and stage.max_files_per_job > 0:
             start_command.extend([' --max_files', '%d' % (stage.num_jobs * stage.max_files_per_job)])
 
@@ -3576,6 +3579,9 @@ def dojobsub(project, stage, makeup, recur, dryrun, retain, use_rcds):
 
         if abssetupscript != '':
             stop_command.extend([' --init', abssetupscript])
+
+        if project.spack_environment != '':
+            stop_command.extend([' --spack_environment', project.spack_environment])
 
         # Done with stop command.
 
