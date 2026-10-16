@@ -137,6 +137,11 @@ class ProjectDef:
             if spack_load_element.parentNode == project_element:
                 self.spack_load.append(spack_load_element.firstChild.data)
 
+        # If ups products list is empty, set default.
+
+        if len(self.spack_load) == 0:
+            self.spack_load = get_ups_products().split(',')
+
         # OS (subelement).
 
         os_elements = project_element.getElementsByTagName('os')
