@@ -199,6 +199,10 @@
 # <larsoft><local> - Local test release directory or tarball (default none).
 # <version> - Specify project version (default same as <larsoft><tag>).
 #
+# <spackinstance> - Specify the top directory of a spack instance (must be in cvmfs).
+# <spackenvironment> - Specify named environment to activate.
+# <spackload> - Packages to load using spack (comma-separated list, optional).
+#
 # <filetype> - Sam file type ("data" or "mc", default none).
 # <runtype>  - Sam run type (normally "physics", default none).
 # <runnumber> - Sam run number (default nont).
